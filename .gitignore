@@ -1,0 +1,19 @@
+# Python
+
+.venv/
+__pycache__/
+*.pyc
+*.db
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+testLivrotheque2.csv
