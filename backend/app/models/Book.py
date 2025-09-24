@@ -1,6 +1,6 @@
 import datetime as dt
-from typing import Optional
-from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint
+from typing import Optional, List
+from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship
 
 class Book(SQLModel, table=True):
     __tablename__ = "books"
@@ -11,19 +11,18 @@ class Book(SQLModel, table=True):
     title: str = Field(index=True)
     isbn: Optional[str] = Field(default=None,  sa_column=Column(String, nullable=True, index=True))
 
-    authors: Optional[str] = None
-    publisher: Optional[str] = None
     published_date: Optional[dt.date] = None
-    genre: Optional[str] = None
     page_count: Optional[int] = None
 
     # Identification physique
     barcode: str = Field(default=None)  # Code-barres
-    #Prêt
-    lended: bool = Field(default=False)
-    lended_to: Optional[str] = None         #Nom ou identifiant de l'emprunteur
-    lended_date: Optional[dt.date] = None 
-    return_date: Optional[dt.date] = None
+    
+    # Relations
+    authors: List["Author"] = Relationship(back_populates="books", link_model="BookAuthorLink")
+    publisher_id: Optional[int] = Field(default=None, foreign_key="publishers.id")
+    publisher: Optional["Publisher"] = Relationship(back_populates="books")
+    genre_id: Optional[int] = Field(default=None, foreign_key="genres.id")
+    genre: Optional["Genre"] = Relationship(back_populates="books", link_model="BookGenreLink")
 
     # Contraintes d'unicité
     __table_args__ = (
