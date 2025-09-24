@@ -1,13 +1,17 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.routers import books
 from app.db import init_db
 
-app = FastAPI(title="Bibliothèque API", version="0.1.0")
+
 
 # Initialiser la base de données
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
+    yield
+
+app = FastAPI(title="Bibliothèque API", version="0.1.0", lifespan=lifespan)
 
 app.include_router(books.router)
 

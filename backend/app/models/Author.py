@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
-from app.models import BookAuthorLink
+from app.models.BookAuthorLink import BookAuthorLink
 
 class Author(SQLModel, table=True):
     __tablename__ = "authors"
