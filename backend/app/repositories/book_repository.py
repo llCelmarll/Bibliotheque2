@@ -20,3 +20,15 @@ def create_book(session: Session, book: Book):
     session.commit()
     session.refresh(book)
     return book
+
+def update_book(session: Session, book: Book):
+    """Update an existing book in the database."""
+    session.add(book)
+    session.commit()
+    session.refresh(book)
+    return book
+
+def delete_book(session: Session, book: Book):
+    """Delete a book from the database."""
+    session.delete(book)
+    session.commit()

@@ -25,7 +25,7 @@ def get_book(book_id: int, session: Session = Depends(get_session)):
     return book
 
 @router.get("/scan/{isbn}")
-async def scan_book(isbn: str, session: Session = Depends(get_session)):
+async def scan_book(isbn: str):
     result = await book_service.scan_or_get_book(session, isbn)
     if not result:
         raise HTTPException(status_code=404, detail="Livre non trouvé localement ou via l'API externe.")
