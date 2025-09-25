@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from app.db import get_session
 from app.models.Book import Book
 from app.schemas.Book import BookRead
-from app.services import book_service
+
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -24,9 +24,3 @@ def get_book(book_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="livre introuvable")
     return book
 
-@router.get("/scan/{isbn}")
-async def scan_book(isbn: str):
-    result = await book_service.scan_or_get_book(session, isbn)
-    if not result:
-        raise HTTPException(status_code=404, detail="Livre non trouvé localement ou via l'API externe.")
-    return result
