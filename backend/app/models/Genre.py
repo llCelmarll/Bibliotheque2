@@ -7,4 +7,4 @@ class Genre(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
-    books: List["Book"] = Relationship(back_populates="genre", link_model=BookGenreLink)
+    books: List["Book"] = Relationship(back_populates="genres", link_model=BookGenreLink)
