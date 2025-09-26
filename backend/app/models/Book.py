@@ -27,6 +27,9 @@ class Book(SQLModel, table=True):
     genre_id: Optional[int] = Field(default=None, foreign_key="genres.id")
     genres: List["Genre"] = Relationship(back_populates="books", link_model=BookGenreLink)
 
+    # Couverture du livre
+    cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
+
     # Contraintes d'unicité
     __table_args__ = (
         UniqueConstraint("title", "isbn", name="uq_title_isbn"),
