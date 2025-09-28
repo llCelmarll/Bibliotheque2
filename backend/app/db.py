@@ -1,13 +1,19 @@
-from sqlmodel import SQLModel, create_engine, Session
-from app.models.Book import Book
+from sqlmodel import SQLModel
 from app.models.Author import Author
+from app.models.Book import Book
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
 from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
+from sqlmodel import create_engine, Session
+import os
 
+# Obtenir le chemin absolu vers le dossier backend
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BACKEND_DIR, "bibliotheque.db")
 
-engine = create_engine("sqlite:///./bibliotheque.db", echo=False)
+engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+
 
 # Create the database and tables
 def init_db():
@@ -17,3 +23,5 @@ def init_db():
 def get_session():
     with Session(engine) as session:
         yield session
+
+__all__ = ["Author", "Book", "Publisher", "Genre", "BookAuthorLink", "BookGenreLink"]

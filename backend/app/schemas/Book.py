@@ -36,3 +36,4 @@ class BookRead(BookBase):
     authors: List[AuthorRead] = []
     genres: List[GenreRead] = []
     publisher: Optional[PublisherRead] = None
+    cover_url: Optional[str] = None

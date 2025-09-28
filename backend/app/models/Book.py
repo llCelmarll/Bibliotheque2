@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship
 from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
-import datetime as dt
+
 
 class Book(SQLModel, table=True):
     __tablename__ = "books"
@@ -19,7 +19,7 @@ class Book(SQLModel, table=True):
 
     # Identification physique
     barcode: str = Field(default=None, nullable=True)  # Code-barres
-    
+
     # Relations
     authors: List["Author"] = Relationship(back_populates="books", link_model=BookAuthorLink)
     publisher_id: Optional[int] = Field(default=None, foreign_key="publishers.id")
