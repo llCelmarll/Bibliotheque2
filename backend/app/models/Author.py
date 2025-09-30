@@ -1,6 +1,9 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import List, Optional
+from typing import List, Optional, ForwardRef
+
 from app.models.BookAuthorLink import BookAuthorLink
+
+Book = ForwardRef("Book")
 
 class Author(SQLModel, table=True):
     __tablename__ = "authors"

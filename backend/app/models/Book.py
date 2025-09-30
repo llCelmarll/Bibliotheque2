@@ -1,9 +1,9 @@
 import datetime as dt
 from typing import Optional, List
-from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship
+from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship, DateTime
 from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
-
+from datetime import datetime
 
 class Book(SQLModel, table=True):
     __tablename__ = "books"
@@ -14,7 +14,7 @@ class Book(SQLModel, table=True):
     title: str = Field(index=True)
     isbn: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True, index=True))
 
-    published_date: Optional[int] = None
+    published_date: Optional[str] = None
     page_count: Optional[int] = None
 
     # Identification physique
@@ -30,7 +30,19 @@ class Book(SQLModel, table=True):
     # Couverture du livre
     cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
 
+    # Champs de timestamp
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow,
+        sa_column=Column(DateTime, nullable=False),
+    )
+    updated_at: Optional[datetime] = Field(
+        default= None,
+        sa_column=Column(DateTime, nullable=True, onupdate=datetime.utcnow),
+    )
+
+
     # Contraintes d'unicité
     __table_args__ = (
         UniqueConstraint("title", "isbn", name="uq_title_isbn"),
-)
+    )
+

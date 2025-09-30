@@ -16,4 +16,7 @@ build/
 .DS_Store
 Thumbs.db
 
+.env
+.env.local
+
 testLivrotheque2.csv
