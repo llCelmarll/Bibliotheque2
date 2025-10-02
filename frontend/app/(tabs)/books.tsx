@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, FlatList, ActivityIndicator, useWindowDimensions } from "react-native";
 import { fetchBooks, Book } from "@/services/books";
 import { BookListItem } from "@/components/BookListItem";
@@ -20,6 +20,7 @@ export default function BooksScreen() {
 
 	// Calcul du nombre de colonnes et de la largeur des cartes
 	const calculateLayout = () => {
+		// console.log("Calcul du nombre de colonnes et de la largeur des cartes ...")
 		const minCardWidth = 160;
 		const horizontalPadding = 16;
 		const spacing = 10;
@@ -35,7 +36,14 @@ export default function BooksScreen() {
 
 	const { numColumns, cardWidth } = calculateLayout();
 
-	const loadBooks = async (pageNumber: number, isLoadingMore = false) => {
+	const loadBooks = async (
+		pageNumber: number,
+		isLoadingMore = false,
+		sort = sortBy,
+		orderDir = order,
+		query = searchQuery
+	) => {
+		// console.log("Chargement de livres ...")
 		if (isLoadingMore) {
 			setLoadingMore(true);
 		} else {
@@ -43,7 +51,7 @@ export default function BooksScreen() {
 		}
 
 		try {
-			const newBooks = await fetchBooks(pageNumber, 20, sortBy, order, searchQuery);
+			const newBooks = await fetchBooks(pageNumber, 20, sort, orderDir, query);
 			if (isLoadingMore) {
 				setBooks(prevBooks => [...prevBooks, ...newBooks]);
 			} else {
@@ -59,6 +67,10 @@ export default function BooksScreen() {
 	};
 
 	const handleLoadMore = async () => {
+		// console.log("Chargement de plus de livres ...")
+		// console.log(
+		// 	`LoadingMore: ${loadingMore}, HasMore: ${hasMore}, Page: ${page}, SortBy: ${sortBy}, Order: ${order}, SearchQuery: ${searchQuery}`
+		// )
 		if (!loadingMore && hasMore) {
 			const nextPage = page + 1;
 			setPage(nextPage);
@@ -71,14 +83,15 @@ export default function BooksScreen() {
 		await loadBooks(1);
 	};
 
-	const handleSort = async () => {
-		const newSortBy = sortBy === "title" ? "published_date" : "title";
+	const handleSortChange = async (newSortBy : string, newOrder: "asc" | "desc") => {
 		setSortBy(newSortBy);
+		setOrder(newOrder)
 		setPage(1);
-		await loadBooks(1);
+		await loadBooks(1, false, newSortBy, newOrder, searchQuery);
 	};
 
 	useEffect(() => {
+		// console.log("Appel de useEffect");
 		loadBooks(1);
 	}, []);
 
@@ -98,6 +111,7 @@ export default function BooksScreen() {
 	};
 
 	const renderFooter = () => {
+		// console.log("Affichage du loader de chargement de plus de livres ...")
 		if (!loadingMore) return null;
 		return (
 			<View style={styles.footerLoader}>
@@ -112,10 +126,11 @@ export default function BooksScreen() {
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
 				handleSearch={handleSearch}
-				handleSort={handleSort}
 				isGridView={isGridView}
 				toggleView={toggleView}
 				sortBy={sortBy}
+				order={order}
+				onSortChange={handleSortChange}
 			/>
 
 			{loading ? (

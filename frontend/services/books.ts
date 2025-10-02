@@ -53,7 +53,9 @@ export async function fetchBooks(
                 sort_order: order,
             },
         });
-        console.log("Données reçues:", res.data);
+        //log de la requete
+        // console.log("Requete :", res.config.url);
+        // console.log("Données reçues:", res.data);
         return res.data;
     } catch (error) {
         console.error("Erreur lors de la requête:", error);

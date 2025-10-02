@@ -8,6 +8,7 @@ interface BookListItemProps {
 }
 
 export const BookListItem: React.FC<BookListItemProps> = ({ book }) => {
+	// console.log(`render du livre : ${book.title}`);
 	return (
 		<View style={styles.container}>
 			{/* Couverture du livre */}

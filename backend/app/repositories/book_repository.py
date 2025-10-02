@@ -146,6 +146,9 @@ class BookRepository:
             SortBy.isbn: Book.isbn,  # Ajouté ISBN manquant
             SortBy.created_at: Book.id,  # Proxy pour created_date (en attendant les timestamps)
             SortBy.updated_at: Book.id,  # Proxy pour updated_date (en attendant les timestamps)
+            SortBy.author: Author.name,
+            SortBy.publisher: Publisher.name,
+            SortBy.genre: Genre.name
         }
         return field_mapping.get(sort_by, Book.title)
 

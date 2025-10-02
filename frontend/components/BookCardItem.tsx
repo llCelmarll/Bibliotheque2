@@ -10,7 +10,6 @@ interface BookCardItemProps {
 const COVER_RATIO = 2 / 3; // width / height (portrait)
 
 export const BookCardItem: React.FC<BookCardItemProps> = ({ book }) => {
-	const cover = book.cover_url || "https://via.placeholder.com/300x450?text=Couverture";
 
 	return (
 		<View style={styles.card}>

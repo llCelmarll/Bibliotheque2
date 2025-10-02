@@ -14,6 +14,9 @@ class SortBy(str, Enum):
     published_date = "published_date"
     page_count = "page_count"
     isbn = "isbn"
+    author = "author"
+    publisher = "publisher"
+    genre = "genre"
     created_at = "created_at"
     updated_at = "updated_at"
 

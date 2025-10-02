@@ -19,9 +19,15 @@ const BookCover = ({ url, style, containerStyle }: BookCoverProps) => {
                     url ? {uri: url} : require('../assets/images/default-book-cover.jpg')
                 }
                 style={[styles.coverImage, style]}
-                onLoadStart={() => setLoading(true)}
-                onLoadEnd={() => setLoading(false)}
-                onError={() => setLoading(false)}
+                // onLoadStart={() => {                                                   ATTENTION CAUSE RE-RENDER EN BOUCLE
+                //     if (!loading) setLoading(true); // évite le setState inutile
+                // }}
+                onLoadEnd={() => {
+                    if (loading) setLoading(false); // évite boucle
+                }}
+                onError={() => {
+                    if (loading) setLoading(false); // idem
+                }}
             />
         </View>
     );
