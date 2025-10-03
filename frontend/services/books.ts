@@ -65,6 +65,11 @@ export async function fetchBooks(
 export async function fetchBooksBy(
     type:  "author" | "publisher" | "genre" ,
     id: number ): Promise<Book[]> {
+    if (!type || !id) {
+        console.error("Type ou ID manquant dans fetchBooksBy");
+        return [];
+    }
+
     let endpoint = `${API_URL}/books/`;
 
     if (type === "author") {
