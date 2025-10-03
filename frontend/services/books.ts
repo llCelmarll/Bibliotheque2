@@ -1,7 +1,6 @@
 import axios from "axios";
 import { API_URL } from "@/constants/api";
 
-
 export interface Author {
     id: number;
     name: string;
@@ -56,6 +55,28 @@ export async function fetchBooks(
         //log de la requete
         // console.log("Requete :", res.config.url);
         // console.log("Données reçues:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Erreur lors de la requête:", error);
+        throw error;
+    }
+}
+
+export async function fetchBooksBy(
+    type:  "author" | "publisher" | "genre" ,
+    id: number ): Promise<Book[]> {
+    let endpoint = `${API_URL}/books/`;
+
+    if (type === "author") {
+        endpoint += `by-author/${id}`;
+    } else if (type === "publisher") {
+        endpoint += `by-publisher/${id}`;
+    } else if (type === "genre") {
+        endpoint += `by-genre/${id}`;
+    }
+
+    try {
+        const res = await axios.get(endpoint);
         return res.data;
     } catch (error) {
         console.error("Erreur lors de la requête:", error);

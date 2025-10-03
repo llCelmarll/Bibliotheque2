@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, FlatList, ActivityIndicator, useWindowDimensions } from "react-native";
-import { fetchBooks, Book } from "@/services/books";
+import { fetchBooks, fetchBooksBy, Book } from "@/services/books";
 import { BookListItem } from "@/components/BookListItem";
 import { BookCardItem } from "@/components/BookCardItem";
 import { SearchBar } from "@/components/SearchBar";
@@ -17,6 +17,11 @@ export default function BooksScreen() {
 	const [isGridView, setIsGridView] = useState(false);
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
+
+	interface BookFilter {
+		type: "author" | "genre" | "publisher";
+		id: number;
+	}
 
 	// Calcul du nombre de colonnes et de la largeur des cartes
 	const calculateLayout = () => {
@@ -41,7 +46,8 @@ export default function BooksScreen() {
 		isLoadingMore = false,
 		sort = sortBy,
 		orderDir = order,
-		query = searchQuery
+		query = searchQuery,
+		fromFilter? : BookFilter,
 	) => {
 		// console.log("Chargement de livres ...")
 		if (isLoadingMore) {
@@ -51,7 +57,12 @@ export default function BooksScreen() {
 		}
 
 		try {
-			const newBooks = await fetchBooks(pageNumber, 20, sort, orderDir, query);
+			let newBooks: Book[] = [];
+			if (fromFilter) {
+				newBooks = await fetchBooksBy(fromFilter.type, fromFilter.id)
+			} else {
+				newBooks = await fetchBooks(pageNumber, 20, sort, orderDir, query);
+			}
 			if (isLoadingMore) {
 				setBooks(prevBooks => [...prevBooks, ...newBooks]);
 			} else {
@@ -90,6 +101,12 @@ export default function BooksScreen() {
 		await loadBooks(1, false, newSortBy, newOrder, searchQuery);
 	};
 
+	const handleFilterSelect = async (type: "author" | "genre" | "publisher", id: number) => {
+		console.log("Recherche par : " + type + " : " + id);
+		setPage(1);
+		await loadBooks(1, false, sortBy, order, searchQuery, {type, id});
+	}
+
 	useEffect(() => {
 		// console.log("Appel de useEffect");
 		loadBooks(1);
@@ -107,7 +124,7 @@ export default function BooksScreen() {
 				</View>
 			);
 		}
-		return <BookListItem book={item} />;
+		return <BookListItem book={item} onFilterSelect={handleFilterSelect} />;
 	};
 
 	const renderFooter = () => {

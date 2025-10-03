@@ -1,13 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from "react-native";
-import { Book } from "@/services/books";
+import {View, Text, StyleSheet, Image, TouchableOpacity} from "react-native";
+import {Author, Book, Genre} from "@/services/books";
 import BookCover from "@/components/BookCover";
+import {ClickableTag} from "@/components/ClickableTag";
 
 interface BookListItemProps {
 	book: Book;
+	onFilterSelect: (type: "author" | "genre" | "publisher", id: number) => void;
 }
 
-export const BookListItem: React.FC<BookListItemProps> = ({ book }) => {
+export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelect}) => {
 	// console.log(`render du livre : ${book.title}`);
 	return (
 		<View style={styles.container}>
@@ -24,21 +26,45 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book }) => {
 				<Text style={styles.title}>{book.title}</Text>
 
 				{book.authors && book.authors.length > 0 && (
-					<Text style={styles.author}>
-						Par : {book.authors.map(author => author.name).join(", ")}
-					</Text>
+					<View style={styles.author}>
+						<Text>{book.authors.length > 1? "Auteurs" : "Auteur"} :</Text>
+						{book.authors.map((author: Author) => (
+							<ClickableTag
+								key={author.id}
+								label={author.name}
+								type="author"
+								id={author.id}
+								onPress={onFilterSelect}
+							/>
+						))}
+					</View>
 				)}
 
 				{book.publisher && (
-					<Text style={styles.publisher}>
-						Éditeur : {book.publisher.name}
-					</Text>
+					<View style={styles.publisher}>
+						<Text>Editeur : </Text>
+						<ClickableTag
+							label={book.publisher.name}
+							type="publisher"
+							id={book.publisher.id}
+							onPress={onFilterSelect}
+						/>
+					</View>
 				)}
 
 				{book.genres && book.genres.length > 0 && (
-					<Text style={styles.genre}>
-						{book.genres.length > 1? "Genres" : "Genre"} : {book.genres.map(genre => genre.name).join(", ")}
-					</Text>
+					<View style={styles.genre}>
+						<Text>{book.genres.length > 1? "Genres" : "Genre"} : </Text>
+						{book.genres.map((genre: Genre) => (
+							<ClickableTag
+								key={genre.id}
+								label={genre.name}
+								type="genre"
+								id={genre.id}
+								onPress={onFilterSelect}
+							/>
+						))}
+					</View>
 				)}
 
 				{book.page_count && (
@@ -81,16 +107,22 @@ const styles = StyleSheet.create({
 		color: "#666",
 		fontSize: 14,
 		marginBottom: 2,
+		flexDirection: "row",
+		flexWrap: "wrap"
 	},
 	publisher: {
 		color: "#666",
 		fontSize: 13,
 		marginBottom: 2,
+		flexDirection: "row",
+		flexWrap: "wrap"
 	},
 	genre: {
 		color: "#666",
 		fontSize: 13,
 		marginBottom: 2,
+		flexDirection: "row",
+		flexWrap: "wrap"
 	},
 	pages: {
 		color: "#888",
