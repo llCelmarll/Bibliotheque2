@@ -130,16 +130,40 @@ http GET /books/search/simple?q=recherche&skip=0&limit=100&sort_by=title&sort_or
 
 Recherche dans tous les champs : titre, ISBN, auteur, éditeur, genre.
 
-**Exemples:**
+
+**Paramètres de requête :**
+| Paramètre | Type | Défaut | Description |
+|-----------|------|---------|-------------|
+| `q` | string | (requis) | Terme de recherche (min. 1 caractère) |
+| `skip` | int | 0 | Nombre d'éléments à ignorer |
+| `limit` | int | 100 | Nombre max d'éléments (max: 1000) |
+| `sort_by` | string | "title" | Champ de tri |
+| `sort_order` | string | "asc" | Ordre: "asc" ou "desc" |
+
+**Corps de la requête (JSON) :**
+```
+json { "filters": [ {  }
+latex_unknown_tag
+``` 
+
+**Types de filtres disponibles :**
+- `AUTHOR` : Filtre par ID d'auteur
+- `PUBLISHER` : Filtre par ID d'éditeur
+- `GENRE` : Filtre par ID de genre
+
+**Exemples :**
 ```
 bash
-# Rechercher "python"
-curl "[http://localhost:8000/books/search/simple?q=python](http://localhost:8000/books/search/simple?q=python)"
-# Rechercher par ISBN
-curl "[http://localhost:8000/books/search/simple?q=978-2-07-040857-4](http://localhost:8000/books/search/simple?q=978-2-07-040857-4)"
-# Rechercher un auteur
-curl "[http://localhost:8000/books/search/simple?q=Antoine+de+Saint-Exup%C3%A9ry](http://localhost:8000/books/search/simple?q=Antoine+de+Saint-Exup%C3%A9ry)"
-``` 
+# Recherche simple sans filtres
+curl -X POST "[http://localhost:8000/books/search/simple?q=python](http://localhost:8000/books/search/simple?q=python)"
+# Recherche avec filtres
+curl -X POST "http://localhost:8000/books/search/simple?q=python" -H "Content-Type: application/json" -d '{ "filters": [ { }'
+# Recherche avec pagination et tri
+curl -X POST "[http://localhost:8000/books/search/simple?q=python&skip=20&limit=10&sort_by=published_date&sort_order=desc](http://localhost:8000/books/search/simple?q=python&skip=20&limit=10&sort_by=published_date&sort_order=desc)"
+-H "Content-Type: application/json"
+-d '{"filters": [{"type": "PUBLISHER", "id": 5}]}'
+latex_unknown_tag
+```
 
 ### **🎯 Recherche Avancée**
 ```
@@ -311,6 +335,80 @@ javascript // Récupérer les statistiques pour un dashboard async function load
 return { stats, recentBooks }; }
 ``` 
 
+### **🔍 Recherche Simple**
+```
+http POST /books/search/simple
+``` 
+
+Effectue une recherche textuelle dans tous les champs des livres avec possibilité de filtrage, pagination et tri.
+
+**Champs de recherche :**
+- Titre du livre
+- ISBN
+- Nom de l'auteur
+- Nom de l'éditeur
+- Nom du genre
+
+**Paramètres de requête :**
+| Paramètre | Type | Défaut | Description | Contraintes |
+|-----------|------|---------|-------------|-------------|
+| `q` | string | (requis) | Terme de recherche | Minimum 1 caractère |
+| `skip` | int | 0 | Nombre d'éléments à ignorer | ≥ 0 |
+| `limit` | int | 100 | Nombre max d'éléments | Entre 1 et 1000 |
+| `sort_by` | enum | "title" | Champ de tri | Valeurs possibles ci-dessous |
+| `sort_order` | enum | "asc" | Ordre de tri | "asc" ou "desc" |
+
+**Champs de tri disponibles (`sort_by`) :**
+- `title` : Titre du livre
+- `published_date` : Date de publication
+- `page_count` : Nombre de pages
+- `isbn` : Code ISBN
+- `author` : Nom de l'auteur
+- `publisher` : Nom de l'éditeur
+- `genre` : Genre
+- `created_at` : Date de création
+- `updated_at` : Date de mise à jour
+
+**Corps de la requête (optionnel) :**
+```
+json { "filters": [ {  }
+latex_unknown_tag
+``` 
+
+**Réponse (200 OK) :**
+```
+json [ {
+latex_unknown_tag
+``` 
+
+**Codes d'erreur possibles :**
+| Code | Description |
+|------|-------------|
+| 400 | Paramètres invalides (terme de recherche trop court, limite hors bornes...) |
+| 422 | Corps de la requête invalide (format des filtres incorrect) |
+| 500 | Erreur serveur |
+
+**Exemples :**
+```
+bash
+# Recherche simple
+curl -X POST "[http://localhost:8000/books/search/simple?q=python](http://localhost:8000/books/search/simple?q=python)"
+# Recherche avec pagination et tri
+curl -X POST "[http://localhost:8000/books/search/simple?q=python&skip=20&limit=10&sort_by=published_date&sort_order=desc](http://localhost:8000/books/search/simple?q=python&skip=20&limit=10&sort_by=published_date&sort_order=desc)"
+# Recherche avec filtres
+curl -X POST "http://localhost:8000/books/search/simple?q=python" -H "Content-Type: application/json" -d '{ "filters": [ { }'
+latex_unknown_tag
+``` 
+
+**Notes :**
+- Les filtres sont appliqués avec une condition AND (tous les critères doivent être satisfaits)
+- La recherche est insensible à la casse
+- Les résultats sont paginés pour optimiser les performances
+- Le tri est effectué après l'application des filtres
+- Les champs nuls (`null`) sont inclus dans la réponse
+```
+
+
 ### **🔍 Recherche Avancée**
 ```
 javascript // Formulaire de recherche avancée function AdvancedSearch({ onResults }) { const [filters, setFilters] = useState({ title: '', author: '', year_min: '', year_max: '', genre: '' });
@@ -372,4 +470,45 @@ Pour toute question ou problème :
 ---
 
 **🎉 Votre API est prête à être utilisée !**
+
+
+
+## Nouveautés
+
+### Filtrage des livres
+Le système permet maintenant de filtrer les livres selon plusieurs critères :
+- Par auteur
+- Par éditeur
+- Par genre
+
+Pour utiliser les filtres, vous pouvez envoyer une requête avec un ou plusieurs filtres :
+```
+json { 
+   "filters": [
+      {
+         type: "author" | "publisher" | "genre",
+         id: int
+      },
+      ...
+   ]
+}
+``` 
+
+Les types de filtres disponibles sont :
+- `author` : Filtre par ID d'auteur
+- `publisher` : Filtre par ID d'éditeur
+- `genre` : Filtre par ID de genre
+
+## Fonctionnalités existantes
+[...]
+
+## Exemple d'utilisation des filtres
+```
+python
+# Exemple de requête avec filtres
+response = requests.get("/api/books", json={ "filters": [ { })
+latex_unknown_tag
+``` 
+
+Cette requête retournera tous les livres qui correspondent à TOUS les critères spécifiés (condition AND).
 ```

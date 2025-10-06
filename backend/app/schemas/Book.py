@@ -1,5 +1,4 @@
 from typing import Optional, List, ForwardRef, Dict, Any
-
 from pydantic import BaseModel
 from sqlmodel import SQLModel
 from enum import Enum
@@ -7,22 +6,8 @@ from datetime import datetime
 from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 from app.schemas.Genre import GenreRead
+from app.schemas.Other import SortBy, SortOrder, Filter
 
-class SortBy(str, Enum):
-    """Enum pour les champs de tri."""
-    title = "title"
-    published_date = "published_date"
-    page_count = "page_count"
-    isbn = "isbn"
-    author = "author"
-    publisher = "publisher"
-    genre = "genre"
-    created_at = "created_at"
-    updated_at = "updated_at"
-
-class SortOrder(str, Enum):
-    asc = "asc"
-    desc = "desc"
 
 # Schema de lecture
 class BookRead(SQLModel):
@@ -69,6 +54,7 @@ class BookSearchParams(BaseModel):
     search: Optional[str] = None
     sort_by: SortBy = SortBy.title
     sort_order: SortOrder = SortOrder.asc
+    filters: Optional[List[Filter]] = None
     skip: int = 0
     limit: int = 100
 

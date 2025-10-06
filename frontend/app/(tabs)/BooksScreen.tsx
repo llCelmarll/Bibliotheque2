@@ -7,7 +7,7 @@ import {
 	useWindowDimensions,
 } from "react-native";
 import { useBookFilters} from "@/hooks/useBookFilters";
-import { fetchBooks, fetchBooksBy } from "@/services/booksService";
+import { fetchBooks } from "@/services/booksService";
 import { Book } from "@/types/book";
 import {BookFilter, FilterType} from "@/types/filter";
 import { BookListItem } from "@/components/BookListItem";
@@ -55,6 +55,7 @@ export default function BooksScreen() {
 		sort = sortBy,
 		orderDir = order,
 		query = searchQuery,
+		filters = activeFilters,
 	) => {
 		if (isLoadingMore) {
 			setLoadingMore(true);
@@ -63,13 +64,14 @@ export default function BooksScreen() {
 		}
 
 		try {
-			let newBooks: Book[] = [];
-			if (activeFilters.length > 0) {
-				const filter = activeFilters[0];
-				newBooks = await fetchBooksBy(filter.type, filter.id)
-			} else {
-				newBooks = await fetchBooks(pageNumber, 20, sort, orderDir, query);
-			}
+			const newBooks = await fetchBooks({
+				page: pageNumber,
+				sortBy: sort,
+				order: orderDir,
+				searchQuery: query,
+				filters: filters
+			})
+
 			if (isLoadingMore) {
 				setBooks(prevBooks => [...prevBooks, ...newBooks]);
 			} else {
@@ -126,16 +128,20 @@ export default function BooksScreen() {
 		// Utiliser le service de filtres pour créer et ajouter le filtre
 		const newFilter = createFilter(type, {id, name: filterName});
 		addFilter(newFilter);
+		// setPage(1);
+		// await loadBooks(1, false, sortBy, order, searchQuery, activeFilters);
 
-		// Recharger les livres avec le nouveau filtre
-		setPage(1);
-		await loadBooks(1);
-	}, [books, addFilter, loadBooks]);
+	}, [books, addFilter, loadBooks, sortBy, order, searchQuery]);
 
 	useEffect(() => {
-		// console.log("Appel de useEffect");
+		setPage(1);
 		loadBooks(1);
-	}, []);
+	}, [activeFilters]);
+
+	// useEffect(() => {
+	// 	// console.log("Appel de useEffect");
+	// 	loadBooks(1);
+	// }, []);
 
 	const handleFilterRemove = useCallback(async (type: FilterType, id: number) => {
 		removeFilter(type, id);

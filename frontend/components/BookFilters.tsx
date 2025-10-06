@@ -33,7 +33,6 @@ export const BookFilters : React.FC<BookFiltersProps> = ({
 						type={filter.type}
 						id={filter.id}
 						onPress={onFilterRemove}
-						active={true}
 					/>
 				))}
 			</ScrollView>

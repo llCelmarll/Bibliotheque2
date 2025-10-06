@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlmodel import Session
 from app.db import get_session
 from app.services.book_service import BookService
@@ -12,6 +12,7 @@ from app.schemas.Book import (
     SortBy,
     SortOrder
 )
+from app.schemas.Other import Filter
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -23,29 +24,56 @@ def get_book_service(session: Session = Depends(get_session)) -> BookService:
 # SEARCH ENDPOINTS
 # ================================
 
-@router.get("/search/simple", response_model=List[BookRead])
+@router.post("/search/simple", response_model=List[BookRead])
 def search_books(
-    q: str = Query(..., min_length=1, description="Terme de recherche"),
+    q: Optional[str] = Query(None, description="Terme de recherche"),
     skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
     limit: int = Query(100, ge=1, le=1000, description="Nombre max d'éléments à retourner"),
     sort_by: SortBy = Query(SortBy.title, description="Champ de tri"),
     sort_order: SortOrder = Query(SortOrder.asc, description="Ordre de tri"),
+    filters: Optional[List[Filter]] = Body(default=None, description="Filtres de recherche"),
     service: BookService = Depends(get_book_service)
 ):
     """
-    Recherche simple dans tous les champs des livres.
-    
-    Recherche dans : titre, ISBN, nom de l'auteur, nom de l'éditeur, nom du genre.
-    
-    - **q**: Terme de recherche (obligatoire)
-    """
+Recherche simple dans tous les champs des livres.
+
+Recherche dans : titre, ISBN, nom de l'auteur, nom de l'éditeur, nom du genre.
+
+Paramètres de requête :
+    - q (str, optionnel) : Terme de recherche (min. 1 caractère)
+    - skip (int) : Nombre d'éléments à ignorer (défaut: 0)
+    - limit (int) : Nombre max d'éléments à retourner (défaut: 100, max: 1000)
+    - sort_by (SortBy) : Champ de tri (title, published_date, page_count, isbn, etc.)
+    - sort_order (SortOrder) : Ordre de tri (asc ou desc)
+
+Corps de la requête :
+    - filters (List[Filter], optionnel) : Liste des filtres à appliquer
+      Chaque filtre contient :
+      - type : "AUTHOR", "PUBLISHER" ou "GENRE"
+      - id : ID de l'entité correspondante
+
+Retours :
+    - 200 : Liste des livres correspondants aux critères
+    - 400 : Paramètres invalides
+    - 422 : Corps de la requête invalide
+
+Notes :
+    - La recherche est insensible à la casse
+    - Les filtres sont appliqués en AND (tous les critères doivent être satisfaits)
+    - Les résultats sont triés après l'application des filtres
+    - La pagination est appliquée sur les résultats filtrés
+"""
+
     params = BookSearchParams(
         search=q,
         skip=skip,
         limit=limit,
         sort_by=sort_by,
-        sort_order=sort_order
+        sort_order=sort_order,
+        filters=filters
     )
+    print("Requete reçue : " + str(params))
+
     return service.search_books(params)
 
 @router.get("/search/advanced", response_model=List[BookRead])

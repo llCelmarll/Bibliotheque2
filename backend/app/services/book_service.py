@@ -7,6 +7,7 @@ from app.models.Publisher import Publisher
 from app.models.Genre import Genre
 from app.repositories.book_repository import BookRepository
 from app.schemas.Book import BookCreate, BookUpdate, BookRead, BookSearchParams, BookAdvancedSearchParams
+from app.schemas.Other import Filter, FilterType
 from datetime import datetime
 
 class BookService:
@@ -111,6 +112,7 @@ class BookService:
     def search_books(self, params: BookSearchParams) -> List[Book]:
         """Recherche simple de livres"""
         self._validate_pagination(params.skip, params.limit)
+        self._validate_filters(params.filters)
         return self.repository.search_books(params)
 
     def advanced_search_books(self, params: BookAdvancedSearchParams) -> List[Book]:
@@ -139,7 +141,7 @@ class BookService:
         publisher = self.session.get(Publisher, publisher_id)
         if not publisher:
             raise HTTPException(status_code=404, detail="Éditeur non trouvé")
-        
+
         return publisher.books
 
     def get_books_by_genre(self, genre_id: int) -> List[Book]:
@@ -241,3 +243,70 @@ class BookService:
                 status_code=400,
                 detail="Le nombre minimum de pages ne peut pas être supérieur au maximum"
             )
+
+    def _validate_filters(self, filters: Optional[List[Filter]]) -> None:
+        """
+        Valide les filtres de recherche.
+
+        Args:
+            filters: Liste des filtres à valider
+
+        Raises:
+            HTTPException: Si un filtre est invalide
+        """
+        if not filters:
+            return
+
+        # Vérification des doublons
+        filter_types_seen = set()
+        for filter in filters:
+            if filter.type in filter_types_seen:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Filtre en double pour le type {filter.type}"
+                )
+            filter_types_seen.add(filter.type)
+
+        # Vérification que les entités existent
+        for filter in filters:
+            if filter.id <= 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"ID invalide ({filter.id}) pour le filtre de type {filter.type}"
+                )
+
+            try:
+                if filter.type == FilterType.AUTHOR:
+                    author = self.session.get(Author, filter.id)
+                    if not author:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Auteur avec l'ID {filter.id} non trouvé"
+                        )
+
+                elif filter.type == FilterType.PUBLISHER:
+                    publisher = self.session.get(Publisher, filter.id)
+                    if not publisher:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Éditeur avec l'ID {filter.id} non trouvé"
+                        )
+
+                elif filter.type == FilterType.GENRE:
+                    genre = self.session.get(Genre, filter.id)
+                    if not genre:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Genre avec l'ID {filter.id} non trouvé"
+                        )
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Type de filtre inconnu : {filter.type}"
+                    )
+
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Erreur de validation pour le filtre {filter.type}: {str(e)}"
+                )
