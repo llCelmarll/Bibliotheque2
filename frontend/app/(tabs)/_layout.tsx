@@ -5,7 +5,7 @@ export default function TabLayout() {
   return (
     <Tabs>
       <Tabs.Screen
-        name="books"
+        name="BooksScreen"
         options={{
           title: "Livres",
           tabBarIcon: ({ color, size }) => (

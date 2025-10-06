@@ -1,12 +1,13 @@
 import React from 'react';
 import {View, Text, StyleSheet, Image, TouchableOpacity} from "react-native";
-import {Author, Book, Genre} from "@/services/books";
+import {Author, Book, Genre} from "@/types/book";
 import BookCover from "@/components/BookCover";
 import {ClickableTag} from "@/components/ClickableTag";
+import { FilterType} from "@/types/filter";
 
 interface BookListItemProps {
 	book: Book;
-	onFilterSelect: (type: "author" | "genre" | "publisher", id: number) => void;
+	onFilterSelect: (type: FilterType, id: number) => void;
 }
 
 export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelect}) => {

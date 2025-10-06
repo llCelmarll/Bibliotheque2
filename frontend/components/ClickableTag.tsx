@@ -1,12 +1,13 @@
 import React from "react";
 import { Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import {FilterType} from "@/types/filter";
 
 type ClickableTagProps = {
-	type: "author" | "genre" | "publisher";
+	type: FilterType;
 	label: string;
 	id: number;
-	onPress: (type: "author" | "genre" | "publisher", id: number) => void | undefined;
+	onPress: (type: FilterType, id: number) => void | undefined;
 };
 
 export function ClickableTag(props: ClickableTagProps) {

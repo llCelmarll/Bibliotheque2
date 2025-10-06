@@ -5,28 +5,16 @@ import {
 	FlatList,
 	ActivityIndicator,
 	useWindowDimensions,
-	TouchableOpacity,
-	ScrollView,
-	Platform,
-	Text
 } from "react-native";
-import Animated, {
-	useAnimatedStyle,
-	withSpring,
-	useSharedValue,
-	withTiming,
-	Layout,
-} from "react-native-reanimated";
-import { fetchBooks, fetchBooksBy, Book } from "@/services/books";
+import { useBookFilters} from "@/hooks/useBookFilters";
+import { fetchBooks, fetchBooksBy } from "@/services/booksService";
+import { Book } from "@/types/book";
+import {BookFilter, FilterType} from "@/types/filter";
 import { BookListItem } from "@/components/BookListItem";
 import { BookCardItem } from "@/components/BookCardItem";
 import { SearchBar } from "@/components/SearchBar";
-
-interface BookFilter {
-	type: "author" | "genre" | "publisher";
-	id: number;
-	name?: string;
-}
+import { BookFilters} from "@/components/BookFilters";
+import { createFilter, isFilterActive} from "@/services/filtersService";
 
 
 export default function BooksScreen() {
@@ -40,9 +28,8 @@ export default function BooksScreen() {
 	const [isGridView, setIsGridView] = useState(false);
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
-	const [activeFilters, setActiveFilter] = useState<BookFilter[]>([]);
 
-	const filterHeight = useSharedValue(0);
+	const { activeFilters, addFilter, removeFilter, clearFilters} = useBookFilters();
 
 	// Calcul du nombre de colonnes et de la largeur des cartes
 	const calculateLayout = () => {
@@ -68,9 +55,7 @@ export default function BooksScreen() {
 		sort = sortBy,
 		orderDir = order,
 		query = searchQuery,
-		fromFilter? : BookFilter[],
 	) => {
-		// console.log("Chargement de livres ...")
 		if (isLoadingMore) {
 			setLoadingMore(true);
 		} else {
@@ -79,14 +64,9 @@ export default function BooksScreen() {
 
 		try {
 			let newBooks: Book[] = [];
-			if (fromFilter && fromFilter.length > 0) {
-				// Appliquez les filtres séquentiellement ou en combinaison
-				// Option 1: Utilisez seulement le premier filtre actif
-
-				newBooks = await fetchBooksBy(fromFilter[0].type, fromFilter[0].id)
-				// Option 2 (plus avancée): Implémentez une API qui supporte plusieurs filtres
-				// newBooks = await fetchBooksWithMultipleFilters(fromFilters, pageNumber, 20, sort, orderDir, query);
-
+			if (activeFilters.length > 0) {
+				const filter = activeFilters[0];
+				newBooks = await fetchBooksBy(filter.type, filter.id)
 			} else {
 				newBooks = await fetchBooks(pageNumber, 20, sort, orderDir, query);
 			}
@@ -102,7 +82,7 @@ export default function BooksScreen() {
 			setLoading(false);
 			setLoadingMore(false);
 		}
-	}, [sortBy, order, searchQuery]);
+	}, [sortBy, order, searchQuery, activeFilters]);
 
 	const handleLoadMore = async () => {
 		// console.log("Chargement de plus de livres ...")
@@ -128,15 +108,7 @@ export default function BooksScreen() {
 		await loadBooks(1, false, newSortBy, newOrder, searchQuery);
 	};
 
-	const handleFilterSelect = useCallback(async (type: "author" | "genre" | "publisher", id: number) => {
-		console.log("Recherche par : " + type + " : " + id);
-
-		// Vérifier si le filtre existe déjà
-		if (activeFilters.some(filter => filter.type === type && filter.id === id)) {
-			return; // Ne pas ajouter de doublons
-		}
-
-
+	const handleFilterSelect = useCallback(async (type:FilterType, id: number) => {
 		let filterName = "";
 		if (type === "author") {
 			const book = books.find(b => b.authors?.some(a => a.id === id));
@@ -151,50 +123,28 @@ export default function BooksScreen() {
 			filterName = book?.publisher?.name || "Éditeur inconnu";
 		}
 
-		setActiveFilter(prev => [...prev, { type, id, name: filterName }]);
+		// Utiliser le service de filtres pour créer et ajouter le filtre
+		const newFilter = createFilter(type, {id, name: filterName});
+		addFilter(newFilter);
 
-		setPage(1);
-		await loadBooks(1, false, sortBy, order, searchQuery, [{type, id, name: filterName}]);
-	}, [books, sortBy, order, searchQuery, loadBooks]);
-
-	const removeFilter = useCallback(async (index : number) => {
-		setActiveFilter(prev => prev.filter((_, i) => i !== index));
-		// Recharger avec les filtres réstants ou sans filtre si la liste est vide
-		setPage(1);
-		if (activeFilters.length <= 1) {
-			// Si c'était le dernier filtre, revenez à la recherche standard
-
-			await loadBooks(1)
-		} else {
-			// Sinon recherger avec le premier filtre restant
-			const newFilters =  activeFilters.filter((_, i) => i !== index);
-			await loadBooks(1, false, sortBy, order, searchQuery, [newFilters[0]]);
-		}
-	}, [activeFilters, sortBy, order, searchQuery, loadBooks]);
-
-	const resetFilters = useCallback(async () => {
-		setActiveFilter([]);
+		// Recharger les livres avec le nouveau filtre
 		setPage(1);
 		await loadBooks(1);
-	}, [loadBooks]);
-
-	useEffect(() => {
-		// Animation de la hauteur des filtres
-		filterHeight.value = withTiming(activeFilters.length > 0 ? 50 : 0, {duration: 300});
-	}, [activeFilters.length]);
-
-	const filterContainerStyle = useAnimatedStyle(() => {
-		return {
-			height: filterHeight.value,
-			opacity: filterHeight.value > 0 ? 1 : 0,
-			overflow: 'hidden',
-		};
-	})
+	}, [books, addFilter, loadBooks]);
 
 	useEffect(() => {
 		// console.log("Appel de useEffect");
 		loadBooks(1);
 	}, []);
+
+	const handleFilterRemove = useCallback(async (type: FilterType, id: number) => {
+		removeFilter(type, id);
+		if (activeFilters.length <= 1) {
+			setPage(1);
+			await loadBooks(1);
+		}
+	}, [removeFilter, activeFilters.length, loadBooks]);
+
 
 	const toggleView = () => {
 		setIsGridView(!isGridView);
@@ -234,36 +184,7 @@ export default function BooksScreen() {
 				onSortChange={handleSortChange}
 			/>
 
-			{activeFilters.length > 0 && (
-				<Animated.View style={filterContainerStyle}>
-					<ScrollView
-						horizontal
-						showsHorizontalScrollIndicator={false}
-						contentContainerStyle={styles.filtersContainer}>
-						{activeFilters.map((filter, index) => (
-							<Animated.View
-								key={`${filter.type}-${filter.id}-${index}`}
-								layout={Layout.springify()}>
-								<TouchableOpacity
-									style={styles.activeFilter}
-									onPress={() => removeFilter(index)}>
-									<Text style={styles.activeFilterText}>
-										{filter.name} ✕
-									</Text>
-								</TouchableOpacity>
-							</Animated.View>
-						))}
-					</ScrollView>
-				</Animated.View>
-			)}
-
-			{activeFilters.length > 0 && (
-				<TouchableOpacity
-				style={styles.resetButton}
-				onPress={resetFilters}>
-					<Text style={styles.resetButtonText}>Réinitialiser les filtres</Text>
-				</TouchableOpacity>
-			)}
+			<BookFilters activeFilters={activeFilters} onFilterRemove={handleFilterRemove} onClearFilters={clearFilters}/>
 
 			{loading ? (
 				<ActivityIndicator style={styles.loader} size="large" />
@@ -307,35 +228,6 @@ const styles = StyleSheet.create({
 	footerLoader: {
 		paddingVertical: 20,
 		alignItems: 'center',
-	},
-	filtersContainer: {
-		paddingHorizontal: 8,
-		paddingVertical: 10,
-		flexDirection: 'row',
-		alignItems: 'center', // Ajoutez ceci
-	},
-	activeFilter: {
-		backgroundColor: '#007bff',
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		borderRadius: 16,
-		marginRight: 8, // Changez marginBottom par marginRight
-	},
-	activeFilterText: {
-		color: '#fff',
-		fontSize: 14,
-		fontFamily: Platform.OS === 'ios' ? 'System' : 'normal', // Améliore l'apparence de la police
-	},
-	resetButton: {
-		alignSelf: 'flex-end',
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		margin: 8,
-	},
-	resetButtonText: {
-		color: '#ff3b30',
-		fontSize: 14,
-		fontWeight: '500',
 	},
 
 });

@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, Platform } from "react-native";
-import { Book } from "@/services/books";
+import { Book } from "@/types/book"
 import BookCover from "@/components/BookCover";
 
 interface BookCardItemProps {
