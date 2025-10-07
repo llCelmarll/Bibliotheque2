@@ -3,11 +3,12 @@ import {View, Text, StyleSheet, Image, TouchableOpacity} from "react-native";
 import {Author, Book, Genre} from "@/types/book";
 import BookCover from "@/components/BookCover";
 import {ClickableTag} from "@/components/ClickableTag";
-import { FilterType} from "@/types/filter";
+import {BookFilter, FilterType} from "@/types/filter";
+import {createFilter} from "@/services/filtersService";
 
 interface BookListItemProps {
 	book: Book;
-	onFilterSelect: (type: FilterType, id: number) => void;
+	onFilterSelect: (filter: BookFilter) => void;
 }
 
 export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelect}) => {
@@ -32,9 +33,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 						{book.authors.map((author: Author) => (
 							<ClickableTag
 								key={author.id}
-								label={author.name}
-								type="author"
-								id={author.id}
+								filter={createFilter("author", author)}
 								onPress={onFilterSelect}
 							/>
 						))}
@@ -45,9 +44,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 					<View style={styles.publisher}>
 						<Text>Editeur : </Text>
 						<ClickableTag
-							label={book.publisher.name}
-							type="publisher"
-							id={book.publisher.id}
+							filter={createFilter("publisher", book.publisher)}
 							onPress={onFilterSelect}
 						/>
 					</View>
@@ -59,9 +56,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 						{book.genres.map((genre: Genre) => (
 							<ClickableTag
 								key={genre.id}
-								label={genre.name}
-								type="genre"
-								id={genre.id}
+								filter={createFilter("genre", genre)}
 								onPress={onFilterSelect}
 							/>
 						))}

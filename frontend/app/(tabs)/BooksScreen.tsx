@@ -1,35 +1,46 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
+	Text,
+	Button,
 	View,
 	StyleSheet,
 	FlatList,
 	ActivityIndicator,
 	useWindowDimensions,
+    TouchableOpacity,
 } from "react-native";
-import { useBookFilters} from "@/hooks/useBookFilters";
-import { fetchBooks } from "@/services/booksService";
 import { Book } from "@/types/book";
-import {BookFilter, FilterType} from "@/types/filter";
 import { BookListItem } from "@/components/BookListItem";
 import { BookCardItem } from "@/components/BookCardItem";
 import { SearchBar } from "@/components/SearchBar";
 import { BookFilters} from "@/components/BookFilters";
-import { createFilter, isFilterActive} from "@/services/filtersService";
+import { useBooks } from "@/hooks/useBooks";
 
 
 export default function BooksScreen() {
 	const { width: screenWidth } = useWindowDimensions();
-	const [books, setBooks] = useState<Book[]>([]);
-	const [searchQuery, setSearchQuery] = useState<string>("");
-	const [sortBy, setSortBy] = useState<string>("title");
-	const [order, setOrder] = useState<"asc" | "desc">("asc");
-	const [loading, setLoading] = useState(true);
-	const [loadingMore, setLoadingMore] = useState(false);
 	const [isGridView, setIsGridView] = useState(false);
-	const [page, setPage] = useState(1);
-	const [hasMore, setHasMore] = useState(true);
 
-	const { activeFilters, addFilter, removeFilter, clearFilters} = useBookFilters();
+	const {
+		books,
+		loading,
+		loadingMore,
+		loadError,
+		hasMore,
+		searchQuery,
+		setSearchQuery,
+		sortBy,
+		order,
+		handleFilterSelect,
+		handleFilterRemove,
+		handleLoadMore,
+		handleSortChange,
+		handleSearch,
+		loadBooks,
+		activeFilters,
+		clearFilters,
+	} = useBooks();
+
 
 	// Calcul du nombre de colonnes et de la largeur des cartes
 	const calculateLayout = () => {
@@ -46,110 +57,8 @@ export default function BooksScreen() {
 
 		return { numColumns, cardWidth };
 	};
-
 	const { numColumns, cardWidth } = calculateLayout();
 
-	const loadBooks = useCallback(async (
-		pageNumber: number,
-		isLoadingMore = false,
-		sort = sortBy,
-		orderDir = order,
-		query = searchQuery,
-		filters = activeFilters,
-	) => {
-		if (isLoadingMore) {
-			setLoadingMore(true);
-		} else {
-			setLoading(true);
-		}
-
-		try {
-			const newBooks = await fetchBooks({
-				page: pageNumber,
-				sortBy: sort,
-				order: orderDir,
-				searchQuery: query,
-				filters: filters
-			})
-
-			if (isLoadingMore) {
-				setBooks(prevBooks => [...prevBooks, ...newBooks]);
-			} else {
-				setBooks(newBooks);
-			}
-			setHasMore(newBooks.length === 20);
-		} catch (error) {
-			console.error("Erreur lors de la récupération des livres:", error);
-		} finally {
-			setLoading(false);
-			setLoadingMore(false);
-		}
-	}, [sortBy, order, searchQuery, activeFilters]);
-
-	const handleLoadMore = async () => {
-		// console.log("Chargement de plus de livres ...")
-		// console.log(
-		// 	`LoadingMore: ${loadingMore}, HasMore: ${hasMore}, Page: ${page}, SortBy: ${sortBy}, Order: ${order}, SearchQuery: ${searchQuery}`
-		// )
-		if (!loadingMore && hasMore) {
-			const nextPage = page + 1;
-			setPage(nextPage);
-			await loadBooks(nextPage, true);
-		}
-	};
-
-	const handleSearch = async () => {
-		setPage(1);
-		await loadBooks(1);
-	};
-
-	const handleSortChange = async (newSortBy : string, newOrder: "asc" | "desc") => {
-		setSortBy(newSortBy);
-		setOrder(newOrder)
-		setPage(1);
-		await loadBooks(1, false, newSortBy, newOrder, searchQuery);
-	};
-
-	const handleFilterSelect = useCallback(async (type:FilterType, id: number) => {
-		let filterName = "";
-		if (type === "author") {
-			const book = books.find(b => b.authors?.some(a => a.id === id));
-			const author = book?.authors?.find(a => a.id === id);
-			filterName = author?.name || "Auteur inconnu";
-		} else if (type === "genre") {
-			const book = books.find(b => b.genres?.some(g => g.id === id));
-			const genre = book?.genres?.find(g => g.id === id);
-			filterName = genre?.name || "Genre inconnu";
-		} else if (type === "publisher") {
-			const book = books.find(b => b.publisher?.id === id);
-			filterName = book?.publisher?.name || "Éditeur inconnu";
-		}
-
-		// Utiliser le service de filtres pour créer et ajouter le filtre
-		const newFilter = createFilter(type, {id, name: filterName});
-		addFilter(newFilter);
-		// setPage(1);
-		// await loadBooks(1, false, sortBy, order, searchQuery, activeFilters);
-
-	}, [books, addFilter, loadBooks, sortBy, order, searchQuery]);
-
-	useEffect(() => {
-		setPage(1);
-		loadBooks(1);
-	}, [activeFilters]);
-
-	// useEffect(() => {
-	// 	// console.log("Appel de useEffect");
-	// 	loadBooks(1);
-	// }, []);
-
-	const handleFilterRemove = useCallback(async (type: FilterType, id: number) => {
-		removeFilter(type, id);
-		if (activeFilters.length <= 1) {
-			setPage(1);
-			await loadBooks(1);
-		}
-	}, [removeFilter, activeFilters.length, loadBooks]);
 
 
 	const toggleView = () => {
@@ -169,13 +78,49 @@ export default function BooksScreen() {
 
 	const renderFooter = () => {
 		// console.log("Affichage du loader de chargement de plus de livres ...")
-		if (!loadingMore) return null;
-		return (
-			<View style={styles.footerLoader}>
-				<ActivityIndicator size="small" />
-			</View>
-		);
+		if (loadingMore) {
+			return (
+				<View style={styles.footerLoader}>
+					<ActivityIndicator size="small" />
+				</View>
+			);
+		}
+
+		if (loadError && hasMore) {
+			return (
+				<View style={styles.footerError}>
+					<Text style={styles.footerErrorText}>
+						Une erreur est survenue lors du chargement
+					</Text>
+					<Text style={styles.footerSubText}>
+						Appuyez pour réessayer
+					</Text>
+					<TouchableOpacity
+						style={styles.retryButton}
+						onPress={handleLoadMore}
+					>
+						<Text style={styles.retryButtonText}>Réessayer</Text>
+					</TouchableOpacity>
+				</View>
+			);
+		}
+
+		if (hasMore) {
+			return (
+				<View style={styles.footerInfo}>
+					<Text style={styles.footerInfoText}>
+						Tirez pour charger plus de livres
+					</Text>
+				</View>
+			);
+		}
+
+		return null;
 	};
+
+	useEffect(() => {
+		loadBooks(1)
+	}, [activeFilters]);
 
 	return (
 		<View style={styles.container}>
@@ -235,5 +180,41 @@ const styles = StyleSheet.create({
 		paddingVertical: 20,
 		alignItems: 'center',
 	},
+	footerError: {
+		padding: 20,
+		alignItems: 'center',
+		backgroundColor: '#fff8f8',
+		borderRadius: 8,
+		margin: 10,
+	},
+	footerErrorText: {
+		color: '#d32f2f',
+		fontSize: 16,
+		marginBottom: 4,
+	},
+	footerSubText: {
+		color: '#666',
+		fontSize: 14,
+		marginBottom: 12,
+	},
+	retryButton: {
+		backgroundColor: '#d32f2f',
+		paddingHorizontal: 20,
+		paddingVertical: 8,
+		borderRadius: 4,
+	},
+	retryButtonText: {
+		color: '#fff',
+		fontWeight: 'bold',
+	},
+	footerInfo: {
+		padding: 16,
+		alignItems: 'center',
+	},
+	footerInfoText: {
+		color: '#666',
+		fontSize: 14,
+	},
+
 
 });

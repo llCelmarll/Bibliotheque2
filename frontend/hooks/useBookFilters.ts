@@ -14,9 +14,9 @@ export function useBookFilters() {
 		});
 	}, []);
 
-	const removeFilter = useCallback((type: FilterType, id: number) => {
+	const removeFilter = useCallback((filter: BookFilter) => {
 		setActiveFilters(prev =>
-			prev.filter(f => !(f.type === type && f.id === id))
+			prev.filter(f => !(f.type === filter.type && f.id === filter.id))
 		);
 	}, []);
 

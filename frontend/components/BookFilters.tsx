@@ -6,7 +6,7 @@ import { isFilterActive} from "@/services/filtersService";
 
 interface BookFiltersProps {
 	activeFilters: BookFilter[];
-	onFilterRemove: (type: FilterType, id: number) => void;
+	onFilterRemove: (filter: BookFilter) => void;
 	onClearFilters: () => void;
 }
 
@@ -29,9 +29,7 @@ export const BookFilters : React.FC<BookFiltersProps> = ({
 				{activeFilters.map((filter) => (
 					<ClickableTag
 						key={`${filter.type}-${filter.id}`}
-						label={filter.name || ''}
-						type={filter.type}
-						id={filter.id}
+						filter={filter}
 						onPress={onFilterRemove}
 					/>
 				))}
