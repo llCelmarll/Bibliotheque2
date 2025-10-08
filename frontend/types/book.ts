@@ -59,3 +59,67 @@ export interface Book {
 	created_at?: string;
 	updated_at?: string;
 }
+
+export interface BookBase {
+    id: number;
+    title: string;
+    isbn: string;
+    publisher?: Publisher;
+    authors?: Author[];
+    genres?: Genre[];
+    published_date: string;
+    page_count?: number;
+    cover_url: string | null;
+    publisher_id: number;
+    barcode: string | null;
+    genre_id: number | null;
+    created_at: string;
+    updated_at: string | null;
+}
+
+export interface GoogleBooksData {
+    title: string;
+    authors: string[];
+    publisher: string;
+    publishedDate: string;
+    description: string;
+    categories: string[];
+    imageLinks: {
+        smallThumbnail: string;
+        thumbnail: string;
+    };
+    language: string;
+    pageCount: number;
+    subtitle: string;
+    infoLink: string;
+}
+
+export interface OpenLibraryData {
+    other_titles: string[];
+    publishers: string[];
+    description: {
+        value: string;
+    };
+    publish_places: string[];
+    subjects: string[];
+    contributors: Contributor[] | string[];
+    number_of_pages: number;
+    publish_date: string;
+    by_statement: string;
+    links: Array<{
+        title: string;
+        url: string;
+    }>;
+    key: string;
+}
+
+type Contributor = {
+    role: string;
+    name: string;
+} | string;
+
+export interface BookDetail {
+    base: BookBase;
+    google_books: GoogleBooksData;
+    open_library: OpenLibraryData;
+}

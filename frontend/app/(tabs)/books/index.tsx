@@ -17,7 +17,7 @@ import { BookFilters} from "@/components/BookFilters";
 import { useBooks } from "@/hooks/useBooks";
 
 
-export default function BooksScreen() {
+export default function Index() {
 	const { width: screenWidth } = useWindowDimensions();
 	const [isGridView, setIsGridView] = useState(false);
 

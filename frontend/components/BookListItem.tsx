@@ -5,6 +5,7 @@ import BookCover from "@/components/BookCover";
 import {ClickableTag} from "@/components/ClickableTag";
 import {BookFilter, FilterType} from "@/types/filter";
 import {createFilter} from "@/services/filtersService";
+import { useRouter} from "expo-router";
 
 interface BookListItemProps {
 	book: Book;
@@ -12,20 +13,30 @@ interface BookListItemProps {
 }
 
 export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelect}) => {
-	// console.log(`render du livre : ${book.title}`);
+
+	const router = useRouter();
+
+	const handlePress = () => {
+		router.push(`/(tabs)/books/${book.id}`);
+	}
+
 	return (
 		<View style={styles.container}>
-			{/* Couverture du livre */}
-			<BookCover
-				url={book.cover_url}
-				style={styles.cover}
-				containerStyle={styles.coverContainer}
-				resizeMode="cover"
-			/>
+			<TouchableOpacity onPress={handlePress}>
+				{/* Couverture du livre */}
+				<BookCover
+					url={book.cover_url}
+					style={styles.cover}
+					containerStyle={styles.coverContainer}
+					resizeMode="cover"
+				/>
+			</TouchableOpacity>
 
 
 			<View style={styles.infoContainer}>
-				<Text style={styles.title}>{book.title}</Text>
+				<TouchableOpacity onPress={handlePress}>
+					<Text style={styles.title}>{book.title}</Text>
+				</TouchableOpacity>
 
 				{book.authors && book.authors.length > 0 && (
 					<View style={styles.author}>

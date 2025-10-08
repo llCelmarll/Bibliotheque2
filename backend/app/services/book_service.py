@@ -1,4 +1,6 @@
 from typing import List, Optional, Dict, Any
+
+from pyexpat.errors import messages
 from sqlmodel import Session
 from fastapi import HTTPException
 from app.models.Book import Book
@@ -8,6 +10,8 @@ from app.models.Genre import Genre
 from app.repositories.book_repository import BookRepository
 from app.schemas.Book import BookCreate, BookUpdate, BookRead, BookSearchParams, BookAdvancedSearchParams
 from app.schemas.Other import Filter, FilterType
+from app.clients.openlibrary import fetch_openlibrary
+from app.clients.google_books import fetch_google_books
 from datetime import datetime
 
 class BookService:
@@ -15,7 +19,7 @@ class BookService:
 
     def __init__(self, session: Session):
         self.session = session
-        self.repository = BookRepository(session)
+        self.book_repository = BookRepository(session)
 
     def create_book(self, book_data: BookCreate) -> Book:
         """Crée un nouveau livre avec ses relations"""
@@ -57,12 +61,22 @@ class BookService:
         
         return book
 
-    def get_book_by_id(self, book_id: int) -> Book:
+    async def get_book_by_id(self, book_id: int) -> Dict[str, Any]:
         """Récupère un livre par son ID"""
-        book = self.repository.get_by_id(book_id)
-        if not book:
-            raise HTTPException(status_code=404, detail="Livre non trouvé")
-        return book
+        book_data = {}
+
+        base_book = self.book_repository.get_by_id(book_id)
+        #print("Livre renvoyé par le repository" , base_book)
+        if not base_book:
+           raise HTTPException(status_code=404, detail="Livre introuvable")
+
+        from app.schemas.Book import BookRead
+        book_dict = BookRead.from_orm(base_book).model_dump()
+
+        book_data['base'] = book_dict
+        book_data['google_books'] = await fetch_google_books(base_book.isbn)
+        book_data['open_library'] = await fetch_openlibrary(base_book.isbn)
+        return book_data
 
     def update_book(self, book_id: int, book_data: BookUpdate) -> Book:
         """Met à jour un livre"""
@@ -113,7 +127,7 @@ class BookService:
         """Recherche simple de livres"""
         self._validate_pagination(params.skip, params.limit)
         self._validate_filters(params.filters)
-        return self.repository.search_books(params)
+        return self.book_repository.search_books(params)
 
     def advanced_search_books(self, params: BookAdvancedSearchParams) -> List[Book]:
         """Recherche avancée de livres"""
@@ -121,11 +135,11 @@ class BookService:
         self._validate_date_range(params.year_min, params.year_max)
         self._validate_page_range(params.page_min, params.page_max)
         
-        return self.repository.advanced_search_books(params)
+        return self.book_repository.advanced_search_books(params)
 
     def get_statistics(self) -> Dict[str, Any]:
         """Récupère les statistiques des livres"""
-        return self.repository.get_statistics()
+        return self.book_repository.get_statistics()
 
     def get_books_by_author(self, author_id: int) -> List[Book]:
         """Récupère tous les livres d'un auteur"""

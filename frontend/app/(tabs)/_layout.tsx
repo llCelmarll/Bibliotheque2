@@ -3,9 +3,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function TabLayout() {
   return (
-    <Tabs>
+    <Tabs screenOptions={{
+      headerShown: false // Cache le header par défaut pour tous les onglets
+    }}>
       <Tabs.Screen
-        name="BooksScreen"
+        name="books"
         options={{
           title: "Livres",
           tabBarIcon: ({ color, size }) => (

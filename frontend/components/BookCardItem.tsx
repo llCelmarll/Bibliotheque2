@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, Platform } from "react-native";
+import { View, Text, StyleSheet, Image, Platform, TouchableOpacity } from "react-native";
 import { Book } from "@/types/book"
 import BookCover from "@/components/BookCover";
+import { useRouter } from "expo-router";
 
 interface BookCardItemProps {
 	book: Book;
@@ -10,9 +11,15 @@ interface BookCardItemProps {
 const COVER_RATIO = 2 / 3; // width / height (portrait)
 
 export const BookCardItem: React.FC<BookCardItemProps> = ({ book }) => {
+	const router = useRouter();
+
+	const handlePress = () => {
+		router.push(`/(tabs)/books/${book.id}`)
+	}
 
 	return (
-		<View style={styles.card}>
+		<TouchableOpacity onPress={handlePress} style={styles.card}>
+
 			{/* Couverture : ratio fixe + contain (pas de rognage) */}
 			<BookCover
 				url={book.cover_url}
@@ -49,7 +56,7 @@ export const BookCardItem: React.FC<BookCardItemProps> = ({ book }) => {
 					<Text style={styles.meta}>{book.page_count} p.</Text>
 				)}
 			</View>
-		</View>
+		</TouchableOpacity>
 	);
 };
 

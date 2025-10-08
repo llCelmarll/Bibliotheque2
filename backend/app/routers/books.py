@@ -248,15 +248,15 @@ def list_books(
 # CRUD ENDPOINTS
 # ================================
 
-@router.get("/{book_id}", response_model=BookRead)
-def get_book(
+@router.get("/{book_id}" , response_model=Dict[str, Any])
+async def get_book(
         book_id: int,
         service: BookService = Depends(get_book_service)
 ):
     """
     Récupère un livre par son ID.
     """
-    return service.get_book_by_id(book_id)
+    return await service.get_book_by_id(book_id)
 
 
 @router.put("/{book_id}", response_model=BookRead)

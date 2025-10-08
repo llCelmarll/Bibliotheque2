@@ -1,8 +1,12 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+
+from sqlalchemy.orm import selectinload, joinedload
 from sqlmodel import Session, select, or_, and_, func
 from sqlalchemy import desc, asc
 from app.models.Book import Book
 from app.models.Author import Author
+from app.models.BookAuthorLink import BookAuthorLink
+from app.models.BookGenreLink import BookGenreLink
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
 from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams
@@ -16,7 +20,19 @@ class BookRepository:
 
 	def get_by_id(self, book_id: int) -> Optional[Book]:
 		"""Retourne un livre en fonction de son ID."""
-		return self.session.get(Book, book_id)
+		stmt = (
+			select(Book)
+			.where(Book.id == book_id)
+			.options(
+				selectinload(Book.publisher),
+				selectinload(Book.authors).selectinload(Author.books),
+				selectinload(Book.genres).selectinload(Genre.books)
+			)
+		)
+
+		return self.session.exec(stmt).first()
+
+		#return self.session.get(Book, book_id)
 
 	def search_books(self, params: BookSearchParams) -> List[Book]:
 		"""Recherche simple de tous les champs"""
