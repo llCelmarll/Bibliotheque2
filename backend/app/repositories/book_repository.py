@@ -87,6 +87,19 @@ class BookRepository:
 			"newest_publication_year": newest_year
 		}
 
+	def get_by_isbn(self, isbn: str) -> Optional[Book]:
+		"""Retourne un livre en fonction de son ISBN."""
+		stmt = (
+			select(Book)
+			.where(Book.isbn == isbn)
+			.options(
+				selectinload(Book.publisher),
+				selectinload(Book.authors).selectinload(Author.books),
+				selectinload(Book.genres).selectinload(Genre.books)
+			)
+		)
+		return self.session.exec(stmt).first()
+
 	def _build_base_query(self) -> select:
 		"""Construit la requête de base avec les jointures"""
 		return select(Book).join(Author, Book.authors, isouter=True) \

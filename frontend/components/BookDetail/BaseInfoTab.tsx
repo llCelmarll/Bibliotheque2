@@ -68,7 +68,7 @@ export function BaseInfoTab() {
           </View>
         </View>
 
-        <InfoRow label="ISBN" value={book.base.isbn} />
+        <InfoRow label="ISBN" value={book.base.isbn || "Non renseigné"} />
         <InfoRow label="Code-barres" value={book.base.barcode || 'Non renseigné'} />
         
         <View style={styles.infoRow}>

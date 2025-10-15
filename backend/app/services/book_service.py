@@ -165,6 +165,38 @@ class BookService:
             raise HTTPException(status_code=404, detail="Genre non trouvé")
         
         return genre.books
+    
+    async def scan_book(self, isbn: str) -> Dict[str, Any]:
+        """Scanne un livre par son ISBN"""
+        book_data = {}
+       
+
+        # Validation de l'ISBN
+        if not isbn or len(isbn.replace('-', '')) not in [10, 13]:
+            raise HTTPException(
+                status_code=400,
+                detail="L'ISBN doit faire 10 ou 13 caractères (sans les tirets)"
+            )
+        
+        # Recherche du livre dans la base via le repository
+        existing_book = self.book_repository.get_by_isbn(isbn)
+        
+        if existing_book:
+            # Si le livre existe, retourner les données comme pour get_book_by_id
+            from app.schemas.Book import BookRead
+            book_dict = BookRead.from_orm(existing_book).model_dump()
+            book_data['base'] = book_dict
+            book_data['exists'] = True
+        else:
+            # Si le livre n'existe pas, chercher sur les APIs externes
+            book_data['exists'] = False
+            book_data['base'] = None
+        
+        # Récupérer les données des APIs externes dans tous les cas
+        book_data['google_books'] = await fetch_google_books(isbn)
+        book_data['open_library'] = await fetch_openlibrary(isbn)
+        
+        return book_data
 
     # Méthodes privées pour la validation et la logique interne
 

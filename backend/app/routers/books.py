@@ -116,6 +116,25 @@ def advanced_search_books(
     )
     return service.advanced_search_books(params)
 
+@router.get("/scan/{isbn}", response_model=Dict[str, Any])
+async def scan_book(
+        isbn: str,
+        service: BookService = Depends(get_book_service)
+):
+    """
+    Scanne un livre par son ISBN.
+
+    - Si le livre existe dans la base, retourne ses données + les données des APIs externes
+    - Si le livre n'existe pas, retourne uniquement les données des APIs externes
+
+    Retourne :
+    - **exists**: booléen indiquant si le livre existe dans la base
+    - **base**: données du livre de la base (si exists=True)
+    - **google_books**: données de l'API Google Books
+    - **open_library**: données de l'API OpenLibrary
+    """
+    return await service.scan_book(isbn)
+
 # ================================
 # STATISTICS ENDPOINT
 # ================================
