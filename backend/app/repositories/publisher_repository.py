@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from app.models.Publisher import Publisher
 
 class PublisherRepository:
@@ -20,7 +20,7 @@ class PublisherRepository:
 
 	def get_by_name(self, name: str) -> Optional[Publisher]:
 		"""Retourne un éditeur en fonction de son nom"""
-		statement = select(Publisher).where(Publisher.name == name)
+		statement = select(Publisher).where(func.lower(Publisher.name) == name.lower())
 		result =  self.session.exec(statement).first()
 		return result
 

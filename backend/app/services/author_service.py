@@ -7,7 +7,7 @@ from app.schemas.Author import AuthorCreate, AuthorRead, AuthorUpdate
 
 
 class AuthorService:
-	"""Service pour la logique metier des livres"""
+	"""Service pour la logique metier des auteurs"""
 	def __init__(self, session: Session):
 		self.session = session
 		self.author_repository = AuthorRepository(session)
@@ -21,7 +21,7 @@ class AuthorService:
 		return author_read_list
 
 
-	def create_author(self, author_data: AuthorCreate) -> Author:
+	def create(self, author_data: AuthorCreate) -> Author:
 		"""Crée un nouvel Auteur"""
 		self._validate_author_create(author_data)
 		author = Author(name=author_data.name)

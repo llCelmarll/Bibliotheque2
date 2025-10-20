@@ -31,7 +31,7 @@ def create_author(
 		author: AuthorCreate,
 		author_service: AuthorService = Depends(get_author_service)
 ):
-	return author_service.create_author(author)
+	return author_service.create(author)
 
 @router.put("", response_model=AuthorRead)
 def update_author(
