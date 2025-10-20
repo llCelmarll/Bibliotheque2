@@ -21,11 +21,12 @@ class AuthorService:
 		return author_read_list
 
 
-	def create(self, author_data: AuthorCreate) -> Author:
+	def create(self, author_data: AuthorCreate) -> AuthorRead:
 		"""Crée un nouvel Auteur"""
 		self._validate_author_create(author_data)
 		author = Author(name=author_data.name)
 		author = self.author_repository.create(author)
+		author = AuthorRead.model_validate(author)
 		return author
 
 	def get_by_id(self, author_id: int) -> AuthorRead:

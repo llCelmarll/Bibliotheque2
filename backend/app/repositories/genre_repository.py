@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from app.models.Genre import Genre
 
 class GenreRepository:
@@ -20,7 +20,7 @@ class GenreRepository:
 
 	def get_by_name(self, name: str) -> Optional[Genre]:
 		"""Retourne un genre en fonction de son nom"""
-		statement = select(Genre).where(Genre.name == name)
+		statement = select(Genre).where(func.lower(Genre.name) == name.lower())
 		result =  self.session.exec(statement).first()
 		return result
 

@@ -20,11 +20,12 @@ class PublisherService:
 
 		return publisher_read_list
 
-	def create(self, publisher_data: PublisherCreate) -> Publisher:
+	def create(self, publisher_data: PublisherCreate) -> PublisherRead:
 		"""Créé un nouvel éditeur"""
 		self._validate_publisher_create(publisher_data)
 		publisher = Publisher(name=publisher_data.name)
 		publisher = self.publisher_repository.create(publisher)
+		publisher = PublisherRead.model_validate(publisher)
 		return publisher
 
 	def get_by_id(self, publisher_id: int) -> PublisherRead:
