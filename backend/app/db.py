@@ -23,5 +23,3 @@ def init_db():
 def get_session():
     with Session(engine) as session:
         yield session
-
-__all__ = ["Author", "Book", "Publisher", "Genre", "BookAuthorLink", "BookGenreLink"]
