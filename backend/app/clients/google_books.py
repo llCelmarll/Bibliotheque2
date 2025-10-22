@@ -8,7 +8,7 @@ async def fetch_google_books(isbn: str) -> dict | None:
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(BASE_URL, params=params)
         # print(response.url, response.status_code)   # DEBUG
-        # sprint(response.text)                      # DEBUG limité
+        # print(response.text)                      # DEBUG limité
         if response.status_code != 200:
             return None
         data = response.json()

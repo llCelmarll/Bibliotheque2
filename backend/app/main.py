@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from app.routers import books, authors, publishers, genres
+from app.routers import books, authors, publishers, genres, scan
 from app.db import init_db
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -26,6 +26,7 @@ app.include_router(books.router)
 app.include_router(authors.router)
 app.include_router(publishers.router)
 app.include_router(genres.router)
+app.include_router(scan.router)
 
 # Route de test
 @app.get("/")

@@ -32,9 +32,9 @@ class BookCreate(SQLModel):
     page_count: Optional[int] = None
     barcode: Optional[str] = None
     cover_url: Optional[str] = None
-    authors: List[int] = []
-    publisher: Optional[int] = None
-    genres: List[int] = []
+    authors: List[AuthorRead | str] = []
+    publisher: Optional[PublisherRead | str] = None
+    genres: List[GenreRead | str] = []
 
 # Schema de mise à jour
 class BookUpdate(SQLModel):
