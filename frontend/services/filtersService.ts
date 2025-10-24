@@ -1,7 +1,16 @@
 import axios from 'axios';
-import { API_URL } from "@/constants/api";
+import API_CONFIG from "@/config/api";
 import { FilterType, BookFilter } from "@/types/filter";
 import { Author, Publisher, Genre } from "@/types/book";
+
+// Configuration de base pour axios
+const apiClient = axios.create({
+	baseURL: API_CONFIG.BASE_URL,
+	timeout: 10000, // 10 secondes
+	headers: {
+		'Content-Type': 'application/json',
+	},
+});
 
 /**
  * Récupère la liste des auteurs pour le filtre
@@ -10,7 +19,7 @@ import { Author, Publisher, Genre } from "@/types/book";
 
 export async function fetchAuthors(): Promise<Author[]> {
 	try{
-		const response = await axios.get(`${API_URL}/authors`);
+		const response = await apiClient.get(API_CONFIG.ENDPOINTS.AUTHORS);
 		return response.data;
 	} catch (error) {
 		console.error("Erreur lors de la récupération des auteurs :", error);
@@ -24,7 +33,7 @@ export async function fetchAuthors(): Promise<Author[]> {
  */
 export async function fetchPublishers(): Promise<Publisher[]> {
 	try {
-		const response = await axios.get(`${API_URL}/publishers`);
+		const response = await apiClient.get(API_CONFIG.ENDPOINTS.PUBLISHERS);
 		return response.data;
 	} catch (error) {
 		console.error("Erreur lors de la récupération des éditeurs :", error);
@@ -38,7 +47,7 @@ export async function fetchPublishers(): Promise<Publisher[]> {
  */
 export async function fetchGenres(): Promise<Genre[]> {
 	try {
-		const response = await axios.get(`${API_URL}/genres`);
+		const response = await apiClient.get(API_CONFIG.ENDPOINTS.GENRES);
 		return response.data;
 	} catch (error) {
 		console.error("Erreur lors de la récupération des genres :", error);

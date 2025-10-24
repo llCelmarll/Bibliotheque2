@@ -10,13 +10,25 @@ from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 
 
-class ScanResult(SQLModel):
+class SuggestedBook(SQLModel):
+    """Modèle pour le livre suggéré dans le scan - plus facile à sérialiser"""
+    isbn: str | None = None
+    title: str | None = None
+    published_date: str | None = None
+    page_count: int | None = None
+    barcode: str | None = None
+    cover_url: str | None = None
+    authors: List[str] = []  # Simplifié : seulement des strings
+    publisher: str | None = None  # Simplifié : seulement un string
+    genres: List[str] = []
 
-      base : BookRead | None = None
-      suggested : BookCreate | None = None
-      title_match : List[BookRead] | None = None
-      google_book : dict | None= None
-      openlibrary : dict | None= None
+
+class ScanResult(SQLModel):
+    base : BookRead | None = None
+    suggested : SuggestedBook | None = None
+    title_match : List[BookRead] = []
+    google_book : dict | None= None
+    openlibrary : dict | None= None
 
 
 class ScanService:
@@ -42,11 +54,20 @@ class ScanService:
         result.google_book = await fetch_google_books(isbn)
         result.openlibrary = await fetch_openlibrary(isbn)
 
-        print(result)
-
         if base_book:
             result.base = BookRead.model_validate(base_book)
-            result.suggested = BookCreate.model_validate(base_book)
+            # Créer un SuggestedBook à partir du livre existant
+            result.suggested = SuggestedBook(
+                isbn=base_book.isbn,
+                title=base_book.title,
+                published_date=base_book.published_date,
+                page_count=base_book.page_count,
+                barcode=base_book.barcode,
+                cover_url=base_book.cover_url,
+                authors=[author.name for author in base_book.authors] if base_book.authors else [],
+                publisher=base_book.publisher.name if base_book.publisher else None,
+                genres=[genre.name for genre in base_book.genres] if base_book.genres else []
+            )
         else:
             # Récupération des données à suggerer
             google_title = result.google_book.get("title") if result.google_book else None
@@ -59,28 +80,19 @@ class ScanService:
             openlibrary_date = result.openlibrary.get("publish_date") if result.openlibrary else None
             openlibrary_pages = result.openlibrary.get("number_of_pages") if result.openlibrary else None
             openlibrary_cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg" if result.openlibrary else None
-            openlibrary_publisher = result.openlibrary.get("publishers")[0] if result.openlibrary else None
+            openlibrary_publisher = None
+            if result.openlibrary and result.openlibrary.get("publishers") and len(result.openlibrary.get("publishers")) > 0:
+                openlibrary_publisher = result.openlibrary.get("publishers")[0]
 
             authors_list = []
-            suggested_publisher = None
             if result.google_book:
-                # Gestion des auteurs
+                # Gestion des auteurs - simplifiée pour la sérialisation
                 if authors := result.google_book.get("authors"):
-                    for author in authors:
-                        author_db = self.author_repository.get_by_name(author)
-                        if author_db:
-                            authors_list.append(AuthorRead.model_validate(author_db))
-                        else:
-                            authors_list.append(author)
+                    authors_list = authors  # Directement les strings
+            
+            final_publisher = google_publisher or openlibrary_publisher
 
-            publisher_db = self.publisher_repository.get_by_name(google_publisher or openlibrary_publisher)
-            if publisher_db:
-                suggested_publisher = PublisherRead.model_validate(publisher_db)
-            else:
-                suggested_publisher = google_publisher or openlibrary_publisher
-
-
-            result.suggested = BookCreate(
+            result.suggested = SuggestedBook(
                 isbn=isbn,
                 title=google_title or openlibrary_title,
                 published_date=google_date or openlibrary_date,
@@ -88,10 +100,11 @@ class ScanService:
                 barcode=isbn,
                 cover_url=google_cover or openlibrary_cover,
                 authors=authors_list,
-                publisher=suggested_publisher,
-                genre=[],
+                publisher=final_publisher,
+                genres=[],
             )
 
-            result.title_match= self.book_repository.search_title_match(title=result.suggested.title, isbn=isbn)
+            if result.suggested:
+                result.title_match = self.book_repository.search_title_match(title=result.suggested.title, isbn=isbn)
 
         return result

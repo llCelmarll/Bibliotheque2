@@ -1,7 +1,7 @@
 import React, { useState,useEffect } from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Dimensions, Platform} from "react-native";
 import { CameraType, useCameraPermissions } from "expo-camera";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import Scanner from "@/components/Scanner";
@@ -13,6 +13,14 @@ export default function ScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const router = useRouter();
 
+  // Réinitialiser l'état du scanner quand on revient sur l'écran
+  useFocusEffect(
+    React.useCallback(() => {
+      setScanned(false);
+      setTorch(false);
+    }, [])
+  );
+
   const handleBarCodeScanned = (isbn: string) => {
     console.log("Scanned: ", isbn);
     if (scanned) return;
@@ -20,12 +28,15 @@ export default function ScannerScreen() {
     setScanned(true);
 
     if (/^(?:\d{10}|\d{13})$/.test(isbn)) {
-      console.log(isbn);
-      // Ici, vous pouvez ajouter la logique pour naviguer vers la page de détails du livre
-      // router.push(`/book/${isbn}`);
+      console.log("Valid ISBN:", isbn);
+      // Navigation vers la page de résultats du scan
+      router.push(`/scan/${isbn}`);
     } else {
-      console.log("Invalid ISBN");
-      setScanned(false);
+      console.log("Invalid ISBN format");
+      // Réactiver le scanner après 2 secondes pour un ISBN invalide
+      setTimeout(() => {
+        setScanned(false);
+      }, 2000);
     }
   };
 

@@ -1,8 +1,17 @@
 // services/booksService.ts
 import axios from "axios";
-import { API_URL } from "@/constants/api";
+import API_CONFIG from "@/config/api";
 import { Book } from "@/types/book";
 import { BookFilter } from "@/types/filter";
+
+// Configuration de base pour axios
+const apiClient = axios.create({
+	baseURL: API_CONFIG.BASE_URL,
+	timeout: 10000, // 10 secondes
+	headers: {
+		'Content-Type': 'application/json',
+	},
+});
 
 interface FetchBooksParams {
     page?: number;
@@ -29,10 +38,10 @@ export async function fetchBooks({
         filters = [],
  } : FetchBooksParams = {}): Promise<Book[]> {
     const skip = (page - 1) * pageSize;
-    const endpoint = `${API_URL}/books/search/simple`;
+    const endpoint = `${API_CONFIG.ENDPOINTS.BOOKS}/search/simple`;
 
     try {
-        const res = await axios.post(
+        const res = await apiClient.post(
             endpoint,
             filters.map(f => ({
                 type: f.type.toLowerCase(),

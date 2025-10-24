@@ -101,26 +101,20 @@ class BookRepository:
 		)
 		return self.session.exec(stmt).first()
 
-	def search_title_match(self, title: str, isbn: str) -> Optional[List[Book]]:
+	def search_title_match(self, title: str, isbn: str) -> List[Book]:
 		"""Recherche un livre ayant le même titre dont l'isbn n'est pas isbn"""
 
-		print("titre recherché : ", title)
 		stmt = (
 			select(Book)
 			.where(func.lower(Book.title).like(f"%{title.lower()}%"))
 			.where(or_(
 				Book.isbn != isbn,
-		Book.isbn.is_(None)
+				Book.isbn.is_(None)
 			))
-
 		)
 
 		result = list(self.session.exec(stmt).all())
-		print("Resultat de la recherche de titre : ", result)
-		if result:
-			return result
-		else:
-			return None
+		return result
 
 	def _build_base_query(self) -> select:
 		"""Construit la requête de base avec les jointures"""

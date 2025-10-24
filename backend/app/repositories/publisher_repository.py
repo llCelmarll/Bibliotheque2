@@ -20,6 +20,8 @@ class PublisherRepository:
 
 	def get_by_name(self, name: str) -> Optional[Publisher]:
 		"""Retourne un éditeur en fonction de son nom"""
+		if not name:
+			return None
 		statement = select(Publisher).where(func.lower(Publisher.name) == name.lower())
 		result =  self.session.exec(statement).first()
 		return result

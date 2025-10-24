@@ -11,7 +11,7 @@ module.exports = {
       backgroundColor: "#ffffff"
     },
     extra: {
-      apiUrl: process.env.API_URL,
+      apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000',
     },
     updates: {
       fallbackToCacheTimeout: 0

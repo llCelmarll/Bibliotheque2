@@ -31,6 +31,18 @@ export default function Scanner({ onScanned, torchEnabled, onModeChange }: Scann
 /* ----------------------- MANUAL INPUT ----------------------- */
 function ManualInput({ onScanned }: ScannerProps) {
 	const [isbn, setIsbn] = useState("");
+	const inputRef = React.useRef<TextInput>(null);
+
+	// Focus automatique au montage du composant (uniquement sur web)
+	React.useEffect(() => {
+		if (Platform.OS === 'web' && inputRef.current) {
+			// Petit délai pour s'assurer que le composant est complètement monté
+			const timer = setTimeout(() => {
+				inputRef.current?.focus();
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+	}, []);
 
 	const handleSubmit = () => {
 		if (isbn.trim()) {
@@ -38,15 +50,29 @@ function ManualInput({ onScanned }: ScannerProps) {
 		}
 	};
 
+	const handleKeyPress = (event: any) => {
+		// Gérer la touche Entrée sur web
+		if (Platform.OS === 'web' && event.nativeEvent?.key === 'Enter') {
+			event.preventDefault();
+			handleSubmit();
+		}
+	};
+
 	return (
 		<View style={styles.inputContainer}>
 			<Text style={styles.text}>Entrez un ISBN manuellement</Text>
+			<Text style={styles.subText}>Appuyez sur Entrée pour lancer le scan</Text>
 			<TextInput
+				ref={inputRef}
 				style={styles.input}
 				value={isbn}
 				onChangeText={setIsbn}
 				placeholder="ISBN (ex: 9782253257332)"
 				keyboardType="numeric"
+				onKeyPress={handleKeyPress}
+				autoFocus={Platform.OS === 'web'}
+				returnKeyType="search"
+				onSubmitEditing={handleSubmit}
 			/>
 			<Button title="Valider" onPress={handleSubmit} />
 		</View>
@@ -157,6 +183,13 @@ const styles = StyleSheet.create({
 		textAlign: "center", 
 		margin: 10,
 		color: '#333' // Ajouté pour la cohérence avec le reste de l'application
+	},
+	subText: {
+		fontSize: 14,
+		textAlign: "center",
+		color: '#666',
+		marginBottom: 10,
+		fontStyle: 'italic'
 	},
 	camera: { 
 		flex: 1, 

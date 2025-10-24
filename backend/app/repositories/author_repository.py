@@ -21,6 +21,8 @@ class AuthorRepository:
 
 	def get_by_name(self, name: str) -> Optional[Author]:
 		"""Retourne un auteur en fonction de son nom."""
+		if not name:
+			return None
 		statement = select(Author).where(func.lower(Author.name) == name.lower())
 		result =  self.session.exec(statement).first()
 		return result
