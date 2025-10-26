@@ -10,6 +10,65 @@ class BookService {
   }
 
   /**
+   * Met à jour un livre existant
+   */
+  async updateBook(bookId: string, bookData: Partial<BookCreate>): Promise<BookRead> {
+    console.log('📝 Mise à jour livre - ID:', bookId, 'données:', JSON.stringify(bookData, null, 2));
+    
+    try {
+      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookData),
+      });
+
+      console.log('📡 Réponse API mise à jour - status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur API mise à jour livre:', errorText);
+        throw new Error(`Erreur ${response.status}: ${errorText}`);
+      }
+
+      const updatedBook = await response.json();
+      console.log('✅ Livre mis à jour avec succès:', updatedBook);
+      
+      return updatedBook;
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du livre:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Supprime un livre
+   */
+  async deleteBook(bookId: string): Promise<void> {
+    console.log('🗑️ Suppression livre - ID:', bookId);
+    
+    try {
+      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`, {
+        method: 'DELETE',
+      });
+
+      console.log('📡 Réponse API suppression - status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur API suppression livre:', errorText);
+        throw new Error(`Erreur ${response.status}: ${errorText}`);
+      }
+
+      console.log('✅ Livre supprimé avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression du livre:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Crée un nouveau livre
    */
   async createBook(bookData: BookCreate): Promise<BookRead> {

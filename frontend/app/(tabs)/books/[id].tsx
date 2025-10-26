@@ -25,7 +25,13 @@ export  default function BookDetailScreen() {
 					<ErrorMessage message={error} onRetry={refetch}/>
 				) : book ? (
 					<View style={styles.content}>
-						<BookHeader book={book} />
+						<BookHeader 
+							book={book} 
+							onBookDeleted={() => {
+								// Optionnel: rafraîchir les données ou naviguer
+								refetch();
+							}}
+						/>
 						<BookDetailTabs book={book}/>
 					</View>
 				) : null}

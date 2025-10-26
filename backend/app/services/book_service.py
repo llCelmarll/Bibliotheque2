@@ -84,7 +84,10 @@ class BookService:
 
     def update_book(self, book_id: int, book_data: BookUpdate) -> Book:
         """Met à jour un livre"""
-        book = self.get_book_by_id(book_id)
+        # Utiliser le repository pour obtenir l'objet Book directement
+        book = self.book_repository.get_by_id(book_id)
+        if not book:
+            raise HTTPException(status_code=404, detail="Livre introuvable")
         
         # Validation des nouvelles données
         if book_data.title or book_data.isbn:
@@ -120,7 +123,10 @@ class BookService:
 
     def delete_book(self, book_id: int) -> None:
         """Supprime un livre"""
-        book = self.get_book_by_id(book_id)
+        # Utiliser le repository pour obtenir l'objet Book directement
+        book = self.book_repository.get_by_id(book_id)
+        if not book:
+            raise HTTPException(status_code=404, detail="Livre introuvable")
         
         # Les relations many-to-many seront supprimées automatiquement
         # grâce aux contraintes de la base de données

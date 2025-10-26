@@ -1,12 +1,14 @@
 import { View, Image, StyleSheet, Text } from "react-native";
 import { BookDetail } from '@/types/book';
 import BookCover from '@/components/BookCover';
+import { BookActions } from './BookActions';
 
 interface BookHeaderProps {
   book: BookDetail;
+  onBookDeleted?: () => void;
 }
 
-export function BookHeader({book}: BookHeaderProps) {
+export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
   const coverUrl = book.base?.cover_url ||
     book.google_books?.imageLinks?.thumbnail ||
     undefined;
@@ -54,6 +56,15 @@ export function BookHeader({book}: BookHeaderProps) {
           <Text style={styles.title}>{book.base?.title || "Titre inconnu"}</Text>
           {renderAuthors()}
           <Text style={styles.isbn}>ISBN: {book.base?.isbn || "N/A"}</Text>
+          
+          {/* Actions seulement si le livre existe dans la base */}
+          {book.base?.id && (
+            <BookActions
+              bookId={book.base.id.toString()}
+              bookTitle={book.base.title || "Titre inconnu"}
+              onBookDeleted={onBookDeleted}
+            />
+          )}
         </View>
       </View>
   );
