@@ -32,6 +32,11 @@ class BookService:
                 detail="Un livre avec ce titre et cet ISBN existe déjà"
             )
 
+        # Traitement de l'éditeur
+        publisher_id = None
+        if book_data.publisher:
+            publisher_id = self._process_publisher_for_book(book_data.publisher)
+
         # Création du livre
         book = Book(
             title=book_data.title,
@@ -40,7 +45,7 @@ class BookService:
             page_count=book_data.page_count,
             barcode=book_data.barcode,
             cover_url=book_data.cover_url,
-            publisher_id=book_data.publisher
+            publisher_id=publisher_id
         )
 
         # Ajout à la session
@@ -49,10 +54,10 @@ class BookService:
 
         # Gestion des relations many-to-many
         if book_data.authors:
-            self._add_authors_to_book(book, book_data.authors)
+            self._process_authors_for_book(book, book_data.authors)
         
-        if book_data.genre:
-            self._add_genres_to_book(book, book_data.genre)
+        if book_data.genres:
+            self._process_genres_for_book(book, book_data.genres)
 
         # Commit final
         self.session.commit()
@@ -166,19 +171,19 @@ class BookService:
         return genre.books
     
     async def scan_book(self, isbn: str) -> Dict[str, Any]:
-        """Scanne un livre par son ISBN"""
+        """Scanne un livre par son ISBN ou code-barre"""
         book_data = {}
        
 
-        # Validation de l'ISBN
-        if not isbn or len(isbn.replace('-', '')) not in [10, 13]:
+        # Validation du code scanné (ISBN ou code-barre)
+        if not isbn or not isbn.strip():
             raise HTTPException(
                 status_code=400,
-                detail="L'ISBN doit faire 10 ou 13 caractères (sans les tirets)"
+                detail="Le code scanné ne peut pas être vide"
             )
         
-        # Recherche du livre dans la base via le repository
-        existing_book = self.book_repository.get_by_isbn(isbn)
+        # Recherche du livre dans la base via le repository (ISBN ou code-barre)
+        existing_book = self.book_repository.get_by_isbn_or_barcode(isbn)
         
         if existing_book:
             # Si le livre existe, retourner les données comme pour get_book_by_id
@@ -234,8 +239,133 @@ class BookService:
         existing_book = self.session.exec(stmt).first()
         return existing_book is not None
 
+    def _process_authors_for_book(self, book: Book, authors_data) -> None:
+        """Traite les auteurs (création si nécessaire) et les ajoute au livre"""
+        from app.repositories.author_repository import AuthorRepository
+        author_repo = AuthorRepository(self.session)
+        
+        for author_item in authors_data:
+            author = None
+            
+            # Si c'est un entier (ID), récupérer l'auteur existant
+            if isinstance(author_item, int):
+                author = self.session.get(Author, author_item)
+                if not author:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Auteur avec l'ID {author_item} non trouvé"
+                    )
+            
+            # Si c'est une chaîne (nom), chercher ou créer
+            elif isinstance(author_item, str):
+                author = author_repo.get_by_name(author_item)
+                if not author:
+                    print(f"🆕 Création nouvel auteur: '{author_item}'")
+                    author = Author(name=author_item)
+                    author_repo.create(author)
+                else:
+                    print(f"✅ Auteur existant trouvé: '{author.name}'")
+            
+            # Si c'est un objet (dict), utiliser le nom
+            elif isinstance(author_item, dict) and 'name' in author_item:
+                author_name = author_item['name']
+                author = author_repo.get_by_name(author_name)
+                if not author:
+                    print(f"🆕 Création nouvel auteur: '{author_name}'")
+                    author = Author(name=author_name)
+                    author_repo.create(author)
+                else:
+                    print(f"✅ Auteur existant trouvé: '{author.name}'")
+            
+            if author:
+                book.authors.append(author)
+
+    def _process_genres_for_book(self, book: Book, genres_data) -> None:
+        """Traite les genres (création si nécessaire) et les ajoute au livre"""
+        from app.repositories.genre_repository import GenreRepository
+        genre_repo = GenreRepository(self.session)
+        
+        for genre_item in genres_data:
+            genre = None
+            
+            # Si c'est un entier (ID), récupérer le genre existant
+            if isinstance(genre_item, int):
+                genre = self.session.get(Genre, genre_item)
+                if not genre:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Genre avec l'ID {genre_item} non trouvé"
+                    )
+            
+            # Si c'est une chaîne (nom), chercher ou créer
+            elif isinstance(genre_item, str):
+                genre = genre_repo.get_by_name(genre_item)
+                if not genre:
+                    print(f"🆕 Création nouveau genre: '{genre_item}'")
+                    genre = Genre(name=genre_item)
+                    genre_repo.create(genre)
+                else:
+                    print(f"✅ Genre existant trouvé: '{genre.name}'")
+            
+            # Si c'est un objet (dict), utiliser le nom
+            elif isinstance(genre_item, dict) and 'name' in genre_item:
+                genre_name = genre_item['name']
+                genre = genre_repo.get_by_name(genre_name)
+                if not genre:
+                    print(f"🆕 Création nouveau genre: '{genre_name}'")
+                    genre = Genre(name=genre_name)
+                    genre_repo.create(genre)
+                else:
+                    print(f"✅ Genre existant trouvé: '{genre.name}'")
+            
+            if genre:
+                book.genres.append(genre)
+
+    def _process_publisher_for_book(self, publisher_data) -> Optional[int]:
+        """Traite l'éditeur (création si nécessaire) et retourne son ID"""
+        from app.repositories.publisher_repository import PublisherRepository
+        publisher_repo = PublisherRepository(self.session)
+        
+        publisher = None
+        
+        # Si c'est un entier (ID), vérifier qu'il existe
+        if isinstance(publisher_data, int):
+            publisher = self.session.get(Publisher, publisher_data)
+            if not publisher:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Éditeur avec l'ID {publisher_data} non trouvé"
+                )
+            return publisher.id
+        
+        # Si c'est une chaîne (nom), chercher ou créer
+        elif isinstance(publisher_data, str):
+            publisher = publisher_repo.get_by_name(publisher_data)
+            if not publisher:
+                print(f"🆕 Création nouvel éditeur: '{publisher_data}'")
+                publisher = Publisher(name=publisher_data)
+                publisher_repo.create(publisher)
+            else:
+                print(f"✅ Éditeur existant trouvé: '{publisher.name}'")
+            return publisher.id
+        
+        # Si c'est un objet (dict), utiliser le nom
+        elif isinstance(publisher_data, dict) and 'name' in publisher_data:
+            publisher_name = publisher_data['name']
+            publisher = publisher_repo.get_by_name(publisher_name)
+            if not publisher:
+                print(f"🆕 Création nouvel éditeur: '{publisher_name}'")
+                publisher = Publisher(name=publisher_name)
+                publisher_repo.create(publisher)
+            else:
+                print(f"✅ Éditeur existant trouvé: '{publisher.name}'")
+            return publisher.id
+        
+        return None
+
+    # Anciennes fonctions conservées pour compatibilité ascendante
     def _add_authors_to_book(self, book: Book, author_ids: List[int]) -> None:
-        """Ajoute des auteurs à un livre"""
+        """Ajoute des auteurs à un livre (version legacy - IDs seulement)"""
         for author_id in author_ids:
             author = self.session.get(Author, author_id)
             if not author:
@@ -246,7 +376,7 @@ class BookService:
             book.authors.append(author)
 
     def _add_genres_to_book(self, book: Book, genre_ids: List[int]) -> None:
-        """Ajoute des genres à un livre"""
+        """Ajoute des genres à un livre (version legacy - IDs seulement)"""
         for genre_id in genre_ids:
             genre = self.session.get(Genre, genre_id)
             if not genre:

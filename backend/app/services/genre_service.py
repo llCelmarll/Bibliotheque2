@@ -74,3 +74,8 @@ class GenreService:
 				status_code=status.HTTP_404_NOT_FOUND,
 				detail="Genre introuvable"
 			)
+
+	def search_fuzzy(self, query: str, limit: int = 10) -> list[GenreRead]:
+		"""Recherche fuzzy de genres"""
+		genres = self.genre_repository.search_fuzzy(query, limit)
+		return [GenreRead.model_validate(genre) for genre in genres]

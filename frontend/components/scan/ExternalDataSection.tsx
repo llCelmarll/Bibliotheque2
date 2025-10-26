@@ -1,7 +1,9 @@
 // components/scan/ExternalDataSection.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { entityService } from '@/services/entityService';
+import { Author, Publisher, Genre } from '@/types/entityTypes';
 
 interface ExternalDataSectionProps {
 	googleData?: any;
@@ -25,24 +27,12 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		categories: false,
 		thumbnail: false,
 	});
-
-	// Fonctions utilitaires pour la sélection
-	const hasSelectedData = () => Object.values(selectedData).some(Boolean);
 	
-	const getSelectedCount = () => Object.values(selectedData).filter(Boolean).length;
-
-	const handleImport = (bookInfo: any, source: 'google' | 'openLibrary') => {
-		// Créer un objet avec seulement les données sélectionnées
-		const selectedBookData: any = {};
-		
-		Object.keys(selectedData).forEach(key => {
-			if (selectedData[key] && bookInfo[key]) {
-				selectedBookData[key] = bookInfo[key];
-			}
-		});
-
-		onImportData(source, selectedBookData);
-	};
+	// États pour les entités enrichies
+	const [enrichedAuthors, setEnrichedAuthors] = useState<Author[]>([]);
+	const [enrichedPublisher, setEnrichedPublisher] = useState<Publisher | null>(null);
+	const [enrichedGenres, setEnrichedGenres] = useState<Genre[]>([]);
+	const [isEnriching, setIsEnriching] = useState(false);
 
 	// Extraction et normalisation des données selon la source
 	const extractBookInfo = (data: any, source: 'google' | 'openLibrary') => {
@@ -84,16 +74,332 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		return null;
 	};
 
+	// Effet pour enrichir les entités quand les données changent
+	useEffect(() => {
+		const currentData = activeTab === 'google' ? googleData : openLibraryData;
+		if (currentData) {
+			const bookInfo = extractBookInfo(currentData, activeTab);
+			if (bookInfo) {
+				enrichEntities(bookInfo.exploitable);
+			}
+		} else {
+			// Reset si pas de données
+			setEnrichedAuthors([]);
+			setEnrichedPublisher(null);
+			setEnrichedGenres([]);
+		}
+	}, [activeTab, googleData, openLibraryData]);
+
+	// Effet pour réinitialiser la sélection quand on change d'onglet
+	useEffect(() => {
+		console.log('🔄 Reset de la sélection lors du changement d\'onglet');
+		setSelectedData({
+			title: false,
+			authors: false,
+			publisher: false,
+			publishedDate: false,
+			pageCount: false,
+			isbn: false,
+			categories: false,
+			thumbnail: false,
+		});
+	}, [activeTab]);
+
+	// Fonction pour enrichir les entités avec vérification d'existence
+	const enrichEntities = async (bookInfo: any) => {
+		if (!bookInfo || isEnriching) return;
+		
+		setIsEnriching(true);
+		console.log('🔍 Enrichissement des entités...');
+		
+		try {
+			// Enrichir les auteurs
+			if (bookInfo.authors && Array.isArray(bookInfo.authors)) {
+				const enrichedAuthorsList: Author[] = [];
+				for (const authorName of bookInfo.authors) {
+					if (typeof authorName === 'string' && authorName.trim()) {
+						// Chercher si l'auteur existe déjà
+						const existingAuthors = await entityService.searchAuthors(authorName, 1);
+						const exactMatch = existingAuthors.find(a => 
+							a.name.toLowerCase() === authorName.toLowerCase()
+						);
+						
+						if (exactMatch) {
+							enrichedAuthorsList.push({
+								id: exactMatch.id,
+								name: exactMatch.name,
+								exists: true
+							});
+							console.log(`✅ Auteur existant: ${exactMatch.name}`);
+						} else {
+							enrichedAuthorsList.push({
+								id: null,
+								name: authorName.trim(),
+								exists: false
+							});
+							console.log(`🆕 Nouvel auteur: ${authorName}`);
+						}
+					}
+				}
+				setEnrichedAuthors(enrichedAuthorsList);
+			}
+			
+			// Enrichir l'éditeur
+			if (bookInfo.publisher && typeof bookInfo.publisher === 'string') {
+				const existingPublishers = await entityService.searchPublishers(bookInfo.publisher, 1);
+				const exactMatch = existingPublishers.find(p => 
+					p.name.toLowerCase() === bookInfo.publisher.toLowerCase()
+				);
+				
+				if (exactMatch) {
+					setEnrichedPublisher({
+						id: exactMatch.id,
+						name: exactMatch.name,
+						exists: true
+					});
+					console.log(`✅ Éditeur existant: ${exactMatch.name}`);
+				} else {
+					setEnrichedPublisher({
+						id: null,
+						name: bookInfo.publisher.trim(),
+						exists: false
+					});
+					console.log(`🆕 Nouvel éditeur: ${bookInfo.publisher}`);
+				}
+			}
+			
+			// Enrichir les genres/catégories
+			if (bookInfo.categories && Array.isArray(bookInfo.categories)) {
+				const enrichedGenresList: Genre[] = [];
+				for (const categoryName of bookInfo.categories.slice(0, 5)) { // Limiter à 5 catégories
+					if (typeof categoryName === 'string' && categoryName.trim()) {
+						const existingGenres = await entityService.searchGenres(categoryName, 1);
+						const exactMatch = existingGenres.find(g => 
+							g.name.toLowerCase() === categoryName.toLowerCase()
+						);
+						
+						if (exactMatch) {
+							enrichedGenresList.push({
+								id: exactMatch.id,
+								name: exactMatch.name,
+								exists: true
+							});
+							console.log(`✅ Genre existant: ${exactMatch.name}`);
+						} else {
+							enrichedGenresList.push({
+								id: null,
+								name: categoryName.trim(),
+								exists: false
+							});
+							console.log(`🆕 Nouveau genre: ${categoryName}`);
+						}
+					}
+				}
+				setEnrichedGenres(enrichedGenresList);
+			}
+			
+		} catch (error) {
+			console.error('Erreur lors de l\'enrichissement des entités:', error);
+		} finally {
+			setIsEnriching(false);
+		}
+	};
+
+	// Fonctions utilitaires pour la sélection
+	const hasSelectedData = () => Object.values(selectedData).some(Boolean);
+	
+	const getSelectedCount = () => Object.values(selectedData).filter(Boolean).length;
+
+	const handleImport = (bookInfo: any, source: 'google' | 'openLibrary') => {
+		console.log('🔍 DEBUG - État de sélection:', selectedData);
+		console.log('🔍 DEBUG - Entités enrichies:', { 
+			authors: enrichedAuthors, 
+			publisher: enrichedPublisher, 
+			genres: enrichedGenres 
+		});
+		console.log('🔍 DEBUG - Données brutes reçues:', bookInfo);
+		
+		// Créer un objet avec seulement les données sélectionnées
+		const selectedBookData: any = {};
+		
+		// Parcourir chaque clé de sélection
+		Object.keys(selectedData).forEach(key => {
+			const isSelected = selectedData[key];
+			console.log(`🔍 DEBUG - Clé "${key}": sélectionnée=${isSelected}`);
+			
+			if (isSelected) {
+				switch (key) {
+					case 'authors':
+						// Utiliser les entités enrichies si disponibles, sinon les données brutes
+						if (enrichedAuthors.length > 0) {
+							selectedBookData[key] = enrichedAuthors;
+							console.log('✅ Auteurs ajoutés (enrichis):', enrichedAuthors);
+						} else if (bookInfo.authors && bookInfo.authors.length > 0) {
+							// Fallback vers données brutes si enrichissement a échoué
+							selectedBookData[key] = bookInfo.authors.map((name: string) => ({
+								id: null,
+								name: name,
+								exists: false
+							}));
+							console.log('⚠️ Auteurs ajoutés (données brutes):', bookInfo.authors);
+						}
+						break;
+					case 'publisher':
+						// Utiliser l'entité enrichie si disponible, sinon les données brutes
+						if (enrichedPublisher) {
+							selectedBookData[key] = enrichedPublisher;
+							console.log('✅ Éditeur ajouté (enrichi):', enrichedPublisher);
+						} else if (bookInfo.publisher) {
+							// Fallback vers données brutes
+							selectedBookData[key] = {
+								id: null,
+								name: bookInfo.publisher,
+								exists: false
+							};
+							console.log('⚠️ Éditeur ajouté (données brutes):', bookInfo.publisher);
+						}
+						break;
+					case 'categories':
+						// Utiliser les genres enrichis si disponibles, sinon les données brutes
+						if (enrichedGenres.length > 0) {
+							selectedBookData['genres'] = enrichedGenres; // Mapper vers 'genres'
+							console.log('✅ Genres ajoutés (enrichis, categories → genres):', enrichedGenres);
+						} else if (bookInfo.categories && bookInfo.categories.length > 0) {
+							// Fallback vers données brutes
+							selectedBookData['genres'] = bookInfo.categories.map((name: string) => ({
+								id: null,
+								name: name,
+								exists: false
+							}));
+							console.log('⚠️ Genres ajoutés (données brutes, categories → genres):', bookInfo.categories);
+						}
+						break;
+					default:
+						// Pour les autres champs (title, isbn, etc.), utiliser directement les données brutes
+						if (bookInfo[key] !== undefined && bookInfo[key] !== null) {
+							selectedBookData[key] = bookInfo[key];
+							console.log(`✅ Champ standard "${key}" ajouté:`, bookInfo[key]);
+						} else {
+							console.log(`⚠️ Champ "${key}" sélectionné mais absent des données brutes`);
+						}
+						break;
+				}
+			}
+		});
+
+		console.log('📤 Données finales sélectionnées pour import:', selectedBookData);
+		onImportData(source, selectedBookData);
+	};
+
 	const toggleSelection = (key: string) => {
-		setSelectedData(prev => ({
-			...prev,
-			[key]: !prev[key]
-		}));
+		console.log(`🔄 Toggle sélection "${key}": ${selectedData[key]} → ${!selectedData[key]}`);
+		setSelectedData(prev => {
+			const newState = {
+				...prev,
+				[key]: !prev[key]
+			};
+			console.log('📊 Nouvel état de sélection:', newState);
+			return newState;
+		});
+	};
+
+	// Composant pour afficher une entité avec son statut
+	const renderEntityChip = (entity: Author | Publisher | Genre, type: 'author' | 'publisher' | 'genre') => {
+		const chipStyle = entity.exists ? styles.entityChipExisting : styles.entityChipNew;
+		const iconName = entity.exists ? 'check-circle' : 'add-circle';
+		const iconColor = entity.exists ? '#27ae60' : '#f39c12';
+		
+		return (
+			<View key={`${type}-${entity.id || entity.name}`} style={[styles.entityChip, chipStyle]}>
+				<MaterialIcons name={iconName} size={14} color={iconColor} />
+				<Text style={styles.entityChipText}>{entity.name}</Text>
+			</View>
+		);
 	};
 
 	const renderCheckableDataItem = (key: string, label: string, value: any, isSelected: boolean) => {
 		if (!value) return null;
 		
+		// Rendu spécial pour les entités enrichies
+		if (key === 'authors' && enrichedAuthors.length > 0) {
+			return (
+				<TouchableOpacity 
+					key={key}
+					style={[styles.dataItem, isSelected && styles.dataItemSelected]}
+					onPress={() => toggleSelection(key)}
+				>
+					<View style={styles.dataItemHeader}>
+						<Text style={styles.dataLabel}>{label}</Text>
+						{isEnriching ? (
+							<MaterialIcons name="hourglass-empty" size={20} color="#f39c12" />
+						) : (
+							<MaterialIcons
+								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
+								size={20}
+								color={isSelected ? '#27ae60' : '#bdc3c7'}
+							/>
+						)}
+					</View>
+					<View style={styles.entitiesContainer}>
+						{enrichedAuthors.map(author => renderEntityChip(author, 'author'))}
+					</View>
+				</TouchableOpacity>
+			);
+		}
+		
+		if (key === 'publisher' && enrichedPublisher) {
+			return (
+				<TouchableOpacity 
+					key={key}
+					style={[styles.dataItem, isSelected && styles.dataItemSelected]}
+					onPress={() => toggleSelection(key)}
+				>
+					<View style={styles.dataItemHeader}>
+						<Text style={styles.dataLabel}>{label}</Text>
+						{isEnriching ? (
+							<MaterialIcons name="hourglass-empty" size={20} color="#f39c12" />
+						) : (
+							<MaterialIcons
+								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
+								size={20}
+								color={isSelected ? '#27ae60' : '#bdc3c7'}
+							/>
+						)}
+					</View>
+					<View style={styles.entitiesContainer}>
+						{renderEntityChip(enrichedPublisher, 'publisher')}
+					</View>
+				</TouchableOpacity>
+			);
+		}
+		
+		if (key === 'categories' && enrichedGenres.length > 0) {
+			return (
+				<TouchableOpacity 
+					key={key}
+					style={[styles.dataItem, isSelected && styles.dataItemSelected]}
+					onPress={() => toggleSelection(key)}
+				>
+					<View style={styles.dataItemHeader}>
+						<Text style={styles.dataLabel}>Genres</Text>
+						{isEnriching ? (
+							<MaterialIcons name="hourglass-empty" size={20} color="#f39c12" />
+						) : (
+							<MaterialIcons
+								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
+								size={20}
+								color={isSelected ? '#27ae60' : '#bdc3c7'}
+							/>
+						)}
+					</View>
+					<View style={styles.entitiesContainer}>
+						{enrichedGenres.map(genre => renderEntityChip(genre, 'genre'))}
+					</View>
+				</TouchableOpacity>
+			);
+		}
+		
+		// Rendu standard pour les autres champs
 		const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
 		
 		return (
@@ -533,5 +839,36 @@ const styles = StyleSheet.create({
 		color: '#fff',
 		fontSize: 14,
 		fontWeight: '600',
+	},
+	// Styles pour les entités enrichies
+	entitiesContainer: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		gap: 8,
+		marginTop: 8,
+	},
+	entityChip: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 12,
+		borderWidth: 1,
+		marginRight: 6,
+		marginBottom: 4,
+	},
+	entityChipExisting: {
+		backgroundColor: '#e8f5e8',
+		borderColor: '#27ae60',
+	},
+	entityChipNew: {
+		backgroundColor: '#fff3cd',
+		borderColor: '#f39c12',
+	},
+	entityChipText: {
+		fontSize: 12,
+		fontWeight: '500',
+		marginLeft: 4,
+		color: '#2c3e50',
 	},
 });

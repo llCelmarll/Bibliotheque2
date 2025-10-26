@@ -4,12 +4,18 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 
 import { Formik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { SuggestedBook, BookCreate } from "@/types/scanTypes";
+import { AuthorSelector, PublisherSelector, GenreSelector } from '@/components/forms';
+import { Author, Publisher, Genre, Entity, PublisherMetadata, GenreMetadata } from '@/types/entityTypes';
+import { ImagePreview } from './ImagePreview';
+
+// Feature flag pour activer les nouveaux sélecteurs d'entités
+const USE_ENTITY_SELECTORS = true;
 
 // Interface pour le formulaire - utilise la structure BookCreate pour la création
 interface BookFormData extends Omit<BookCreate, 'authors' | 'publisher' | 'genres'> {
-	authors: string;      // String pour saisie (noms séparés par des virgules)
-	publisher: string;    // String pour saisie
-	genres: string;       // String pour saisie (noms séparés par des virgules)
+	authors: Author[] | string;                                    // Array d'entités ou string (selon le flag)
+	publisher: Entity<PublisherMetadata>[] | string;              // Array d'entités ou string (selon le flag)
+	genres: Entity<GenreMetadata>[] | string;                     // Array d'entités ou string (selon le flag)
 }
 
 // Schéma de validation
@@ -32,7 +38,7 @@ interface SuggestedBookFormProps {
 	onSubmit: (values: BookCreate) => Promise<void>;
 }
 
-// Fonction pour convertir SuggestedBook vers BookFormData
+// Fonction pour convertir SuggestedBook vers BookFormData (maintenant synchrone car enrichie par le backend)
 const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	title: suggested.title || '',
 	isbn: suggested.isbn || '',
@@ -40,9 +46,27 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	pageCount: suggested.page_count || undefined,
 	barcode: suggested.barcode || '',
 	coverUrl: suggested.cover_url || '',
-	authors: suggested.authors?.join(', ') || '',
-	publisher: suggested.publisher || '',
-	genres: suggested.genres?.join(', ') || '',
+	authors: USE_ENTITY_SELECTORS 
+		? (suggested.authors?.map(suggestedAuthor => ({ 
+				id: suggestedAuthor.id || null,
+				name: suggestedAuthor.name, 
+				exists: suggestedAuthor.exists 
+			} as Author)) || [])
+		: (suggested.authors?.map(a => a.name).join(', ') || ''),
+	publisher: USE_ENTITY_SELECTORS 
+		? (suggested.publisher ? [{
+				id: suggested.publisher.id || null,
+				name: suggested.publisher.name,
+				exists: suggested.publisher.exists
+			} as Entity<PublisherMetadata>] : [])
+		: (suggested.publisher?.name || ''),
+	genres: USE_ENTITY_SELECTORS
+		? (suggested.genres?.map(suggestedGenre => ({
+				id: suggestedGenre.id || null,
+				name: suggestedGenre.name,
+				exists: suggestedGenre.exists
+			} as Entity<GenreMetadata>)) || [])
+		: (suggested.genres?.map(g => g.name).join(', ') || ''),
 });
 
 // Fonction pour convertir BookFormData vers BookCreate
@@ -53,9 +77,21 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 	pageCount: formData.pageCount,
 	barcode: formData.barcode || undefined,
 	coverUrl: formData.coverUrl || undefined,
-	authors: formData.authors ? formData.authors.split(',').map(author => ({ name: author.trim() })) : [],
-	publisher: formData.publisher ? { name: formData.publisher } : undefined,
-	genres: formData.genres ? formData.genres.split(',').map(genre => ({ name: genre.trim() })) : [],
+	authors: USE_ENTITY_SELECTORS && Array.isArray(formData.authors)
+		? formData.authors.map(author => ({ name: author.name }))
+		: typeof formData.authors === 'string' && formData.authors
+		? formData.authors.split(',').map(author => ({ name: author.trim() }))
+		: [],
+	publisher: USE_ENTITY_SELECTORS && Array.isArray(formData.publisher)
+		? (formData.publisher.length > 0 ? { name: formData.publisher[0].name } : undefined)
+		: typeof formData.publisher === 'string' && formData.publisher
+		? { name: formData.publisher }
+		: undefined,
+	genres: USE_ENTITY_SELECTORS && Array.isArray(formData.genres)
+		? formData.genres.map(genre => ({ name: genre.name }))
+		: typeof formData.genres === 'string' && formData.genres
+		? formData.genres.split(',').map((genre: string) => ({ name: genre.trim() }))
+		: [],
 });
 
 export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
@@ -92,7 +128,7 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 			<View style={styles.fieldContainer}>
 				<Text style={styles.label}>{label}</Text>
 				<TextInput
-					style={[styles.input, hasError && styles.inputError]}
+					style={[styles.input, hasError ? styles.inputError : null]}
 					value={formik.values[fieldName]?.toString() || ''}
 					onChangeText={formik.handleChange(fieldName)}
 					onBlur={formik.handleBlur(fieldName)}
@@ -100,11 +136,43 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 					multiline={multiline}
 					keyboardType={keyboardType}
 				/>
-				{hasError && (
+				{hasError ? (
 					<Text style={styles.errorText}>
 						{formik.errors[fieldName] as string}
 					</Text>
-				)}
+				) : null}
+			</View>
+		);
+	};
+
+	const renderCoverUrlField = (formik: FormikProps<BookFormData>) => {
+		const hasError = formik.touched.coverUrl && formik.errors.coverUrl;
+		const coverUrl = formik.values.coverUrl || '';
+
+		return (
+			<View style={styles.fieldContainer}>
+				<Text style={styles.label}>📖 URL de couverture</Text>
+				<TextInput
+					style={[styles.input, hasError ? styles.inputError : null]}
+					value={coverUrl}
+					onChangeText={formik.handleChange('coverUrl')}
+					onBlur={formik.handleBlur('coverUrl')}
+					placeholder="https://example.com/couverture.jpg"
+					keyboardType="url"
+					autoCapitalize="none"
+					autoCorrect={false}
+				/>
+				
+				{/* Aperçu de l'image avec composant séparé */}
+				{coverUrl ? (
+					<ImagePreview url={coverUrl} debounceMs={1500} />
+				) : null}
+				
+				{hasError ? (
+					<Text style={styles.errorText}>
+						{formik.errors.coverUrl as string}
+					</Text>
+				) : null}
 			</View>
 		);
 	};
@@ -132,13 +200,50 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 						
 						{renderFormField('Code-barres', 'barcode', formik, 'Code-barres')}
 						
-						{renderFormField('URL de couverture', 'coverUrl', formik, 'https://...', false, 'url')}
+						{/* Champ URL de couverture avec aperçu */}
+						{renderCoverUrlField(formik)}
 
-						{renderFormField('Auteurs', 'authors', formik, 'Nom1, Nom2, Nom3', true)}
+						{/* Champ Auteurs - Nouveau sélecteur ou champ texte selon le flag */}
+						{USE_ENTITY_SELECTORS ? (
+							<View style={styles.fieldContainer}>
+								<AuthorSelector
+									selectedEntities={Array.isArray(formik.values.authors) ? formik.values.authors : []}
+									onEntitiesChange={(authors) => formik.setFieldValue('authors', authors)}
+									disabled={formik.isSubmitting}
+									error={formik.touched.authors && typeof formik.errors.authors === 'string' ? formik.errors.authors : undefined}
+								/>
+							</View>
+						) : (
+							renderFormField('Auteurs', 'authors', formik, 'Nom1, Nom2, Nom3', true)
+						)}
 						
-						{renderFormField('Éditeur', 'publisher', formik, 'Nom de l\'éditeur')}
+						{/* Champ Éditeur - Nouveau sélecteur ou champ texte selon le flag */}
+						{USE_ENTITY_SELECTORS ? (
+							<View style={styles.fieldContainer}>
+								<PublisherSelector
+									selectedEntities={Array.isArray(formik.values.publisher) ? formik.values.publisher : []}
+									onEntitiesChange={(publishers) => formik.setFieldValue('publisher', publishers)}
+									disabled={formik.isSubmitting}
+									error={formik.touched.publisher && typeof formik.errors.publisher === 'string' ? formik.errors.publisher : undefined}
+								/>
+							</View>
+						) : (
+							renderFormField('Éditeur', 'publisher', formik, 'Nom de l\'éditeur')
+						)}
 						
-						{renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)}
+						{/* Champ Genres - Nouveau sélecteur ou champ texte selon le flag */}
+						{USE_ENTITY_SELECTORS ? (
+							<View style={styles.fieldContainer}>
+								<GenreSelector
+									selectedEntities={Array.isArray(formik.values.genres) ? formik.values.genres : []}
+									onEntitiesChange={(genres) => formik.setFieldValue('genres', genres)}
+									disabled={formik.isSubmitting}
+									error={formik.touched.genres && typeof formik.errors.genres === 'string' ? formik.errors.genres : undefined}
+								/>
+							</View>
+						) : (
+							renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)
+						)}
 
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity
@@ -154,7 +259,7 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 								disabled={formik.isSubmitting || !formik.isValid}
 							>
 								<Text style={styles.submitButtonText}>
-									{formik.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+									{formik.isSubmitting ? 'Enregistrement...' : 'Enregistrer (à venir)'}
 								</Text>
 							</TouchableOpacity>
 						</View>

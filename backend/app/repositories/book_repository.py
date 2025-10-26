@@ -101,6 +101,19 @@ class BookRepository:
 		)
 		return self.session.exec(stmt).first()
 
+	def get_by_isbn_or_barcode(self, code: str) -> Optional[Book]:
+		"""Retourne un livre en fonction de son ISBN ou de son code-barre."""
+		stmt = (
+			select(Book)
+			.where((Book.isbn == code) | (Book.barcode == code))
+			.options(
+				selectinload(Book.publisher),
+				selectinload(Book.authors).selectinload(Author.books),
+				selectinload(Book.genres).selectinload(Genre.books)
+			)
+		)
+		return self.session.exec(stmt).first()
+
 	def search_title_match(self, title: str, isbn: str) -> List[Book]:
 		"""Recherche un livre ayant le même titre dont l'isbn n'est pas isbn"""
 

@@ -75,3 +75,8 @@ class AuthorService:
 				status_code=status.HTTP_404_NOT_FOUND,
 				detail="Auteur introuvable"
 			)
+
+	def search_fuzzy(self, query: str, limit: int = 10) -> list[AuthorRead]:
+		"""Recherche fuzzy d'auteurs"""
+		authors = self.author_repository.search_fuzzy(query, limit)
+		return [AuthorRead.model_validate(author) for author in authors]

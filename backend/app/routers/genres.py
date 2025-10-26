@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 from typing import List
 from app.models.Genre import Genre
 from app.schemas.Genre import GenreRead, GenreCreate, GenreUpdate
+from app.schemas.Search import GenreSearchResult
 from app.db import get_session
 from app.services.genre_service import GenreService
 
@@ -19,6 +20,21 @@ def get_genres(
 		genre_service: GenreService = Depends(get_genre_service)
 ):
 	return genre_service.get_all()
+
+@router.get("/search", response_model=GenreSearchResult)
+def search_genres(
+		query: str = Query(..., min_length=1, description="Terme de recherche"),
+		limit: int = Query(10, ge=1, le=50, description="Nombre maximum de résultats"),
+		genre_service: GenreService = Depends(get_genre_service)
+):
+	"""Recherche fuzzy de genres"""
+	results = genre_service.search_fuzzy(query, limit)
+	return GenreSearchResult(
+		results=results,
+		total=len(results),
+		query=query,
+		limit=limit
+	)
 
 @router.get("/{genre_id}", response_model=GenreRead)
 def get_genre_by_id(

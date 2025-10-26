@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from app.schemas.Author import AuthorRead, AuthorUpdate, AuthorCreate
+from app.schemas.Search import AuthorSearchResult
 from app.services.author_service import AuthorService
 from app.db import get_session
 from typing import List
@@ -18,6 +19,21 @@ def get_authors(
 		author_service: AuthorService = Depends(get_author_service)
 ):
 	return author_service.get_all()
+
+@router.get("/search", response_model=AuthorSearchResult)
+def search_authors(
+		query: str = Query(..., min_length=1, description="Terme de recherche"),
+		limit: int = Query(10, ge=1, le=50, description="Nombre maximum de résultats"),
+		author_service: AuthorService = Depends(get_author_service)
+):
+	"""Recherche fuzzy d'auteurs"""
+	results = author_service.search_fuzzy(query, limit)
+	return AuthorSearchResult(
+		results=results,
+		total=len(results),
+		query=query,
+		limit=limit
+	)
 
 @router.get("/{author_id}", response_model=AuthorRead)
 def get_author_by_id(

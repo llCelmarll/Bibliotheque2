@@ -108,7 +108,7 @@ export default function ScanResultPage() {
 				published_date: importedData.publishedDate || currentData?.published_date || '',
 				page_count: importedData.pageCount || currentData?.page_count || 0,
 				isbn: importedData.isbn || currentData?.isbn || '',
-				genres: importedData.categories || currentData?.genres || [],
+				genres: importedData.genres || currentData?.genres || [], // Fixed: use 'genres' not 'categories'
 				cover_url: importedData.thumbnail || currentData?.cover_url || '',
 				barcode: currentData?.barcode || '',
 			};

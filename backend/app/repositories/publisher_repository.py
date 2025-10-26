@@ -45,3 +45,21 @@ class PublisherRepository:
 		"""Supprime un éditeur de la base"""
 		self.session.delete(publisher)
 		self.session.commit()
+
+	def search_fuzzy(self, query: str, limit: int = 10) -> List[Publisher]:
+		"""Recherche fuzzy d'éditeurs par nom"""
+		if not query or len(query.strip()) < 2:
+			# Si requête trop courte, retourner les premiers résultats
+			statement = select(Publisher).limit(limit)
+			results = self.session.exec(statement)
+			return list(results)
+		
+		# Recherche avec LIKE (insensible à la casse)
+		search_pattern = f"%{query.strip()}%"
+		statement = (
+			select(Publisher)
+			.where(func.lower(Publisher.name).like(search_pattern.lower()))
+			.limit(limit)
+		)
+		results = self.session.exec(statement)
+		return list(results)

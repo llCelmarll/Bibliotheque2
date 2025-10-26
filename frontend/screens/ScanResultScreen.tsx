@@ -1,5 +1,5 @@
 // screens/ScanResultScreen.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { useLocalSearchParams } from 'expo-router';
@@ -49,6 +49,9 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 	}
 
 	const { isLoading, error, data } = useScanResult(isbn || '');
+	
+	// État pour gérer les données du formulaire 
+	const [formData, setFormData] = useState<any>(null);
 
 	if (!isbn) {
 		return <ErrorMessage message="Aucun ISBN fourni" />;
@@ -73,8 +76,26 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 
 	const handleImportData = (source: 'google' | 'openLibrary', importedData: any) => {
 		try {
-			// TODO: Implémenter la logique d'import
 			console.log('Import de données depuis', source, ':', importedData);
+			
+			// Fusionner avec les données existantes du formulaire
+			const currentData = formData || data.suggested;
+			const updatedFormData = {
+				...currentData,
+				// Mapper les données importées vers la structure SuggestedBook
+				title: importedData.title || currentData?.title || '',
+				authors: importedData.authors || currentData?.authors || [],
+				publisher: importedData.publisher || currentData?.publisher || '',
+				published_date: importedData.publishedDate || currentData?.published_date || '',
+				page_count: importedData.pageCount || currentData?.page_count || 0,
+				isbn: importedData.isbn || currentData?.isbn || '',
+				genres: importedData.genres || currentData?.genres || [], // Use 'genres' not 'categories'
+				cover_url: importedData.thumbnail || currentData?.cover_url || '',
+				barcode: currentData?.barcode || '',
+			};
+			
+			setFormData(updatedFormData);
+			
 		} catch (error) {
 			console.error('Erreur lors de l\'import:', error);
 		}
@@ -100,8 +121,9 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 			{data.suggested && (
 				<View style={styles.section}>
 					<SuggestedBookForm
-						initialData={data.suggested}
+						initialData={formData || data.suggested}
 						onSubmit={handleFormSubmit}
+						key={formData ? 'updated' : 'initial'} // Force re-render when formData changes
 					/>
 				</View>
 			)}

@@ -45,3 +45,21 @@ class GenreRepository:
 		"""Supprime un genre de la base"""
 		self.session.delete(genre)
 		self.session.commit()
+
+	def search_fuzzy(self, query: str, limit: int = 10) -> List[Genre]:
+		"""Recherche fuzzy de genres par nom"""
+		if not query or len(query.strip()) < 2:
+			# Si requête trop courte, retourner les premiers résultats
+			statement = select(Genre).limit(limit)
+			results = self.session.exec(statement)
+			return list(results)
+		
+		# Recherche avec LIKE (insensible à la casse)
+		search_pattern = f"%{query.strip()}%"
+		statement = (
+			select(Genre)
+			.where(func.lower(Genre.name).like(search_pattern.lower()))
+			.limit(limit)
+		)
+		results = self.session.exec(statement)
+		return list(results)

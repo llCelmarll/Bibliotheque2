@@ -10,17 +10,35 @@ from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 
 
+class SuggestedAuthor(SQLModel):
+    """Auteur suggéré avec information d'existence"""
+    name: str
+    exists: bool = False
+    id: int | None = None
+
+class SuggestedPublisher(SQLModel):
+    """Éditeur suggéré avec information d'existence"""
+    name: str
+    exists: bool = False
+    id: int | None = None
+
+class SuggestedGenre(SQLModel):
+    """Genre suggéré avec information d'existence"""
+    name: str
+    exists: bool = False
+    id: int | None = None
+
 class SuggestedBook(SQLModel):
-    """Modèle pour le livre suggéré dans le scan - plus facile à sérialiser"""
+    """Modèle pour le livre suggéré dans le scan - avec entités enrichies"""
     isbn: str | None = None
     title: str | None = None
     published_date: str | None = None
     page_count: int | None = None
     barcode: str | None = None
     cover_url: str | None = None
-    authors: List[str] = []  # Simplifié : seulement des strings
-    publisher: str | None = None  # Simplifié : seulement un string
-    genres: List[str] = []
+    authors: List[SuggestedAuthor] = []
+    publisher: SuggestedPublisher | None = None
+    genres: List[SuggestedGenre] = []
 
 
 class ScanResult(SQLModel):
@@ -64,9 +82,19 @@ class ScanService:
                 page_count=base_book.page_count,
                 barcode=base_book.barcode,
                 cover_url=base_book.cover_url,
-                authors=[author.name for author in base_book.authors] if base_book.authors else [],
-                publisher=base_book.publisher.name if base_book.publisher else None,
-                genres=[genre.name for genre in base_book.genres] if base_book.genres else []
+                authors=[
+                    SuggestedAuthor(name=author.name, exists=True, id=author.id) 
+                    for author in base_book.authors
+                ] if base_book.authors else [],
+                publisher=SuggestedPublisher(
+                    name=base_book.publisher.name, 
+                    exists=True, 
+                    id=base_book.publisher.id
+                ) if base_book.publisher else None,
+                genres=[
+                    SuggestedGenre(name=genre.name, exists=True, id=genre.id)
+                    for genre in base_book.genres
+                ] if base_book.genres else []
             )
         else:
             # Récupération des données à suggerer
@@ -84,13 +112,49 @@ class ScanService:
             if result.openlibrary and result.openlibrary.get("publishers") and len(result.openlibrary.get("publishers")) > 0:
                 openlibrary_publisher = result.openlibrary.get("publishers")[0]
 
+            # Gestion des auteurs avec vérification en base
             authors_list = []
             if result.google_book:
-                # Gestion des auteurs - simplifiée pour la sérialisation
-                if authors := result.google_book.get("authors"):
-                    authors_list = authors  # Directement les strings
+                if api_authors := result.google_book.get("authors"):
+                    for api_author_name in api_authors:
+                        # Vérifier si l'auteur existe déjà dans la base
+                        existing_author = self.author_repository.get_by_name(api_author_name)
+                        if existing_author:
+                            authors_list.append(SuggestedAuthor(
+                                name=existing_author.name,
+                                exists=True,
+                                id=existing_author.id
+                            ))
+                            print(f"✅ Auteur trouvé en base: '{existing_author.name}' (API: '{api_author_name}')")
+                        else:
+                            authors_list.append(SuggestedAuthor(
+                                name=api_author_name,
+                                exists=False,
+                                id=None
+                            ))
+                            print(f"🆕 Nouvel auteur détecté: '{api_author_name}'")
             
-            final_publisher = google_publisher or openlibrary_publisher
+            # Récupération du nom de l'éditeur depuis les APIs
+            api_publisher_name = google_publisher or openlibrary_publisher
+            
+            # Vérification si l'éditeur existe déjà dans la base de données
+            final_publisher = None
+            if api_publisher_name:
+                existing_publisher = self.publisher_repository.get_by_name(api_publisher_name)
+                if existing_publisher:
+                    final_publisher = SuggestedPublisher(
+                        name=existing_publisher.name,
+                        exists=True,
+                        id=existing_publisher.id
+                    )
+                    print(f"✅ Éditeur trouvé en base: '{existing_publisher.name}' (API: '{api_publisher_name}')")
+                else:
+                    final_publisher = SuggestedPublisher(
+                        name=api_publisher_name,
+                        exists=False,
+                        id=None
+                    )
+                    print(f"🆕 Nouvel éditeur détecté: '{api_publisher_name}'")
 
             result.suggested = SuggestedBook(
                 isbn=isbn,
@@ -101,7 +165,7 @@ class ScanService:
                 cover_url=google_cover or openlibrary_cover,
                 authors=authors_list,
                 publisher=final_publisher,
-                genres=[],
+                genres=[],  # TODO: Enrichir les genres plus tard si nécessaire
             )
 
             if result.suggested:

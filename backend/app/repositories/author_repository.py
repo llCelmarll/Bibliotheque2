@@ -46,3 +46,21 @@ class AuthorRepository:
 		"""Supprime un auteur de la base"""
 		self.session.delete(author)
 		self.session.commit()
+
+	def search_fuzzy(self, query: str, limit: int = 10) -> List[Author]:
+		"""Recherche fuzzy d'auteurs par nom"""
+		if not query or len(query.strip()) < 2:
+			# Si requête trop courte, retourner les premiers résultats
+			statement = select(Author).limit(limit)
+			results = self.session.exec(statement)
+			return list(results)
+		
+		# Recherche avec LIKE (insensible à la casse)
+		search_pattern = f"%{query.strip()}%"
+		statement = (
+			select(Author)
+			.where(func.lower(Author.name).like(search_pattern.lower()))
+			.limit(limit)
+		)
+		results = self.session.exec(statement)
+		return list(results)

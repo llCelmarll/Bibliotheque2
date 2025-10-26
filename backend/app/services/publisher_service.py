@@ -75,3 +75,13 @@ class PublisherService:
 				status_code=status.HTTP_404_NOT_FOUND,
 				detail="Editeur introuvable"
 			)
+
+	def search_fuzzy(self, query: str, limit: int = 10) -> list[PublisherRead]:
+		"""Recherche fuzzy d'éditeurs"""
+		publishers = self.publisher_repository.search_fuzzy(query, limit)
+		return [PublisherRead.model_validate(publisher) for publisher in publishers]
+
+	def search_fuzzy(self, query: str, limit: int = 10) -> list[PublisherRead]:
+		"""Recherche fuzzy d'éditeurs"""
+		publishers = self.publisher_repository.search_fuzzy(query, limit)
+		return [PublisherRead.model_validate(publisher) for publisher in publishers]

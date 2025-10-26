@@ -25,7 +25,26 @@ export interface BookCreate {
 	genres?: (GenreCreate | GenreRead)[];
 }
 
-// Nouveau type pour le livre suggéré dans le scan - correspond au backend
+// Types enrichis pour les entités suggérées
+export interface SuggestedAuthor {
+	name: string;
+	exists: boolean;
+	id?: number;
+}
+
+export interface SuggestedPublisher {
+	name: string;
+	exists: boolean;
+	id?: number;
+}
+
+export interface SuggestedGenre {
+	name: string;
+	exists: boolean;
+	id?: number;
+}
+
+// Nouveau type pour le livre suggéré dans le scan - correspond au backend enrichi
 export interface SuggestedBook {
 	isbn?: string;
 	title?: string;
@@ -33,9 +52,9 @@ export interface SuggestedBook {
 	page_count?: number;
 	barcode?: string;
 	cover_url?: string;
-	authors: string[];
-	publisher?: string;
-	genres: string[];
+	authors: SuggestedAuthor[];
+	publisher?: SuggestedPublisher;
+	genres: SuggestedGenre[];
 }
 
 export interface ScanResult {

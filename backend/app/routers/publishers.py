@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 from typing import List
 from app.models.Publisher import Publisher
 from app.schemas.Publisher import PublisherRead, PublisherCreate, PublisherUpdate
+from app.schemas.Search import PublisherSearchResult
 from app.db import get_session
 from app.services.publisher_service import PublisherService
 
@@ -19,6 +20,21 @@ def get_publishers(
 		publisher_service: PublisherService = Depends(get_publisher_service)
 ):
 	return publisher_service.get_all()
+
+@router.get("/search", response_model=PublisherSearchResult)
+def search_publishers(
+		query: str = Query(..., min_length=1, description="Terme de recherche"),
+		limit: int = Query(10, ge=1, le=50, description="Nombre maximum de résultats"),
+		publisher_service: PublisherService = Depends(get_publisher_service)
+):
+	"""Recherche fuzzy d'éditeurs"""
+	results = publisher_service.search_fuzzy(query, limit)
+	return PublisherSearchResult(
+		results=results,
+		total=len(results),
+		query=query,
+		limit=limit
+	)
 
 @router.get("/{publisher_id}", response_model=PublisherRead)
 def get_publisher_by_id(

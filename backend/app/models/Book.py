@@ -18,7 +18,7 @@ class Book(SQLModel, table=True):
     page_count: Optional[int] = None
 
     # Identification physique
-    barcode: str = Field(default=None, nullable=True)  # Code-barres
+    barcode: str = Field(default=None, sa_column=Column(String, nullable=True, index=True))  # Code-barres
 
     # Relations
     authors: List["Author"] = Relationship(back_populates="books", link_model=BookAuthorLink)
