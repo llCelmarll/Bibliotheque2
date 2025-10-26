@@ -215,11 +215,17 @@ class BookService:
                 detail="L'ISBN doit faire 10 ou 13 caractères (sans les tirets)"
             )
         
-        if book_data.published_date and (book_data.published_date < 0 or book_data.published_date > datetime.now().year):
-            raise HTTPException(
-                status_code=400,
-                detail="L'année de publication n'est pas valide"
-            )
+        if book_data.published_date:
+            # La date de publication peut être dans différents formats :
+            # - Année seule (ex: "2023")
+            # - Date complète (ex: "2023-01-15")
+            # - Texte descriptif (ex: "circa 1850", "fin XIXe siècle")
+            # On accepte toute chaîne non vide, pas de validation stricte
+            if not book_data.published_date.strip():
+                raise HTTPException(
+                    status_code=400,
+                    detail="La date de publication ne peut pas être vide"
+                )
         
         if book_data.page_count and book_data.page_count <= 0:
             raise HTTPException(status_code=400, detail="Le nombre de pages doit être positif")

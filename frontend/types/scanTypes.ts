@@ -3,11 +3,12 @@ export interface BookRead {
 	id: string;
 	title: string;
 	isbn?: string;
-	publishedDate?: string;
-	pageCount?: number;
+	published_date?: string;  // Aligné avec le backend
+	page_count?: number;      // Aligné avec le backend
 	barcode?: string;
-	coverUrl?: string;
-	createdAt?: string;
+	cover_url?: string;       // Aligné avec le backend
+	created_at?: string;      // Aligné avec le backend
+	updated_at?: string;      // Aligné avec le backend
 	authors?: AuthorRead[];
 	publisher?: PublisherRead;
 	genres?: GenreRead[];
@@ -15,11 +16,11 @@ export interface BookRead {
 
 export interface BookCreate {
 	title: string;
-	isbn?: string
-	publishedDate?: string;
-	pageCount?: number;
+	isbn?: string;
+	published_date?: string;  // Aligné avec le backend
+	page_count?: number;      // Aligné avec le backend
 	barcode?: string;
-	coverUrl?: string;
+	cover_url?: string;       // Aligné avec le backend
 	authors?: (AuthorCreate | AuthorRead)[];
 	publisher?: PublisherCreate | PublisherRead;
 	genres?: (GenreCreate | GenreRead)[];

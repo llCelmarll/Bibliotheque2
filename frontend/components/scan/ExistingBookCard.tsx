@@ -12,9 +12,9 @@ export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPres
 	return (
 		<TouchableOpacity style={styles.card} onPress={onPress}>
 			<View style={styles.coverContainer}>
-				{book.coverUrl ? (
+				{book.cover_url ? (
 					<Image
-						source={{ uri: book.coverUrl }}
+						source={{ uri: book.cover_url }}
 						style={styles.cover}
 						resizeMode="cover"
 					/>
@@ -34,8 +34,8 @@ export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPres
 				{book.publisher && (
 					<Text style={styles.publisher} numberOfLines={1}>{book.publisher.name}</Text>
 				)}
-				{book.publishedDate && (
-					<Text style={styles.publishedDate}>{book.publishedDate}</Text>
+				{book.published_date && (
+					<Text style={styles.publishedDate}>{book.published_date}</Text>
 				)}
 				{book.isbn && (
 					<Text style={styles.isbn}>ISBN: {book.isbn}</Text>

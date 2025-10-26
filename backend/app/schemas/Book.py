@@ -1,4 +1,4 @@
-from typing import Optional, List, ForwardRef, Dict, Any
+from typing import Optional, List, ForwardRef, Dict, Any, Union
 from pydantic import BaseModel
 from sqlmodel import SQLModel
 from enum import Enum
@@ -26,15 +26,29 @@ class BookRead(SQLModel):
 
 # Schema de création
 class BookCreate(SQLModel):
+    """
+    Schéma pour la création d'un livre.
+    
+    Les champs authors, publisher et genres acceptent plusieurs formats :
+    - int : ID d'une entité existante
+    - str : Nom d'une entité (sera créée si elle n'existe pas)
+    - dict : Objet avec 'name' et optionnellement 'id' et 'exists'
+           (format utilisé par le frontend avec EntitySelectors)
+    
+    Exemples :
+    - authors: [1, "Nouvel Auteur", {"name": "Victor Hugo", "id": 5, "exists": true}]
+    - publisher: {"name": "Gallimard", "id": 12, "exists": true}
+    - genres: ["Science-Fiction", {"name": "Roman", "id": 3, "exists": true}]
+    """
     title: str
     isbn: Optional[str] = None
     published_date: Optional[str] = None
     page_count: Optional[int] = None
     barcode: Optional[str] = None
     cover_url: Optional[str] = None
-    authors: List[AuthorRead | str] = []
-    publisher: Optional[PublisherRead | str] = None
-    genres: List[GenreRead | str] = []
+    authors: List[int | str | Dict[str, Any]] = []
+    publisher: Optional[int | str | Dict[str, Any]] = None
+    genres: List[int | str | Dict[str, Any]] = []
 
 # Schema de mise à jour
 class BookUpdate(SQLModel):

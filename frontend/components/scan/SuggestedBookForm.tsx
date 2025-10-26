@@ -73,10 +73,10 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 	title: formData.title,
 	isbn: formData.isbn || undefined,
-	publishedDate: formData.publishedDate || undefined,
-	pageCount: formData.pageCount,
+	published_date: formData.publishedDate || undefined,  // Aligné avec le backend
+	page_count: formData.pageCount,                       // Aligné avec le backend  
 	barcode: formData.barcode || undefined,
-	coverUrl: formData.coverUrl || undefined,
+	cover_url: formData.coverUrl || undefined,            // Aligné avec le backend
 	authors: USE_ENTITY_SELECTORS && Array.isArray(formData.authors)
 		? formData.authors.map(author => ({ name: author.name }))
 		: typeof formData.authors === 'string' && formData.authors
@@ -259,7 +259,7 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 								disabled={formik.isSubmitting || !formik.isValid}
 							>
 								<Text style={styles.submitButtonText}>
-									{formik.isSubmitting ? 'Enregistrement...' : 'Enregistrer (à venir)'}
+									{formik.isSubmitting ? 'Enregistrement...' : 'Enregistrer le livre'}
 								</Text>
 							</TouchableOpacity>
 						</View>

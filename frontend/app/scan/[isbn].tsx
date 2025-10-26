@@ -3,12 +3,14 @@ import React, { useState, useRef } from 'react';
 import { View, ScrollView, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScanResult } from '@/hooks/useScanResult';
 import { ExistingBookCard } from "@/components/scan/ExistingBookCard";
 import { SuggestedBookForm } from "@/components/scan/SuggestedBookForm";
 import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
 import { SuggestedBook } from "@/types/scanTypes";
+import { bookService } from "@/services/bookService";
 
 // Composants utilitaires simples
 const LoadingIndicator: React.FC = () => (
@@ -30,6 +32,7 @@ const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
 export default function ScanResultPage() {
 	const { isbn } = useLocalSearchParams<{ isbn: string }>();
 	const router = useRouter();
+	const insets = useSafeAreaInsets();
 	const { isLoading, error, data } = useScanResult(isbn || '');
 	
 	// État pour gérer les données du formulaire et le feedback
@@ -79,10 +82,27 @@ export default function ScanResultPage() {
 
 	const handleFormSubmit = async (values: any) => {
 		try {
-			// TODO: Implémenter la logique de soumission
-			console.log('Soumission du formulaire:', values);
+			console.log('🚀 Début soumission du formulaire:', values);
+			
+			// Validation côté client
+			const validation = bookService.validateBookData(values);
+			if (!validation.isValid) {
+				console.error('❌ Validation échouée:', validation.errors);
+				// TODO: Afficher les erreurs à l'utilisateur
+				return;
+			}
+
+			// Appel API pour créer le livre
+			const createdBook = await bookService.createBook(values);
+			
+			console.log('✅ Livre créé avec succès! ID:', createdBook.id);
+			
+			// Navigation vers la fiche du livre créé
+			router.push(`/(tabs)/books/${createdBook.id}`);
+			
 		} catch (error) {
-			console.error('Erreur lors de la soumission:', error);
+			console.error('❌ Erreur lors de la soumission:', error);
+			// TODO: Afficher un message d'erreur à l'utilisateur
 		}
 	};
 
@@ -124,10 +144,10 @@ export default function ScanResultPage() {
 	return (
 		<View style={styles.container}>
 			{/* Header avec bouton retour et ISBN */}
-			<View style={styles.header}>
+			<View style={[styles.header, { paddingTop: insets.top + 10 }]}>
 				<TouchableOpacity 
 					style={styles.backButton}
-					onPress={() => router.back()}
+					onPress={() => router.push('/(tabs)/scanner')}
 				>
 					<MaterialIcons name="arrow-back" size={24} color="#ffffff" />
 				</TouchableOpacity>
@@ -167,8 +187,8 @@ export default function ScanResultPage() {
 					</View>
 				)}
 
-				{/* Formulaire de suggestion */}
-				{data.suggested && (
+				{/* Formulaire de suggestion - seulement si le livre n'existe pas déjà */}
+				{data.suggested && !data.base && (
 					<View style={styles.section}>
 						<SuggestedBookForm
 							initialData={formData || data.suggested}
@@ -178,14 +198,16 @@ export default function ScanResultPage() {
 					</View>
 				)}
 
-				{/* Données externes */}
-				<View style={styles.section}>
-					<ExternalDataSection
-						googleData={data.google_book}
-						openLibraryData={data.openlibrary}
-						onImportData={handleImportData}
-					/>
-				</View>
+				{/* Données externes - seulement si le livre n'existe pas déjà */}
+				{!data.base && (
+					<View style={styles.section}>
+						<ExternalDataSection
+							googleData={data.google_book}
+							openLibraryData={data.openlibrary}
+							onImportData={handleImportData}
+						/>
+					</View>
+				)}
 
 				{/* Livres similaires */}
 				{data.title_match && data.title_match.length > 0 && (

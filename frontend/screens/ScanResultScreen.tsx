@@ -8,6 +8,7 @@ import { ExistingBookCard } from "@/components/scan/ExistingBookCard";
 import { SuggestedBookForm } from "@/components/scan/SuggestedBookForm";
 import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
+import { bookService } from "@/services/bookService";
 
 // Composants utilitaires simples
 const LoadingIndicator: React.FC = () => (
@@ -67,10 +68,25 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 
 	const handleFormSubmit = async (values: any) => {
 		try {
-			// TODO: Implémenter la logique de soumission
-			console.log('Soumission du formulaire:', values);
+			console.log('🚀 Début soumission du formulaire:', values);
+			
+			// Validation côté client
+			const validation = bookService.validateBookData(values);
+			if (!validation.isValid) {
+				console.error('❌ Validation échouée:', validation.errors);
+				// TODO: Afficher les erreurs à l'utilisateur
+				return;
+			}
+
+			// Appel API pour créer le livre
+			const createdBook = await bookService.createBook(values);
+			
+			console.log('✅ Livre créé avec succès! ID:', createdBook.id);
+			// TODO: Navigation vers la fiche du livre créé ou message de succès
+			
 		} catch (error) {
-			console.error('Erreur lors de la soumission:', error);
+			console.error('❌ Erreur lors de la soumission:', error);
+			// TODO: Afficher un message d'erreur à l'utilisateur
 		}
 	};
 
