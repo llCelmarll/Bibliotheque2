@@ -16,8 +16,9 @@ from datetime import datetime
 class BookService:
     """Service pour la logique métier des livres"""
 
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, user_id: Optional[int] = None):
         self.session = session
+        self.user_id = user_id
         self.book_repository = BookRepository(session)
 
     def create_book(self, book_data: BookCreate) -> Book:
@@ -45,7 +46,8 @@ class BookService:
             page_count=book_data.page_count,
             barcode=book_data.barcode,
             cover_url=book_data.cover_url,
-            publisher_id=publisher_id
+            publisher_id=publisher_id,
+            owner_id=self.user_id  # Assigner à l'utilisateur actuel
         )
 
         # Ajout à la session
@@ -66,10 +68,10 @@ class BookService:
         return book
 
     async def get_book_by_id(self, book_id: int) -> Dict[str, Any]:
-        """Récupère un livre par son ID"""
+        """Récupère un livre par son ID (seulement si l'utilisateur en est propriétaire)"""
         book_data = {}
 
-        base_book = self.book_repository.get_by_id(book_id)
+        base_book = self.book_repository.get_by_id(book_id, self.user_id)
         #print("Livre renvoyé par le repository" , base_book)
         if not base_book:
            raise HTTPException(status_code=404, detail="Livre introuvable")
@@ -83,9 +85,9 @@ class BookService:
         return book_data
 
     def update_book(self, book_id: int, book_data: BookUpdate) -> Book:
-        """Met à jour un livre"""
-        # Utiliser le repository pour obtenir l'objet Book directement
-        book = self.book_repository.get_by_id(book_id)
+        """Met à jour un livre (seulement si l'utilisateur en est propriétaire)"""
+        # Utiliser le repository pour obtenir l'objet Book directement avec vérification de propriété
+        book = self.book_repository.get_by_id(book_id, self.user_id)
         if not book:
             raise HTTPException(status_code=404, detail="Livre introuvable")
         
@@ -138,9 +140,9 @@ class BookService:
         return book
 
     def delete_book(self, book_id: int) -> None:
-        """Supprime un livre"""
-        # Utiliser le repository pour obtenir l'objet Book directement
-        book = self.book_repository.get_by_id(book_id)
+        """Supprime un livre (seulement si l'utilisateur en est propriétaire)"""
+        # Utiliser le repository pour obtenir l'objet Book directement avec vérification de propriété
+        book = self.book_repository.get_by_id(book_id, self.user_id)
         if not book:
             raise HTTPException(status_code=404, detail="Livre introuvable")
         
@@ -150,22 +152,22 @@ class BookService:
         self.session.commit()
 
     def search_books(self, params: BookSearchParams) -> List[Book]:
-        """Recherche simple de livres"""
+        """Recherche simple de livres pour l'utilisateur actuel"""
         self._validate_pagination(params.skip, params.limit)
         self._validate_filters(params.filters)
-        return self.book_repository.search_books(params)
+        return self.book_repository.search_books(params, self.user_id)
 
     def advanced_search_books(self, params: BookAdvancedSearchParams) -> List[Book]:
-        """Recherche avancée de livres"""
+        """Recherche avancée de livres pour l'utilisateur actuel"""
         self._validate_pagination(params.skip, params.limit)
         self._validate_date_range(params.year_min, params.year_max)
         self._validate_page_range(params.page_min, params.page_max)
         
-        return self.book_repository.advanced_search_books(params)
+        return self.book_repository.advanced_search_books(params, self.user_id)
 
     def get_statistics(self) -> Dict[str, Any]:
-        """Récupère les statistiques des livres"""
-        return self.book_repository.get_statistics()
+        """Récupère les statistiques des livres de l'utilisateur actuel"""
+        return self.book_repository.get_statistics(self.user_id)
 
     def get_books_by_author(self, author_id: int) -> List[Book]:
         """Récupère tous les livres d'un auteur"""

@@ -19,8 +19,8 @@ class BookRepository:
 	def __init__(self, session: Session):
 		self.session = session
 
-	def get_by_id(self, book_id: int) -> Optional[Book]:
-		"""Retourne un livre en fonction de son ID."""
+	def get_by_id(self, book_id: int, user_id: Optional[int] = None) -> Optional[Book]:
+		"""Retourne un livre en fonction de son ID et du propriétaire."""
 		stmt = (
 			select(Book)
 			.where(Book.id == book_id)
@@ -31,13 +31,19 @@ class BookRepository:
 			)
 		)
 
+		# Filtrer par propriétaire si spécifié
+		if user_id is not None:
+			stmt = stmt.where(Book.owner_id == user_id)
+
 		return self.session.exec(stmt).first()
 
-		#return self.session.get(Book, book_id)
-
-	def search_books(self, params: BookSearchParams) -> List[Book]:
-		"""Recherche simple de tous les champs"""
+	def search_books(self, params: BookSearchParams, user_id: Optional[int] = None) -> List[Book]:
+		"""Recherche simple de tous les champs pour un utilisateur"""
 		stmt = self._build_base_query()
+
+		# Filtrer par propriétaire si spécifié
+		if user_id is not None:
+			stmt = stmt.where(Book.owner_id == user_id)
 
 		if params.search:
 			stmt = self._apply_global_search(stmt, params.search)
@@ -50,9 +56,14 @@ class BookRepository:
 
 		return list(self.session.exec(stmt.distinct()).all())
 
-	def advanced_search_books(self, params: BookAdvancedSearchParams) -> List[Book]:
-		"""Recherche avancée avec filtres spécifiques"""
+	def advanced_search_books(self, params: BookAdvancedSearchParams, user_id: Optional[int] = None) -> List[Book]:
+		"""Recherche avancée avec filtres spécifiques pour un utilisateur"""
 		stmt = self._build_base_query()
+		
+		# Filtrer par propriétaire si spécifié
+		if user_id is not None:
+			stmt = stmt.where(Book.owner_id == user_id)
+		
 		conditions = self._build_advanced_conditions(params)
 
 		if conditions:
@@ -63,22 +74,31 @@ class BookRepository:
 
 		return list(self.session.exec(stmt.distinct()).all())
 
-	def get_statistics(self) -> dict:
-		"""Récupère les statistiques des livres"""
+	def get_statistics(self, user_id: Optional[int] = None) -> dict:
+		"""Récupère les statistiques des livres pour un utilisateur"""
+		# Base query avec filtrage par utilisateur si spécifié
+		base_filter = Book.owner_id == user_id if user_id is not None else True
+		
 		# Requête pour le nombre total de livres
-		total_books_stmt = select(func.count(Book.id))
+		total_books_stmt = select(func.count(Book.id)).where(base_filter)
 		total_books = self.session.exec(total_books_stmt).first()
 
 		# Requête pour la moyenne des pages
-		avg_pages_stmt = select(func.avg(Book.page_count)).where(Book.page_count != None)
+		avg_pages_stmt = select(func.avg(Book.page_count)).where(
+			and_(Book.page_count != None, base_filter)
+		)
 		avg_pages = self.session.exec(avg_pages_stmt).first()
 
 		# Requête pour l'année la plus ancienne
-		oldest_year_stmt = select(func.min(Book.published_date)).where(Book.published_date != None)
+		oldest_year_stmt = select(func.min(Book.published_date)).where(
+			and_(Book.published_date != None, base_filter)
+		)
 		oldest_year = self.session.exec(oldest_year_stmt).first()
 
 		# Requête pour l'année la plus récente
-		newest_year_stmt = select(func.max(Book.published_date)).where(Book.published_date != None)
+		newest_year_stmt = select(func.max(Book.published_date)).where(
+			and_(Book.published_date != None, base_filter)
+		)
 		newest_year = self.session.exec(newest_year_stmt).first()
 
 		return {

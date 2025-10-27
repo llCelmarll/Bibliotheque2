@@ -10,6 +10,7 @@ from app.models.Book import Book
 from app.models.Author import Author
 from app.models.Genre import Genre
 from app.models.Publisher import Publisher
+from app.models.User import User  # Ajout du modèle User
 from sqlmodel import SQLModel
 
 # this is the Alembic Config object, which provides

@@ -1,9 +1,15 @@
 import datetime as dt
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship, DateTime
 from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from app.models.User import User
+    from app.models.Author import Author
+    from app.models.Publisher import Publisher
+    from app.models.Genre import Genre
 
 class Book(SQLModel, table=True):
     __tablename__ = "books"
@@ -26,6 +32,10 @@ class Book(SQLModel, table=True):
     publisher: Optional["Publisher"] = Relationship(back_populates="books")
     genre_id: Optional[int] = Field(default=None, foreign_key="genres.id")
     genres: List["Genre"] = Relationship(back_populates="books", link_model=BookGenreLink)
+    
+    # Propriétaire du livre
+    owner_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    owner: Optional["User"] = Relationship(back_populates="books")
 
     # Couverture du livre
     cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))

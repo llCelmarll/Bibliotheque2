@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlmodel import Session
 from app.db import get_session
 from app.services.book_service import BookService
+from app.services.auth_service import get_current_user
+from app.models.User import User
 from app.schemas.Book import (
     BookRead, 
     BookCreate, 
@@ -16,9 +18,12 @@ from app.schemas.Other import Filter
 
 router = APIRouter(prefix="/books", tags=["books"])
 
-def get_book_service(session: Session = Depends(get_session)) -> BookService:
-    """Dependency injection pour le service des livres"""
-    return BookService(session)
+def get_book_service(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+) -> BookService:
+    """Dependency injection pour le service des livres avec utilisateur authentifié"""
+    return BookService(session, user_id=current_user.id)
 
 # ================================
 # SEARCH ENDPOINTS
