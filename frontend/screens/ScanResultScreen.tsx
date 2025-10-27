@@ -5,7 +5,7 @@ import { useRoute } from '@react-navigation/native';
 import { useLocalSearchParams } from 'expo-router';
 import { useScanResult } from '@/hooks/useScanResult';
 import { ExistingBookCard } from "@/components/scan/ExistingBookCard";
-import { SuggestedBookForm } from "@/components/scan/SuggestedBookForm";
+import { BookForm } from "@/components/scan/BookForm";
 import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
 import { bookService } from "@/services/bookService";
@@ -136,7 +136,7 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 			{/* Formulaire de suggestion */}
 			{data.suggested && (
 				<View style={styles.section}>
-					<SuggestedBookForm
+					<BookForm
 						initialData={formData || data.suggested}
 						onSubmit={handleFormSubmit}
 						key={formData ? 'updated' : 'initial'} // Force re-render when formData changes

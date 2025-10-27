@@ -6,7 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScanResult } from '@/hooks/useScanResult';
 import { ExistingBookCard } from "@/components/scan/ExistingBookCard";
-import { SuggestedBookForm } from "@/components/scan/SuggestedBookForm";
+import { BookForm } from "@/components/scan/BookForm";
 import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
 import { SuggestedBook } from "@/types/scanTypes";
@@ -190,7 +190,7 @@ export default function ScanResultPage() {
 				{/* Formulaire de suggestion - seulement si le livre n'existe pas déjà */}
 				{data.suggested && !data.base && (
 					<View style={styles.section}>
-						<SuggestedBookForm
+						<BookForm
 							initialData={formData || data.suggested}
 							onSubmit={handleFormSubmit}
 							key={formData ? 'updated' : 'initial'} // Force re-render quand formData change

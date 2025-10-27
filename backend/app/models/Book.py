@@ -14,7 +14,7 @@ class Book(SQLModel, table=True):
     title: str = Field(index=True)
     isbn: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True, index=True))
 
-    published_date: Optional[str] = None
+    published_date: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
     page_count: Optional[int] = None
 
     # Identification physique

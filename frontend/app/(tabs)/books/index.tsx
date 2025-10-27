@@ -8,7 +8,10 @@ import {
 	ActivityIndicator,
 	useWindowDimensions,
     TouchableOpacity,
+	Platform,
 } from "react-native";
+import { useRouter } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Book } from "@/types/book";
 import { BookListItem } from "@/components/BookListItem";
 import { BookCardItem } from "@/components/BookCardItem";
@@ -20,6 +23,7 @@ import { useBooks } from "@/hooks/useBooks";
 export default function Index() {
 	const { width: screenWidth } = useWindowDimensions();
 	const [isGridView, setIsGridView] = useState(false);
+	const router = useRouter();
 
 	const {
 		books,
@@ -153,6 +157,15 @@ export default function Index() {
 					ListFooterComponent={renderFooter}
 				/>
 			)}
+			
+			{/* Bouton d'ajout manuel flottant */}
+			<TouchableOpacity 
+				style={styles.addButton}
+				onPress={() => router.push('/scan/manual')}
+				activeOpacity={0.8}
+			>
+				<MaterialIcons name="add" size={24} color="#fff" />
+			</TouchableOpacity>
 		</View>
 	);
 }
@@ -215,6 +228,29 @@ const styles = StyleSheet.create({
 		color: '#666',
 		fontSize: 14,
 	},
-
-
+	addButton: {
+		position: 'absolute',
+		bottom: 20,
+		right: 20,
+		width: 56,
+		height: 56,
+		borderRadius: 28,
+		backgroundColor: '#3498db',
+		justifyContent: 'center',
+		alignItems: 'center',
+		...Platform.select({
+			ios: {
+				shadowColor: '#000',
+				shadowOffset: { width: 0, height: 4 },
+				shadowOpacity: 0.3,
+				shadowRadius: 6,
+			},
+			android: {
+				elevation: 8,
+			},
+			web: {
+				boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+			},
+		}),
+	},
 });

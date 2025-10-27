@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useBookDetail } from '@/hooks/useBookDetail';
-import { SuggestedBookForm } from '@/components/scan/SuggestedBookForm';
+import { BookForm } from '@/components/scan/BookForm';
 import { bookService } from '@/services/bookService';
 import { BookCreate, SuggestedBook } from '@/types/scanTypes';
 import { BookUpdate } from '@/types/book';
@@ -140,7 +140,7 @@ export default function EditBookScreen() {
             showsVerticalScrollIndicator={true}
           >
             <Text style={styles.sectionTitle}>Modifier les informations</Text>
-            <SuggestedBookForm
+            <BookForm
               initialData={suggestedData}
               onSubmit={handleFormSubmit}
               submitButtonText="Modifier le livre"

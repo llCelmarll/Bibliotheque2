@@ -114,16 +114,15 @@ class BookService:
             book.authors.clear()
             # Ajouter les nouvelles relations avec traitement d'entités
             if book_data.authors:
-                processed_authors = self._process_authors_for_book(book_data.authors)
-                book.authors.extend(processed_authors)
+                self._process_authors_for_book(book, book_data.authors)
 
         # Gestion de l'éditeur si fourni (avec support des objets et IDs)
         if book_data.publisher is not None:
             if book_data.publisher:
-                processed_publisher = self._process_publisher_for_book(book_data.publisher)
-                book.publisher = processed_publisher
+                publisher_id = self._process_publisher_for_book(book_data.publisher)
+                book.publisher_id = publisher_id
             else:
-                book.publisher = None
+                book.publisher_id = None
 
         # Gestion des genres si fourni (avec support des objets et IDs)
         if book_data.genres is not None:
@@ -131,8 +130,7 @@ class BookService:
             book.genres.clear()
             # Ajouter les nouvelles relations avec traitement d'entités
             if book_data.genres:
-                processed_genres = self._process_genres_for_book(book_data.genres)
-                book.genres.extend(processed_genres)
+                self._process_genres_for_book(book, book_data.genres)
 
         self.session.commit()
         self.session.refresh(book)

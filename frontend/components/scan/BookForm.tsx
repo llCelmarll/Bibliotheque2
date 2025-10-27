@@ -1,4 +1,4 @@
-// components/scan/SuggestedBookForm.tsx
+// components/scan/BookForm.tsx
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Formik, FormikProps } from 'formik';
@@ -33,7 +33,7 @@ const validationSchema = Yup.object().shape({
 	coverUrl: Yup.string().url('URL invalide'),
 });
 
-interface SuggestedBookFormProps {
+interface BookFormProps {
 	initialData: SuggestedBook;
 	onSubmit: (values: BookCreate) => Promise<void>;
 	submitButtonText?: string;
@@ -97,7 +97,7 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 		: [],
 });
 
-export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
+export const BookForm: React.FC<BookFormProps> = ({
 																		initialData,
 																		onSubmit,
 																		submitButtonText = 'Enregistrer le livre',
@@ -161,8 +161,8 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 				<TextInput
 					style={[styles.input, hasError ? styles.inputError : null]}
 					value={coverUrl}
-					onChangeText={formik.handleChange('coverUrl')}
-					onBlur={formik.handleBlur('coverUrl')}
+					onChangeText={formik.handleChange('cover_url')}
+					onBlur={formik.handleBlur('cover_url')}
 					placeholder="https://example.com/couverture.jpg"
 					keyboardType="url"
 					autoCapitalize="none"

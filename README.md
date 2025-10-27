@@ -60,7 +60,7 @@ frontend/
 ├── components/              # Composants réutilisables
 │   ├── BookDetail/
 │   ├── EntitySelectors/
-│   └── SuggestedBookForm/
+│   └── BookForm/            # Formulaire universel de livre
 ├── services/                # Services API
 │   └── bookService.ts
 ├── types/                   # Types TypeScript
