@@ -36,16 +36,19 @@ const validationSchema = Yup.object().shape({
 interface SuggestedBookFormProps {
 	initialData: SuggestedBook;
 	onSubmit: (values: BookCreate) => Promise<void>;
+	submitButtonText?: string;
+	submitButtonLoadingText?: string;
+	disableInternalScroll?: boolean;
 }
 
 // Fonction pour convertir SuggestedBook vers BookFormData (maintenant synchrone car enrichie par le backend)
 const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	title: suggested.title || '',
 	isbn: suggested.isbn || '',
-	publishedDate: suggested.published_date || '',
-	pageCount: suggested.page_count || undefined,
+	published_date: suggested.published_date || '',
+	page_count: suggested.page_count || undefined,
 	barcode: suggested.barcode || '',
-	coverUrl: suggested.cover_url || '',
+	cover_url: suggested.cover_url || '',
 	authors: USE_ENTITY_SELECTORS 
 		? (suggested.authors?.map(suggestedAuthor => ({ 
 				id: suggestedAuthor.id || null,
@@ -73,10 +76,10 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 	title: formData.title,
 	isbn: formData.isbn || undefined,
-	published_date: formData.publishedDate || undefined,  // Aligné avec le backend
-	page_count: formData.pageCount,                       // Aligné avec le backend  
+	published_date: formData.published_date || undefined,  // Aligné avec le backend
+	page_count: formData.page_count,                       // Aligné avec le backend
 	barcode: formData.barcode || undefined,
-	cover_url: formData.coverUrl || undefined,            // Aligné avec le backend
+	cover_url: formData.cover_url || undefined,            // Aligné avec le backend
 	authors: USE_ENTITY_SELECTORS && Array.isArray(formData.authors)
 		? formData.authors.map(author => ({ name: author.name }))
 		: typeof formData.authors === 'string' && formData.authors
@@ -96,7 +99,10 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 
 export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 																		initialData,
-																		onSubmit
+																		onSubmit,
+																		submitButtonText = 'Enregistrer le livre',
+																		submitButtonLoadingText = 'Enregistrement...',
+																		disableInternalScroll = false
 																	}) => {
 	const formInitialValues = suggestedBookToFormData(initialData);
 	const formikRef = useRef<FormikProps<BookFormData> | null>(null);
@@ -146,8 +152,8 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 	};
 
 	const renderCoverUrlField = (formik: FormikProps<BookFormData>) => {
-		const hasError = formik.touched.coverUrl && formik.errors.coverUrl;
-		const coverUrl = formik.values.coverUrl || '';
+		const hasError = formik.touched.cover_url && formik.errors.cover_url;
+		const coverUrl = formik.values.cover_url || '';
 
 		return (
 			<View style={styles.fieldContainer}>
@@ -170,7 +176,7 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 				
 				{hasError ? (
 					<Text style={styles.errorText}>
-						{formik.errors.coverUrl as string}
+						{formik.errors.cover_url as string}
 					</Text>
 				) : null}
 			</View>
@@ -188,15 +194,17 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 				innerRef={formikRef}
 				enableReinitialize={true}
 			>
-				{(formik) => (
-					<ScrollView style={styles.form}>
+				{(formik) => {
+					const FormContainer = disableInternalScroll ? View : ScrollView;
+					return (
+					<FormContainer style={styles.form}>
 						{renderFormField('Titre *', 'title', formik, 'Titre du livre')}
 						
 						{renderFormField('ISBN', 'isbn', formik, '978XXXXXXXXX')}
 						
-						{renderFormField('Date de publication', 'publishedDate', formik, 'YYYY-MM-DD')}
+						{renderFormField('Date de publication', 'published_date', formik, 'YYYY-MM-DD')}
 						
-						{renderFormField('Nombre de pages', 'pageCount', formik, '0', false, 'numeric')}
+						{renderFormField('Nombre de pages', 'page_count', formik, '0', false, 'numeric')}
 						
 						{renderFormField('Code-barres', 'barcode', formik, 'Code-barres')}
 						
@@ -245,26 +253,17 @@ export const SuggestedBookForm: React.FC<SuggestedBookFormProps> = ({
 							renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)
 						)}
 
-						<View style={styles.buttonContainer}>
-							<TouchableOpacity
-								style={[styles.button, styles.resetButton]}
-								onPress={() => formik.resetForm()}
-							>
-								<Text style={styles.resetButtonText}>Réinitialiser</Text>
-							</TouchableOpacity>
-							
-							<TouchableOpacity
-								style={[styles.button, styles.submitButton]}
-								onPress={() => formik.handleSubmit()}
-								disabled={formik.isSubmitting || !formik.isValid}
-							>
-								<Text style={styles.submitButtonText}>
-									{formik.isSubmitting ? 'Enregistrement...' : 'Enregistrer le livre'}
-								</Text>
-							</TouchableOpacity>
-						</View>
-					</ScrollView>
-				)}
+						<TouchableOpacity
+							style={[styles.button, styles.submitButton]}
+							onPress={() => formik.handleSubmit()}
+							disabled={formik.isSubmitting || !formik.isValid}
+						>
+							<Text style={styles.submitButtonText}>
+								{formik.isSubmitting ? submitButtonLoadingText : submitButtonText}
+							</Text>
+						</TouchableOpacity>
+					</FormContainer>
+				)}}
 			</Formik>
 		</View>
 	);
@@ -315,34 +314,19 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 		fontStyle: 'italic',
 	},
-	buttonContainer: {
-		flexDirection: 'row',
-		gap: 12,
-		marginTop: 24,
-		marginBottom: 16,
-	},
 	button: {
-		flex: 1,
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderRadius: 8,
 		alignItems: 'center',
 		justifyContent: 'center',
-	},
-	resetButton: {
-		backgroundColor: '#95a5a6',
-		borderWidth: 1,
-		borderColor: '#7f8c8d',
+		marginTop: 24,
+		marginBottom: 16,
 	},
 	submitButton: {
 		backgroundColor: '#3498db',
 		borderWidth: 1,
 		borderColor: '#2980b9',
-	},
-	resetButtonText: {
-		color: '#ffffff',
-		fontSize: 16,
-		fontWeight: '500',
 	},
 	submitButtonText: {
 		color: '#ffffff',

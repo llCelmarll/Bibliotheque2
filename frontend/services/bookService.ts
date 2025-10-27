@@ -1,6 +1,7 @@
 // services/bookService.ts
 import API_CONFIG from '@/config/api';
 import { BookCreate, BookRead } from '@/types/scanTypes';
+import { BookUpdate } from '@/types/book';
 
 class BookService {
   private baseUrl: string;
@@ -12,7 +13,7 @@ class BookService {
   /**
    * Met à jour un livre existant
    */
-  async updateBook(bookId: string, bookData: Partial<BookCreate>): Promise<BookRead> {
+  async updateBook(bookId: string, bookData: BookUpdate): Promise<BookRead> {
     console.log('📝 Mise à jour livre - ID:', bookId, 'données:', JSON.stringify(bookData, null, 2));
     
     try {

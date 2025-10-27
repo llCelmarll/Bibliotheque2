@@ -1,3 +1,5 @@
+import { AuthorCreate, AuthorRead, PublisherCreate, PublisherRead, GenreCreate, GenreRead } from './scanTypes';
+
 /**
  * Représente un auteur de livre
  * @interface Author
@@ -122,4 +124,20 @@ export interface BookDetail {
     base: BookBase;
     google_books: GoogleBooksData;
     open_library: OpenLibraryData;
+}
+
+/**
+ * Interface pour les données de modification d'un livre
+ * Supporte maintenant les objets d'entités comme BookCreate
+ */
+export interface BookUpdate {
+    title?: string;
+    isbn?: string;
+    published_date?: string;
+    page_count?: number;
+    barcode?: string;
+    cover_url?: string;
+    authors?: (AuthorCreate | AuthorRead)[];
+    publisher?: PublisherCreate | PublisherRead;
+    genres?: (GenreCreate | GenreRead)[];
 }

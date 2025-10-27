@@ -100,21 +100,39 @@ class BookService:
                     detail="Un autre livre avec ce titre et cet ISBN existe déjà"
                 )
 
-        # Mise à jour des champs simples
-        update_data = book_data.model_dump(exclude_unset=True, exclude={'authors'})
+        # Mise à jour des champs simples (excluant les entités)
+        update_data = book_data.model_dump(exclude_unset=True, exclude={'authors', 'publisher', 'genres'})
         for field, value in update_data.items():
             setattr(book, field, value)
 
         # Mise à jour du timestamp
         book.updated_at = datetime.utcnow()
 
-        # Gestion des auteurs si fourni
+        # Gestion des auteurs si fourni (avec support des objets et IDs)
         if book_data.authors is not None:
             # Supprimer les anciennes relations
             book.authors.clear()
-            # Ajouter les nouvelles relations
+            # Ajouter les nouvelles relations avec traitement d'entités
             if book_data.authors:
-                self._add_authors_to_book(book, book_data.authors)
+                processed_authors = self._process_authors_for_book(book_data.authors)
+                book.authors.extend(processed_authors)
+
+        # Gestion de l'éditeur si fourni (avec support des objets et IDs)
+        if book_data.publisher is not None:
+            if book_data.publisher:
+                processed_publisher = self._process_publisher_for_book(book_data.publisher)
+                book.publisher = processed_publisher
+            else:
+                book.publisher = None
+
+        # Gestion des genres si fourni (avec support des objets et IDs)
+        if book_data.genres is not None:
+            # Supprimer les anciennes relations
+            book.genres.clear()
+            # Ajouter les nouvelles relations avec traitement d'entités
+            if book_data.genres:
+                processed_genres = self._process_genres_for_book(book_data.genres)
+                book.genres.extend(processed_genres)
 
         self.session.commit()
         self.session.refresh(book)
@@ -252,7 +270,21 @@ class BookService:
         return existing_book is not None
 
     def _process_authors_for_book(self, book: Book, authors_data) -> None:
-        """Traite les auteurs (création si nécessaire) et les ajoute au livre"""
+        """
+        Traite les auteurs (création si nécessaire) et les ajoute au livre.
+        
+        Gère intelligemment les différents formats d'entrée :
+        - int : ID d'un auteur existant (récupération directe)
+        - str : Nom d'auteur (recherche puis création si nécessaire)
+        - dict : Objet avec clé 'name' (recherche puis création si nécessaire)
+        
+        Args:
+            book (Book): Le livre auquel ajouter les auteurs
+            authors_data: Liste des données d'auteurs (mix d'IDs, noms, objets)
+            
+        Raises:
+            HTTPException: Si un ID référencé n'existe pas
+        """
         from app.repositories.author_repository import AuthorRepository
         author_repo = AuthorRepository(self.session)
         

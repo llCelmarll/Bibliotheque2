@@ -31,13 +31,18 @@ class BookCreate(SQLModel):
     
     Les champs authors, publisher et genres acceptent plusieurs formats :
     - int : ID d'une entité existante
-    - str : Nom d'une entité (sera créée si elle n'existe pas)
+    - str : Nom d'une entité (sera créée si elle n'existe pas)  
     - dict : Objet avec 'name' et optionnellement 'id' et 'exists'
            (format utilisé par le frontend avec EntitySelectors)
     
+    Le service _process_*_for_book() gère automatiquement :
+    - La réutilisation des entités existantes (par ID)
+    - La création des nouvelles entités (par nom/objet)
+    - La validation et la déduplication
+    
     Exemples :
     - authors: [1, "Nouvel Auteur", {"name": "Victor Hugo", "id": 5, "exists": true}]
-    - publisher: {"name": "Gallimard", "id": 12, "exists": true}
+    - publisher: {"name": "Gallimard", "id": 12, "exists": true}  
     - genres: ["Science-Fiction", {"name": "Roman", "id": 3, "exists": true}]
     """
     title: str
@@ -52,15 +57,33 @@ class BookCreate(SQLModel):
 
 # Schema de mise à jour
 class BookUpdate(SQLModel):
+    """
+    Schéma pour la modification d'un livre.
+    
+    Supporte la même flexibilité que BookCreate :
+    - Entités par ID (int) pour réutiliser des entités existantes
+    - Entités par objet (Dict) pour créer de nouvelles entités
+    - Format mixte supporté
+    
+    Exemples :
+        # Avec IDs existants
+        {"authors": [1, 2], "publisher": 3}
+        
+        # Avec nouveaux objets  
+        {"authors": [{"name": "Nouvel Auteur"}], "publisher": {"name": "Nouvel Editeur"}}
+        
+        # Format mixte
+        {"authors": [1, {"name": "Nouvel Auteur"}], "publisher": {"name": "Editeur"}}
+    """
     title: Optional[str] = None
     isbn: Optional[str] = None
     published_date: Optional[str] = None
     page_count: Optional[int] = None
     barcode: Optional[str] = None
     cover_url: Optional[str] = None
-    authors: Optional[List[int]] = None
-    publisher: Optional[int] = None
-    genres: Optional[List[int]] = None
+    authors: Optional[List[Union[int, Dict[str, Any]]]] = None
+    publisher: Optional[Union[int, Dict[str, Any]]] = None
+    genres: Optional[List[Union[int, Dict[str, Any]]]] = None
 
 #Schema de recherche
 
