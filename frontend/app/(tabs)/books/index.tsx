@@ -18,12 +18,21 @@ import { BookCardItem } from "@/components/BookCardItem";
 import { SearchBar } from "@/components/SearchBar";
 import { BookFilters} from "@/components/BookFilters";
 import { useBooks } from "@/hooks/useBooks";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 export default function Index() {
 	const { width: screenWidth } = useWindowDimensions();
 	const [isGridView, setIsGridView] = useState(false);
 	const router = useRouter();
+	const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+	// Protection d'authentification
+	useEffect(() => {
+		if (!authLoading && !isAuthenticated) {
+			router.replace("/auth/login");
+		}
+	}, [isAuthenticated, authLoading, router]);
 
 	const {
 		books,
@@ -123,8 +132,15 @@ export default function Index() {
 	};
 
 	useEffect(() => {
-		loadBooks(1)
-	}, [activeFilters]);
+		if (isAuthenticated) {
+			loadBooks(1);
+		}
+	}, [activeFilters, isAuthenticated]);
+
+	// Si pas authentifié, ne rien afficher (redirection en cours)
+	if (!authLoading && !isAuthenticated) {
+		return null;
+	}
 
 	return (
 		<View style={styles.container}>
@@ -252,5 +268,17 @@ const styles = StyleSheet.create({
 				boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
 			},
 		}),
+	},
+	authLoading: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		padding: 20,
+	},
+	authLoadingText: {
+		marginTop: 16,
+		fontSize: 16,
+		color: '#666',
+		textAlign: 'center',
 	},
 });

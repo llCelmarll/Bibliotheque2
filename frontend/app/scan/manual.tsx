@@ -1,17 +1,38 @@
 // app/scan/manual.tsx
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, Alert, Platform, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, Alert, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookForm } from "@/components/scan/BookForm";
 import { BookCreate, SuggestedBook } from "@/types/scanTypes";
 import { bookService } from "@/services/bookService";
 import { MaterialIcons } from '@expo/vector-icons';
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ManualBookAddPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirection si non authentifié
+  React.useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/auth/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Afficher un loader pendant la vérification d'authentification
+  if (authLoading || !isAuthenticated) {
+    return (
+      <View style={styles.authContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.authText}>
+          {authLoading ? "Vérification de l'authentification..." : "Redirection..."}
+        </Text>
+      </View>
+    );
+  }
 
   // Données vides pour le formulaire d'ajout manuel
   const emptyBookData: SuggestedBook = {
@@ -221,5 +242,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#5a6c7d',
     lineHeight: 20,
+  },
+  authContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  authText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });

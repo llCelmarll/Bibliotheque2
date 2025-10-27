@@ -2,6 +2,19 @@ import {useState, useEffect} from "react";
 import API_CONFIG from "@/config/api";
 import axios from "axios";
 import {BookDetail} from "@/types/book";
+import { setupAuthInterceptor } from "@/services/api/authInterceptor";
+
+// Configuration axios avec intercepteur d'authentification
+const apiClient = axios.create({
+	baseURL: API_CONFIG.BASE_URL,
+	timeout: 10000,
+	headers: {
+		'Content-Type': 'application/json',
+	},
+});
+
+// Ajouter l'intercepteur d'authentification
+setupAuthInterceptor(apiClient);
 
 export function useBookDetail(bookId: string) {
 	const [book, setBook] = useState(<BookDetail | null>(null));
@@ -11,7 +24,7 @@ export function useBookDetail(bookId: string) {
 	const fetchBookDetail = async () => {
 		try{
 			setLoading(true);
-			const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`);
+			const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`);
 			setBook(response.data);
 			console.log(response.data);
 			setError(null);

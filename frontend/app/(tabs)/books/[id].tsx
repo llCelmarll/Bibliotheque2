@@ -1,13 +1,39 @@
-import { useLocalSearchParams, Stack} from "expo-router";
+import { useLocalSearchParams, Stack, useRouter} from "expo-router";
 import {View, ScrollView, ActivityIndicator, StyleSheet, Text} from "react-native";
 import {useBookDetail} from "@/hooks/useBookDetail";
 import {BookHeader} from "@/components/BookDetail/BookHeader";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import {BookDetailTabs} from "@/components/BookDetail/BookDetailTabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 export  default function BookDetailScreen() {
-	const {id} = useLocalSearchParams(); // récupération de l'id d'un livre depuis l'URL
-	const { book, loading, error, refetch } = useBookDetail(id as string)
+	const {id, refresh} = useLocalSearchParams(); // récupération de l'id d'un livre depuis l'URL
+	const { book, loading, error, refetch } = useBookDetail(id as string);
+	const { isAuthenticated, isLoading: authLoading } = useAuth();
+	const router = useRouter();
+
+	// Protection d'authentification
+	useEffect(() => {
+		if (!authLoading && !isAuthenticated) {
+			router.replace("/auth/login");
+		}
+	}, [isAuthenticated, authLoading, router]);
+
+	// Rafraîchir les données quand le paramètre refresh change
+	useEffect(() => {
+		if (refresh) {
+			console.log('🔄 Rafraîchissement des détails du livre demandé');
+			refetch();
+			// Nettoyer l'URL pour éviter les rafraîchissements en boucle
+			router.replace(`/books/${id}`);
+		}
+	}, [refresh, refetch, router, id]);
+
+	// Si pas authentifié, ne rien afficher (redirection en cours)
+	if (!authLoading && !isAuthenticated) {
+		return null;
+	}
 
 	return (
 		<>

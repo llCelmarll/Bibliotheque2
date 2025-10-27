@@ -85,8 +85,8 @@ export default function EditBookScreen() {
       
       console.log('✅ Livre modifié avec succès!', updatedBook);
       
-      // Retour à la page de détail du livre
-      router.back();
+      // Retour à la page de détail du livre avec rafraîchissement
+      router.replace(`/books/${id}?refresh=${Date.now()}`);
       
     } catch (error) {
       console.error('❌ Erreur lors de la modification:', error);

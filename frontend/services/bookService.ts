@@ -1,14 +1,23 @@
 // services/bookService.ts
+import axios from 'axios';
 import API_CONFIG from '@/config/api';
 import { BookCreate, BookRead } from '@/types/scanTypes';
 import { BookUpdate } from '@/types/book';
+import { setupAuthInterceptor } from '@/services/api/authInterceptor';
+
+// Configuration axios avec intercepteur d'authentification
+const apiClient = axios.create({
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Ajouter l'intercepteur d'authentification
+setupAuthInterceptor(apiClient);
 
 class BookService {
-  private baseUrl: string;
-
-  constructor() {
-    this.baseUrl = API_CONFIG.BASE_URL;
-  }
 
   /**
    * Met à jour un livre existant
@@ -17,26 +26,9 @@ class BookService {
     console.log('📝 Mise à jour livre - ID:', bookId, 'données:', JSON.stringify(bookData, null, 2));
     
     try {
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookData),
-      });
-
-      console.log('📡 Réponse API mise à jour - status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Erreur API mise à jour livre:', errorText);
-        throw new Error(`Erreur ${response.status}: ${errorText}`);
-      }
-
-      const updatedBook = await response.json();
-      console.log('✅ Livre mis à jour avec succès:', updatedBook);
-      
-      return updatedBook;
+      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`, bookData);
+      console.log('✅ Livre mis à jour avec succès:', response.data);
+      return response.data;
     } catch (error) {
       console.error('❌ Erreur lors de la mise à jour du livre:', error);
       throw error;
@@ -50,18 +42,7 @@ class BookService {
     console.log('🗑️ Suppression livre - ID:', bookId);
     
     try {
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`, {
-        method: 'DELETE',
-      });
-
-      console.log('📡 Réponse API suppression - status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Erreur API suppression livre:', errorText);
-        throw new Error(`Erreur ${response.status}: ${errorText}`);
-      }
-
+      await apiClient.delete(`${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`);
       console.log('✅ Livre supprimé avec succès');
     } catch (error) {
       console.error('❌ Erreur lors de la suppression du livre:', error);
@@ -76,26 +57,9 @@ class BookService {
     console.log('📚 Création livre - données envoyées:', JSON.stringify(bookData, null, 2));
     
     try {
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.BOOKS}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookData),
-      });
-
-      console.log('📡 Réponse API - status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Erreur API création livre:', errorText);
-        throw new Error(`Erreur ${response.status}: ${errorText}`);
-      }
-
-      const createdBook = await response.json();
-      console.log('✅ Livre créé avec succès:', createdBook);
-      
-      return createdBook;
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.BOOKS, bookData);
+      console.log('✅ Livre créé avec succès:', response.data);
+      return response.data;
     } catch (error) {
       console.error('❌ Erreur lors de la création du livre:', error);
       throw error;

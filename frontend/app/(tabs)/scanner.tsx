@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import Scanner from "@/components/Scanner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ScannerScreen() {
   const [torch, setTorch] = useState(false);
@@ -12,6 +13,14 @@ export default function ScannerScreen() {
   const [isManualInput, setIsManualInput] = useState(Platform.OS === 'web');
   const [permission, requestPermission] = useCameraPermissions();
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirection si non authentifié
+  React.useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/auth/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   // Réinitialiser l'état du scanner quand on revient sur l'écran
   useFocusEffect(
@@ -20,6 +29,18 @@ export default function ScannerScreen() {
       setTorch(false);
     }, [])
   );
+
+  // Afficher un loader pendant la vérification d'authentification
+  if (authLoading || !isAuthenticated) {
+    return (
+      <View style={styles.authContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.authText}>
+          {authLoading ? "Vérification de l'authentification..." : "Redirection..."}
+        </Text>
+      </View>
+    );
+  }
 
   const handleBarCodeScanned = (isbn: string) => {
     console.log("Scanned: ", isbn);
@@ -132,5 +153,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  authContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  authText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });

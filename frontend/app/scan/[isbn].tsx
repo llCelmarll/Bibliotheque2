@@ -11,6 +11,7 @@ import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
 import { SuggestedBook } from "@/types/scanTypes";
 import { bookService } from "@/services/bookService";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Composants utilitaires simples
 const LoadingIndicator: React.FC = () => (
@@ -34,6 +35,7 @@ export default function ScanResultPage() {
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
 	const { isLoading, error, data } = useScanResult(isbn || '');
+	const { isAuthenticated, isLoading: authLoading } = useAuth();
 	
 	// État pour gérer les données du formulaire et le feedback
 	const [formData, setFormData] = useState<SuggestedBook | null>(null);
@@ -45,6 +47,25 @@ export default function ScanResultPage() {
 	
 	// Animation pour le feedback
 	const fadeAnim = useRef(new Animated.Value(0)).current;
+
+	// Redirection si non authentifié
+	React.useEffect(() => {
+		if (!authLoading && !isAuthenticated) {
+			router.replace('/auth/login');
+		}
+	}, [isAuthenticated, authLoading, router]);
+
+	// Afficher un loader pendant la vérification d'authentification
+	if (authLoading || !isAuthenticated) {
+		return (
+			<View style={styles.authContainer}>
+				<ActivityIndicator size="large" color="#2196F3" />
+				<Text style={styles.authText}>
+					{authLoading ? "Vérification de l'authentification..." : "Redirection..."}
+				</Text>
+			</View>
+		);
+	}
 
 	if (!isbn) {
 		return <ErrorMessage message="Aucun ISBN fourni" />;
@@ -317,6 +338,19 @@ const styles = StyleSheet.create({
 		fontWeight: '500',
 		marginLeft: 8,
 		flex: 1,
+		textAlign: 'center',
+	},
+	authContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		backgroundColor: '#f5f5f5',
+		padding: 20,
+	},
+	authText: {
+		marginTop: 16,
+		fontSize: 16,
+		color: '#666',
 		textAlign: 'center',
 	},
 });

@@ -3,6 +3,7 @@ import axios from "axios";
 import API_CONFIG from "@/config/api";
 import { Book } from "@/types/book";
 import { BookFilter } from "@/types/filter";
+import { setupAuthInterceptor } from "@/services/api/authInterceptor";
 
 // Configuration de base pour axios
 const apiClient = axios.create({
@@ -12,6 +13,9 @@ const apiClient = axios.create({
 		'Content-Type': 'application/json',
 	},
 });
+
+// Ajouter l'intercepteur d'authentification
+setupAuthInterceptor(apiClient);
 
 interface FetchBooksParams {
     page?: number;

@@ -3,6 +3,7 @@ import {Book} from "@/types/book";
 import {BookFilter, FilterType} from "@/types/filter";
 import {fetchBooks} from "@/services/booksService";
 import {useBookFilters} from "@/hooks/useBookFilters";
+import {useAuth} from "@/contexts/AuthContext";
 
 interface UseBooksParams {
 	initialPageSize?: number;
@@ -17,6 +18,7 @@ export function useBooks({
 	initialOrder = 'asc',
 	initialFilters = [],
 }: UseBooksParams = {}) {
+	const { isAuthenticated, isLoading: authLoading } = useAuth();
 	const [books, setBooks] = useState<Book[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [loadingMore, setLoadingMore] = useState(false);
@@ -38,6 +40,13 @@ export function useBooks({
 			currentFilters: activeFilters,
 		}
 	) => {
+		// Ne pas charger si l'utilisateur n'est pas authentifié
+		if (!isAuthenticated) {
+			setLoading(false);
+			setLoadingMore(false);
+			return;
+		}
+
 		if (isLoadingMore) {
 			setLoadingMore(true);
 		} else {
@@ -68,7 +77,7 @@ export function useBooks({
 			setLoading(false);
 			setLoadingMore(false);
 		}
-	}, [sortBy, order, searchQuery, activeFilters, initialPageSize]);
+	}, [sortBy, order, searchQuery, activeFilters, initialPageSize, isAuthenticated]);
 
 	const handleFilterSelect = useCallback(async (filter: BookFilter) => {
 		addFilter(filter);
