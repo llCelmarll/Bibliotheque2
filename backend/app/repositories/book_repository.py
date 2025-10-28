@@ -123,8 +123,8 @@ class BookRepository:
 			stmt = stmt.where(Book.owner_id == user_id)
 		return self.session.exec(stmt).first()
 
-	def get_by_isbn_or_barcode(self, code: str) -> Optional[Book]:
-		"""Retourne un livre en fonction de son ISBN ou de son code-barre."""
+	def get_by_isbn_or_barcode(self, code: str, user_id: int = None) -> Optional[Book]:
+		"""Retourne un livre en fonction de son ISBN ou de son code-barre, optionnellement filtré par utilisateur."""
 		stmt = (
 			select(Book)
 			.where((Book.isbn == code) | (Book.barcode == code))
@@ -134,6 +134,11 @@ class BookRepository:
 				selectinload(Book.genres).selectinload(Genre.books)
 			)
 		)
+		
+		# Filtre par utilisateur si spécifié (pour l'isolation)
+		if user_id is not None:
+			stmt = stmt.where(Book.owner_id == user_id)
+		
 		return self.session.exec(stmt).first()
 
 	def search_title_match(self, title: str, isbn: str, user_id: int = None) -> List[Book]:

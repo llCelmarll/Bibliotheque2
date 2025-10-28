@@ -207,7 +207,8 @@ class BookService:
             )
         
         # Recherche du livre dans la base via le repository (ISBN ou code-barre)
-        existing_book = self.book_repository.get_by_isbn_or_barcode(isbn)
+        # Filtré par utilisateur pour assurer l'isolation
+        existing_book = self.book_repository.get_by_isbn_or_barcode(isbn, self.user_id)
         
         if existing_book:
             # Si le livre existe, retourner les données comme pour get_book_by_id
