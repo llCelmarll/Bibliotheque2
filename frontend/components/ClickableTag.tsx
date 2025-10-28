@@ -33,7 +33,8 @@ export function ClickableTag(props: ClickableTagProps) {
     return (
         <TouchableOpacity 
             style={[styles.tag, { backgroundColor: tagColor }]} 
-            onPress={() => props.onPress(props.filter)}>
+            onPress={() => props.onPress(props.filter)}
+            testID="clickable-tag">
             <Ionicons name={iconName} size={14} color={textColor} />
             <Text style={[styles.text, { color: textColor }]}>{props.filter.name}</Text>
         </TouchableOpacity>

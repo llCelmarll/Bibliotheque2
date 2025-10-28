@@ -1,0 +1,31 @@
+{
+  "preset": "react-native",
+  "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+  "transformIgnorePatterns": [
+    "node_modules/(?!(react-native|@react-native|react-native-vector-icons|@expo|expo|@react-navigation|@react-native-community|react-native-safe-area-context|react-native-screens|react-native-svg|react-native-gesture-handler|react-native-reanimated)/)"
+  ],
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"],
+  "transform": {
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+  },
+  "testMatch": [
+    "**/__tests__/**/*.(ts|tsx|js|jsx)",
+    "**/*.(test|spec).(ts|tsx|js|jsx)"
+  ],
+  "collectCoverageFrom": [
+    "**/*.{ts,tsx}",
+    "!**/*.d.ts",
+    "!**/node_modules/**",
+    "!**/.expo/**",
+    "!**/coverage/**"
+  ],
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/$1",
+    "^@components/(.*)$": "<rootDir>/components/$1",
+    "^@screens/(.*)$": "<rootDir>/screens/$1",
+    "^@services/(.*)$": "<rootDir>/services/$1",
+    "^@utils/(.*)$": "<rootDir>/utils/$1",
+    "^@types/(.*)$": "<rootDir>/types/$1",
+    "^@contexts/(.*)$": "<rootDir>/contexts/$1"
+  }
+}

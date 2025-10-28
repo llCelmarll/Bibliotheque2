@@ -8,17 +8,19 @@ interface BookCoverProps {
     resizeMode?: ImageResizeMode;
 }
 
-const BookCover = ({ url, style, containerStyle }: BookCoverProps) => {
+const BookCover = ({ url, style, containerStyle, resizeMode }: BookCoverProps) => {
     const [loading, setLoading] = useState(true);
 
     return (
-        <View style={[styles.coverContainer, containerStyle]}>
-            {loading && <ActivityIndicator style={styles.imageLoader} />}
+        <View style={[styles.coverContainer, containerStyle]} testID="book-cover-container">
+            {loading && <ActivityIndicator style={styles.imageLoader} testID="book-cover-loading" />}
             <Image
+                testID="book-cover-image"
                 source={
                     url ? {uri: url} : require('../assets/images/default-book-cover.jpg')
                 }
                 style={[styles.coverImage, style]}
+                resizeMode={resizeMode || 'cover'}
                 // onLoadStart={() => {                                                   ATTENTION CAUSE RE-RENDER EN BOUCLE
                 //     if (!loading) setLoading(true); // évite le setState inutile
                 // }}

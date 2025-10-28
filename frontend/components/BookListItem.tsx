@@ -22,7 +22,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 
 	return (
 		<View style={styles.container}>
-			<TouchableOpacity onPress={handlePress}>
+			<TouchableOpacity onPress={handlePress} testID="book-item-touchable">
 				{/* Couverture du livre */}
 				<BookCover
 					url={book.cover_url}
