@@ -44,7 +44,7 @@ class BookFactory(factory.Factory):
         model = Book
     
     title = Faker('sentence', nb_words=4)
-    isbn = Faker('isbn13')
+    isbn = Faker('isbn13', separator="")  # ISBN sans tirets
     published_date = Faker('date_between', start_date='-50y', end_date='today')
     page_count = Faker('random_int', min=50, max=1000)
     barcode = Faker('ean13')
