@@ -26,11 +26,11 @@ class BookService:
         # Validation des données
         self._validate_book_data(book_data)
         
-        # Vérification de l'unicité du titre + ISBN
+        # Vérification de l'unicité du titre + ISBN pour l'utilisateur actuel
         if self._book_exists(book_data.title, book_data.isbn):
             raise HTTPException(
                 status_code=400, 
-                detail="Un livre avec ce titre et cet ISBN existe déjà"
+                detail="Un livre avec ce titre et cet ISBN existe déjà dans votre bibliothèque"
             )
 
         # Traitement de l'éditeur
@@ -255,10 +255,14 @@ class BookService:
             raise HTTPException(status_code=400, detail="Le nombre de pages doit être positif")
 
     def _book_exists(self, title: str, isbn: Optional[str] = None, exclude_id: Optional[int] = None) -> bool:
-        """Vérifie si un livre existe déjà avec le même titre et ISBN"""
+        """Vérifie si un livre existe déjà avec le même titre et ISBN pour l'utilisateur actuel"""
         from sqlmodel import select
         
         stmt = select(Book).where(Book.title == title)
+        
+        # Filtrer par propriétaire pour éviter les conflits entre utilisateurs
+        if self.user_id:
+            stmt = stmt.where(Book.owner_id == self.user_id)
         
         if isbn:
             stmt = stmt.where(Book.isbn == isbn)

@@ -52,11 +52,13 @@ class ScanResult(SQLModel):
 class ScanService:
     """Service pour le scan de livres"""
 
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, user_id: int = None):
         self.session = session
+        self.user_id = user_id
         self.book_repository = BookRepository(session)
         self.author_repository = AuthorRepository(session)
         self.publisher_repository = PublisherRepository(session)
+
 
 
     async def scan_isbn(self, isbn: str):
@@ -64,8 +66,8 @@ class ScanService:
         result = ScanResult()
 
 
-        #Check si dans la base
-        base_book = self.book_repository.get_by_isbn(isbn)
+        #Check si dans la base (pour l'utilisateur connecté uniquement)
+        base_book = self.book_repository.get_by_isbn(isbn, user_id=self.user_id)
 
 
         #Check google_books et openLibrary
@@ -168,7 +170,7 @@ class ScanService:
                 genres=[],  # TODO: Enrichir les genres plus tard si nécessaire
             )
 
-            if result.suggested:
-                result.title_match = self.book_repository.search_title_match(title=result.suggested.title, isbn=isbn)
+            if result.suggested and result.suggested.title:
+                result.title_match = self.book_repository.search_title_match(title=result.suggested.title, isbn=isbn, user_id=self.user_id)
 
         return result

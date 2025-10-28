@@ -43,22 +43,14 @@ export default function ScannerScreen() {
   }
 
   const handleBarCodeScanned = (isbn: string) => {
-    console.log("Scanned: ", isbn);
     if (scanned) return;
-
+    
     setScanned(true);
-
-    if (/^(?:\d{10}|\d{13})$/.test(isbn)) {
-      console.log("Valid ISBN:", isbn);
-      // Navigation vers la page de résultats du scan
-      router.push(`/scan/${isbn}`);
-    } else {
-      console.log("Invalid ISBN format");
-      // Réactiver le scanner après 2 secondes pour un ISBN invalide
-      setTimeout(() => {
-        setScanned(false);
-      }, 2000);
-    }
+    console.log('📚 Code scanné:', isbn);
+    console.log('👤 Utilisateur authentifié:', !!isAuthenticated);
+    
+    // Naviguer vers la page de résultat du scan avec l'ISBN comme paramètre de route
+    router.push(`/scan/${encodeURIComponent(isbn)}`);
   };
 
   const toggleTorch = () => {

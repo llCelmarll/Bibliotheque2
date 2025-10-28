@@ -21,9 +21,9 @@ export interface BookCreate {
 	page_count?: number;      // Aligné avec le backend
 	barcode?: string;
 	cover_url?: string;       // Aligné avec le backend
-	authors?: (AuthorCreate | AuthorRead)[];
-	publisher?: PublisherCreate | PublisherRead;
-	genres?: (GenreCreate | GenreRead)[];
+	authors?: (number | string | {name: string; id?: number; exists?: boolean})[];
+	publisher?: number | string | {name: string; id?: number; exists?: boolean};
+	genres?: (number | string | {name: string; id?: number; exists?: boolean})[];
 }
 
 // Types enrichis pour les entités suggérées

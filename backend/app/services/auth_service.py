@@ -86,6 +86,32 @@ class AuthService:
         result = self.session.exec(statement)
         return result.first()
 
+    def create_user(self, email: str, username: str, password: str) -> User:
+        """Créer un nouvel utilisateur"""
+        # Vérifier si l'email existe déjà
+        existing_user = self.get_user_by_email(email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Un compte avec cet email existe déjà"
+            )
+        
+        # Créer le nouvel utilisateur
+        hashed_password = self.get_password_hash(password)
+        new_user = User(
+            email=email,
+            username=username,
+            hashed_password=hashed_password,
+            is_active=True,
+            created_at=datetime.utcnow()
+        )
+        
+        self.session.add(new_user)
+        self.session.commit()
+        self.session.refresh(new_user)
+        
+        return new_user
+
 
 def get_auth_service(session: Session = Depends(get_session)) -> AuthService:
     """Dependency injection pour le service d'authentification"""

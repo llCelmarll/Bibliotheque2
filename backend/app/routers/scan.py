@@ -1,12 +1,18 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 from app.services.scan_service import ScanService, ScanResult
+from app.services.auth_service import get_current_user
+from app.models.User import User
 from app.db import get_session
 
 router = APIRouter(prefix="/scan", tags=["scan"])
 
-def get_scan_service(session: Session = Depends(get_session)) -> ScanService:
-	return ScanService(session)
+def get_scan_service(
+	session: Session = Depends(get_session),
+	current_user: User = Depends(get_current_user)
+) -> ScanService:
+	"""Dependency injection pour le service de scan avec utilisateur authentifié"""
+	return ScanService(session, user_id=current_user.id)
 
 @router.post("", response_model=ScanResult)
 async def scan(

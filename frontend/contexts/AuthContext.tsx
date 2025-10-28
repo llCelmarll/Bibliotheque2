@@ -1,7 +1,7 @@
 // contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authService, LoginRequest, User } from '@/services/authService';
+import { authService, LoginRequest, RegisterRequest, User } from '@/services/authService';
 
 interface AuthContextType {
   user: User | null;
@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -79,6 +80,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const register = async (data: RegisterRequest) => {
+    try {
+      setIsLoading(true);
+      
+      // Inscription
+      const registerResponse = await authService.register(data);
+      
+      // Stocker le token et les informations utilisateur
+      await AsyncStorage.setItem(TOKEN_KEY, registerResponse.token.access_token);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(registerResponse.user));
+      
+      setToken(registerResponse.token.access_token);
+      setUser(registerResponse.user);
+    } catch (error) {
+      console.error('Erreur d\'inscription:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       setIsLoading(true);
@@ -103,6 +125,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     isAuthenticated,
     login,
+    register,
     logout,
     checkAuth,
   };

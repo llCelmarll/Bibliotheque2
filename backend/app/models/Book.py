@@ -51,8 +51,8 @@ class Book(SQLModel, table=True):
     )
 
 
-    # Contraintes d'unicité
+    # Contraintes d'unicité - un utilisateur ne peut pas avoir deux livres identiques
     __table_args__ = (
-        UniqueConstraint("title", "isbn", name="uq_title_isbn"),
+        UniqueConstraint("title", "isbn", "owner_id", name="uq_title_isbn_owner"),
     )
 

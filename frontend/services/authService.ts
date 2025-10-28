@@ -11,12 +11,24 @@ export interface LoginResponse {
   token_type: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  username: string;
+  password: string;
+  confirm_password: string;
+}
+
 export interface User {
   id: number;
   email: string;
   username: string;
   is_active: boolean;
   created_at: string;
+}
+
+export interface RegisterResponse {
+  user: User;
+  token: LoginResponse;
 }
 
 class AuthService {
@@ -54,6 +66,13 @@ class AuthService {
     return this.makeRequest<LoginResponse>('/auth/login-json', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    });
+  }
+
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
+    return this.makeRequest<RegisterResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 

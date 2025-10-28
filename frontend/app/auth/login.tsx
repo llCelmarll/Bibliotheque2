@@ -122,6 +122,14 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Register Link */}
+        <View style={styles.registerLink}>
+          <Text style={styles.registerText}>Pas encore de compte ? </Text>
+          <TouchableOpacity onPress={() => router.push('/auth/register')}>
+            <Text style={styles.registerLinkText}>S'inscrire</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             Version de développement avec authentification
@@ -226,9 +234,25 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 8,
   },
+  registerLink: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  registerText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  registerLinkText: {
+    fontSize: 16,
+    color: '#2196F3',
+    fontWeight: '600',
+  },
   footer: {
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 20,
   },
   footerText: {
     fontSize: 12,

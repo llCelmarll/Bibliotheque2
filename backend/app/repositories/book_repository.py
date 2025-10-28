@@ -108,8 +108,8 @@ class BookRepository:
 			"newest_publication_year": newest_year
 		}
 
-	def get_by_isbn(self, isbn: str) -> Optional[Book]:
-		"""Retourne un livre en fonction de son ISBN."""
+	def get_by_isbn(self, isbn: str, user_id: int = None) -> Optional[Book]:
+		"""Retourne un livre en fonction de son ISBN, optionnellement filtré par utilisateur."""
 		stmt = (
 			select(Book)
 			.where(Book.isbn == isbn)
@@ -119,6 +119,8 @@ class BookRepository:
 				selectinload(Book.genres).selectinload(Genre.books)
 			)
 		)
+		if user_id is not None:
+			stmt = stmt.where(Book.owner_id == user_id)
 		return self.session.exec(stmt).first()
 
 	def get_by_isbn_or_barcode(self, code: str) -> Optional[Book]:
@@ -134,8 +136,8 @@ class BookRepository:
 		)
 		return self.session.exec(stmt).first()
 
-	def search_title_match(self, title: str, isbn: str) -> List[Book]:
-		"""Recherche un livre ayant le même titre dont l'isbn n'est pas isbn"""
+	def search_title_match(self, title: str, isbn: str, user_id: int = None) -> List[Book]:
+		"""Recherche un livre ayant le même titre dont l'isbn n'est pas isbn, optionnellement filtré par utilisateur"""
 
 		stmt = (
 			select(Book)
@@ -145,6 +147,9 @@ class BookRepository:
 				Book.isbn.is_(None)
 			))
 		)
+		
+		if user_id is not None:
+			stmt = stmt.where(Book.owner_id == user_id)
 
 		result = list(self.session.exec(stmt).all())
 		return result

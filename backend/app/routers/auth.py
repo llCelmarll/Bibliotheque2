@@ -2,6 +2,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas.User import UserLogin, UserRead, Token
+from app.schemas.auth import UserCreate, UserResponse
 from app.services.auth_service import AuthService, get_auth_service, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.User import User
 
@@ -54,6 +55,45 @@ async def login_with_json(
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/register", response_model=UserResponse)
+async def register_user(
+    user_data: UserCreate,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Inscription d'un nouvel utilisateur.
+    Crée le compte et retourne directement un token de connexion.
+    """
+    try:
+        # Créer l'utilisateur
+        new_user = auth_service.create_user(
+            email=user_data.email,
+            username=user_data.username,
+            password=user_data.password
+        )
+        
+        # Générer un token pour la connexion automatique
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = auth_service.create_access_token(
+            data={"sub": str(new_user.id)}, expires_delta=access_token_expires
+        )
+        
+        return {
+            "user": new_user,
+            "token": {
+                "access_token": access_token,
+                "token_type": "bearer"
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la création du compte: {str(e)}"
+        )
 
 @router.get("/me", response_model=UserRead)
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
