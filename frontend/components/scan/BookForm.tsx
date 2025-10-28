@@ -51,21 +51,21 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	cover_url: suggested.cover_url || '',
 	authors: USE_ENTITY_SELECTORS 
 		? (suggested.authors?.map(suggestedAuthor => ({ 
-				id: suggestedAuthor.id || null,
+				id: suggestedAuthor.id || undefined,
 				name: suggestedAuthor.name, 
 				exists: suggestedAuthor.exists 
 			} as Author)) || [])
 		: (suggested.authors?.map(a => a.name).join(', ') || ''),
 	publisher: USE_ENTITY_SELECTORS 
 		? (suggested.publisher ? [{
-				id: suggested.publisher.id || null,
+				id: suggested.publisher.id || undefined,
 				name: suggested.publisher.name,
 				exists: suggested.publisher.exists
 			} as Entity<PublisherMetadata>] : [])
 		: (suggested.publisher?.name || ''),
 	genres: USE_ENTITY_SELECTORS
 		? (suggested.genres?.map(suggestedGenre => ({
-				id: suggestedGenre.id || null,
+				id: suggestedGenre.id || undefined,
 				name: suggestedGenre.name,
 				exists: suggestedGenre.exists
 			} as Entity<GenreMetadata>)) || [])
@@ -82,7 +82,7 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 	cover_url: formData.cover_url || undefined,            // Aligné avec le backend
 	authors: USE_ENTITY_SELECTORS && Array.isArray(formData.authors)
 		? formData.authors.map(author => 
-			author.exists ? { name: author.name, id: author.id, exists: true } : author.name
+			author.exists ? { name: author.name, id: author.id ?? undefined, exists: true } : author.name
 		)
 		: typeof formData.authors === 'string' && formData.authors
 		? formData.authors.split(',').map(author => author.trim())
@@ -90,7 +90,7 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 	publisher: USE_ENTITY_SELECTORS && Array.isArray(formData.publisher)
 		? (formData.publisher.length > 0 ? 
 			formData.publisher[0].exists 
-				? { name: formData.publisher[0].name, id: formData.publisher[0].id, exists: true }
+				? { name: formData.publisher[0].name, id: formData.publisher[0].id ?? undefined, exists: true }
 				: formData.publisher[0].name
 			: undefined)
 		: typeof formData.publisher === 'string' && formData.publisher
@@ -98,7 +98,7 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 		: undefined,
 	genres: USE_ENTITY_SELECTORS && Array.isArray(formData.genres)
 		? formData.genres.map(genre => 
-			genre.exists ? { name: genre.name, id: genre.id, exists: true } : genre.name
+			genre.exists ? { name: genre.name, id: genre.id ?? undefined, exists: true } : genre.name
 		)
 		: typeof formData.genres === 'string' && formData.genres
 		? formData.genres.split(',').map((genre: string) => genre.trim())
