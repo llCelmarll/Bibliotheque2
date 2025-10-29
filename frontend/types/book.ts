@@ -80,20 +80,20 @@ export interface BookBase {
 }
 
 export interface GoogleBooksData {
-    title: string;
-    authors: string[];
-    publisher: string;
-    publishedDate: string;
-    description: string;
-    categories: string[];
-    imageLinks: {
-        smallThumbnail: string;
-        thumbnail: string;
+    title?: string;
+    authors?: string[];
+    publisher?: string;
+    publishedDate?: string;
+    description?: string;
+    categories?: string[];
+    imageLinks?: {
+        smallThumbnail?: string;
+        thumbnail?: string;
     };
-    language: string;
-    pageCount: number;
-    subtitle: string;
-    infoLink: string;
+    language?: string;
+    pageCount?: number;
+    subtitle?: string;
+    infoLink?: string;
 }
 
 export interface OpenLibraryData {

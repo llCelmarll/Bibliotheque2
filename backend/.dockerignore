@@ -1,0 +1,21 @@
+# Backend .dockerignore
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+.idea/
+.vscode/
+.git/
+README.md
+*.md
+tests/
+.env
+.env.local
+.env.*.local
+node_modules/
+dist/
+build/

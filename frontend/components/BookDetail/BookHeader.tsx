@@ -26,7 +26,7 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
     if (book.base && book.base.authors && book.base.authors.length > 0) {
       return (
           <Text style={styles.author}>
-            {book.base.authors.join(", ")} (Base)
+            {book.base.authors.map(author => author.name).join(", ")} (Base)
           </Text>
       );
     }

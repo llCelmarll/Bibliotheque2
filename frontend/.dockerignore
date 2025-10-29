@@ -1,0 +1,19 @@
+# Frontend .dockerignore
+node_modules/
+.expo/
+.vscode/
+.idea/
+.git/
+README.md
+*.md
+.env.local
+.env.*.local
+dist/
+build/
+coverage/
+__tests__/
+*.test.js
+*.test.ts
+*.test.tsx
+.DS_Store
+Thumbs.db

@@ -13,15 +13,24 @@ export function GoogleBooksTab() {
 	const route = useRoute();
 	const { book } = route.params as { book: BookDetail };
 
+	// Vérification de sécurité
+	if (!book?.google_books) {
+		return (
+			<View style={styles.container}>
+				<Text style={styles.value}>Aucune donnée Google Books disponible</Text>
+			</View>
+		);
+	}
+
 	const handleOpenGoogleBooks = async () => {
-		if (book.google_books.infoLink) {
+		if (book.google_books?.infoLink) {
 			await WebBrowser.openBrowserAsync(book.google_books.infoLink);
 		}
 	};
 
 
 	const renderCategories = () => {
-		if (!book.google_books.categories || book.google_books.categories.length === 0) {
+		if (!book.google_books?.categories || book.google_books.categories.length === 0) {
 			return <Text style={styles.value}>Non renseigné</Text>;
 		}
 		return (
@@ -36,7 +45,7 @@ export function GoogleBooksTab() {
 	return (
 		<ScrollView style={styles.container}>
 
-			{book.google_books.infoLink && (
+			{book.google_books?.infoLink && (
 				<Pressable
 					style={styles.linkButton}
 					onPress={handleOpenGoogleBooks}
@@ -46,40 +55,40 @@ export function GoogleBooksTab() {
 				</Pressable>
 			)}
 
-			<CollapsibleSection title="Description" defaultExpanded={!!book.google_books.description}>
+			<CollapsibleSection title="Description" defaultExpanded={!!book.google_books?.description}>
 				<Text style={styles.description}>
-					{book.google_books.description || 'Non renseigné'}
+					{book.google_books?.description || 'Non renseigné'}
 				</Text>
 			</CollapsibleSection>
 
 			<CollapsibleSection title="Details">
 				<InfoRow
-					label={book.google_books.authors.length > 1 ? "Auteurs" : "Auteur"}
-					value={book.google_books.authors.join(", ") || 'Non reseigné'}
+					label={book.google_books?.authors && book.google_books.authors.length > 1 ? "Auteurs" : "Auteur"}
+					value={book.google_books?.authors ? book.google_books.authors.join(", ") : 'Non renseigné'}
 				/>
 				<InfoRow
 					label="Éditeur" 
-					value={book.google_books.publisher || 'Non renseigné'} 
+					value={book.google_books?.publisher || 'Non renseigné'} 
 				/>
 				<InfoRow 
 					label="Date de publication" 
-					value={book.google_books.publishedDate || 'Non renseigné'} 
+					value={book.google_books?.publishedDate || 'Non renseigné'} 
 				/>
 				<InfoRow 
 					label="Langue" 
-					value={book.google_books.language || 'Non renseigné'} 
+					value={book.google_books?.language || 'Non renseigné'} 
 				/>
 				<InfoRow 
 					label="Pages" 
-					value={book.google_books.pageCount ? book.google_books.pageCount.toString() : 'Non renseigné'} 
+					value={book.google_books?.pageCount ? book.google_books.pageCount.toString() : 'Non renseigné'} 
 				/>
 				<InfoRow
 					label="Sous-titre"
-					value={book.google_books.subtitle || 'Non renseigné'}
+					value={book.google_books?.subtitle || 'Non renseigné'}
 				/>
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Categories" defaultExpanded={!!book.google_books.categories?.length}>
+			<CollapsibleSection title="Categories" defaultExpanded={!!book.google_books?.categories?.length}>
 				{renderCategories()}
 			</CollapsibleSection>
 
