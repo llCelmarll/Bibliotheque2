@@ -16,7 +16,20 @@ build/
 .DS_Store
 Thumbs.db
 
+# Variables d'environnement - CRITIQUE DE SÉCURITÉ
 .env
+.env.*
+!.env.example
 .env.local
+.env.development
+.env.production
+.env.staging
+
+# Fichiers sensibles
+*.key
+*.pem
+*.p12
+secrets/
+config/secrets/
 
 testLivrotheque2.csv
