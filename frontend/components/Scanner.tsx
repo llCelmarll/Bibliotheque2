@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Platform, View, Text, Button, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
@@ -11,7 +11,25 @@ interface ScannerProps {
 }
 
 export default function Scanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) {
+  const [hasCamera, setHasCamera] = useState(false);
   const isMobile = Platform.OS !== "web";
+
+  // Sur web, vérifier si getUserMedia est disponible (navigateur mobile avec caméra)
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const checkCamera = async () => {
+        try {
+          const devices = await navigator.mediaDevices?.enumerateDevices();
+          const hasVideoInput = devices?.some(device => device.kind === 'videoinput');
+          setHasCamera(!!hasVideoInput);
+        } catch (error) {
+          console.log('Pas de caméra disponible:', error);
+          setHasCamera(false);
+        }
+      };
+      checkCamera();
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -21,8 +39,139 @@ export default function Scanner({ onScanned, torchEnabled, onModeChange }: Scann
           torchEnabled={torchEnabled} 
           onModeChange={onModeChange}
         />
+      ) : hasCamera ? (
+        <WebScanner onScanned={onScanned} onModeChange={onModeChange} />
       ) : (
         <ManualInput onScanned={onScanned} />
+      )}
+    </View>
+  );
+}
+
+/* ----------------------- WEB SCANNER (ZXing) ----------------------- */
+function WebScanner({ onScanned, onModeChange }: ScannerProps) {
+  const [scanned, setScanned] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === "web" && !showManualInput && !scanned) {
+      startCamera();
+    }
+
+    return () => {
+      stopCamera();
+    };
+  }, [showManualInput, scanned]);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        startScanning();
+      }
+    } catch (err) {
+      console.error('Erreur accès caméra:', err);
+      setError('Impossible d\'accéder à la caméra. Autorisez l\'accès ou utilisez la saisie manuelle.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const startScanning = async () => {
+    if (!videoRef.current) return;
+
+    // Utiliser ZXing pour scanner
+    const { BrowserMultiFormatReader } = await import('@zxing/browser');
+    const codeReader = new BrowserMultiFormatReader();
+
+    try {
+      await codeReader.decodeFromVideoElement(videoRef.current, (result) => {
+        if (result && !scanned) {
+          setScanned(true);
+          onScanned(result.getText());
+          stopCamera();
+        }
+      });
+    } catch (err) {
+      console.error('Erreur scan:', err);
+    }
+  };
+
+  if (showManualInput) {
+    return (
+      <View style={styles.manualInputWrapper}>
+        <ManualInput onScanned={onScanned} />
+        <Button 
+          title="Retour au scan" 
+          onPress={() => {
+            setShowManualInput(false);
+            setScanned(false);
+            onModeChange?.(false);
+          }}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {error ? (
+        <View style={styles.inputContainer}>
+          <Text style={styles.text}>{error}</Text>
+          <Button 
+            title="Saisie manuelle" 
+            onPress={() => {
+              setShowManualInput(true);
+              onModeChange?.(true);
+            }}
+          />
+        </View>
+      ) : (
+        <>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          />
+          <View style={styles.overlay}>
+            <View style={styles.scanArea}>
+              <View style={styles.cornerTL} />
+              <View style={styles.cornerTR} />
+              <View style={styles.cornerBL} />
+              <View style={styles.cornerBR} />
+            </View>
+          </View>
+          <View style={styles.controlsContainer}>
+            <Text style={styles.instruction}>
+              Placez le code-barre dans le cadre
+            </Text>
+            <Button 
+              title="Saisie manuelle" 
+              onPress={() => {
+                setShowManualInput(true);
+                onModeChange?.(true);
+              }}
+            />
+          </View>
+        </>
       )}
     </View>
   );

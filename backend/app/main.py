@@ -12,7 +12,12 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="Bibliothèque API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Bibliothèque API", 
+    version="0.1.0", 
+    lifespan=lifespan,
+    openapi_version="3.1.0"
+)
 
 app.add_middleware(
     CORSMiddleware,

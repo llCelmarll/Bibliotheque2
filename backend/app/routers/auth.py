@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas.User import UserLogin, UserRead, Token
 from app.schemas.auth import UserCreate, UserResponse
@@ -59,18 +59,21 @@ async def login_with_json(
 @router.post("/register", response_model=UserResponse)
 async def register_user(
     user_data: UserCreate,
+    request: Request,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Inscription d'un nouvel utilisateur.
     Crée le compte et retourne directement un token de connexion.
+    Envoie une notification email avec l'IP du nouvel inscrit.
     """
     try:
         # Créer l'utilisateur
-        new_user = auth_service.create_user(
+        new_user = await auth_service.create_user(
             email=user_data.email,
             username=user_data.username,
-            password=user_data.password
+            password=user_data.password,
+            request=request
         )
         
         # Générer un token pour la connexion automatique

@@ -10,8 +10,12 @@ services:
     volumes:
       - ./backend:/app
       - bibliotheque_data:/app/data
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=sqlite:///./data/bibliotheque.db
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/bibliotheque.db}
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
     networks:

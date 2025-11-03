@@ -6,8 +6,11 @@ console.log('process.env.EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL)
 console.log('Constants.expoConfig?.extra?.apiUrl:', Constants.expoConfig?.extra?.apiUrl);
 
 const API_CONFIG = {
-  // Changez cette URL pour pointer vers votre backend
-  BASE_URL: process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000',
+  // En production web, utiliser /api (proxifié par Nginx)
+  // En développement local, utiliser process.env.EXPO_PUBLIC_API_URL
+  BASE_URL: typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+    ? '/api'  // Production web : utiliser le proxy Nginx
+    : (process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000'),
   ENDPOINTS: {
     SCAN: '/scan',
     BOOKS: '/books',

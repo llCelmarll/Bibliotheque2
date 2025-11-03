@@ -9,9 +9,10 @@ from app.models.User import User
 from app.db import get_session
 
 # Configuration de sécurité
-SECRET_KEY = "votre-clé-secrète-super-longue-et-complexe-ici"  # À changer en production !
+import os
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-not-for-production")  # Depuis variables d'environnement
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # Configuration du bearer token
 security = HTTPBearer()
@@ -86,7 +87,7 @@ class AuthService:
         result = self.session.exec(statement)
         return result.first()
 
-    def create_user(self, email: str, username: str, password: str) -> User:
+    async def create_user(self, email: str, username: str, password: str, request=None) -> User:
         """Créer un nouvel utilisateur"""
         # Vérifier si l'email existe déjà
         existing_user = self.get_user_by_email(email)
@@ -109,6 +110,22 @@ class AuthService:
         self.session.add(new_user)
         self.session.commit()
         self.session.refresh(new_user)
+        
+        # Envoyer notification email
+        if request:
+            try:
+                from .email_service import email_notification_service
+                await email_notification_service.send_registration_notification(
+                    username=username,
+                    email=email,
+                    request=request,
+                    additional_info={
+                        "ID utilisateur": new_user.id,
+                        "Date création": new_user.created_at.strftime("%d/%m/%Y %H:%M:%S")
+                    }
+                )
+            except Exception as e:
+                print(f"⚠️ Erreur notification email : {e}")
         
         return new_user
 
