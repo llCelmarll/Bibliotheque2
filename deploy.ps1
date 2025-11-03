@@ -13,7 +13,11 @@ Write-Host ""
 Write-Host "Copie des fichiers de configuration..." -ForegroundColor Yellow
 Get-Content nginx.conf -Raw | ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "cat > ${SYNOLOGY_PATH}/nginx.conf"
 Get-Content .env.synology -Raw | ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "cat > ${SYNOLOGY_PATH}/.env"
-ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/data"
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/data ${SYNOLOGY_PATH}/backups"
+
+# Backup de la base de donnees si elle existe
+Write-Host "Backup de la base de donnees..." -ForegroundColor Yellow
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "if [ -f ${SYNOLOGY_PATH}/data/bibliotheque.db ] && [ -s ${SYNOLOGY_PATH}/data/bibliotheque.db ]; then cp ${SYNOLOGY_PATH}/data/bibliotheque.db ${SYNOLOGY_PATH}/backups/bibliotheque_\$(date +%Y%m%d_%H%M%S).db; echo 'Backup cree'; else echo 'Pas de backup (DB vide ou inexistante)'; fi"
 
 # Arreter les anciens conteneurs
 Write-Host "Arret des anciens conteneurs..." -ForegroundColor Yellow
