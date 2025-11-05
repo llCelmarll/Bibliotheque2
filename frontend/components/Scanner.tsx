@@ -8,9 +8,10 @@ interface ScannerProps {
   onScanned: (isbn: string) => void;
   torchEnabled?: boolean;
   onModeChange?: (isManual: boolean) => void;
+  onManualAdd?: () => void;
 }
 
-export default function Scanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) {
+export default function Scanner({ onScanned, torchEnabled, onModeChange, onManualAdd }: ScannerProps) {
   const [hasCamera, setHasCamera] = useState(false);
   const [isMobileWeb, setIsMobileWeb] = useState(false);
   const isMobile = Platform.OS !== "web";
@@ -45,6 +46,7 @@ export default function Scanner({ onScanned, torchEnabled, onModeChange }: Scann
           onScanned={onScanned} 
           torchEnabled={torchEnabled} 
           onModeChange={onModeChange}
+          onManualAdd={onManualAdd}
         />
       ) : (
         // Sur web : saisie manuelle uniquement (scanner réservé à l'app native)
@@ -235,7 +237,7 @@ function ManualInput({ onScanned }: ScannerProps) {
 }
 
 /* ---------------------- MOBILE SCANNER (Expo Camera) ---------------------- */
-function MobileScanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) {
+function MobileScanner({ onScanned, torchEnabled, onModeChange, onManualAdd }: ScannerProps) {
 	const [permission, requestPermission] = useCameraPermissions();
 	const [scanned, setScanned] = useState(false);
 	const [showManualInput, setShowManualInput] = useState(false);
@@ -254,6 +256,7 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) 
 					Pour scanner les codes-barres des livres, l'application a besoin d'accéder à votre caméra.
 				</Text>
 				<TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+					<MaterialCommunityIcons name="camera" size={20} color="white" />
 					<Text style={styles.permissionButtonText}>Autoriser l'accès</Text>
 				</TouchableOpacity>
 				<TouchableOpacity 
@@ -263,7 +266,8 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) 
 						onModeChange?.(true);
 					}}
 				>
-					<Text style={styles.manualButtonText}>Saisir manuellement</Text>
+					<MaterialCommunityIcons name="keyboard" size={20} color="white" />
+					<Text style={styles.manualButtonText}>Saisir l'ISBN manuellement</Text>
 				</TouchableOpacity>
 			</View>
 		);
@@ -309,6 +313,9 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) 
                   color="white"
                 />
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.bottomControls}>
               <Text style={styles.instruction}>
                 Placez le code-barre dans le cadre
               </Text>
@@ -320,8 +327,17 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) 
                 }}
               >
                 <MaterialCommunityIcons name="keyboard" size={20} color="white" />
-                <Text style={styles.manualInputButtonText}>Saisie manuelle</Text>
+                <Text style={styles.manualInputButtonText}>Saisir l'ISBN manuellement</Text>
               </TouchableOpacity>
+              {onManualAdd && (
+                <TouchableOpacity 
+                  style={styles.manualAddButton} 
+                  onPress={onManualAdd}
+                >
+                  <MaterialCommunityIcons name="book-plus" size={20} color="white" />
+                  <Text style={styles.manualAddButtonText}>Ajout manuel</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </CameraView>
         </>
@@ -403,10 +419,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   controlsContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    paddingBottom: 50,
+  },
+  bottomControls: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    gap: 15,
   },
   scanArea: {
     width: scanAreaSize,
@@ -492,11 +518,16 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   permissionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#007AFF',
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 10,
     marginBottom: 15,
+    gap: 8,
+    width: '80%',
   },
   permissionButtonText: {
     color: 'white',
@@ -504,26 +535,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   manualButton: {
-    backgroundColor: '#f0f0f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6c757d',
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 10,
+    gap: 8,
+    width: '80%',
   },
   manualButtonText: {
-    color: '#333',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
   manualInputButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
+    justifyContent: 'center',
+    backgroundColor: '#6c757d',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
     gap: 8,
+    width: '80%',
+    alignSelf: 'center',
   },
   manualInputButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  manualAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3498db',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+    gap: 8,
+    width: '80%',
+    alignSelf: 'center',
+  },
+  manualAddButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',

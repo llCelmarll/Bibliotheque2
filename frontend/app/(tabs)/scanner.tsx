@@ -82,17 +82,8 @@ export default function ScannerScreen() {
         onScanned={handleBarCodeScanned}
         torchEnabled={torch}
         onModeChange={handleModeChange}
+        onManualAdd={() => router.push('/scan/manual')}
       />
-      
-      {/* Bouton flottant pour l'ajout manuel */}
-      <TouchableOpacity 
-        style={styles.manualAddButton}
-        onPress={() => router.push('/scan/manual')}
-        activeOpacity={0.8}
-      >
-        <MaterialIcons name="edit" size={24} color="#fff" />
-        <Text style={styles.manualAddText}>Ajout manuel</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -114,37 +105,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
     color: Platform.OS === 'web' ? '#333' : '#fff',
-  },
-  manualAddButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    backgroundColor: '#3498db',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 25,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-      },
-    }),
-  },
-  manualAddText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   authContainer: {
     flex: 1,

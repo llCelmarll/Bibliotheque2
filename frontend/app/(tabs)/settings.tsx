@@ -1,18 +1,66 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Alert } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import * as Updates from 'expo-updates';
 
 export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/auth/login");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  const checkForUpdates = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Non disponible', 'Les mises à jour automatiques ne sont pas disponibles sur le web.');
+      return;
+    }
+
+    setIsCheckingUpdates(true);
+    try {
+      console.log('🔍 Checking for updates...');
+      const update = await Updates.checkForUpdateAsync();
+      
+      if (update.isAvailable) {
+        console.log('✅ Update available! Downloading...');
+        Alert.alert(
+          'Mise à jour disponible',
+          'Une nouvelle version est disponible. Téléchargement en cours...',
+          [{ text: 'OK' }]
+        );
+        
+        await Updates.fetchUpdateAsync();
+        console.log('✅ Update downloaded! Reloading...');
+        
+        Alert.alert(
+          'Mise à jour téléchargée',
+          'L\'application va redémarrer pour appliquer la mise à jour.',
+          [
+            {
+              text: 'Redémarrer',
+              onPress: async () => {
+                await Updates.reloadAsync();
+              }
+            }
+          ]
+        );
+      } else {
+        console.log('ℹ️ No updates available');
+        Alert.alert('À jour', 'Vous avez déjà la dernière version de l\'application.');
+      }
+    } catch (error) {
+      console.error('❌ Error checking for updates:', error);
+      Alert.alert('Erreur', 'Impossible de vérifier les mises à jour. Veuillez réessayer plus tard.');
+    } finally {
+      setIsCheckingUpdates(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -51,6 +99,24 @@ export default function SettingsScreen() {
         {/* Section Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>
+          
+          {Platform.OS !== 'web' && (
+            <TouchableOpacity 
+              style={[styles.actionButton, { marginBottom: 12 }]} 
+              onPress={checkForUpdates}
+              disabled={isCheckingUpdates}
+            >
+              <MaterialIcons name="system-update" size={24} color="#2196F3" />
+              <Text style={styles.updateButtonText}>
+                {isCheckingUpdates ? 'Vérification...' : 'Vérifier les mises à jour'}
+              </Text>
+              {isCheckingUpdates ? (
+                <ActivityIndicator size="small" color="#2196F3" />
+              ) : (
+                <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+              )}
+            </TouchableOpacity>
+          )}
           
           <TouchableOpacity 
             style={styles.actionButton} 
@@ -163,6 +229,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  updateButtonText: {
+    fontSize: 16,
+    color: "#2196F3",
+    fontWeight: "500",
+    flex: 1,
+    marginLeft: 12,
   },
   logoutButtonText: {
     fontSize: 16,
