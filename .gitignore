@@ -32,4 +32,6 @@ Thumbs.db
 secrets/
 config/secrets/
 
+# Données de test et testeurs
 testLivrotheque2.csv
+deploy/testers-ips.txt

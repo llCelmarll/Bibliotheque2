@@ -94,7 +94,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(registerResponse.token.access_token);
       setUser(registerResponse.user);
     } catch (error) {
-      console.error('Erreur d\'inscription:', error);
       throw error;
     } finally {
       setIsLoading(false);

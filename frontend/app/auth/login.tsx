@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,33 +23,47 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   const { login } = useAuth();
   const router = useRouter();
 
+  // Récupérer l'erreur depuis AsyncStorage si elle existe
+  useEffect(() => {
+    const loadError = async () => {
+      const error = await AsyncStorage.getItem('register_error');
+      
+      if (error) {
+        setErrorMessage(error);
+        // Supprimer l'erreur après l'avoir affichée
+        await AsyncStorage.removeItem('register_error');
+      }
+    };
+    
+    loadError();
+  }, []);
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      setErrorMessage('Veuillez remplir tous les champs');
       return;
     }
 
     setIsLoading(true);
+    setErrorMessage('');
     try {
       await login({ email: email.trim(), password });
       router.replace('/(tabs)/books');
     } catch (error) {
-      Alert.alert(
-        'Erreur de connexion',
-        error instanceof Error ? error.message : 'Une erreur est survenue'
-      );
+      const message = error instanceof Error ? error.message : 'Une erreur est survenue';
+      setErrorMessage(message);
+      // Garder Alert pour les apps natives
+      if (Platform.OS !== 'web') {
+        Alert.alert('Erreur de connexion', message);
+      }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const fillTestCredentials = () => {
-    setEmail('admin@example.com');
-    setPassword('admin123');
   };
 
   return (
@@ -56,19 +73,35 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <MaterialIcons name="library-books" size={80} color="#2196F3" />
+          {Platform.OS === 'web' && (
+            <Image 
+              source={require('@/assets/icon.png')} 
+              style={styles.logo}
+            />
+          )}
           <Text style={styles.title}>Bibliothèque</Text>
           <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
         </View>
 
         <View style={styles.form}>
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <MaterialIcons name="error-outline" size={20} color="#f44336" />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.inputContainer}>
             <MaterialIcons name="email" size={24} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder="Email (ex: user@example.com)"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                // Effacer l'erreur quand l'utilisateur tape
+                if (errorMessage) setErrorMessage('');
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
@@ -82,7 +115,11 @@ export default function LoginScreen() {
               style={styles.input}
               placeholder="Mot de passe"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                // Effacer l'erreur quand l'utilisateur tape
+                if (errorMessage) setErrorMessage('');
+              }}
               secureTextEntry={!showPassword}
               autoComplete="password"
               editable={!isLoading}
@@ -111,15 +148,6 @@ export default function LoginScreen() {
               <Text style={styles.loginButtonText}>Se connecter</Text>
             )}
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={fillTestCredentials}
-            disabled={isLoading}
-          >
-            <MaterialIcons name="science" size={20} color="#2196F3" />
-            <Text style={styles.testButtonText}>Utiliser le compte de test</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Register Link */}
@@ -135,6 +163,15 @@ export default function LoginScreen() {
             Version de développement avec authentification
           </Text>
         </View>
+
+        {Platform.OS === 'web' && (
+          <TouchableOpacity 
+            style={styles.downloadButton}
+            onPress={() => Linking.openURL('https://mabibliotheque.ovh/bibliotheque.apk')}
+          >
+            <Text style={styles.downloadButtonText}>📱 Télécharger l'application Android</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -153,6 +190,24 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 40,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 20,
+  },
+  downloadButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  downloadButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   title: {
     fontSize: 32,
@@ -178,6 +233,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffebee',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f44336',
+  },
+  errorText: {
+    color: '#c62828',
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -217,22 +288,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  testButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#2196F3',
-    borderRadius: 8,
-    backgroundColor: '#f8f9fa',
-  },
-  testButtonText: {
-    color: '#2196F3',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
   },
   registerLink: {
     flexDirection: 'row',

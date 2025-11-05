@@ -38,28 +38,7 @@ jest.mock('@expo/vector-icons', () => {
   };
 });
 
-jest.mock('expo-barcode-scanner', () => ({
-  BarCodeScanner: {
-    requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-    Constants: {
-      BarCodeType: {
-        qr: 'qr',
-        pdf417: 'pdf417',
-        aztec: 'aztec',
-        ean13: 'ean13',
-        ean8: 'ean8',
-        code39: 'code39',
-        code93: 'code93',
-        code128: 'code128',
-        code39mod43: 'code39mod43',
-        codabar: 'codabar',
-        interleaved2of5: 'interleaved2of5',
-        itf14: 'itf14',
-        upc_e: 'upc_e',
-      },
-    },
-  },
-}));
+// expo-barcode-scanner removed - using expo-camera for native barcode scanning
 
 jest.mock('expo-camera', () => ({
   Camera: {

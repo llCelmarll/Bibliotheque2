@@ -1,16 +1,23 @@
 // config/api.ts
-import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-console.log('🔧 Configuration API:');
-console.log('process.env.EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
-console.log('Constants.expoConfig?.extra?.apiUrl:', Constants.expoConfig?.extra?.apiUrl);
+const getBaseUrl = () => {
+  // App native (iOS/Android) : toujours utiliser l'URL complète du backend
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    return process.env.EXPO_PUBLIC_API_URL || 'https://mabibliotheque.ovh/api';
+  }
+  
+  // Web production : utiliser /api (proxifié par Nginx)
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return '/api';
+  }
+  
+  // Développement local (web) : utiliser localhost
+  return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+};
 
 const API_CONFIG = {
-  // En production web, utiliser /api (proxifié par Nginx)
-  // En développement local, utiliser process.env.EXPO_PUBLIC_API_URL
-  BASE_URL: typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
-    ? '/api'  // Production web : utiliser le proxy Nginx
-    : (process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000'),
+  BASE_URL: getBaseUrl(),
   ENDPOINTS: {
     SCAN: '/scan',
     BOOKS: '/books',
@@ -19,7 +26,5 @@ const API_CONFIG = {
     GENRES: '/genres',
   }
 };
-
-console.log('📡 API BASE_URL configurée:', API_CONFIG.BASE_URL);
 
 export default API_CONFIG;

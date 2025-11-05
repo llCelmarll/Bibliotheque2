@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
 from typing import Optional
 import hashlib
+import re
 from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import Session, select
 from app.models.User import User
 from app.db import get_session
+from app.config.whitelist import is_email_allowed
 
 # Configuration de sécurité
 import os
@@ -87,17 +89,77 @@ class AuthService:
         result = self.session.exec(statement)
         return result.first()
 
+    def validate_email(self, email: str) -> bool:
+        """Valider le format d'un email"""
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(email_regex, email) is not None
+    
+    def validate_password(self, password: str) -> tuple[bool, str]:
+        """
+        Valider la force d'un mot de passe.
+        Retourne (is_valid, error_message)
+        """
+        if len(password) < 8:
+            return False, "Le mot de passe doit contenir au moins 8 caractères"
+        
+        if not re.search(r'[A-Z]', password):
+            return False, "Le mot de passe doit contenir au moins une majuscule"
+        
+        if not re.search(r'[a-z]', password):
+            return False, "Le mot de passe doit contenir au moins une minuscule"
+        
+        if not re.search(r'[0-9]', password):
+            return False, "Le mot de passe doit contenir au moins un chiffre"
+        
+        return True, ""
+
     async def create_user(self, email: str, username: str, password: str, request=None) -> User:
-        """Créer un nouvel utilisateur"""
-        # Vérifier si l'email existe déjà
+        """Créer un nouvel utilisateur avec validation stricte"""
+        
+        # 1. Valider le format de l'email
+        if not self.validate_email(email):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Format d'email invalide"
+            )
+        
+        # 2. Vérifier si l'email est dans la liste blanche
+        if not is_email_allowed(email):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cette adresse email n'est pas autorisée à créer un compte. Contactez l'administrateur."
+            )
+        
+        # 3. Vérifier si l'email existe déjà
         existing_user = self.get_user_by_email(email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Un compte avec cet email existe déjà"
+                detail="Un compte avec cette adresse email existe déjà"
             )
         
-        # Créer le nouvel utilisateur
+        # 4. Valider la force du mot de passe
+        is_valid, error_msg = self.validate_password(password)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg
+            )
+        
+        # 5. Valider le username
+        if len(username) < 3:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Le nom d'utilisateur doit contenir au moins 3 caractères"
+            )
+        
+        if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores"
+            )
+        
+        # 6. Créer le nouvel utilisateur
         hashed_password = self.get_password_hash(password)
         new_user = User(
             email=email,
@@ -111,7 +173,7 @@ class AuthService:
         self.session.commit()
         self.session.refresh(new_user)
         
-        # Envoyer notification email
+        # 7. Envoyer notification email
         if request:
             try:
                 from .email_service import email_notification_service

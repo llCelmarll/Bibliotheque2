@@ -12,22 +12,29 @@ interface ScannerProps {
 
 export default function Scanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) {
   const [hasCamera, setHasCamera] = useState(false);
+  const [isMobileWeb, setIsMobileWeb] = useState(false);
   const isMobile = Platform.OS !== "web";
 
-  // Sur web, vérifier si getUserMedia est disponible (navigateur mobile avec caméra)
+  // Sur web, vérifier si c'est un navigateur mobile ET si une caméra est disponible
   useEffect(() => {
     if (Platform.OS === "web") {
-      const checkCamera = async () => {
-        try {
-          const devices = await navigator.mediaDevices?.enumerateDevices();
-          const hasVideoInput = devices?.some(device => device.kind === 'videoinput');
-          setHasCamera(!!hasVideoInput);
-        } catch (error) {
-          console.log('Pas de caméra disponible:', error);
-          setHasCamera(false);
-        }
-      };
-      checkCamera();
+      // Détection mobile web (smartphone/tablette)
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobileWeb(isMobileDevice);
+
+      if (isMobileDevice) {
+        const checkCamera = async () => {
+          try {
+            const devices = await navigator.mediaDevices?.enumerateDevices();
+            const hasVideoInput = devices?.some(device => device.kind === 'videoinput');
+            setHasCamera(!!hasVideoInput);
+          } catch (error) {
+            console.log('Pas de caméra disponible:', error);
+            setHasCamera(false);
+          }
+        };
+        checkCamera();
+      }
     }
   }, []);
 
@@ -39,9 +46,8 @@ export default function Scanner({ onScanned, torchEnabled, onModeChange }: Scann
           torchEnabled={torchEnabled} 
           onModeChange={onModeChange}
         />
-      ) : hasCamera ? (
-        <WebScanner onScanned={onScanned} onModeChange={onModeChange} />
       ) : (
+        // Sur web : saisie manuelle uniquement (scanner réservé à l'app native)
         <ManualInput onScanned={onScanned} />
       )}
     </View>

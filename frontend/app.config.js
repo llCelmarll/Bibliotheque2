@@ -12,9 +12,16 @@ module.exports = {
     },
     extra: {
       apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000',
+      eas: {
+        projectId: "b94a31f7-30e7-4781-8a4d-c32e75cb7e82"
+      }
     },
     updates: {
+      url: "https://u.expo.dev/b94a31f7-30e7-4781-8a4d-c32e75cb7e82",
       fallbackToCacheTimeout: 0
+    },
+    runtimeVersion: {
+      policy: "appVersion"
     },
     assetBundlePatterns: [
       "**/*" // Pattern pour inclure tous les assets

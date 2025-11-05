@@ -73,6 +73,8 @@ class EmailNotificationService:
             
             # Corps de l'email
             alert_message = "⚠️ ALERTE : Cette inscription provient d'une IP non autorisée!" if not is_authorized else ""
+            user_agent = request.headers.get('User-Agent', 'Non spécifié')
+            user_agent_short = user_agent[:100] + "..." if len(user_agent) > 100 else user_agent
             
             body = f"""
 Nouvelle inscription sur Ma Bibliothèque !
@@ -84,7 +86,7 @@ Nouvelle inscription sur Ma Bibliothèque !
 
 🌐 INFORMATIONS RÉSEAU :
 • Adresse IP : {client_ip}
-• User-Agent : {request.headers.get('User-Agent', 'Non spécifié')[:100]}...
+• User-Agent : {user_agent_short}
 • Referer : {request.headers.get('Referer', 'Accès direct')}
 
 🔐 SÉCURITÉ :

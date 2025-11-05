@@ -19,3 +19,9 @@ tests/
 node_modules/
 dist/
 build/
+
+# Ignorer les bases de données (ne doivent pas être dans l'image)
+*.db
+*.db-*
+data/
+backups/

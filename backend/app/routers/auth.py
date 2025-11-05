@@ -5,18 +5,42 @@ from app.schemas.User import UserLogin, UserRead, Token
 from app.schemas.auth import UserCreate, UserResponse
 from app.services.auth_service import AuthService, get_auth_service, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.User import User
+from app.utils.rate_limiter import rate_limiter
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+def get_client_ip(request: Request) -> str:
+    """Récupérer l'IP réelle du client (même derrière un proxy)"""
+    # Vérifier les headers de proxy courants
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip
+    
+    # Fallback sur l'IP du client direct
+    if request.client:
+        return request.client.host
+    
+    return "unknown"
+
 @router.post("/login", response_model=Token)
 async def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Connexion utilisateur avec email et mot de passe.
     Retourne un token JWT pour les requêtes authentifiées.
+    Protection rate limiting: 10 tentatives max par 15 minutes.
     """
+    # Rate limiting
+    client_ip = get_client_ip(request)
+    rate_limiter.check_and_record(client_ip, "login", max_attempts=10, window_minutes=15)
+    
     user = auth_service.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -24,6 +48,9 @@ async def login_for_access_token(
             detail="Email ou mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Succès: effacer les tentatives de login
+    rate_limiter.clear_attempts(client_ip, "login")
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth_service.create_access_token(
@@ -34,13 +61,19 @@ async def login_for_access_token(
 
 @router.post("/login-json", response_model=Token)
 async def login_with_json(
+    request: Request,
     user_login: UserLogin,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Connexion utilisateur avec JSON (pour le frontend).
     Alternative à login qui accepte un JSON au lieu d'un form.
+    Protection rate limiting: 10 tentatives max par 15 minutes.
     """
+    # Rate limiting
+    client_ip = get_client_ip(request)
+    rate_limiter.check_and_record(client_ip, "login", max_attempts=10, window_minutes=15)
+    
     user = auth_service.authenticate_user(user_login.email, user_login.password)
     if not user:
         raise HTTPException(
@@ -48,6 +81,9 @@ async def login_with_json(
             detail="Email ou mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Succès: effacer les tentatives de login
+    rate_limiter.clear_attempts(client_ip, "login")
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth_service.create_access_token(
@@ -64,17 +100,27 @@ async def register_user(
 ):
     """
     Inscription d'un nouvel utilisateur.
-    Crée le compte et retourne directement un token de connexion.
-    Envoie une notification email avec l'IP du nouvel inscrit.
+    - Vérifie que l'email est dans la liste blanche
+    - Valide la force du mot de passe
+    - Crée le compte et retourne directement un token de connexion
+    - Envoie une notification email avec l'IP du nouvel inscrit
+    Protection rate limiting: 3 tentatives max par 15 minutes.
     """
+    # Rate limiting strict sur le register
+    client_ip = get_client_ip(request)
+    rate_limiter.check_and_record(client_ip, "register", max_attempts=3, window_minutes=15)
+    
     try:
-        # Créer l'utilisateur
+        # Créer l'utilisateur (avec toutes les validations)
         new_user = await auth_service.create_user(
             email=user_data.email,
             username=user_data.username,
             password=user_data.password,
             request=request
         )
+        
+        # Succès: effacer les tentatives de register
+        rate_limiter.clear_attempts(client_ip, "register")
         
         # Générer un token pour la connexion automatique
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

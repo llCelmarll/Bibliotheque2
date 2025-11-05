@@ -1,0 +1,4 @@
+# Load testing only (optional)
+-r requirements-prod.txt
+
+locust==2.31.8

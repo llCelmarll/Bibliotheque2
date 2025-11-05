@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface RegisterForm {
@@ -85,14 +86,17 @@ export default function RegisterScreen() {
         confirm_password: form.confirmPassword,
       });
 
-      // Redirection vers la page d'accueil
+      // En cas de SUCCÈS : rediriger vers books
       router.replace('/(tabs)/books');
-
+      
     } catch (error: any) {
-      Alert.alert(
-        'Erreur d\'inscription',
-        error.message || 'Une erreur est survenue lors de l\'inscription'
-      );
+      const errorMessage = error.message || 'Une erreur est survenue lors de l\'inscription';
+      
+      // Stocker l'erreur temporairement dans AsyncStorage
+      await AsyncStorage.setItem('register_error', errorMessage);
+      
+      // Rediriger vers login
+      router.replace('/auth/login');
     } finally {
       setLoading(false);
     }

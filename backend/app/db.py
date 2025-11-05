@@ -8,9 +8,19 @@ from app.models.BookGenreLink import BookGenreLink
 from sqlmodel import create_engine, Session
 import os
 
-# Obtenir le chemin absolu vers le dossier backend
-BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BACKEND_DIR, "bibliotheque.db")
+# Utiliser le dossier /app/data pour la persistance via volume Docker
+# En local, utilise le dossier backend/
+if os.getenv("DATA_DIR"):
+    DATA_DIR = os.getenv("DATA_DIR")
+else:
+    # En local : utiliser le dossier backend
+    BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DATA_DIR = BACKEND_DIR
+
+DB_PATH = os.path.join(DATA_DIR, "bibliotheque.db")
+
+# Créer le dossier data s'il n'existe pas
+os.makedirs(DATA_DIR, exist_ok=True)
 
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
 

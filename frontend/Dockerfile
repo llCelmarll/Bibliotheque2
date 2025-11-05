@@ -1,28 +1,30 @@
-# Dockerfile pour Frontend React Native/Expo Web
-FROM node:18-alpine
+# Dockerfile pour Frontend React Native/Expo Web - PRODUCTION
+# Stage 1: Build
+FROM node:18-alpine AS builder
 
-# Installer les dépendances système
-RUN apk add --no-cache git
-
-# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de configuration des dépendances
+# Copier package.json et installer les dépendances
 COPY package*.json ./
-
-# Installer les dépendances
 RUN npm ci
 
 # Copier le code source
 COPY . .
 
-# Exposer le port pour le serveur de développement
-EXPOSE 8081
+# Build pour production (génère dist/)
+RUN npx expo export -p web
 
-# Variables d'environnement pour Expo
-ENV EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
-ENV REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0
-ENV EXPO_PUBLIC_API_URL=http://backend:8000
+# Stage 2: Production avec nginx
+FROM nginx:alpine
 
-# Commande de démarrage
-CMD ["npm", "run", "web"]
+# Copier les fichiers buildés depuis le stage précédent
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copier la configuration nginx personnalisée
+COPY nginx-frontend.conf /etc/nginx/conf.d/default.conf
+
+# Exposer le port 80
+EXPOSE 80
+
+# Démarrer nginx
+CMD ["nginx", "-g", "daemon off;"]

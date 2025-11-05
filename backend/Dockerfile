@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier et installer les dépendances Python
-COPY requirements.txt .
+# Copier et installer les dépendances Python (production uniquement)
+COPY requirements-prod.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements-prod.txt
 
 # Copier le code source
 COPY . .

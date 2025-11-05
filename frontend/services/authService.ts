@@ -56,7 +56,29 @@ class AuthService {
       const errorData = await response.json().catch(() => ({
         detail: `HTTP ${response.status}: ${response.statusText}`
       }));
-      throw new Error(errorData.detail || 'Erreur de connexion');
+      
+      // Pour 422, afficher les détails de validation
+      if (response.status === 422 && errorData.detail) {
+        console.error('Validation error details:', errorData.detail);
+        if (Array.isArray(errorData.detail)) {
+          const emailError = errorData.detail.find((err: any) => 
+            err.loc?.includes('email') && err.msg?.includes('valid email')
+          );
+          
+          if (emailError) {
+            throw new Error('Veuillez entrer une adresse email valide (exemple: user@example.com)');
+          }
+          
+          const messages = errorData.detail.map((err: any) => 
+            `${err.loc?.join('.') || 'field'}: ${err.msg}`
+          ).join(', ');
+          throw new Error(messages);
+        }
+      }
+      
+      // Récupérer le message d'erreur du backend
+      const errorMessage = errorData.detail || errorData.message || `Erreur ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     return await response.json();
