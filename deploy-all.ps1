@@ -70,7 +70,7 @@ if (-not $SkipApk) {
     Write-Host ""
     
     Write-Host "  La redirection nginx pointe vers le dernier build EAS" -ForegroundColor Gray
-    Write-Host "  URL EAS: https://expo.dev/artifacts/eas/oJGWpnV1j1Yr7KJcapRs4L.apk" -ForegroundColor Gray
+    Write-Host "  URL EAS: https://expo.dev/artifacts/eas/vuBFnSsvW3JjrC452yDw9c.apk" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Pour mettre a jour l'APK, modifiez l'URL dans nginx-frontend.conf" -ForegroundColor Yellow
     Write-Host "  puis redemarrez le container frontend avec redeploy-frontend.ps1" -ForegroundColor Yellow
@@ -94,5 +94,6 @@ if (-not $SkipApk) {
 Write-Host ""
 Write-Host "Deploiement termine !" -ForegroundColor Cyan
 Write-Host ""
+
 
 
