@@ -64,33 +64,19 @@ if (-not $SkipMobile) {
     Write-Host ""
 }
 
-# 3. Déploiement de l'APK Android sur le NAS
+# 3. Configuration APK Android (redirection nginx vers EAS)
 if (-not $SkipApk) {
-    Write-Host "[3/4] Deploiement de l'APK Android..." -ForegroundColor Yellow
+    Write-Host "[3/4] Configuration du lien APK Android..." -ForegroundColor Yellow
     Write-Host ""
     
-    if ($ApkPath -and (Test-Path $ApkPath)) {
-        Write-Host "  Utilisation de l'APK fourni: $ApkPath" -ForegroundColor Gray
-        
-        Set-Location frontend
-        .\deploy-apk.ps1 -SkipDownload -ApkPath "..\$ApkPath"
-        Set-Location ..
-    } else {
-        Write-Host "  Telechargement du dernier APK depuis EAS..." -ForegroundColor Gray
-        
-        Set-Location frontend
-        .\deploy-apk.ps1
-        Set-Location ..
-    }
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "  Erreur lors du deploiement de l'APK" -ForegroundColor Red
-        Write-Host "  Le deploiement continue sans l'APK..." -ForegroundColor Yellow
-    } else {
-        Write-Host ""
-        Write-Host "  APK Android deploye !" -ForegroundColor Green
-        Write-Host ""
-    }
+    Write-Host "  La redirection nginx pointe vers le dernier build EAS" -ForegroundColor Gray
+    Write-Host "  URL EAS: https://expo.dev/artifacts/eas/oJGWpnV1j1Yr7KJcapRs4L.apk" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  Pour mettre a jour l'APK, modifiez l'URL dans nginx-frontend.conf" -ForegroundColor Yellow
+    Write-Host "  puis redemarrez le container frontend avec redeploy-frontend.ps1" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  APK accessible via: https://mabibliotheque.ovh/bibliotheque.apk" -ForegroundColor Green
+    Write-Host ""
 }
 
 # 4. Résumé

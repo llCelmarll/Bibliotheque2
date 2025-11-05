@@ -247,9 +247,24 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) 
 
 	if (!permission.granted) {
 		return (
-			<View style={styles.container}>
-				<Text style={styles.text}>Autorisez l'accès à la caméra</Text>
-				<Button title="Autoriser" onPress={requestPermission} />
+			<View style={styles.permissionContainer}>
+				<MaterialCommunityIcons name="camera-off" size={64} color="#666" />
+				<Text style={styles.permissionTitle}>Accès à la caméra requis</Text>
+				<Text style={styles.permissionText}>
+					Pour scanner les codes-barres des livres, l'application a besoin d'accéder à votre caméra.
+				</Text>
+				<TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+					<Text style={styles.permissionButtonText}>Autoriser l'accès</Text>
+				</TouchableOpacity>
+				<TouchableOpacity 
+					style={styles.manualButton} 
+					onPress={() => {
+						setShowManualInput(true);
+						onModeChange?.(true);
+					}}
+				>
+					<Text style={styles.manualButtonText}>Saisir manuellement</Text>
+				</TouchableOpacity>
 			</View>
 		);
 	}
@@ -275,47 +290,55 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange }: ScannerProps) 
             barcodeScannerSettings={{
               barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128", "qr"],
             }}
-			enableTorch={torch}
-          />
-          <Button 
-            title="Saisie manuelle" 
-            onPress={() => {
-              setShowManualInput(true);
-              onModeChange?.(true);
-            }}
-          />
-			<View style={styles.overlay}>
-				<View style={styles.scanArea}>
-					<View style={styles.cornerTL} />
-					<View style={styles.cornerTR} />
-					<View style={styles.cornerBL} />
-					<View style={styles.cornerBR} />
-				</View>
-			</View>
+            enableTorch={torch}
+          >
+            <View style={styles.overlay}>
+              <View style={styles.scanArea}>
+                <View style={styles.cornerTL} />
+                <View style={styles.cornerTR} />
+                <View style={styles.cornerBL} />
+                <View style={styles.cornerBR} />
+              </View>
+            </View>
 
-			<View style={styles.controlsContainer}>
-				<TouchableOpacity style={styles.torchButton} onPress={toggleTorch}>
-					<MaterialCommunityIcons
-						name={torch ? "flashlight" : "flashlight-off"}
-						size={24}
-						color="white"
-					/>
-				</TouchableOpacity>
-				<Text style={styles.instruction}>
-					Placez le code-barre dans le cadre ou utilisez la saisie manuelle
-				</Text>
-			</View>
+            <View style={styles.controlsContainer}>
+              <TouchableOpacity style={styles.torchButton} onPress={toggleTorch}>
+                <MaterialCommunityIcons
+                  name={torch ? "flashlight" : "flashlight-off"}
+                  size={32}
+                  color="white"
+                />
+              </TouchableOpacity>
+              <Text style={styles.instruction}>
+                Placez le code-barre dans le cadre
+              </Text>
+              <TouchableOpacity 
+                style={styles.manualInputButton} 
+                onPress={() => {
+                  setShowManualInput(true);
+                  onModeChange?.(true);
+                }}
+              >
+                <MaterialCommunityIcons name="keyboard" size={20} color="white" />
+                <Text style={styles.manualInputButtonText}>Saisie manuelle</Text>
+              </TouchableOpacity>
+            </View>
+          </CameraView>
         </>
       ) : (
         <View style={styles.manualInputWrapper}>
           <ManualInput onScanned={onScanned} />
-          <Button 
-            title="Retour au scan" 
+          <TouchableOpacity 
+            style={styles.backButton}
             onPress={() => {
               setShowManualInput(false);
+              setScanned(false);
               onModeChange?.(false);
             }}
-          />
+          >
+            <MaterialCommunityIcons name="camera" size={20} color="white" />
+            <Text style={styles.backButtonText}>Retour au scan</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -435,15 +458,91 @@ const styles = StyleSheet.create({
   torchButton: {
     padding: 15,
     borderRadius: 30,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     marginBottom: 20,
   },
   instruction: {
     color: 'white',
     fontSize: 16,
     textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+    backgroundColor: '#fff',
+  },
+  permissionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  permissionText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  permissionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  manualButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+  },
+  manualButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  manualInputButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    gap: 8,
+  },
+  manualInputButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 25,
+    paddingVertical: 15,
+    borderRadius: 10,
+    marginTop: 20,
+    alignSelf: 'center',
+    gap: 8,
+  },
+  backButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
