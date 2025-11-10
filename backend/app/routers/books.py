@@ -15,6 +15,8 @@ from app.schemas.Book import (
     SortOrder
 )
 from app.schemas.Other import Filter
+import logging
+from time import perf_counter
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -194,34 +196,58 @@ def get_books_by_genre(
     return service.get_books_by_genre(genre_id)
 
 # ================================
-# BULK OPERATIONS (Bonus)
+# BULK OPERATIONS (Import CSV)
 # ================================
 
-@router.post("/bulk", response_model=List[BookRead])
+@router.post("/bulk", response_model=Dict[str, Any])
 def create_multiple_books(
     books_data: List[BookCreate],
+    skip_errors: bool = Query(False, description="Ignorer les erreurs et continuer l'import"),
+    populate_covers: bool = Query(False, description="Tenter de peupler les URLs de couvertures à partir de l'ISBN"),
     service: BookService = Depends(get_book_service)
 ):
     """
-    Crée plusieurs livres en une seule requête.
+    Crée plusieurs livres en une seule requête (Import CSV).
     
-    Attention : si un livre échoue, toute l'opération est annulée (transaction).
+    Modes de fonctionnement :
+    - **skip_errors=false** (défaut) : Transaction atomique, si un livre échoue, tout est annulé
+    - **skip_errors=true** : Import partiel, les livres valides sont créés malgré les erreurs
+    
+    Retourne :
+    - **success** : nombre de livres créés avec succès
+    - **failed** : nombre de livres en échec
+    - **total** : nombre total de livres dans la requête
+    - **created** : liste des livres créés (si skip_errors=true)
+    - **errors** : détail des erreurs rencontrées (si skip_errors=true)
     """
-    created_books = []
-    
+    logger = logging.getLogger("app.bulk")
+    start = perf_counter()
     try:
-        for book_data in books_data:
-            book = service.create_book(book_data)
-            created_books.append(book)
-        
-        return created_books
-        
-    except Exception as e:
-        # En cas d'erreur, la transaction sera rollback automatiquement
-        raise HTTPException(
-            status_code=400,
-            detail=f"Erreur lors de la création en lot : {str(e)}"
+        logger.info(
+            "Bulk import request: total=%d skip_errors=%s populate_covers=%s",
+            len(books_data), skip_errors, populate_covers
         )
+        if books_data:
+            sample = books_data[0]
+            logger.info(
+                "Bulk import sample: title=%s isbn=%s",
+                getattr(sample, "title", None),
+                getattr(sample, "isbn", None),
+            )
+        result = service.bulk_create_books(books_data, skip_errors, populate_covers)
+        duration_ms = int((perf_counter() - start) * 1000)
+        logger.info(
+            "Bulk import result: success=%d failed=%d total=%d duration_ms=%d",
+            result.get("success", 0),
+            result.get("failed", 0),
+            result.get("total", 0),
+            duration_ms,
+        )
+        return result
+    except Exception as e:
+        duration_ms = int((perf_counter() - start) * 1000)
+        logger.exception("Bulk import failed after %d ms: %s", duration_ms, str(e))
+        raise
 
 # ================================
 # HEALTH CHECK

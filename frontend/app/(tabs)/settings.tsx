@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import * as Updates from 'expo-updates';
+import ImportCSV from "@/components/ImportCSV";
 
 export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
@@ -134,6 +135,14 @@ export default function SettingsScreen() {
             <MaterialIcons name="chevron-right" size={24} color="#ccc" />
           </TouchableOpacity>
         </View>
+
+        {/* Section Import CSV (Web uniquement) */}
+        {Platform.OS === 'web' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Import de données</Text>
+            <ImportCSV />
+          </View>
+        )}
 
         {/* Section Informations */}
         <View style={styles.section}>

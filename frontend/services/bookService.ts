@@ -67,6 +67,106 @@ class BookService {
   }
 
   /**
+   * Import en masse de livres depuis un CSV
+   */
+  async bulkCreateBooks(booksData: BookCreate[], skipErrors: boolean = true, populateCovers: boolean = false): Promise<{
+    success: number;
+    failed: number;
+    total: number;
+    created: BookRead[];
+    errors: Array<{
+      line: number;
+      title: string;
+      isbn: string;
+      error: string;
+    }>;
+  }> {
+    console.log('📦 Import en masse - livres:', booksData.length, 'skip_errors:', skipErrors);
+    
+    try {
+      const url = `${API_CONFIG.ENDPOINTS.BOOKS}/bulk?skip_errors=${skipErrors}&populate_covers=${populateCovers}`;
+      console.log('➡️ Appel API bulkCreateBooks', {
+        baseURL: apiClient.defaults.baseURL,
+        url,
+        timeout: apiClient.defaults.timeout,
+      });
+
+      // Pour de très gros imports, envoyer en lots pour éviter les limites réseau/proxy
+      const CHUNK_SIZE = 10;
+      if (booksData.length > CHUNK_SIZE) {
+        console.log(`🔀 Envoi par lots: ${booksData.length} éléments, taille lot=${CHUNK_SIZE}`);
+        let aggregate = {
+          success: 0,
+          failed: 0,
+          total: booksData.length,
+          created: [] as BookRead[],
+          errors: [] as Array<{
+            line: number;
+            title: string;
+            isbn: string;
+            error: string;
+          }>,
+        };
+
+        for (let start = 0; start < booksData.length; start += CHUNK_SIZE) {
+          const end = Math.min(start + CHUNK_SIZE, booksData.length);
+          const batch = booksData.slice(start, end);
+          const batchIndex = start / CHUNK_SIZE + 1;
+          console.log(`➡️ Envoi lot ${batchIndex}: items ${start + 1}..${end}`, { count: batch.length });
+          console.time(`lot_${batchIndex}`);
+          const response = await apiClient.post(url, batch, { timeout: 300000 });
+          console.timeEnd(`lot_${batchIndex}`);
+          const data = response.data as typeof aggregate;
+          aggregate.success += data.success || 0;
+          aggregate.failed += data.failed || 0;
+          if (Array.isArray(data.created)) aggregate.created.push(...(data.created as any));
+          if (Array.isArray(data.errors)) {
+            // Réindexer les lignes au global
+            aggregate.errors.push(
+              ...data.errors.map((e) => ({
+                ...e,
+                line: (e.line || 0) + start,
+              }))
+            );
+          }
+          // Laisser l'UI respirer entre les lots
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        console.log('✅ Import terminé (lots):', aggregate);
+        return aggregate as any;
+      } else {
+        const response = await apiClient.post(
+          url,
+          booksData,
+          {
+            // Import de CSV peut prendre longtemps selon le volume et les traitements backend
+            timeout: 300000, // 5 minutes
+          }
+        );
+        console.log('✅ Import terminé:', response.data);
+        return response.data;
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Erreur lors de l\'import en masse (Axios):', {
+          message: error.message,
+          code: error.code,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          timeout: error.config?.timeout,
+          method: error.config?.method,
+        });
+      } else {
+        console.error('❌ Erreur lors de l\'import en masse (Unknown):', error);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Valide les données du livre avant envoi
    */
   validateBookData(bookData: BookCreate): { isValid: boolean; errors: string[] } {

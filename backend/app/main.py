@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from app.routers import books, authors, publishers, genres, scan, auth
 from app.db import init_db
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+from time import perf_counter
 
 
 
@@ -18,6 +20,20 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_version="3.1.0"
 )
+
+# Logging de base (provisoire)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("app")
+
+# Middleware de log des requêtes (début/fin)
+@app.middleware("http")
+async def log_requests(request, call_next):
+	start = perf_counter()
+	logger.info("HTTP %s %s?%s", request.method, request.url.path, request.url.query)
+	response = await call_next(request)
+	duration_ms = int((perf_counter() - start) * 1000)
+	logger.info("HTTP %s %s -> %d (%d ms)", request.method, request.url.path, response.status_code, duration_ms)
+	return response
 
 app.add_middleware(
     CORSMiddleware,

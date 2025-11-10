@@ -1,4 +1,6 @@
 from typing import List, Optional, Dict, Any
+import httpx
+import re
 
 from sqlmodel import Session
 from fastapi import HTTPException
@@ -12,6 +14,8 @@ from app.schemas.Other import Filter, FilterType
 from app.clients.openlibrary import fetch_openlibrary
 from app.clients.google_books import fetch_google_books
 from datetime import datetime
+import logging
+from time import perf_counter
 
 class BookService:
     """Service pour la logique métier des livres"""
@@ -23,6 +27,9 @@ class BookService:
 
     def create_book(self, book_data: BookCreate) -> Book:
         """Crée un nouveau livre avec ses relations"""
+        logger = logging.getLogger("app.books")
+        start = perf_counter()
+        logger.info("Create book: title=%s isbn=%s", book_data.title, getattr(book_data, "isbn", None))
         # Validation des données
         self._validate_book_data(book_data)
         
@@ -64,6 +71,8 @@ class BookService:
         # Commit final
         self.session.commit()
         self.session.refresh(book)
+        duration_ms = int((perf_counter() - start) * 1000)
+        logger.info("Create book OK: id=%s duration_ms=%d", book.id, duration_ms)
         
         return book
 
@@ -193,6 +202,137 @@ class BookService:
             raise HTTPException(status_code=404, detail="Genre non trouvé")
         
         return genre.books
+    
+    def bulk_create_books(self, books_data: List[BookCreate], skip_errors: bool = False, populate_covers: bool = False) -> Dict[str, Any]:
+        """
+        Crée plusieurs livres en une seule opération (Import CSV).
+        
+        Modes de fonctionnement :
+        - skip_errors=False : Transaction atomique, si un livre échoue, tout est annulé
+        - skip_errors=True : Import partiel, les livres valides sont créés malgré les erreurs
+        
+        Args:
+            books_data: Liste des données de livres à créer
+            skip_errors: Si True, continue malgré les erreurs
+            
+        Returns:
+            Dict contenant :
+            - success: nombre de livres créés
+            - failed: nombre d'échecs
+            - total: nombre total de livres
+            - created: liste des livres créés (si skip_errors=True)
+            - errors: détails des erreurs (si skip_errors=True)
+        """
+        logger = logging.getLogger("app.bulk")
+        logger.info("Bulk service start: total=%d skip_errors=%s populate_covers=%s", len(books_data), skip_errors, populate_covers)
+
+        # Optionnel: enrichir les URLs de couvertures à partir de l'ISBN
+        if populate_covers:
+            enrich_start = perf_counter()
+            for bd in books_data:
+                try:
+                    if getattr(bd, "cover_url", None):
+                        continue
+                    isbn = getattr(bd, "isbn", None)
+                    if not isbn:
+                        continue
+                    cover = self._find_cover_url_sync(isbn)
+                    if cover:
+                        bd.cover_url = cover
+                except Exception:
+                    # Ne pas bloquer l'import sur l'enrichissement de couverture
+                    continue
+            logger.info("Bulk cover enrichment finished in %d ms", int((perf_counter() - enrich_start) * 1000))
+
+        if not skip_errors:
+            # Mode transaction atomique
+            created_books = []
+            try:
+                for book_data in books_data:
+                    book = self.create_book(book_data)
+                    created_books.append(book)
+                
+                return {
+                    "success": len(created_books),
+                    "failed": 0,
+                    "total": len(books_data),
+                    "created": created_books,
+                    "errors": []
+                }
+                
+            except Exception as e:
+                # Rollback automatique via la session
+                self.session.rollback()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Erreur lors de la création en lot : {str(e)}"
+                )
+        
+        else:
+            # Mode import partiel (pour CSV)
+            created_books = []
+            errors = []
+            
+            for idx, book_data in enumerate(books_data):
+                try:
+                    book = self.create_book(book_data)
+                    created_books.append(book)
+                except Exception as e:
+                    # Rollback de ce livre uniquement
+                    self.session.rollback()
+                    
+                    # Amélioration des messages d'erreur pour l'utilisateur
+                    error_msg = str(e)
+                    user_friendly_error = self._format_error_message(e, book_data)
+                    
+                    errors.append({
+                        "line": idx + 1,
+                        "title": book_data.title if hasattr(book_data, 'title') else "N/A",
+                        "isbn": book_data.isbn if hasattr(book_data, 'isbn') else "N/A",
+                        "error": user_friendly_error
+                    })
+            logger.info("Bulk service done: success=%d failed=%d total=%d", len(created_books), len(errors), len(books_data))
+            
+            return {
+                "success": len(created_books),
+                "failed": len(errors),
+                "total": len(books_data),
+                "created": created_books,
+                "errors": errors
+            }
+
+    def _find_cover_url_sync(self, isbn: str) -> Optional[str]:
+        """Tente de trouver une URL de couverture via Google Books puis OpenLibrary (synchrone, court timeout)."""
+        # Google Books
+        try:
+            with httpx.Client(timeout=5.0) as client:
+                resp = client.get(
+                    "https://www.googleapis.com/books/v1/volumes",
+                    params={"q": f"isbn:{isbn}"}
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    items = data.get("items") or []
+                    if items:
+                        volume = items[0].get("volumeInfo") or {}
+                        image_links = volume.get("imageLinks") or {}
+                        thumb = image_links.get("thumbnail")
+                        if thumb:
+                            return thumb
+        except httpx.HTTPError:
+            pass
+
+        # OpenLibrary
+        try:
+            with httpx.Client(timeout=5.0, follow_redirects=True) as client:
+                resp = client.get(f"https://openlibrary.org/isbn/{isbn}.json")
+                if resp.status_code == 200:
+                    # Si le livre existe, utiliser le service de covers
+                    return f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
+        except httpx.HTTPError:
+            pass
+
+        return None
     
     async def scan_book(self, isbn: str) -> Dict[str, Any]:
         """Scanne un livre par son ISBN ou code-barre"""
@@ -411,6 +551,60 @@ class BookService:
             return publisher.id
         
         return None
+
+    def _format_error_message(self, error: Exception, book_data: BookCreate) -> str:
+        """
+        Formate les messages d'erreur pour qu'ils soient plus clairs pour l'utilisateur.
+        
+        Args:
+            error: L'exception levée
+            book_data: Les données du livre qui a causé l'erreur
+            
+        Returns:
+            Un message d'erreur formaté et compréhensible
+        """
+        error_str = str(error)
+        
+        # Erreur de contrainte UNIQUE sur les auteurs
+        if "UNIQUE constraint failed: authors.name" in error_str:
+            # Extraire le nom de l'auteur du message d'erreur SQL
+            match = re.search(r"\('([^']+)'\)", error_str)
+            author_name = match.group(1) if match else "inconnu"
+            return (f"⚠️ Conflit de doublon : L'auteur '{author_name}' existe déjà dans la base de données "
+                   f"mais ne peut pas être associé (problème de casse ou caractères spéciaux). "
+                   f"Vérifiez que le nom est exactement identique à celui dans la base.")
+        
+        # Erreur de contrainte UNIQUE sur les éditeurs
+        if "UNIQUE constraint failed: publishers.name" in error_str:
+            match = re.search(r"\('([^']+)'\)", error_str)
+            publisher_name = match.group(1) if match else "inconnu"
+            return (f"⚠️ Conflit de doublon : L'éditeur '{publisher_name}' existe déjà dans la base de données "
+                   f"mais ne peut pas être associé (problème de casse ou caractères spéciaux). "
+                   f"Vérifiez que le nom est exactement identique à celui dans la base.")
+        
+        # Erreur de contrainte UNIQUE sur les genres
+        if "UNIQUE constraint failed: genres.name" in error_str:
+            match = re.search(r"\('([^']+)'\)", error_str)
+            genre_name = match.group(1) if match else "inconnu"
+            return (f"⚠️ Conflit de doublon : Le genre '{genre_name}' existe déjà dans la base de données "
+                   f"mais ne peut pas être associé (problème de casse ou caractères spéciaux). "
+                   f"Vérifiez que le nom est exactement identique à celui dans la base.")
+        
+        # Erreur de validation d'ISBN
+        if "ISBN" in error_str and ("10 ou 13" in error_str or "caractères" in error_str):
+            isbn_value = book_data.isbn if hasattr(book_data, 'isbn') else "N/A"
+            return f"❌ ISBN invalide : '{isbn_value}' - L'ISBN doit contenir exactement 10 ou 13 chiffres (sans tirets ni espaces)"
+        
+        # Erreur HTTPException
+        if isinstance(error, HTTPException):
+            return f"❌ {error.detail}"
+        
+        # Erreur de livre existant
+        if "existe déjà" in error_str:
+            return f"⚠️ Ce livre existe déjà dans votre bibliothèque"
+        
+        # Erreur générique mais formatée
+        return f"❌ Erreur : {error_str}"
 
     # Anciennes fonctions conservées pour compatibilité ascendante
     def _add_authors_to_book(self, book: Book, author_ids: List[int]) -> None:

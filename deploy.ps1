@@ -29,11 +29,11 @@ ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker network create
 
 # Telecharger l'image
 Write-Host "Telechargement de la nouvelle image..." -ForegroundColor Yellow
-ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker pull llcelmarll/mabibliotheque:latest"
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker pull llcelmarll/mabibliotheque-backend:latest"
 
 # Demarrer le backend
 Write-Host "Demarrage du backend..." -ForegroundColor Yellow
-ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker run -d --name mabibliotheque-backend --network ${NETWORK_NAME} --restart unless-stopped -v ${SYNOLOGY_PATH}/data:/app/data --env-file ${SYNOLOGY_PATH}/.env llcelmarll/mabibliotheque:latest"
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker run -d --name mabibliotheque-backend --network ${NETWORK_NAME} --restart unless-stopped -v ${SYNOLOGY_PATH}/data:/app/data --env-file ${SYNOLOGY_PATH}/.env llcelmarll/mabibliotheque-backend:latest"
 
 
 # Demarrer le frontend (contient Nginx + fichiers statiques + proxy API)

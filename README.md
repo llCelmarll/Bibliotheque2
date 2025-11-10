@@ -225,4 +225,4 @@ Voir [SECURITY_PLAN.md](docs/SECURITY_PLAN.md) pour le plan d'implémentation de
 
 ---
 
-**Développé avec ❤️ en FastAPI et React Native**
+**Développé avec ❤️ en FastAPI et React Native/Expo**
