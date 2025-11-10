@@ -1,7 +1,8 @@
 # Script de deploiement complet
-# Met a jour le frontend web, l'app mobile ET l'APK Android
+# Met a jour le backend, le frontend web, l'app mobile ET l'APK Android
 
 param(
+    [switch]$SkipBackend,
     [switch]$SkipWeb,
     [switch]$SkipMobile,
     [switch]$SkipApk,
@@ -13,9 +14,38 @@ Write-Host "`nDeploiement complet de l'application" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Build et push de l'image Docker frontend (Web)
+# 1. Build et push de l'image Docker backend
+if (-not $SkipBackend) {
+    Write-Host "[1/4] Build et deploiement du backend..." -ForegroundColor Yellow
+    Write-Host ""
+    
+    Set-Location backend
+    
+    # Build multi-architecture
+    Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray
+    docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile -t llcelmarll/mabibliotheque-backend:latest --push .
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Erreur lors du build Docker du backend" -ForegroundColor Red
+        exit 1
+    }
+    
+    Set-Location ..
+    
+    # Redeploy sur le NAS
+    Write-Host ""
+    Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
+    & "$PSScriptRoot\redeploy-backend.ps1"
+    
+    Write-Host ""
+    Write-Host "  Backend deploye !" -ForegroundColor Green
+    Write-Host "  API URL: https://mabibliotheque.ovh/api" -ForegroundColor Gray
+    Write-Host ""
+}
+
+# 2. Build et push de l'image Docker frontend (Web)
 if (-not $SkipWeb) {
-    Write-Host "[1/3] Build et deploiement du frontend Web..." -ForegroundColor Yellow
+    Write-Host "[2/4] Build et deploiement du frontend Web..." -ForegroundColor Yellow
     Write-Host ""
     
     Set-Location frontend
@@ -34,7 +64,7 @@ if (-not $SkipWeb) {
     # Redeploy sur le NAS
     Write-Host ""
     Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
-    .\redeploy-frontend.ps1
+    & "$PSScriptRoot\redeploy-frontend.ps1"
     
     Write-Host ""
     Write-Host "  Frontend Web deploye !" -ForegroundColor Green
@@ -42,9 +72,9 @@ if (-not $SkipWeb) {
     Write-Host ""
 }
 
-# 2. Publication OTA pour l'app mobile
+# 3. Publication OTA pour l'app mobile
 if (-not $SkipMobile) {
-    Write-Host "[2/3] Mise a jour OTA de l'app mobile..." -ForegroundColor Yellow
+    Write-Host "[3/4] Mise a jour OTA de l'app mobile..." -ForegroundColor Yellow
     Write-Host ""
     
     Set-Location frontend
@@ -66,7 +96,7 @@ if (-not $SkipMobile) {
 
 # 3. Configuration APK Android (redirection nginx vers EAS)
 if (-not $SkipApk) {
-    Write-Host "[3/4] Configuration du lien APK Android..." -ForegroundColor Yellow
+    Write-Host "[4/4] Configuration du lien APK Android..." -ForegroundColor Yellow
     Write-Host ""
     
     Write-Host "  La redirection nginx pointe vers le dernier build EAS" -ForegroundColor Gray
@@ -79,9 +109,12 @@ if (-not $SkipApk) {
     Write-Host ""
 }
 
-# 4. Résumé
-Write-Host "[4/4] Resume du deploiement" -ForegroundColor Yellow
+# 5. Résumé
+Write-Host "[5/5] Resume du deploiement" -ForegroundColor Yellow
 Write-Host ""
+if (-not $SkipBackend) {
+    Write-Host "  Backend API: https://mabibliotheque.ovh/api" -ForegroundColor Green
+}
 if (-not $SkipWeb) {
     Write-Host "  Frontend Web: https://mabibliotheque.ovh" -ForegroundColor Green
 }

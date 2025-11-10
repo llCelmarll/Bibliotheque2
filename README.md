@@ -70,26 +70,56 @@ frontend/
     └── useBookDetail.ts
 ```
 
-## 🚀 Installation et démarrage
+## 🚀 Installation et démarrage rapide
 
 ### Prérequis
 - Python 3.11+
 - Node.js 18+
-- SQLite (inclus)
+- Docker & Docker Compose (pour le déploiement)
+- PowerShell (Windows)
 
-### Backend
+### Quick Start (Recommandé)
+
+Le projet utilise un script PowerShell centralisé pour toutes les opérations :
+
+```powershell
+# Configuration initiale (première fois uniquement)
+.\run.ps1 setup
+
+# Développement local
+.\run.ps1 dev          # Démarre backend + frontend en mode dev
+.\run.ps1 start        # Démarre avec Docker (mode production local)
+.\run.ps1 stop         # Arrête tous les conteneurs
+
+# Déploiement
+.\run.ps1 deploy       # Déploie sur Synology NAS (backend + web + mobile)
+.\run.ps1 deploy-backend # Met à jour uniquement le backend
+.\run.ps1 deploy-web   # Met à jour uniquement le frontend web
+.\run.ps1 deploy-mobile # Publie une mise à jour mobile (EAS)
+
+# Aide et documentation
+.\run.ps1 help         # Affiche toutes les commandes disponibles
+```
+
+⚠️ **Avant le premier déploiement**, consultez [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md) pour configurer Docker Hub, SSH et EAS CLI.
+
+### Installation manuelle (alternative)
+
+#### Backend
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend  
+#### Frontend  
 ```bash
 cd frontend
 npm install
 npm start
 ```
+
+Pour plus de détails sur les scripts de développement et déploiement, consultez [scripts/README.md](scripts/README.md).
 
 ## 📊 Base de données
 

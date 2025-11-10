@@ -36,7 +36,52 @@ Toutes les fonctionnalités seront disponibles sur les deux supports.
 
 ---
 
-## � Import CSV : Guide Rapide
+## 🚀 Démarrage Rapide
+
+### 📦 Installation
+
+```powershell
+# 1. Cloner le repository
+git clone <url-du-repo>
+cd Bibliotheque2
+
+# 2. Configuration initiale
+.\run.ps1 setup
+
+# 3. Éditer les fichiers .env avec vos valeurs
+# - .env
+# - backend/.env
+# - frontend/.env
+
+# 4. Démarrer l'application
+.\run.ps1 start
+```
+
+### 🔧 Commandes Principales
+
+```powershell
+# Démarrage
+.\run.ps1 start      # Mode production
+.\run.ps1 dev        # Mode développement (hot-reload)
+.\run.ps1 stop       # Arrêter l'application
+
+# Déploiement
+.\run.ps1 deploy     # Déploiement complet
+
+# Aide
+.\run.ps1 help       # Voir toutes les commandes
+```
+
+**Accès à l'application :**
+- 📱 Frontend : http://localhost:8081
+- 🔧 API Backend : http://localhost:8000
+- 📚 Documentation API : http://localhost:8000/docs
+
+Pour plus de détails, consultez [scripts/README.md](../scripts/README.md)
+
+---
+
+## 📥 Import CSV : Guide Rapide
 
 ### Format du Fichier CSV
 
