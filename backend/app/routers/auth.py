@@ -30,6 +30,7 @@ def get_client_ip(request: Request) -> str:
 async def login_for_access_token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
+    remember_me: bool = False,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
@@ -52,12 +53,14 @@ async def login_for_access_token(
     # Succès: effacer les tentatives de login
     rate_limiter.clear_attempts(client_ip, "login")
     
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = auth_service.create_access_token(
-        data={"sub": str(user.id)}, expires_delta=access_token_expires
-    )
-    
-    return {"access_token": access_token, "token_type": "bearer"}
+    tokens = auth_service.generate_tokens(user_id=str(user.id), remember_me=remember_me)
+    return tokens
+@router.post("/refresh", response_model=Token)
+async def refresh_access_token(refresh_token: str, auth_service: AuthService = Depends(get_auth_service)):
+    """
+    Renouvelle le token d'accès à partir du refresh token.
+    """
+    return auth_service.renew_access_token(refresh_token)
 
 @router.post("/login-json", response_model=Token)
 async def login_with_json(

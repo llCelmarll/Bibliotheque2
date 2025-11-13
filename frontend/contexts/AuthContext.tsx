@@ -1,6 +1,28 @@
 // contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+let SecureStore: any;
+if (Platform.OS !== 'web') {
+  SecureStore = require('expo-secure-store');
+}
+
+async function setItem(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    await AsyncStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+}
+
+async function getItem(key: string) {
+  if (Platform.OS === 'web') {
+    return await AsyncStorage.getItem(key);
+  } else {
+    return await SecureStore.getItemAsync(key);
+  }
+}
 import { authService, LoginRequest, RegisterRequest, User } from '@/services/authService';
 
 interface AuthContextType {
@@ -18,12 +40,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  // Vérifie l'expiration d'un JWT
+  function isTokenExpired(token: string): boolean {
+    try {
+      const [, payload] = token.split('.');
+      const decoded = JSON.parse(atob(payload));
+      return decoded.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  }
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,22 +66,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Vérifier l'authentification au démarrage
   useEffect(() => {
-    checkAuth();
+  checkAuth();
   }, []);
 
   const checkAuth = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
-      const storedUser = await AsyncStorage.getItem(USER_KEY);
-      
+  try {
+      // Essaye d'abord SecureStore (remember me)
+      let storedToken = await getItem(ACCESS_TOKEN_KEY);
+      let storedUser = await AsyncStorage.getItem(USER_KEY);
+      if (storedToken) {
+        try {
+          const [, payload] = storedToken.split('.');
+          const decoded = JSON.parse(atob(payload));
+        } catch (e) {
+        }
+      }
+      // Si pas de token, essaye AsyncStorage (session simple)
+      if (!storedToken) {
+        storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+      }
+      // Si pas de token ou expiré, essaye de renouveler avec le refresh token
+      if (!storedToken || isTokenExpired(storedToken)) {
+        const storedRefreshToken = await getItem(REFRESH_TOKEN_KEY);
+        if (storedRefreshToken) {
+          const newToken = await authService.refreshAccessToken();
+          if (newToken) {
+            setToken(newToken);
+            storedToken = newToken;
+            // Après refresh, récupérer et stocker l'utilisateur
+            try {
+              const currentUser = await authService.getCurrentUser(newToken);
+              setUser(currentUser);
+              await AsyncStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+              storedUser = JSON.stringify(currentUser);
+            } catch (error) {
+              await logout();
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            await logout();
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          await logout();
+          setIsLoading(false);
+          return;
+        }
+      }
       if (storedToken && storedUser) {
         try {
-          // Vérifier si le token est toujours valide
           const currentUser = await authService.getCurrentUser(storedToken);
           setToken(storedToken);
           setUser(currentUser);
-        } catch (error) {
-          // Token invalide, nettoyer le stockage
+        } catch (error: any) {
+          if (error && typeof error === 'object' && 'response' in error) {
+            // Axios-like error
+            // @ts-ignore
+          } else {
+          }
           await logout();
         }
       }
@@ -59,17 +137,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const login = async (credentials: LoginRequest) => {
-    try {
+  try {
       setIsLoading(true);
-      
-      // Connexion
-      const loginResponse = await authService.login(credentials);
+      // Connexion avec remember_me si présent
+      const loginResponse = await authService.login(credentials as any);
       const userResponse = await authService.getCurrentUser(loginResponse.access_token);
-      
-      // Stocker le token et les informations utilisateur
-      await AsyncStorage.setItem(TOKEN_KEY, loginResponse.access_token);
+      // Stockage sécurisé des tokens
+      if (loginResponse.access_token) {
+        await setItem(ACCESS_TOKEN_KEY, loginResponse.access_token);
+      }
+      if (loginResponse.refresh_token) {
+        await setItem(REFRESH_TOKEN_KEY, loginResponse.refresh_token);
+      }
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(userResponse));
-      
       setToken(loginResponse.access_token);
       setUser(userResponse);
     } catch (error) {
@@ -78,10 +158,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
+  // Vérifie l'expiration d'un JWT
+  function isTokenExpired(token: string): boolean {
+    try {
+      const [, payload] = token.split('.');
+      const decoded = JSON.parse(atob(payload));
+      return decoded.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  }
   };
 
   const register = async (data: RegisterRequest) => {
-    try {
+  try {
       setIsLoading(true);
       
       // Inscription
@@ -101,7 +191,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = async () => {
-    try {
+  try {
       setIsLoading(true);
       
       // Supprimer du stockage

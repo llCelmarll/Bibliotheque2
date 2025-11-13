@@ -14,6 +14,10 @@ Write-Host "`nDeploiement complet de l'application" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host ""
 
+# Backup de la base de donnees si elle existe
+Write-Host "Backup de la base de donnees..." -ForegroundColor Yellow
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "if [ -f ${SYNOLOGY_PATH}/data/bibliotheque.db ] && [ -s ${SYNOLOGY_PATH}/data/bibliotheque.db ]; then cp ${SYNOLOGY_PATH}/data/bibliotheque.db ${SYNOLOGY_PATH}/backups/bibliotheque_\$(date +%Y%m%d_%H%M%S).db; echo 'Backup cree'; else echo 'Pas de backup (DB vide ou inexistante)'; fi"
+
 # 1. Build et push de l'image Docker backend
 if (-not $SkipBackend) {
     Write-Host "[1/4] Build et deploiement du backend..." -ForegroundColor Yellow

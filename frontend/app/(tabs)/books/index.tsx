@@ -19,21 +19,13 @@ import { SearchBar } from "@/components/SearchBar";
 import { BookFilters} from "@/components/BookFilters";
 import { useBooks } from "@/hooks/useBooks";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 
 export default function Index() {
 	const { width: screenWidth } = useWindowDimensions();
 	const [isGridView, setIsGridView] = useState(false);
 	const router = useRouter();
-	const { isAuthenticated, isLoading: authLoading } = useAuth();
-
-	// Protection d'authentification
-	useEffect(() => {
-		if (!authLoading && !isAuthenticated) {
-			router.replace("/auth/login");
-		}
-	}, [isAuthenticated, authLoading, router]);
-
 	const {
 		books,
 		loading,
@@ -54,10 +46,8 @@ export default function Index() {
 		clearFilters,
 	} = useBooks();
 
-
 	// Calcul du nombre de colonnes et de la largeur des cartes
 	const calculateLayout = () => {
-		// console.log("Calcul du nombre de colonnes et de la largeur des cartes ...")
 		const minCardWidth = 160;
 		const horizontalPadding = 16;
 		const spacing = 10;
@@ -72,8 +62,6 @@ export default function Index() {
 	};
 	const { numColumns, cardWidth } = calculateLayout();
 
-
-
 	const toggleView = () => {
 		setIsGridView(!isGridView);
 	};
@@ -81,7 +69,7 @@ export default function Index() {
 	const renderItem = ({ item }: { item: Book }) => {
 		if (isGridView) {
 			return (
-				<View style={[styles.cardWrapper, { width: cardWidth }]}>
+				<View style={[styles.cardWrapper, { width: cardWidth }]}> 
 					<BookCardItem book={item} />
 				</View>
 			);
@@ -90,7 +78,6 @@ export default function Index() {
 	};
 
 	const renderFooter = () => {
-		// console.log("Affichage du loader de chargement de plus de livres ...")
 		if (loadingMore) {
 			return (
 				<View style={styles.footerLoader}>
@@ -131,16 +118,9 @@ export default function Index() {
 		return null;
 	};
 
-	useEffect(() => {
-		if (isAuthenticated) {
+		useEffect(() => {
 			loadBooks(1);
-		}
-	}, [activeFilters, isAuthenticated]);
-
-	// Si pas authentifié, ne rien afficher (redirection en cours)
-	if (!authLoading && !isAuthenticated) {
-		return null;
-	}
+		}, [activeFilters]);
 
 	return (
 		<View style={styles.container}>
@@ -282,3 +262,5 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 	},
 });
+
+	// ...existing code...

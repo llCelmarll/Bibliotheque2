@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Checkbox from 'expo-checkbox';
 import {
   View,
   Text,
@@ -18,28 +19,38 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 
+let SecureStore: any;
+if (Platform.OS !== 'web') {
+  SecureStore = require('expo-secure-store');
+}
+
+async function setItem(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    await AsyncStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+}
+
 export default function LoginScreen() {
+  const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
-  const { login } = useAuth();
+
+  const { login, isLoading } = useAuth();
   const router = useRouter();
 
-  // Récupérer l'erreur depuis AsyncStorage si elle existe
   useEffect(() => {
     const loadError = async () => {
       const error = await AsyncStorage.getItem('register_error');
-      
       if (error) {
         setErrorMessage(error);
-        // Supprimer l'erreur après l'avoir affichée
         await AsyncStorage.removeItem('register_error');
       }
     };
-    
     loadError();
   }, []);
 
@@ -48,132 +59,157 @@ export default function LoginScreen() {
       setErrorMessage('Veuillez remplir tous les champs');
       return;
     }
-
-    setIsLoading(true);
+    setIsLoginLoading(true);
     setErrorMessage('');
     try {
-      await login({ email: email.trim(), password });
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://mabibliotheque.ovh/api'}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `username=${encodeURIComponent(email.trim())}&password=${encodeURIComponent(password)}&remember_me=${rememberMe}`,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Erreur de connexion');
+      }
+      if (rememberMe) {
+        await setItem('access_token', data.access_token);
+      } else {
+        await AsyncStorage.setItem('access_token', data.access_token);
+      }
+      if (login) {
+        await login({ email: email.trim(), password });
+      }
       router.replace('/(tabs)/books');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Une erreur est survenue';
       setErrorMessage(message);
-      // Garder Alert pour les apps natives
       if (Platform.OS !== 'web') {
         Alert.alert('Erreur de connexion', message);
       }
     } finally {
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          {Platform.OS === 'web' && (
-            <Image 
-              source={require('@/assets/icon.png')} 
-              style={styles.logo}
-            />
-          )}
-          <Text style={styles.title}>Bibliothèque</Text>
-          <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
-        </View>
-
-        <View style={styles.form}>
-          {errorMessage ? (
-            <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color="#f44336" />
-              <Text style={styles.errorText}>{errorMessage}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="email" size={24} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email (ex: user@example.com)"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                // Effacer l'erreur quand l'utilisateur tape
-                if (errorMessage) setErrorMessage('');
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              editable={!isLoading}
-            />
+    <View style={{ flex: 1 }}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.header}>
+            {Platform.OS === 'web' && (
+              <Image 
+                source={require('@/assets/icon.png')} 
+                style={styles.logo}
+              />
+            )}
+            <Text style={styles.title}>Bibliothèque</Text>
+            <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="lock" size={24} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Mot de passe"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                // Effacer l'erreur quand l'utilisateur tape
-                if (errorMessage) setErrorMessage('');
-              }}
-              secureTextEntry={!showPassword}
-              autoComplete="password"
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowPassword(!showPassword)}
-              disabled={isLoading}
-            >
-              <MaterialIcons
-                name={showPassword ? "visibility-off" : "visibility"}
-                size={24}
-                color="#666"
+          <View style={styles.form}>
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <MaterialIcons name="error-outline" size={20} color="#f44336" />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="email" size={24} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email (ex: user@example.com)"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errorMessage) setErrorMessage('');
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                editable={!isLoginLoading}
               />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="lock" size={24} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Mot de passe"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errorMessage) setErrorMessage('');
+                }}
+                secureTextEntry={!showPassword}
+                autoComplete="password"
+                editable={!isLoginLoading}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+                disabled={isLoginLoading}
+              >
+                <MaterialIcons
+                  name={showPassword ? "visibility-off" : "visibility"}
+                  size={24}
+                  color="#666"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Checkbox
+                value={rememberMe}
+                onValueChange={setRememberMe}
+                color={rememberMe ? '#2196F3' : undefined}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={{ fontSize: 16, color: '#333' }}>Se souvenir de moi</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.loginButton, isLoginLoading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoginLoading}
+            >
+              {isLoginLoading ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>Se connecter</Text>
+              )}
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <Text style={styles.loginButtonText}>Se connecter</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+          {/* Register Link */}
+          <View style={styles.registerLink}>
+            <Text style={styles.registerText}>Pas encore de compte ? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/register')}>
+              <Text style={styles.registerLinkText}>S'inscrire</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Register Link */}
-        <View style={styles.registerLink}>
-          <Text style={styles.registerText}>Pas encore de compte ? </Text>
-          <TouchableOpacity onPress={() => router.push('/auth/register')}>
-            <Text style={styles.registerLinkText}>S'inscrire</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Version de développement avec authentification
+            </Text>
+          </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Version de développement avec authentification
-          </Text>
-        </View>
-
-        {Platform.OS === 'web' && (
-          <TouchableOpacity 
-            style={styles.downloadButton}
-            onPress={() => Linking.openURL('https://mabibliotheque.ovh/bibliotheque.apk')}
-          >
-            <Text style={styles.downloadButtonText}>📱 Télécharger l'application Android</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {Platform.OS === 'web' && (
+            <TouchableOpacity 
+              style={styles.downloadButton}
+              onPress={() => Linking.openURL('https://mabibliotheque.ovh/bibliotheque.apk')}
+            >
+              <Text style={styles.downloadButtonText}>📱 Télécharger l'application Android</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 

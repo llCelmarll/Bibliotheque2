@@ -1,3 +1,4 @@
+import { View, ActivityIndicator } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -15,7 +16,7 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: '/',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -42,7 +43,45 @@ export default function RootLayout() {
     return null;
   }
 
-  return <AuthProvider><RootLayoutNav /></AuthProvider>;
+  // Ajout de la logique de redirection ici
+  return (
+    <AuthProvider>
+      <AuthRedirectWrapper>
+        <RootLayoutNav />
+      </AuthRedirectWrapper>
+    </AuthProvider>
+  );
+}
+
+import { useRouter, useSegments } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
+import { useEffect as useReactEffect } from 'react';
+
+function AuthRedirectWrapper({ children }) {
+  const router = useRouter();
+  const segments = useSegments();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useReactEffect(() => {
+    if (!isLoading) {
+      const currentSegment = segments.join('/');
+      if (isAuthenticated && !currentSegment.includes('books')) {
+        router.replace('/(tabs)/books');
+      } else if (!isAuthenticated && !currentSegment.includes('auth/login')) {
+        router.replace('/auth/login');
+      }
+    }
+  }, [isAuthenticated, isLoading, router, segments]);
+
+  // Afficher un loader tant que l'authentification n'est pas vérifiée
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
+        <ActivityIndicator size="large" color="#2196F3" />
+      </View>
+    );
+  }
+  return children;
 }
 
 function RootLayoutNav() {

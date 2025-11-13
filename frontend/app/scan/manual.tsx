@@ -8,32 +8,14 @@ import { BookCreate, SuggestedBook } from "@/types/scanTypes";
 import { bookService } from "@/services/bookService";
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 export default function ManualBookAddPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Redirection si non authentifié
-  React.useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace('/auth/login');
-    }
-  }, [isAuthenticated, authLoading, router]);
-
-  // Afficher un loader pendant la vérification d'authentification
-  if (authLoading || !isAuthenticated) {
-    return (
-      <View style={styles.authContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.authText}>
-          {authLoading ? "Vérification de l'authentification..." : "Redirection..."}
-        </Text>
-      </View>
-    );
-  }
-
+  // Protection centralisée
   // Données vides pour le formulaire d'ajout manuel
   const emptyBookData: SuggestedBook = {
     title: '',
@@ -51,7 +33,6 @@ export default function ManualBookAddPage() {
     setIsSubmitting(true);
     try {
       console.log('📝 Ajout manuel - données:', values);
-      
       // Validation côté client
       const validation = bookService.validateBookData(values);
       if (!validation.isValid) {
@@ -66,9 +47,7 @@ export default function ManualBookAddPage() {
 
       // Créer le livre via l'API
       const createdBook = await bookService.createBook(values);
-      
       console.log('✅ Livre créé manuellement:', createdBook);
-      
       // Message de succès avec navigation intelligente
       if (Platform.OS === 'web') {
         const goToBooks = confirm('✅ Livre ajouté avec succès !\n\nAller à la liste des livres ?');
@@ -98,11 +77,9 @@ export default function ManualBookAddPage() {
           ]
         );
       }
-      
     } catch (error) {
       console.error('❌ Erreur lors de l\'ajout manuel:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      
       if (Platform.OS === 'web') {
         alert(`❌ Erreur: ${errorMessage}`);
       } else {
@@ -118,50 +95,51 @@ export default function ManualBookAddPage() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* En-tête personnalisé */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <MaterialIcons name="menu-book" size={24} color="#3498db" />
-          <Text style={styles.headerTitle}>Ajouter un livre manuellement</Text>
+    <ProtectedRoute>
+      <View style={[styles.container, { paddingTop: insets.top }]}> 
+        {/* En-tête personnalisé */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <MaterialIcons name="menu-book" size={24} color="#3498db" />
+            <Text style={styles.headerTitle}>Ajouter un livre manuellement</Text>
+          </View>
+          {/* Bouton retour vers la liste des livres */}
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={() => router.push('/books')}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="list" size={20} color="#3498db" />
+          </TouchableOpacity>
         </View>
         
-        {/* Bouton retour vers la liste des livres */}
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => router.push('/books')}
-          activeOpacity={0.7}
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
-          <MaterialIcons name="list" size={20} color="#3498db" />
-        </TouchableOpacity>
-      </View>
-      
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Instructions pour l'utilisateur */}
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>
-            📝 Saisie manuelle
-          </Text>
-          <Text style={styles.instructionsText}>
-            Remplissez les informations du livre. Seul le titre est obligatoire. 
-            Les auteurs, éditeurs et genres seront créés automatiquement s'ils n'existent pas.
-          </Text>
-        </View>
+          {/* Instructions pour l'utilisateur */}
+          <View style={styles.instructionsContainer}>
+            <Text style={styles.instructionsTitle}>
+              📝 Saisie manuelle
+            </Text>
+            <Text style={styles.instructionsText}>
+              Remplissez les informations du livre. Seul le titre est obligatoire. 
+              Les auteurs, éditeurs et genres seront créés automatiquement s'ils n'existent pas.
+            </Text>
+          </View>
 
-        {/* Formulaire d'ajout manuel */}
-        <BookForm
-          initialData={emptyBookData}
-          onSubmit={handleSubmit}
-          submitButtonText={isSubmitting ? "Ajout en cours..." : "Ajouter le livre"}
-          submitButtonLoadingText="Ajout en cours..."
-          disableInternalScroll={true}
-        />
-      </ScrollView>
-    </View>
+          {/* Formulaire d'ajout manuel */}
+          <BookForm
+            initialData={emptyBookData}
+            onSubmit={handleSubmit}
+            submitButtonText={isSubmitting ? "Ajout en cours..." : "Ajouter le livre"}
+            submitButtonLoadingText="Ajout en cours..."
+            disableInternalScroll={true}
+          />
+        </ScrollView>
+      </View>
+    </ProtectedRoute>
   );
 }
 

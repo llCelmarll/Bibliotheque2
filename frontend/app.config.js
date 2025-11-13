@@ -57,7 +57,8 @@ module.exports = {
           "cameraPermissions": "Autorisez l'accès à la caméra pour scanner les livres",
 
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 };

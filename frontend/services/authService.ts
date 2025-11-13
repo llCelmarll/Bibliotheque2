@@ -1,6 +1,29 @@
 // services/authService.ts
 import API_CONFIG from '@/config/api';
 
+let SecureStore: any = null;
+if (Platform.OS !== 'web') {
+  SecureStore = require('expo-secure-store');
+}
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// Abstraction cross-platform pour le stockage sécurisé
+async function setItem(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    await AsyncStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+}
+
+async function getItem(key: string) {
+  if (Platform.OS === 'web') {
+    return await AsyncStorage.getItem(key);
+  } else {
+    return await SecureStore.getItemAsync(key);
+  }
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -8,6 +31,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 
@@ -30,6 +54,9 @@ export interface RegisterResponse {
   user: User;
   token: LoginResponse;
 }
+
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 class AuthService {
   private baseUrl: string;
@@ -85,10 +112,42 @@ class AuthService {
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    return this.makeRequest<LoginResponse>('/auth/login-json', {
+    // Ajout du paramètre remember_me et stockage sécurisé
+    const response = await this.makeRequest<LoginResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `username=${encodeURIComponent(credentials.email)}&password=${encodeURIComponent(credentials.password)}&remember_me=${(credentials as any).remember_me ? 'true' : 'false'}`,
     });
+    if (response.access_token) {
+      await setItem(ACCESS_TOKEN_KEY, response.access_token);
+    }
+    if (response.refresh_token) {
+      await setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+    }
+    return response;
+  }
+
+  async refreshAccessToken(): Promise<string | null> {
+  const refreshToken = await getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) return null;
+    const response = await this.makeRequest<LoginResponse>('/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (response.access_token) {
+      await setItem(ACCESS_TOKEN_KEY, response.access_token);
+      return response.access_token;
+    }
+    return null;
+  }
+
+  async getStoredAccessToken(): Promise<string | null> {
+  return await getItem(ACCESS_TOKEN_KEY);
+  }
+
+  async getStoredRefreshToken(): Promise<string | null> {
+  return await getItem(REFRESH_TOKEN_KEY);
   }
 
   async register(data: RegisterRequest): Promise<RegisterResponse> {

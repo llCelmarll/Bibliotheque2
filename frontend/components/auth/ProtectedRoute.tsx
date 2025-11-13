@@ -13,6 +13,7 @@ export function ProtectedRoute({ children, redirectTo = '/auth/login' }: Protect
   const router = useRouter();
 
   React.useEffect(() => {
+    console.log('[ProtectedRoute] isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'redirectTo:', redirectTo);
     if (!isLoading && !isAuthenticated) {
       router.replace(redirectTo);
     }

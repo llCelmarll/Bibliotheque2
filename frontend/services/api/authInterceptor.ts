@@ -1,15 +1,26 @@
 // services/api/authInterceptor.ts
 import axios, { AxiosInstance } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const TOKEN_KEY = 'auth_token';
+let SecureStore: any;
+if (Platform.OS !== 'web') {
+  SecureStore = require('expo-secure-store');
+}
+
+const TOKEN_KEY = 'access_token';
 
 export function setupAuthInterceptor(apiClient: AxiosInstance) {
   // Intercepteur pour ajouter le token à chaque requête
   apiClient.interceptors.request.use(
     async (config) => {
       try {
-        const token = await AsyncStorage.getItem(TOKEN_KEY);
+        let token;
+        if (Platform.OS === 'web') {
+          token = await AsyncStorage.getItem(TOKEN_KEY);
+        } else {
+          token = await SecureStore.getItemAsync(TOKEN_KEY);
+        }
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }

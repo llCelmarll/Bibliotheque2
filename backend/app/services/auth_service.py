@@ -28,6 +28,62 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return hash_password(plain_password) == hashed_password
 
 class AuthService:
+    def generate_tokens(self, user_id: str, remember_me: bool = False):
+        """
+        Génère un access token et un refresh token selon l'option 'Se souvenir de moi'.
+        """
+        if remember_me:
+            access_token_expires = timedelta(days=30)
+            refresh_token_expires = timedelta(days=60)
+        else:
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            refresh_token_expires = timedelta(days=1)
+        access_token = self.create_access_token(
+            data={"sub": user_id}, expires_delta=access_token_expires
+        )
+        refresh_token = self.create_refresh_token(
+            data={"sub": user_id}, expires_delta=refresh_token_expires
+        )
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        }
+
+    def renew_access_token(self, refresh_token: str):
+        """
+        Renouvelle le token d'accès à partir du refresh token.
+        """
+        payload = self.verify_refresh_token(refresh_token)
+        if not payload:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=401, detail="Refresh token invalide ou expiré")
+        user_id = payload.get("sub")
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = self.create_access_token(
+            data={"sub": user_id}, expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    def create_refresh_token(self, data: dict, expires_delta: Optional[timedelta] = None):
+        """Créer un refresh token JWT"""
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(days=7)
+        to_encode.update({"exp": expire, "type": "refresh"})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+
+    def verify_refresh_token(self, token: str) -> Optional[dict]:
+        """Vérifier et décoder un refresh token JWT"""
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            if payload.get("type") != "refresh":
+                return None
+            return payload
+        except JWTError:
+            return None
     def __init__(self, session: Session):
         self.session = session
 
