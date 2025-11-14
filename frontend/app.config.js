@@ -1,3 +1,5 @@
+const { version } = require("react");
+
 module.exports = {
   expo: {
     name: "Bibliothèque", // Nom de l'application
@@ -20,9 +22,7 @@ module.exports = {
       url: "https://u.expo.dev/b94a31f7-30e7-4781-8a4d-c32e75cb7e82",
       fallbackToCacheTimeout: 0
     },
-    runtimeVersion: {
-      policy: "appVersion"
-    },
+      runtimeVersion: "stable",
     assetBundlePatterns: [
       "**/*" // Pattern pour inclure tous les assets
     ],

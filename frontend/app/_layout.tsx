@@ -57,15 +57,17 @@ import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect as useReactEffect } from 'react';
 
-function AuthRedirectWrapper({ children }) {
+function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Redirection uniquement au démarrage (sur la racine)
   useReactEffect(() => {
     if (!isLoading) {
       const currentSegment = segments.join('/');
-      if (isAuthenticated && !currentSegment.includes('books')) {
+      const isRoot = currentSegment === '' || currentSegment === '/';
+      if (isAuthenticated && isRoot) {
         router.replace('/(tabs)/books');
       } else if (!isAuthenticated && !currentSegment.includes('auth/login')) {
         router.replace('/auth/login');
