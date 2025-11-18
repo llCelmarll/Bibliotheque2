@@ -6,7 +6,7 @@ param(
     [switch]$SkipWeb,
     [switch]$SkipMobile,
     [switch]$SkipApk,
-    [string]$UpdateMessage = "Persistance de connexion"
+    [string]$UpdateMessage = "Corrections de bugs et ameliorations diverses"
 )
 
 Write-Host "`nDeploiement complet de l'application" -ForegroundColor Cyan

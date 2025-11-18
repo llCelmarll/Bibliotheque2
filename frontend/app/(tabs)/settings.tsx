@@ -10,6 +10,21 @@ export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<{id?: string, createdAt?: string} | null>(null);
+
+  useEffect(() => {
+    async function fetchUpdateInfo() {
+      try {
+        const info = await import('expo-updates');
+        setUpdateInfo({
+          id: info.manifest?.id || info.updateId || undefined
+        });
+      } catch (e) {
+        setUpdateInfo(null);
+      }
+    }
+    fetchUpdateInfo();
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -79,7 +94,7 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>⚙️ Paramètres</Text>
-        
+
         {/* Section Utilisateur */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Informations utilisateur</Text>
@@ -100,7 +115,7 @@ export default function SettingsScreen() {
         {/* Section Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>
-          
+
           {Platform.OS !== 'web' && (
             <TouchableOpacity 
               style={[styles.actionButton, { marginBottom: 12 }]} 
@@ -118,7 +133,7 @@ export default function SettingsScreen() {
               )}
             </TouchableOpacity>
           )}
-          
+
           <TouchableOpacity 
             style={styles.actionButton} 
             onPress={async () => {
@@ -151,6 +166,12 @@ export default function SettingsScreen() {
             <Text style={styles.infoText}>Version de développement</Text>
             <Text style={styles.infoText}>Authentification activée</Text>
             <Text style={styles.infoText}>Bibliothèque personnelle</Text>
+            {/* Ajout de l'info de mise à jour OTA */}
+            {updateInfo?.id && (
+              <Text style={styles.infoText}>
+                Dernière mise à jour OTA : {updateInfo.id}
+              </Text>
+            )}
           </View>
         </View>
       </View>
