@@ -13,13 +13,6 @@ export  default function BookDetailScreen() {
 	const { isAuthenticated, isLoading: authLoading } = useAuth();
 	const router = useRouter();
 
-	// Protection d'authentification
-	useEffect(() => {
-		if (!authLoading && !isAuthenticated) {
-			router.replace("/auth/login");
-		}
-	}, [isAuthenticated, authLoading, router]);
-
 	// Rafraîchir les données quand le paramètre refresh change
 	useEffect(() => {
 		if (refresh) {
@@ -41,6 +34,19 @@ export  default function BookDetailScreen() {
 				options={{
 					title: "Details du livre",
 					headerShown: true,
+					headerLeft: () => {
+						const router = useRouter();
+						const MaterialIcons = require('@expo/vector-icons').MaterialIcons;
+						return (
+							<MaterialIcons
+								name="arrow-back"
+								size={24}
+								color="#222"
+								style={{marginLeft: 16}}
+								onPress={() => router.replace('/(tabs)/books')}
+							/>
+						);
+					}
 				}}
 			/>
 
