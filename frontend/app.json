@@ -35,13 +35,17 @@
     "experiments": {
       "typedRoutes": true
     },
+    "extra": {
+      "eas": {
+        "projectId": "b94a31f7-30e7-4781-8a4d-c32e75cb7e82"
+      }
+    },
     "updates": {
       "enabled": true,
+      "url": "https://u.expo.dev/b94a31f7-30e7-4781-8a4d-c32e75cb7e82",
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 5000
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    }
+    "runtimeVersion": "1.0.0"
   }
 }

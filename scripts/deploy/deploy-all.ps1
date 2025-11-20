@@ -20,8 +20,8 @@ if ($SkipMobile) { Write-Host "  - App Mobile: SAUTE" -ForegroundColor Yellow } 
 if ($SkipApk) { Write-Host "  - APK Android: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - APK Android: OK" -ForegroundColor Green }
 Write-Host ""
 
-Write-Host "Note : La runtimeVersion est fixée à 'stable' dans app.config.js. Les mises à jour OTA JS ne nécessitent plus d'incrémenter la version ou le versionCode." -ForegroundColor Cyan
-Write-Host "Si tu rebuilds l'app native, incrémente manuellement la version et le versionCode dans app.config.js." -ForegroundColor Cyan
+Write-Host "Note : La runtimeVersion est fixée à '1.0.0' dans app.json. Les mises à jour OTA JS ne nécessitent plus d'incrémenter la version ou le versionCode." -ForegroundColor Cyan
+Write-Host "Si tu rebuilds l'app native avec une nouvelle runtimeVersion, incrémente-la aussi dans app.json." -ForegroundColor Cyan
 
 # Backup de la base de donnees si elle existe
 Write-Host "Backup de la base de donnees..." -ForegroundColor Yellow
@@ -63,7 +63,7 @@ if (-not $SkipMobile) {
     Set-Location frontend
     
     $env:EXPO_PUBLIC_API_URL = "https://mabibliotheque.ovh/api"
-    eas update --branch preview --message $UpdateMessage
+    eas update --branch production --message $UpdateMessage
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Erreur lors de la publication OTA" -ForegroundColor Red

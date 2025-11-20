@@ -10,14 +10,25 @@ export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<{id?: string, createdAt?: string} | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{
+    updateId?: string;
+    channel?: string;
+    runtimeVersion?: string;
+    createdAt?: string;
+    isEmbeddedLaunch?: boolean;
+    isEmergencyLaunch?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     async function fetchUpdateInfo() {
       try {
-        const info = await import('expo-updates');
         setUpdateInfo({
-          id: info.manifest?.id || info.updateId || undefined
+          updateId: Updates.updateId || undefined,
+          channel: Updates.channel || undefined,
+          runtimeVersion: Updates.runtimeVersion || undefined,
+          createdAt: Updates.createdAt?.toISOString() || undefined,
+          isEmbeddedLaunch: Updates.isEmbeddedLaunch,
+          isEmergencyLaunch: Updates.isEmergencyLaunch,
         });
       } catch (e) {
         setUpdateInfo(null);
@@ -166,11 +177,34 @@ export default function SettingsScreen() {
             <Text style={styles.infoText}>Version de développement</Text>
             <Text style={styles.infoText}>Authentification activée</Text>
             <Text style={styles.infoText}>Bibliothèque personnelle</Text>
-            {/* Ajout de l'info de mise à jour OTA */}
-            {updateInfo?.id && (
-              <Text style={styles.infoText}>
-                Dernière mise à jour OTA : {updateInfo.id}
-              </Text>
+
+            {/* Debug OTA - Informations dynamiques */}
+            {Platform.OS !== 'web' && (
+              <>
+                <Text style={[styles.infoText, { marginTop: 12, fontWeight: '600' }]}>
+                  Informations OTA :
+                </Text>
+                <Text style={styles.infoText}>
+                  Channel : {updateInfo?.channel || 'Non défini'}
+                </Text>
+                <Text style={styles.infoText}>
+                  RuntimeVersion : {updateInfo?.runtimeVersion || 'Non défini'}
+                </Text>
+                <Text style={styles.infoText}>
+                  Update ID : {updateInfo?.updateId || 'Aucune mise à jour'}
+                </Text>
+                {updateInfo?.createdAt && (
+                  <Text style={styles.infoText}>
+                    Date update : {new Date(updateInfo.createdAt).toLocaleString('fr-FR')}
+                  </Text>
+                )}
+                <Text style={styles.infoText}>
+                  Embedded launch : {updateInfo?.isEmbeddedLaunch ? 'Oui' : 'Non'}
+                </Text>
+                <Text style={styles.infoText}>
+                  Emergency launch : {updateInfo?.isEmergencyLaunch ? 'Oui' : 'Non'}
+                </Text>
+              </>
             )}
           </View>
         </View>

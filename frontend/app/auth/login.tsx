@@ -62,14 +62,23 @@ export default function LoginScreen() {
     setIsLoginLoading(true);
     setErrorMessage('');
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://mabibliotheque.ovh/api'}/auth/login`, {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://mabibliotheque.ovh/api';
+      console.log('🔍 API URL:', apiUrl);
+      console.log('🔍 Email:', email.trim());
+      console.log('🔍 Remember me:', rememberMe);
+
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `username=${encodeURIComponent(email.trim())}&password=${encodeURIComponent(password)}&remember_me=${rememberMe}`,
       });
+
+      console.log('🔍 Response status:', response.status);
       const data = await response.json();
+      console.log('🔍 Response data:', data);
+
       if (!response.ok) {
         throw new Error(data.detail || 'Erreur de connexion');
       }

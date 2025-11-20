@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { UpdateChecker } from '@/components/UpdateChecker';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -46,6 +47,7 @@ export default function RootLayout() {
   // Ajout de la logique de redirection ici
   return (
     <AuthProvider>
+      <UpdateChecker />
       <AuthRedirectWrapper>
         <RootLayoutNav />
       </AuthRedirectWrapper>
