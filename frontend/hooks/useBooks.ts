@@ -14,7 +14,7 @@ interface UseBooksParams {
 
 export function useBooks({
 	initialPageSize = 20,
-	initialSortBy = 'title',
+	initialSortBy = 'author',
 	initialOrder = 'asc',
 	initialFilters = [],
 }: UseBooksParams = {}) {
