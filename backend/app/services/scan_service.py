@@ -158,13 +158,18 @@ class ScanService:
                     )
                     print(f"🆕 Nouvel éditeur détecté: '{api_publisher_name}'")
 
+            # Forcer HTTPS pour les URLs de couverture (fix pour les apps mobiles)
+            cover_url = google_cover or openlibrary_cover
+            if cover_url and cover_url.startswith('http://'):
+                cover_url = cover_url.replace('http://', 'https://', 1)
+
             result.suggested = SuggestedBook(
                 isbn=isbn,
                 title=google_title or openlibrary_title,
                 published_date=google_date or openlibrary_date,
                 page_count=google_pages or openlibrary_pages,
                 barcode=isbn,
-                cover_url=google_cover or openlibrary_cover,
+                cover_url=cover_url,
                 authors=authors_list,
                 publisher=final_publisher,
                 genres=[],  # TODO: Enrichir les genres plus tard si nécessaire

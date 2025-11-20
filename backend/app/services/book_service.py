@@ -318,6 +318,9 @@ class BookService:
                         image_links = volume.get("imageLinks") or {}
                         thumb = image_links.get("thumbnail")
                         if thumb:
+                            # Forcer HTTPS pour compatibilité mobile
+                            if thumb.startswith('http://'):
+                                thumb = thumb.replace('http://', 'https://', 1)
                             return thumb
         except httpx.HTTPError:
             pass

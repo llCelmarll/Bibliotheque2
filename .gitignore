@@ -35,3 +35,7 @@ config/secrets/
 # Données de test et testeurs
 testLivrotheque2.csv
 deploy/testers-ips.txt
+scripts/check-http-covers.ps1
+.gitignore
+.gitignore
+scripts/fix-http-covers.ps1
