@@ -6,8 +6,74 @@ param(
     [switch]$SkipWeb,
     [switch]$SkipMobile,
     [switch]$SkipApk,
-    [string]$UpdateMessage = "Corrections de bugs et ameliorations diverses"
+    [string]$UpdateMessage = "Correction bug retour scan bloqué"
 )
+
+# Fonction pour vérifier et lancer Docker Desktop si nécessaire
+function Start-DockerIfNeeded {
+    Write-Host "Vérification de Docker Desktop..." -ForegroundColor Gray
+
+    # Vérifier si Docker est en cours d'exécution
+    try {
+        $null = docker info 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  Docker Desktop est déjà en cours d'exécution" -ForegroundColor Green
+            return $true
+        }
+    } catch {
+        # Docker n'est pas accessible
+    }
+
+    Write-Host "  Docker Desktop n'est pas en cours d'exécution" -ForegroundColor Yellow
+    Write-Host "  Lancement de Docker Desktop..." -ForegroundColor Yellow
+
+    # Chemins possibles pour Docker Desktop
+    $dockerPaths = @(
+        "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe",
+        "${env:ProgramFiles(x86)}\Docker\Docker\Docker Desktop.exe",
+        "$env:LOCALAPPDATA\Docker\Docker Desktop.exe"
+    )
+
+    $dockerExe = $null
+    foreach ($path in $dockerPaths) {
+        if (Test-Path $path) {
+            $dockerExe = $path
+            break
+        }
+    }
+
+    if (-not $dockerExe) {
+        Write-Host "  Erreur: Docker Desktop n'a pas été trouvé" -ForegroundColor Red
+        Write-Host "  Veuillez lancer Docker Desktop manuellement" -ForegroundColor Red
+        return $false
+    }
+
+    # Lancer Docker Desktop
+    Start-Process -FilePath $dockerExe
+
+    Write-Host "  Attente du démarrage de Docker Desktop..." -ForegroundColor Yellow
+    $maxAttempts = 60  # 60 secondes max
+    $attempts = 0
+
+    while ($attempts -lt $maxAttempts) {
+        Start-Sleep -Seconds 2
+        try {
+            $null = docker info 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "  Docker Desktop est maintenant prêt !" -ForegroundColor Green
+                return $true
+            }
+        } catch {
+            # Continuer à attendre
+        }
+        $attempts++
+        Write-Host "  ." -NoNewline -ForegroundColor Gray
+    }
+
+    Write-Host ""
+    Write-Host "  Timeout: Docker Desktop n'a pas démarré dans les temps" -ForegroundColor Red
+    return $false
+}
 
 Write-Host "`nDeploiement complet de l'application" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
@@ -30,9 +96,15 @@ ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" 'if [ -f ${SYNOLOGY_PATH}/data/bibliothequ
 if (-not $SkipBackend) {
     Write-Host "[1/4] Build et deploiement du backend..." -ForegroundColor Yellow
     Write-Host ""
-    
+
+    # Vérifier que Docker est lancé
+    if (-not (Start-DockerIfNeeded)) {
+        Write-Host "Impossible de continuer sans Docker Desktop" -ForegroundColor Red
+        exit 1
+    }
+
     Set-Location backend
-    
+
     # Build multi-architecture
     Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray
     docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile -t llcelmarll/mabibliotheque-backend:latest --push .
@@ -115,9 +187,15 @@ if (-not $SkipApk) {
 if (-not $SkipWeb) {
     Write-Host "[4/4] Build et deploiement du frontend Web..." -ForegroundColor Yellow
     Write-Host ""
-    
+
+    # Vérifier que Docker est lancé
+    if (-not (Start-DockerIfNeeded)) {
+        Write-Host "Impossible de continuer sans Docker Desktop" -ForegroundColor Red
+        exit 1
+    }
+
     Set-Location frontend
-    
+
     # Build multi-architecture
     Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray
     docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.prod -t llcelmarll/mabibliotheque-frontend:latest --push .
