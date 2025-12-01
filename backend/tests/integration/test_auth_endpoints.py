@@ -19,8 +19,8 @@ class TestAuthEndpoints:
         user_data = {
             "email": "test@example.com",
             "username": "testuser",
-            "password": "testpassword123",
-            "confirm_password": "testpassword123"
+            "password": "TestPassword123",
+            "confirm_password": "TestPassword123"
         }
         
         response = client.post("/auth/register", json=user_data)
@@ -42,19 +42,19 @@ class TestAuthEndpoints:
         user_data = {
             "email": "test@example.com",  # Même email
             "username": "differentuser",
-            "password": "testpassword123",
-            "confirm_password": "testpassword123"
+            "password": "TestPassword123",
+            "confirm_password": "TestPassword123"
         }
         
         response = client.post("/auth/register", json=user_data)
         
         assert response.status_code == 400
-        assert "Un compte avec cet email existe déjà" in response.json()["detail"]
+        assert "Un compte avec cette adresse email existe déjà" in response.json()["detail"]
     
     def test_login_success(self, client: TestClient, session: Session):
         """Test de connexion réussie."""
         # Créer un utilisateur de test
-        password = "testpassword123"
+        password = "TestPassword123"
         user = create_test_user(
             session, 
             email="test@example.com",
@@ -126,7 +126,7 @@ class TestAuthService:
     
     def test_password_hashing(self):
         """Test du hachage de mot de passe."""
-        password = "testpassword123"
+        password = "TestPassword123"
         hashed = hash_password(password)
         
         assert hashed != password  # Le mot de passe est bien haché

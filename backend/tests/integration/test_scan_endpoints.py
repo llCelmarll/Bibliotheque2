@@ -51,18 +51,17 @@ class TestScanEndpoint:
         data = response.json()
         
         # Le livre existe dans la base
-        assert data["exists"] is True
         assert data["base"] is not None
         assert data["base"]["id"] == existing_book.id
         assert data["base"]["title"] == "Existing Book"
-        
-        # Les APIs externes sont toujours appelées
-        assert data["google_books"]["title"] == "Google Title"
-        assert data["open_library"]["title"] == "OpenLibrary Title"
-        
-        # Vérifier que les APIs ont été appelées
-        mock_google_books.assert_called_once_with("9781234567890")
-        mock_openlibrary.assert_called_once_with("9781234567890")
+
+        # Les APIs externes ne sont PAS appelées quand le livre existe déjà
+        assert "google_books" not in data
+        assert "open_library" not in data
+
+        # Vérifier que les APIs n'ont PAS été appelées
+        mock_google_books.assert_not_called()
+        mock_openlibrary.assert_not_called()
     
     @patch('app.services.book_service.fetch_google_books')
     @patch('app.services.book_service.fetch_openlibrary')
@@ -94,7 +93,6 @@ class TestScanEndpoint:
         data = response.json()
         
         # Le livre n'existe pas dans la base
-        assert data["exists"] is False
         assert data["base"] is None
         
         # Mais les données des APIs externes sont disponibles
@@ -137,7 +135,6 @@ class TestScanEndpoint:
         data = response.json()
         
         # Pour l'utilisateur authentifié, le livre n'existe pas (isolation)
-        assert data["exists"] is False
         assert data["base"] is None
         
         # Mais les APIs externes répondent quand même
@@ -163,9 +160,8 @@ class TestScanEndpoint:
         data = response.json()
         
         # Le livre n'existe pas dans la base
-        assert data["exists"] is False
         assert data["base"] is None
-        
+
         # Les APIs ont échoué
         assert data["google_books"] is None
         assert data["open_library"] is None
@@ -194,8 +190,7 @@ class TestScanEndpoint:
         
         assert response.status_code == 200
         data = response.json()
-        
-        assert data["exists"] is False
+
         assert data["base"] is None
         assert data["google_books"]["title"] == "Only Google Works"
         assert data["open_library"] is None
@@ -273,10 +268,10 @@ class TestScanWithBarcode:
         data = response.json()
         
         # Le livre doit être trouvé par son code-barre
-        assert data["exists"] is True
+        assert data["base"] is not None
         assert data["base"]["id"] == existing_book.id
         assert data["base"]["title"] == "Book with Barcode"
-        
-        # Les APIs externes sont appelées avec le code scanné
-        mock_google_books.assert_called_once_with("1234567890123")
-        mock_openlibrary.assert_called_once_with("1234567890123")
+
+        # Les APIs externes ne sont PAS appelées quand le livre existe déjà
+        mock_google_books.assert_not_called()
+        mock_openlibrary.assert_not_called()

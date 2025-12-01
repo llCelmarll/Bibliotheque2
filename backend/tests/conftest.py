@@ -25,6 +25,19 @@ from app.models.Genre import Genre
 # from tests.factories.book_factory import BookFactory
 
 
+# Configuration globale pour les tests
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Configure l'environnement de test."""
+    # Définir les variables d'environnement pour les tests
+    os.environ["ENV"] = "development"
+    os.environ["ALLOWED_EMAILS"] = "test@example.com,@example.com"
+    os.environ["TESTING"] = "true"
+    yield
+    # Nettoyage
+    os.environ.pop("TESTING", None)
+
+
 @pytest.fixture(scope="session")
 def anyio_backend():
     """Configuration backend pour anyio."""
@@ -151,12 +164,16 @@ def clean_db(session: Session):
     """Nettoie la base de données avant chaque test."""
     # Cette fixture s'exécute automatiquement avant chaque test
     yield  # Le test s'exécute ici
-    
-    # Nettoyage après le test
-    session.rollback()
-    for table in reversed(SQLModel.metadata.sorted_tables):
-        session.execute(table.delete())
-    session.commit()
+
+    # Nettoyage après le test - Try/except pour éviter les blocages
+    try:
+        session.rollback()
+        for table in reversed(SQLModel.metadata.sorted_tables):
+            session.execute(table.delete())
+        session.commit()
+    except Exception as e:
+        # En cas d'erreur, forcer un rollback
+        session.rollback()
 
 
 # Helpers pour les tests

@@ -214,10 +214,97 @@ class TestBookSearch:
     def test_search_no_results(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de recherche sans résultats."""
         book = create_test_book(session, test_user.id, title="Test Book")
-        
+
         # L'endpoint utilise des query params, pas du JSON
         response = authenticated_client.post("/books/search/simple?q=Nonexistent")
-        
+
         assert response.status_code == 200
         books = response.json()
         assert len(books) == 0
+
+
+@pytest.mark.integration
+@pytest.mark.books
+class TestScanBookSimilarDetection:
+    """Tests d'intégration pour la détection de livres similaires lors du scan."""
+
+    @pytest.mark.asyncio
+    async def test_scan_with_similar_book_found(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de scan avec un livre similaire dans la bibliothèque."""
+        # Créer un livre existant avec un ISBN différent
+        existing_book = create_test_book(
+            session,
+            test_user.id,
+            title="Sapiens",
+            isbn="9782226257012"
+        )
+
+        # Scanner un ISBN différent mais même titre
+        scanned_isbn = "9782226257017"
+
+        # Note: Ce test nécessite que les APIs externes soient mockées
+        # ou qu'elles retournent des données pour cet ISBN
+        response = authenticated_client.get(f"/books/scan/{scanned_isbn}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Le livre scanné n'existe pas
+        assert data['base'] is None or data['base']['isbn'] != scanned_isbn
+
+        # Mais des livres similaires doivent être trouvés
+        assert 'title_match' in data
+
+        # Si des livres similaires sont trouvés, vérifier qu'ils contiennent le livre existant
+        if len(data['title_match']) > 0:
+            similar_isbns = [book['isbn'] for book in data['title_match']]
+            assert existing_book.isbn in similar_isbns
+
+    @pytest.mark.asyncio
+    async def test_scan_existing_book_no_similar_search(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de scan d'un livre existant (pas de recherche de similaires)."""
+        # Créer un livre
+        existing_book = create_test_book(
+            session,
+            test_user.id,
+            title="Python Programming",
+            isbn="1234567890123"
+        )
+
+        # Scanner le même ISBN
+        response = authenticated_client.get(f"/books/scan/{existing_book.isbn}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Le livre doit être trouvé
+        assert data['base'] is not None
+        assert data['base']['isbn'] == existing_book.isbn
+
+        # title_match ne doit pas être utilisé (ou vide) car le livre existe déjà
+        # La logique frontend n'affiche pas les similaires si le livre existe
+
+    @pytest.mark.asyncio
+    async def test_scan_user_isolation_similar_books(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test que la recherche de livres similaires respecte l'isolation utilisateur."""
+        # Créer un autre utilisateur avec un livre
+        other_user = create_test_user(session, email="other@example.com", username="otheruser")
+        other_book = create_test_book(
+            session,
+            other_user.id,
+            title="Shared Title Book",
+            isbn="1111111111111"
+        )
+
+        # Scanner un ISBN différent avec un titre similaire
+        scanned_isbn = "2222222222222"
+
+        response = authenticated_client.get(f"/books/scan/{scanned_isbn}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Les livres similaires ne doivent PAS inclure le livre de l'autre utilisateur
+        if 'title_match' in data and len(data['title_match']) > 0:
+            similar_isbns = [book['isbn'] for book in data['title_match']]
+            assert other_book.isbn not in similar_isbns

@@ -151,8 +151,13 @@ class BookRepository:
 				Book.isbn != isbn,
 				Book.isbn.is_(None)
 			))
+			.options(
+				selectinload(Book.publisher),
+				selectinload(Book.authors),
+				selectinload(Book.genres)
+			)
 		)
-		
+
 		if user_id is not None:
 			stmt = stmt.where(Book.owner_id == user_id)
 

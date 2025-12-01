@@ -358,16 +358,32 @@ class BookService:
             from app.schemas.Book import BookRead
             book_dict = BookRead.from_orm(existing_book).model_dump()
             book_data['base'] = book_dict
-            book_data['exists'] = True
+            return book_data
         else:
             # Si le livre n'existe pas, chercher sur les APIs externes
-            book_data['exists'] = False
             book_data['base'] = None
         
         # Récupérer les données des APIs externes dans tous les cas
         book_data['google_books'] = await fetch_google_books(isbn)
         book_data['open_library'] = await fetch_openlibrary(isbn)
-        
+
+        # Extraire le titre pour la recherche de similarités (vérifier que les APIs ont retourné des données)
+        google_title = book_data['google_books'].get('title') if book_data['google_books'] else None
+        openlibrary_title = book_data['open_library'].get('title') if book_data['open_library'] else None
+        title = google_title or openlibrary_title
+
+        if title:
+            # Recherche d'un potentiel livre similaire dans la base (même titre, même auteur mais ISBN différent)
+            similar_books = self.book_repository.search_title_match(title, isbn, self.user_id)
+            # Conversion des livres similaires - import local pour éviter les conflits avec les tests mockés
+            from app.schemas.Book import BookRead as BookReadSchema
+            title_match_list = []
+            for similar_book in similar_books:
+                book_read = BookReadSchema.model_validate(similar_book)
+                title_match_list.append(book_read.model_dump())
+            book_data['title_match'] = title_match_list
+
+
         return book_data
 
     # Méthodes privées pour la validation et la logique interne

@@ -57,18 +57,18 @@ class TestBookServiceScan:
         mock_openlibrary.return_value = {"title": "OL Title"}
         
         result = await book_service.scan_book("9781234567890")
-        
+
         # Vérifications
-        assert result["exists"] is True
         assert result["base"] is not None
         assert result["base"]["id"] == 1
         assert result["base"]["title"] == "Existing Book"
-        assert result["google_books"]["title"] == "Google Title"
-        assert result["open_library"]["title"] == "OL Title"
-        
-        # Vérifier que les APIs sont appelées même si le livre existe
-        mock_google_books.assert_called_once_with("9781234567890")
-        mock_openlibrary.assert_called_once_with("9781234567890")
+
+        # Les APIs ne sont PAS appelées quand le livre existe déjà
+        assert "google_books" not in result
+        assert "open_library" not in result
+
+        mock_google_books.assert_not_called()
+        mock_openlibrary.assert_not_called()
         book_service.book_repository.get_by_isbn_or_barcode.assert_called_once_with("9781234567890", test_user.id)
     
     @pytest.mark.asyncio
@@ -85,7 +85,8 @@ class TestBookServiceScan:
         # Mock du repository - livre non trouvé
         book_service.book_repository = Mock()
         book_service.book_repository.get_by_isbn_or_barcode.return_value = None
-        
+        book_service.book_repository.search_title_match.return_value = []  # Pas de livres similaires
+
         # Mock des APIs externes
         mock_google_books.return_value = {
             "title": "New Book",
@@ -100,7 +101,6 @@ class TestBookServiceScan:
         result = await book_service.scan_book("9780987654321")
         
         # Vérifications
-        assert result["exists"] is False
         assert result["base"] is None
         assert result["google_books"]["title"] == "New Book"
         assert result["google_books"]["pageCount"] == 300
@@ -158,15 +158,15 @@ class TestBookServiceScan:
         # Mock du repository - livre non trouvé
         book_service.book_repository = Mock()
         book_service.book_repository.get_by_isbn_or_barcode.return_value = None
-        
+        book_service.book_repository.search_title_match.return_value = []
+
         # Simuler l'échec des APIs
         mock_google_books.return_value = None
         mock_openlibrary.return_value = None
-        
+
         result = await book_service.scan_book("9999999999999")
-        
+
         # Le scan ne doit pas planter même si les APIs échouent
-        assert result["exists"] is False
         assert result["base"] is None
         assert result["google_books"] is None
         assert result["open_library"] is None
@@ -188,17 +188,17 @@ class TestBookServiceScan:
         # Mock du repository - livre non trouvé
         book_service.book_repository = Mock()
         book_service.book_repository.get_by_isbn_or_barcode.return_value = None
-        
+        book_service.book_repository.search_title_match.return_value = []
+
         # Google fonctionne, OpenLibrary échoue
         mock_google_books.return_value = {
             "title": "Only Google Works",
             "authors": ["Google Author"]
         }
         mock_openlibrary.return_value = None
-        
+
         result = await book_service.scan_book("9788888888888")
-        
-        assert result["exists"] is False
+
         assert result["base"] is None
         assert result["google_books"]["title"] == "Only Google Works"
         assert result["open_library"] is None
@@ -235,14 +235,14 @@ class TestBookServiceScan:
         result = await book_service.scan_book("1234567890123")
         
         # Le livre doit être trouvé par son code-barre
-        assert result["exists"] is True
+        assert result["base"] is not None
         assert result["base"]["id"] == 2
         assert result["base"]["title"] == "Book with Barcode"
         assert result["base"]["barcode"] == "1234567890123"
-        
+
+        # Les APIs ne sont PAS appelées quand le livre existe déjà
+        mock_google_books.assert_not_called()
+        mock_openlibrary.assert_not_called()
+
         # Vérifier que la recherche s'est faite avec le code-barre
         book_service.book_repository.get_by_isbn_or_barcode.assert_called_once_with("1234567890123", test_user.id)
-        
-        # Les APIs sont appelées avec le code scanné (pas l'ISBN du livre)
-        mock_google_books.assert_called_once_with("1234567890123")
-        mock_openlibrary.assert_called_once_with("1234567890123")

@@ -208,6 +208,18 @@ export default function ScanResultPage() {
 					</View>
 				)}
 
+				{/* Livres similaires - affichés EN PREMIER si le livre n'existe pas déjà */}
+				{!data.base && data.title_match && data.title_match.length > 0 && (
+					<View style={styles.section}>
+						<SimilarBooksSection
+							books={data.title_match}
+							onSelectBook={(book) => {
+								router.push(`/(tabs)/books/${book.id}`);
+							}}
+						/>
+					</View>
+				)}
+
 				{/* Formulaire de suggestion - seulement si le livre n'existe pas déjà */}
 				{data.suggested && !data.base && (
 					<View style={styles.section}>
@@ -226,18 +238,6 @@ export default function ScanResultPage() {
 							googleData={data.google_book}
 							openLibraryData={data.openlibrary}
 							onImportData={handleImportData}
-						/>
-					</View>
-				)}
-
-				{/* Livres similaires */}
-				{data.title_match && data.title_match.length > 0 && (
-					<View style={styles.section}>
-						<SimilarBooksSection 
-							books={data.title_match} 
-							onSelectBook={(book) => {
-								router.push(`/(tabs)/books/${book.id}`);
-							}}
 						/>
 					</View>
 				)}

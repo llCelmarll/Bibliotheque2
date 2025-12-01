@@ -131,14 +131,14 @@ async def scan_book(
     """
     Scanne un livre par son ISBN.
 
-    - Si le livre existe dans la base, retourne ses données + les données des APIs externes
-    - Si le livre n'existe pas, retourne uniquement les données des APIs externes
+    - Si le livre existe dans la base, retourne uniquement ses données
+    - Si le livre n'existe pas, retourne les données des APIs externes + recherche de livres similaires
 
     Retourne :
-    - **exists**: booléen indiquant si le livre existe dans la base
-    - **base**: données du livre de la base (si exists=True)
-    - **google_books**: données de l'API Google Books
-    - **open_library**: données de l'API OpenLibrary
+    - **base**: données du livre de la base (si le livre existe) ou None
+    - **google_books**: données de l'API Google Books (si le livre n'existe pas)
+    - **open_library**: données de l'API OpenLibrary (si le livre n'existe pas)
+    - **title_match**: liste des livres similaires (si le livre n'existe pas et qu'un titre est trouvé)
     """
     return await service.scan_book(isbn)
 

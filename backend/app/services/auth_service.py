@@ -229,8 +229,17 @@ class AuthService:
         self.session.commit()
         self.session.refresh(new_user)
         
-        # 7. Envoyer notification email
-        if request:
+        # 7. Envoyer notification email (sauf en mode test)
+        # Détecte si pytest est en cours d'exécution
+        import sys
+        import logging
+        logger = logging.getLogger("app")
+
+        is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true"
+        logger.info(f"[AUTH] is_testing={is_testing}, pytest in sys.modules={'pytest' in sys.modules}, TESTING env={os.getenv('TESTING')}")
+
+        if request and not is_testing:
+            logger.info("[AUTH] Sending registration email notification...")
             try:
                 from .email_service import email_notification_service
                 await email_notification_service.send_registration_notification(
@@ -243,7 +252,9 @@ class AuthService:
                     }
                 )
             except Exception as e:
-                print(f"⚠️ Erreur notification email : {e}")
+                logger.warning(f"Erreur notification email : {e}")
+        else:
+            logger.info("[AUTH] Skipping email notification (testing mode)")
         
         return new_user
 
