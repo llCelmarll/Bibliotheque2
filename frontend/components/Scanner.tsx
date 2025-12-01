@@ -3,6 +3,7 @@ import { Platform, View, Text, Button, StyleSheet, TextInput, TouchableOpacity }
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { useFocusEffect } from "expo-router";
 
 interface ScannerProps {
   onScanned: (isbn: string) => void;
@@ -242,6 +243,13 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange, onManualAdd }: S
 	const [scanned, setScanned] = useState(false);
 	const [showManualInput, setShowManualInput] = useState(false);
 	const [torch, setTorch] = useState(false);
+
+	// Réinitialiser l'état du scanner quand on revient sur l'écran
+	useFocusEffect(
+		React.useCallback(() => {
+			setScanned(false);
+		}, [])
+	);
 
 	if (!permission) {
 		return <View />;
