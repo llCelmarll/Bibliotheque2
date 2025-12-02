@@ -34,12 +34,9 @@ describe('AuthService', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/x-www-form-urlencoded'
           }),
-          body: JSON.stringify({
-            email: 'test@example.com',
-            password: 'password123'
-          })
+          body: 'username=test%40example.com&password=password123&remember_me=false'
         })
       );
       expect(result).toEqual(mockResponseData);

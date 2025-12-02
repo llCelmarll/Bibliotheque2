@@ -1,12 +1,12 @@
 // services/authService.ts
 import API_CONFIG from '@/config/api';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let SecureStore: any = null;
 if (Platform.OS !== 'web') {
   SecureStore = require('expo-secure-store');
 }
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 // Abstraction cross-platform pour le stockage sécurisé
 async function setItem(key: string, value: string) {
   if (Platform.OS === 'web') {
