@@ -23,6 +23,9 @@ COPY . .
 # Créer le répertoire pour la base de données si nécessaire
 RUN mkdir -p /app/data
 
+# Rendre le script de démarrage exécutable
+RUN chmod +x /app/start.sh
+
 # Exposer le port
 EXPOSE 8000
 
@@ -31,5 +34,5 @@ ENV PYTHONPATH=/app
 ENV DATABASE_URL=sqlite:///./data/bibliotheque.db
 ENV PYTHONUNBUFFERED=1
 
-# Commande de démarrage
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Commande de démarrage avec migrations automatiques
+CMD ["/app/start.sh"]

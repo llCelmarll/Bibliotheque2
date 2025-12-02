@@ -35,24 +35,27 @@ class TestFactories:
     
     def test_author_factory(self):
         """Test de création d'auteur avec AuthorFactory."""
-        author = AuthorFactory()
-        
+        author = AuthorFactory(owner_id=1)
+
         assert author.name is not None
         assert len(author.name) > 0
+        assert author.owner_id == 1
     
     def test_publisher_factory(self):
         """Test de création d'éditeur avec PublisherFactory."""
-        publisher = PublisherFactory()
-        
+        publisher = PublisherFactory(owner_id=1)
+
         assert publisher.name is not None
         assert len(publisher.name) > 0
+        assert publisher.owner_id == 1
     
     def test_genre_factory(self):
         """Test de création de genre avec GenreFactory."""
-        genre = GenreFactory()
-        
+        genre = GenreFactory(owner_id=1)
+
         assert genre.name is not None
         assert len(genre.name) > 0
+        assert genre.owner_id == 1
     
     def test_factory_with_custom_values(self):
         """Test de factory avec valeurs personnalisées."""

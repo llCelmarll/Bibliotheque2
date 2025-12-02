@@ -6,7 +6,7 @@ param(
     [switch]$SkipWeb,
     [switch]$SkipMobile,
     [switch]$SkipApk,
-    [string]$UpdateMessage = "Correction bug retour scan bloqué"
+    [string]$UpdateMessage
 )
 
 # Fonction pour vérifier et lancer Docker Desktop si nécessaire
@@ -77,6 +77,20 @@ function Start-DockerIfNeeded {
 
 Write-Host "`nDeploiement complet de l'application" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
+
+# Demander le message de déploiement si non fourni
+if (-not $UpdateMessage) {
+    Write-Host ""
+    Write-Host "Message de deploiement requis !" -ForegroundColor Yellow
+    $UpdateMessage = Read-Host "Entrez le message de deploiement"
+    
+    if (-not $UpdateMessage -or $UpdateMessage.Trim() -eq "") {
+        Write-Host "Erreur: Le message de deploiement ne peut pas etre vide" -ForegroundColor Red
+        exit 1
+    }
+}
+
+
 Write-Host "Parametres de deploiement :" -ForegroundColor Cyan
 Write-Host "Update Message pour l'app mobile OTA: $UpdateMessage" -ForegroundColor Cyan
 Write-Host ""
@@ -120,6 +134,24 @@ if (-not $SkipBackend) {
     Write-Host ""
     Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
     & "$PSScriptRoot\redeploy-backend.ps1"
+
+    # Attendre que le conteneur soit prêt
+    Write-Host "  Attente du démarrage du conteneur..." -ForegroundColor Gray
+    Start-Sleep -Seconds 10
+    
+    # Vérification que les migrations se sont bien déroulées
+    Write-Host ""
+    Write-Host "  Vérification des migrations..." -ForegroundColor Gray
+    $migrationCheck = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "docker logs mabibliotheque-backend 2>&1 | grep -E '(Migrations appliquées|alembic_version)'"
+    
+    if ($migrationCheck) {
+        Write-Host "  Migrations détectées dans les logs :" -ForegroundColor Green
+        Write-Host "  $migrationCheck" -ForegroundColor Gray
+    } else {
+        Write-Host "  Aucune confirmation de migration trouvée dans les logs" -ForegroundColor Yellow
+        Write-Host "  Vérifiez les logs complets avec: docker logs mabibliotheque-backend" -ForegroundColor Yellow
+    }
+    
     
     Write-Host ""
     Write-Host "  Backend deploye !" -ForegroundColor Green

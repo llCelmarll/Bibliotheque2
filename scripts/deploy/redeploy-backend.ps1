@@ -18,7 +18,7 @@ Write-Host ""
 
 # 0. Backup de la base de donnees AVANT tout
 Write-Host "[0/4] Backup de la base de donnees..." -ForegroundColor Yellow
-ssh "${NAS_USER}@${NAS_HOST}" "mkdir -p ${NAS_PATH}/backups && if [ -f ${NAS_PATH}/data/bibliotheque.db ] && [ -s ${NAS_PATH}/data/bibliotheque.db ]; then cp ${NAS_PATH}/data/bibliotheque.db ${NAS_PATH}/backups/bibliotheque_\`$(date +%Y%m%d_%H%M%S).db && echo 'Backup cree' || echo 'Erreur backup'; else echo 'Pas de DB a sauvegarder'; fi"
+ssh "${NAS_USER}@${NAS_HOST}" 'mkdir -p /volume1/docker/mabibliotheque/backups && if [ -f /volume1/docker/mabibliotheque/data/bibliotheque.db ] && [ -s /volume1/docker/mabibliotheque/data/bibliotheque.db ]; then cp /volume1/docker/mabibliotheque/data/bibliotheque.db /volume1/docker/mabibliotheque/backups/bibliotheque_$(date +%Y%m%d_%H%M%S).db && echo "Backup cree" || echo "Erreur backup"; else echo "Pas de DB a sauvegarder"; fi'
 
 Write-Host ""
 

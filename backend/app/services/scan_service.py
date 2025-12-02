@@ -119,8 +119,8 @@ class ScanService:
             if result.google_book:
                 if api_authors := result.google_book.get("authors"):
                     for api_author_name in api_authors:
-                        # Vérifier si l'auteur existe déjà dans la base
-                        existing_author = self.author_repository.get_by_name(api_author_name)
+                        # Vérifier si l'auteur existe déjà dans la base pour cet utilisateur
+                        existing_author = self.author_repository.get_by_name(api_author_name, self.user_id)
                         if existing_author:
                             authors_list.append(SuggestedAuthor(
                                 name=existing_author.name,
@@ -139,10 +139,10 @@ class ScanService:
             # Récupération du nom de l'éditeur depuis les APIs
             api_publisher_name = google_publisher or openlibrary_publisher
             
-            # Vérification si l'éditeur existe déjà dans la base de données
+            # Vérification si l'éditeur existe déjà dans la base de données pour cet utilisateur
             final_publisher = None
             if api_publisher_name:
-                existing_publisher = self.publisher_repository.get_by_name(api_publisher_name)
+                existing_publisher = self.publisher_repository.get_by_name(api_publisher_name, self.user_id)
                 if existing_publisher:
                     final_publisher = SuggestedPublisher(
                         name=existing_publisher.name,

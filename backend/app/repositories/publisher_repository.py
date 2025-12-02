@@ -18,17 +18,20 @@ class PublisherRepository:
 		"""Retourne un éditeur en fonction de son ID"""
 		return self.session.get(Publisher, publisher_id)
 
-	def get_by_name(self, name: str) -> Optional[Publisher]:
-		"""Retourne un éditeur en fonction de son nom"""
+	def get_by_name(self, name: str, owner_id: int) -> Optional[Publisher]:
+		"""Retourne un éditeur en fonction de son nom et owner_id"""
 		if not name:
 			return None
-		statement = select(Publisher).where(func.lower(Publisher.name) == name.lower())
+		statement = select(Publisher).where(
+			func.lower(Publisher.name) == name.lower(),
+			Publisher.owner_id == owner_id
+		)
 		result =  self.session.exec(statement).first()
 		return result
 
-	def get_all(self) -> List[Publisher]:
-		"""Retourne tous les éditeurs"""
-		statement = select(Publisher)
+	def get_all(self, owner_id: int) -> List[Publisher]:
+		"""Retourne tous les éditeurs d'un utilisateur"""
+		statement = select(Publisher).where(Publisher.owner_id == owner_id)
 		results = self.session.exec(statement)
 		return list(results)
 
@@ -46,19 +49,22 @@ class PublisherRepository:
 		self.session.delete(publisher)
 		self.session.commit()
 
-	def search_fuzzy(self, query: str, limit: int = 10) -> List[Publisher]:
-		"""Recherche fuzzy d'éditeurs par nom"""
+	def search_fuzzy(self, query: str, owner_id: int, limit: int = 10) -> List[Publisher]:
+		"""Recherche fuzzy d'éditeurs par nom pour un utilisateur"""
 		if not query or len(query.strip()) < 2:
-			# Si requête trop courte, retourner les premiers résultats
-			statement = select(Publisher).limit(limit)
+			# Si requête trop courte, retourner les premiers résultats de l'utilisateur
+			statement = select(Publisher).where(Publisher.owner_id == owner_id).limit(limit)
 			results = self.session.exec(statement)
 			return list(results)
-		
-		# Recherche avec LIKE (insensible à la casse)
+
+		# Recherche avec LIKE (insensible à la casse) pour cet utilisateur
 		search_pattern = f"%{query.strip()}%"
 		statement = (
 			select(Publisher)
-			.where(func.lower(Publisher.name).like(search_pattern.lower()))
+			.where(
+				func.lower(Publisher.name).like(search_pattern.lower()),
+				Publisher.owner_id == owner_id
+			)
 			.limit(limit)
 		)
 		results = self.session.exec(statement)

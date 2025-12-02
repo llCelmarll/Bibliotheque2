@@ -466,10 +466,10 @@ class BookService:
             
             # Si c'est une chaîne (nom), chercher ou créer
             elif isinstance(author_item, str):
-                author = author_repo.get_by_name(author_item)
+                author = author_repo.get_by_name(author_item, self.user_id)
                 if not author:
                     print(f"🆕 Création nouvel auteur: '{author_item}'")
-                    author = Author(name=author_item)
+                    author = Author(name=author_item, owner_id=self.user_id)
                     author_repo.create(author)
                 else:
                     print(f"✅ Auteur existant trouvé: '{author.name}'")
@@ -477,10 +477,10 @@ class BookService:
             # Si c'est un objet (dict), utiliser le nom
             elif isinstance(author_item, dict) and 'name' in author_item:
                 author_name = author_item['name']
-                author = author_repo.get_by_name(author_name)
+                author = author_repo.get_by_name(author_name, self.user_id)
                 if not author:
                     print(f"🆕 Création nouvel auteur: '{author_name}'")
-                    author = Author(name=author_name)
+                    author = Author(name=author_name, owner_id=self.user_id)
                     author_repo.create(author)
                 else:
                     print(f"✅ Auteur existant trouvé: '{author.name}'")
@@ -507,10 +507,10 @@ class BookService:
             
             # Si c'est une chaîne (nom), chercher ou créer
             elif isinstance(genre_item, str):
-                genre = genre_repo.get_by_name(genre_item)
+                genre = genre_repo.get_by_name(genre_item, self.user_id)
                 if not genre:
                     print(f"🆕 Création nouveau genre: '{genre_item}'")
-                    genre = Genre(name=genre_item)
+                    genre = Genre(name=genre_item, owner_id=self.user_id)
                     genre_repo.create(genre)
                 else:
                     print(f"✅ Genre existant trouvé: '{genre.name}'")
@@ -518,10 +518,10 @@ class BookService:
             # Si c'est un objet (dict), utiliser le nom
             elif isinstance(genre_item, dict) and 'name' in genre_item:
                 genre_name = genre_item['name']
-                genre = genre_repo.get_by_name(genre_name)
+                genre = genre_repo.get_by_name(genre_name, self.user_id)
                 if not genre:
                     print(f"🆕 Création nouveau genre: '{genre_name}'")
-                    genre = Genre(name=genre_name)
+                    genre = Genre(name=genre_name, owner_id=self.user_id)
                     genre_repo.create(genre)
                 else:
                     print(f"✅ Genre existant trouvé: '{genre.name}'")
@@ -548,10 +548,10 @@ class BookService:
         
         # Si c'est une chaîne (nom), chercher ou créer
         elif isinstance(publisher_data, str):
-            publisher = publisher_repo.get_by_name(publisher_data)
+            publisher = publisher_repo.get_by_name(publisher_data, self.user_id)
             if not publisher:
                 print(f"🆕 Création nouvel éditeur: '{publisher_data}'")
-                publisher = Publisher(name=publisher_data)
+                publisher = Publisher(name=publisher_data, owner_id=self.user_id)
                 publisher_repo.create(publisher)
             else:
                 print(f"✅ Éditeur existant trouvé: '{publisher.name}'")
@@ -560,10 +560,10 @@ class BookService:
         # Si c'est un objet (dict), utiliser le nom
         elif isinstance(publisher_data, dict) and 'name' in publisher_data:
             publisher_name = publisher_data['name']
-            publisher = publisher_repo.get_by_name(publisher_name)
+            publisher = publisher_repo.get_by_name(publisher_name, self.user_id)
             if not publisher:
                 print(f"🆕 Création nouvel éditeur: '{publisher_name}'")
-                publisher = Publisher(name=publisher_name)
+                publisher = Publisher(name=publisher_name, owner_id=self.user_id)
                 publisher_repo.create(publisher)
             else:
                 print(f"✅ Éditeur existant trouvé: '{publisher.name}'")
