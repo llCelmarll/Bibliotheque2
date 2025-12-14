@@ -4,6 +4,7 @@
 __pycache__/
 *.pyc
 *.db
+*.db.*
 
 # Node / Frontend
 node_modules/
@@ -39,3 +40,4 @@ scripts/check-http-covers.ps1
 .gitignore
 .gitignore
 scripts/fix-http-covers.ps1
+

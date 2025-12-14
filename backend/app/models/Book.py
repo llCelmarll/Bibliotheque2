@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.Author import Author
     from app.models.Publisher import Publisher
     from app.models.Genre import Genre
+    from app.models.Loan import Loan
 
 class Book(SQLModel, table=True):
     __tablename__ = "books"
@@ -36,6 +37,9 @@ class Book(SQLModel, table=True):
     # Propriétaire du livre
     owner_id: Optional[int] = Field(default=None, foreign_key="users.id")
     owner: Optional["User"] = Relationship(back_populates="books")
+
+    # Prêts
+    loans: List["Loan"] = Relationship(back_populates="book")
 
     # Couverture du livre
     cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))

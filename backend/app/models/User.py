@@ -4,6 +4,8 @@ from datetime import datetime
 
 if TYPE_CHECKING:
     from app.models.Book import Book
+    from app.models.Loan import Loan
+    from app.models.Borrower import Borrower
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -26,7 +28,12 @@ class User(SQLModel, table=True):
     
     # Relations
     books: List["Book"] = Relationship(back_populates="owner")
-    
+    loans_as_owner: List["Loan"] = Relationship(
+        back_populates="owner",
+        sa_relationship_kwargs={"foreign_keys": "Loan.owner_id"}
+    )
+    borrowers: List["Borrower"] = Relationship(back_populates="owner")
+
     # Contraintes
     __table_args__ = (
         UniqueConstraint("email", name="uq_user_email"),
