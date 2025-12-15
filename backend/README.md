@@ -512,3 +512,303 @@ latex_unknown_tag
 
 Cette requête retournera tous les livres qui correspondent à TOUS les critères spécifiés (condition AND).
 ```
+
+---
+
+## 📚 Gestion des Prêts de Livres
+
+L'API inclut un système complet de gestion des prêts permettant de suivre à qui vous prêtez vos livres.
+
+### 🔐 Authentification Requise
+
+**Tous les endpoints de prêts nécessitent une authentification JWT.**
+
+**Header requis :**
+```http
+Authorization: Bearer <votre_token_jwt>
+```
+
+**Obtenir un token :**
+```bash
+curl -X POST http://localhost:8000/auth/login-json \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "password"}'
+```
+
+### 👥 Emprunteurs (Borrowers)
+
+Gérez les personnes à qui vous prêtez vos livres.
+
+#### Créer un emprunteur
+```http
+POST /borrowers
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**Body:**
+```json
+{
+  "name": "Marie Dupont",
+  "email": "marie@example.com",
+  "phone": "0123456789",
+  "notes": "Amie de confiance"
+}
+```
+
+#### Lister les emprunteurs
+```http
+GET /borrowers?skip=0&limit=100
+Authorization: Bearer <token>
+```
+
+#### Rechercher un emprunteur
+```http
+GET /borrowers/search?query=marie&limit=10
+Authorization: Bearer <token>
+```
+
+#### Modifier un emprunteur
+```http
+PUT /borrowers/{borrower_id}
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+#### Supprimer un emprunteur
+```http
+DELETE /borrowers/{borrower_id}
+Authorization: Bearer <token>
+```
+
+**Note:** Impossible de supprimer un emprunteur avec des prêts actifs.
+
+---
+
+### 📖 Prêts (Loans)
+
+Gérez les prêts de vos livres.
+
+#### Créer un prêt
+
+Le champ `borrower` accepte 3 formats pour plus de flexibilité :
+
+**Option 1 : ID d'emprunteur existant**
+```json
+{
+  "book_id": 42,
+  "borrower": 1,
+  "due_date": "2025-02-01T00:00:00",
+  "notes": "À rendre avant fin janvier"
+}
+```
+
+**Option 2 : Nom (création automatique si nouveau)**
+```json
+{
+  "book_id": 42,
+  "borrower": "Sophie Durand",
+  "due_date": "2025-02-01T00:00:00"
+}
+```
+
+**Option 3 : Objet complet**
+```json
+{
+  "book_id": 42,
+  "borrower": {
+    "name": "Pierre Lefebvre",
+    "email": "pierre@example.com",
+    "phone": "0611223344"
+  },
+  "due_date": "2025-02-01T00:00:00"
+}
+```
+
+```http
+POST /loans
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**Réponse (201):**
+```json
+{
+  "id": 1,
+  "book_id": 42,
+  "book": {
+    "id": 42,
+    "title": "Clean Code",
+    "isbn": "9780136083238"
+  },
+  "borrower_id": 1,
+  "borrower": {
+    "id": 1,
+    "name": "Marie Dupont"
+  },
+  "loan_date": "2025-01-15T14:30:00",
+  "due_date": "2025-02-01T00:00:00",
+  "return_date": null,
+  "status": "active",
+  "notes": "À rendre avant fin janvier"
+}
+```
+
+#### Lister les prêts
+
+```http
+# Tous les prêts
+GET /loans?skip=0&limit=100
+Authorization: Bearer <token>
+
+# Prêts actifs uniquement
+GET /loans/active
+Authorization: Bearer <token>
+
+# Prêts en retard
+GET /loans/overdue
+Authorization: Bearer <token>
+```
+
+#### Retourner un livre
+
+```http
+PUT /loans/{loan_id}/return
+Authorization: Bearer <token>
+```
+
+**Body (optionnel):**
+```json
+{
+  "return_date": "2025-01-20T16:45:00"
+}
+```
+
+Si `return_date` n'est pas fourni, utilise la date/heure actuelle.
+
+#### Statistiques des prêts
+
+```http
+GET /loans/statistics
+Authorization: Bearer <token>
+```
+
+**Réponse:**
+```json
+{
+  "total_loans": 45,
+  "active_loans": 12,
+  "overdue_loans": 3,
+  "returned_loans": 33
+}
+```
+
+#### Historique par livre
+
+```http
+GET /loans/by-book/{book_id}
+Authorization: Bearer <token>
+```
+
+#### Historique par emprunteur
+
+```http
+GET /loans/by-borrower/{borrower_id}
+Authorization: Bearer <token>
+```
+
+#### Modifier un prêt
+
+```http
+PUT /loans/{loan_id}
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+**Body (tous les champs optionnels):**
+```json
+{
+  "due_date": "2025-02-15T23:59:59",
+  "notes": "Extension accordée"
+}
+```
+
+#### Supprimer un prêt
+
+```http
+DELETE /loans/{loan_id}
+Authorization: Bearer <token>
+```
+
+---
+
+### 📊 Statuts des prêts
+
+Les prêts peuvent avoir 3 statuts :
+
+| Statut | Description |
+|--------|-------------|
+| `active` | Prêt en cours |
+| `returned` | Livre retourné |
+| `overdue` | Prêt en retard (calculé automatiquement si `due_date` dépassée) |
+
+---
+
+### 🔒 Sécurité et Isolation
+
+- ✅ Tous les endpoints nécessitent une authentification JWT
+- ✅ Chaque utilisateur ne voit que ses propres emprunteurs et prêts
+- ✅ Impossible de prêter un livre déjà prêté
+- ✅ Impossible de supprimer un emprunteur avec des prêts actifs
+
+---
+
+### ⚡ Exemples d'utilisation
+
+#### Scénario complet : Prêter un livre
+
+```bash
+# 1. Se connecter
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login-json \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "password"}' \
+  | jq -r '.access_token')
+
+# 2. Créer le prêt (emprunteur créé automatiquement)
+curl -X POST http://localhost:8000/loans \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_id": 42,
+    "borrower": "Marie Dupont",
+    "due_date": "2025-02-01T00:00:00"
+  }'
+
+# 3. Voir les prêts actifs
+curl -X GET http://localhost:8000/loans/active \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Retourner le livre
+curl -X PUT http://localhost:8000/loans/1/return \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### 🧪 Tests
+
+Les tests couvrent toutes les fonctionnalités de prêts :
+
+```bash
+# Tous les tests de prêts
+pytest tests/integration/test_borrower_endpoints.py -v
+pytest tests/integration/test_loan_endpoints.py -v
+
+# Tests avec marqueur spécifique
+pytest -m loans -v
+pytest -m borrowers -v
+```
+
+---
+
+```
+
