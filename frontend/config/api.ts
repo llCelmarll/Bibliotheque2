@@ -24,6 +24,8 @@ const API_CONFIG = {
     AUTHORS: '/authors',
     PUBLISHERS: '/publishers',
     GENRES: '/genres',
+    LOANS: '/loans',
+    BORROWERS: '/borrowers',
   }
 };
 

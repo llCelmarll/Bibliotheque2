@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from app.models.Borrower import Borrower
 from app.repositories.borrower_repository import BorrowerRepository
+from app.repositories.loan_repository import LoanRepository
 from app.schemas.Borrower import BorrowerCreate, BorrowerRead, BorrowerUpdate
 
 
@@ -14,11 +15,23 @@ class BorrowerService:
         self.session = session
         self.user_id = user_id
         self.borrower_repository = BorrowerRepository(session)
+        self.loan_repository = LoanRepository(session)
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[BorrowerRead]:
-        """Récupère tous les emprunteurs de l'utilisateur"""
+        """Récupère tous les emprunteurs de l'utilisateur avec le nombre de prêts actifs"""
         borrowers = self.borrower_repository.get_all(self.user_id, skip, limit)
-        return [BorrowerRead.model_validate(borrower) for borrower in borrowers]
+
+        result = []
+        for borrower in borrowers:
+            # Compter les prêts actifs (ACTIVE + OVERDUE) pour cet emprunteur
+            active_loans = self.loan_repository.get_loans_by_borrower(borrower.id, self.user_id)
+            active_count = sum(1 for loan in active_loans if loan.status in ['active', 'overdue'])
+
+            borrower_dict = borrower.model_dump()
+            borrower_dict['active_loans_count'] = active_count
+            result.append(BorrowerRead(**borrower_dict))
+
+        return result
 
     def create(self, borrower_data: BorrowerCreate) -> BorrowerRead:
         """Crée un nouvel emprunteur"""
@@ -33,23 +46,40 @@ class BorrowerService:
         )
 
         borrower = self.borrower_repository.create(borrower)
-        return BorrowerRead.model_validate(borrower)
+
+        # Nouvel emprunteur = 0 prêts actifs
+        borrower_dict = borrower.model_dump()
+        borrower_dict['active_loans_count'] = 0
+        return BorrowerRead(**borrower_dict)
 
     def get_by_id(self, borrower_id: int) -> BorrowerRead:
-        """Récupère un emprunteur par son ID"""
+        """Récupère un emprunteur par son ID avec le nombre de prêts actifs"""
         borrower = self.borrower_repository.get_by_id(borrower_id, self.user_id)
         if not borrower:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Emprunteur introuvable"
             )
-        return BorrowerRead.model_validate(borrower)
+
+        # Compter les prêts actifs (ACTIVE + OVERDUE) pour cet emprunteur
+        active_loans = self.loan_repository.get_loans_by_borrower(borrower.id, self.user_id)
+        active_count = sum(1 for loan in active_loans if loan.status in ['active', 'overdue'])
+
+        borrower_dict = borrower.model_dump()
+        borrower_dict['active_loans_count'] = active_count
+        return BorrowerRead(**borrower_dict)
 
     def get_by_name(self, name: str) -> Optional[BorrowerRead]:
-        """Récupère un emprunteur par son nom"""
+        """Récupère un emprunteur par son nom avec le nombre de prêts actifs"""
         borrower = self.borrower_repository.get_by_name(name, self.user_id)
         if borrower:
-            return BorrowerRead.model_validate(borrower)
+            # Compter les prêts actifs (ACTIVE + OVERDUE) pour cet emprunteur
+            active_loans = self.loan_repository.get_loans_by_borrower(borrower.id, self.user_id)
+            active_count = sum(1 for loan in active_loans if loan.status in ['active', 'overdue'])
+
+            borrower_dict = borrower.model_dump()
+            borrower_dict['active_loans_count'] = active_count
+            return BorrowerRead(**borrower_dict)
         return None
 
     def get_or_create_by_name(self, name: str) -> BorrowerRead:
@@ -57,15 +87,23 @@ class BorrowerService:
         borrower = self.borrower_repository.get_by_name(name, self.user_id)
 
         if borrower:
-            return BorrowerRead.model_validate(borrower)
+            # Compter les prêts actifs (ACTIVE + OVERDUE) pour cet emprunteur
+            active_loans = self.loan_repository.get_loans_by_borrower(borrower.id, self.user_id)
+            active_count = sum(1 for loan in active_loans if loan.status in ['active', 'overdue'])
 
-        # Créer un nouvel emprunteur
+            borrower_dict = borrower.model_dump()
+            borrower_dict['active_loans_count'] = active_count
+            return BorrowerRead(**borrower_dict)
+
+        # Créer un nouvel emprunteur (0 prêts actifs par défaut)
         new_borrower = Borrower(
             name=name,
             owner_id=self.user_id
         )
         borrower = self.borrower_repository.create(new_borrower)
-        return BorrowerRead.model_validate(borrower)
+        borrower_dict = borrower.model_dump()
+        borrower_dict['active_loans_count'] = 0
+        return BorrowerRead(**borrower_dict)
 
     def update(self, borrower_id: int, borrower_data: BorrowerUpdate) -> BorrowerRead:
         """Met à jour un emprunteur"""
@@ -91,7 +129,14 @@ class BorrowerService:
             borrower.notes = borrower_data.notes
 
         borrower = self.borrower_repository.update(borrower)
-        return BorrowerRead.model_validate(borrower)
+
+        # Compter les prêts actifs (ACTIVE + OVERDUE) pour cet emprunteur
+        active_loans = self.loan_repository.get_loans_by_borrower(borrower.id, self.user_id)
+        active_count = sum(1 for loan in active_loans if loan.status in ['active', 'overdue'])
+
+        borrower_dict = borrower.model_dump()
+        borrower_dict['active_loans_count'] = active_count
+        return BorrowerRead(**borrower_dict)
 
     def delete(self, borrower_id: int) -> None:
         """Supprime un emprunteur"""
@@ -102,12 +147,11 @@ class BorrowerService:
                 detail="Emprunteur introuvable"
             )
 
-        # Vérifier s'il a des prêts actifs
-        from app.repositories.loan_repository import LoanRepository
-        loan_repo = LoanRepository(self.session)
-        active_loan = loan_repo.get_active_loan_for_book(borrower_id, self.user_id)
+        # Vérifier s'il a des prêts actifs (ACTIVE + OVERDUE)
+        active_loans = self.loan_repository.get_loans_by_borrower(borrower_id, self.user_id)
+        active_count = sum(1 for loan in active_loans if loan.status in ['active', 'overdue'])
 
-        if active_loan:
+        if active_count > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Impossible de supprimer un emprunteur avec des prêts actifs"
@@ -116,9 +160,20 @@ class BorrowerService:
         self.borrower_repository.delete(borrower)
 
     def search_fuzzy(self, query: str, limit: int = 10) -> List[BorrowerRead]:
-        """Recherche fuzzy d'emprunteurs"""
+        """Recherche fuzzy d'emprunteurs avec le nombre de prêts actifs"""
         borrowers = self.borrower_repository.search_fuzzy(query, self.user_id, limit)
-        return [BorrowerRead.model_validate(borrower) for borrower in borrowers]
+
+        result = []
+        for borrower in borrowers:
+            # Compter les prêts actifs (ACTIVE + OVERDUE) pour cet emprunteur
+            active_loans = self.loan_repository.get_loans_by_borrower(borrower.id, self.user_id)
+            active_count = sum(1 for loan in active_loans if loan.status in ['active', 'overdue'])
+
+            borrower_dict = borrower.model_dump()
+            borrower_dict['active_loans_count'] = active_count
+            result.append(BorrowerRead(**borrower_dict))
+
+        return result
 
     def _validate_borrower_create(self, borrower_data: BorrowerCreate) -> None:
         """Valide la création d'un emprunteur"""

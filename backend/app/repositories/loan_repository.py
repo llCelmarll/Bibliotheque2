@@ -49,12 +49,16 @@ class LoanRepository:
         return list(results)
 
     def get_active_loans(self, owner_id: int, skip: int = 0, limit: int = 100) -> List[Loan]:
-        """Retourne tous les prêts actifs d'un utilisateur"""
+        """Retourne tous les prêts actifs d'un utilisateur (inclut les prêts en retard)
+        Note: Un prêt OVERDUE est aussi considéré comme actif (non retourné)"""
         statement = (
             select(Loan)
             .where(
                 Loan.owner_id == owner_id,
-                Loan.status == LoanStatus.ACTIVE
+                or_(
+                    Loan.status == LoanStatus.ACTIVE,
+                    Loan.status == LoanStatus.OVERDUE
+                )
             )
             .options(
                 selectinload(Loan.book),
@@ -128,13 +132,17 @@ class LoanRepository:
         return list(results)
 
     def get_active_loan_for_book(self, book_id: int, owner_id: int) -> Optional[Loan]:
-        """Retourne le prêt actif pour un livre (s'il existe)"""
+        """Retourne le prêt actif pour un livre (s'il existe)
+        Note: Un prêt OVERDUE est aussi considéré comme actif (non retourné)"""
         statement = (
             select(Loan)
             .where(
                 Loan.book_id == book_id,
                 Loan.owner_id == owner_id,
-                Loan.status == LoanStatus.ACTIVE
+                or_(
+                    Loan.status == LoanStatus.ACTIVE,
+                    Loan.status == LoanStatus.OVERDUE
+                )
             )
             .options(
                 selectinload(Loan.book),
@@ -162,10 +170,14 @@ class LoanRepository:
         return self.session.exec(statement).one()
 
     def count_active_by_owner(self, owner_id: int) -> int:
-        """Compte le nombre de prêts actifs pour un utilisateur"""
+        """Compte le nombre de prêts actifs pour un utilisateur (inclut les prêts en retard)
+        Note: Un prêt OVERDUE est aussi considéré comme actif (non retourné)"""
         from sqlmodel import func
         statement = select(func.count(Loan.id)).where(
             Loan.owner_id == owner_id,
-            Loan.status == LoanStatus.ACTIVE
+            or_(
+                Loan.status == LoanStatus.ACTIVE,
+                Loan.status == LoanStatus.OVERDUE
+            )
         )
         return self.session.exec(statement).one()

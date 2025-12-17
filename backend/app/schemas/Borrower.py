@@ -11,6 +11,7 @@ class BorrowerRead(SQLModel):
     phone: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
+    active_loans_count: int = 0
 
 
 class BorrowerCreate(SQLModel):
