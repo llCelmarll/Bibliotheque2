@@ -83,7 +83,11 @@ export const LoanListItem: React.FC<LoanListItemProps> = ({ loan, onReturn }) =>
   const canReturn = loan.status === LoanStatus.ACTIVE || loan.status === LoanStatus.OVERDUE;
 
   return (
-    <TouchableOpacity style={styles.container} onPress={handlePress}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={handlePress}
+      testID={`loan-item-${loan.id}`}
+    >
       <BookCover
         url={loan.book.cover_url}
         style={styles.cover}

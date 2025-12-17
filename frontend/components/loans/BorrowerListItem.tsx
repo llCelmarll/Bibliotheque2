@@ -25,6 +25,7 @@ export const BorrowerListItem: React.FC<BorrowerListItemProps> = ({
       style={styles.container}
       onPress={handlePress}
       disabled={!onPress}
+      testID={`borrower-item-${borrower.id}`}
     >
       <View style={styles.iconContainer}>
         <MaterialIcons name="person" size={32} color="#2196F3" />
