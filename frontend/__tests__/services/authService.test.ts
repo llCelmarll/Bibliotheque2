@@ -1,15 +1,36 @@
 /**
  * Tests pour le service d'authentification
  */
+
+// Mock expo-secure-store before importing authService
+jest.mock('expo-secure-store', () => ({
+  setItemAsync: jest.fn(() => Promise.resolve()),
+  getItemAsync: jest.fn(() => Promise.resolve(null)),
+  deleteItemAsync: jest.fn(() => Promise.resolve()),
+}));
+
 import { authService } from '../../services/authService';
 
 // Mock fetch
 const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
-global.fetch = mockFetch;
 
 describe('AuthService', () => {
+  // Sauvegarder le fetch original
+  const originalFetch = global.fetch;
+
+  beforeAll(() => {
+    // Remplacer fetch uniquement pour ces tests
+    global.fetch = mockFetch;
+  });
+
+  afterAll(() => {
+    // Restaurer fetch après tous les tests
+    global.fetch = originalFetch;
+  });
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Nettoyer les appels mockés entre chaque test
+    mockFetch.mockClear();
   });
 
   describe('login', () => {

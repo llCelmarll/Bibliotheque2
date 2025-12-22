@@ -7,10 +7,11 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest",
+    "test": "jest --runInBand",
+    "test:verbose": "jest --runInBand --silent=false",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test:coverage": "jest --coverage --runInBand",
+    "test:ci": "jest --ci --coverage --watchAll=false --runInBand"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

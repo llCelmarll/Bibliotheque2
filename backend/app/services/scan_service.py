@@ -5,7 +5,8 @@ from app.clients.openlibrary import fetch_openlibrary
 from app.repositories.book_repository import BookRepository
 from app.repositories.author_repository import AuthorRepository
 from app.repositories.publisher_repository import PublisherRepository
-from app.schemas.Book import BookCreate, BookRead
+from app.repositories.loan_repository import LoanRepository
+from app.schemas.Book import BookCreate, BookRead, CurrentLoanRead
 from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 
@@ -58,6 +59,7 @@ class ScanService:
         self.book_repository = BookRepository(session)
         self.author_repository = AuthorRepository(session)
         self.publisher_repository = PublisherRepository(session)
+        self.loan_repository = LoanRepository(session)
 
 
 
@@ -75,7 +77,12 @@ class ScanService:
         result.openlibrary = await fetch_openlibrary(isbn)
 
         if base_book:
+            # Récupérer le prêt actif pour ce livre
+            active_loan = self.loan_repository.get_active_loan_for_book(base_book.id, self.user_id)
+
             result.base = BookRead.model_validate(base_book)
+            if active_loan:
+                result.base.current_loan = CurrentLoanRead.model_validate(active_loan)
             # Créer un SuggestedBook à partir du livre existant
             result.suggested = SuggestedBook(
                 isbn=base_book.isbn,

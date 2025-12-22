@@ -1,4 +1,23 @@
 // services/api/types.ts
+
+// Import des types de prêt pour éviter les dépendances circulaires
+export interface LoanRead {
+	id: number;
+	book_id: number;
+	borrower_id: number;
+	borrower?: {
+		id: number;
+		name: string;
+		email?: string;
+		phone?: string;
+	};
+	loan_date: string;
+	due_date?: string;
+	return_date?: string;
+	notes?: string;
+	status: 'active' | 'returned' | 'overdue';
+}
+
 export interface BookRead {
 	id: string;
 	title: string;
@@ -12,6 +31,7 @@ export interface BookRead {
 	authors?: AuthorRead[];
 	publisher?: PublisherRead;
 	genres?: GenreRead[];
+	current_loan?: LoanRead;  // Prêt actif si le livre est prêté
 }
 
 export interface BookCreate {

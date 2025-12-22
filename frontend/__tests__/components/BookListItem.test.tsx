@@ -7,12 +7,40 @@ import { TouchableOpacity } from 'react-native';
 import { BookListItem } from '../../components/BookListItem';
 import { Book } from '../../types/book';
 
-// Mock expo-router
+// Mock @expo/vector-icons localement pour ce fichier
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+
+  const createMockIcon = (name: string) => ({ name: iconName, size, color, ...props }: any) =>
+    React.createElement(Text, {
+      ...props,
+      testID: `icon-${iconName}`,
+      style: { fontSize: size, color }
+    }, iconName);
+
+  return {
+    Ionicons: createMockIcon('Ionicons'),
+    MaterialIcons: createMockIcon('MaterialIcons'),
+    AntDesign: createMockIcon('AntDesign'),
+    Feather: createMockIcon('Feather'),
+    FontAwesome: createMockIcon('FontAwesome'),
+    MaterialCommunityIcons: createMockIcon('MaterialCommunityIcons')
+  };
+});
+
+// Mock expo-router - mock local pour ce fichier uniquement
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
+const mockBack = jest.fn();
+
 jest.mock('expo-router', () => ({
-  useRouter: () => ({
+  useRouter: jest.fn(() => ({
     push: mockPush,
-  }),
+    replace: mockReplace,
+    back: mockBack,
+  })),
+  useLocalSearchParams: jest.fn(() => ({})),
 }));
 
 describe('BookListItem', () => {
@@ -37,7 +65,11 @@ describe('BookListItem', () => {
   const mockOnFilterSelect = jest.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Nettoyer tous les mocks avant chaque test
+    mockPush.mockClear();
+    mockReplace.mockClear();
+    mockBack.mockClear();
+    mockOnFilterSelect.mockClear();
   });
 
   it('should render book information correctly', () => {
@@ -125,5 +157,109 @@ describe('BookListItem', () => {
 
     // Le livre doit s'afficher même sans genres
     expect(getByText('Test Book Title')).toBeTruthy();
+  });
+
+  describe('Loan badge display', () => {
+    it('should display loan badge when book has active loan', () => {
+      const bookWithLoan = {
+        ...mockBook,
+        current_loan: {
+          id: 1,
+          borrower_id: 1,
+          borrower: {
+            id: 1,
+            name: 'John Doe',
+            email: 'john@example.com'
+          },
+          loan_date: '2025-01-01',
+          due_date: '2025-01-15',
+          status: 'active' as const
+        }
+      };
+
+      const { getByText } = render(
+        <BookListItem book={bookWithLoan} onFilterSelect={mockOnFilterSelect} />
+      );
+
+      // Vérifier que le badge de prêt est affiché
+      expect(getByText('📖 Prêté à John Doe')).toBeTruthy();
+      expect(getByText(/Retour :/)).toBeTruthy();
+    });
+
+    it('should not display loan badge when book has no active loan', () => {
+      const { queryByText } = render(
+        <BookListItem book={mockBook} onFilterSelect={mockOnFilterSelect} />
+      );
+
+      // Vérifier que le badge de prêt n'est pas affiché
+      expect(queryByText(/Prêté à/)).toBeNull();
+    });
+
+    it('should display loan badge without borrower name when borrower is unknown', () => {
+      const bookWithLoan = {
+        ...mockBook,
+        current_loan: {
+          id: 1,
+          borrower_id: 1,
+          loan_date: '2025-01-01',
+          status: 'active' as const
+        }
+      };
+
+      const { getByText } = render(
+        <BookListItem book={bookWithLoan} onFilterSelect={mockOnFilterSelect} />
+      );
+
+      // Vérifier que le message par défaut est affiché
+      expect(getByText('📖 Prêté à Emprunteur inconnu')).toBeTruthy();
+    });
+
+    it('should format due date correctly', () => {
+      const bookWithLoan = {
+        ...mockBook,
+        current_loan: {
+          id: 1,
+          borrower_id: 1,
+          borrower: {
+            id: 1,
+            name: 'John Doe'
+          },
+          loan_date: '2025-01-01',
+          due_date: '2025-01-15T00:00:00Z',
+          status: 'active' as const
+        }
+      };
+
+      const { getByText } = render(
+        <BookListItem book={bookWithLoan} onFilterSelect={mockOnFilterSelect} />
+      );
+
+      // Vérifier que la date est formatée
+      expect(getByText(/Retour : \d{2}\/\d{2}\/\d{4}/)).toBeTruthy();
+    });
+
+    it('should handle loan without due date', () => {
+      const bookWithLoan = {
+        ...mockBook,
+        current_loan: {
+          id: 1,
+          borrower_id: 1,
+          borrower: {
+            id: 1,
+            name: 'John Doe'
+          },
+          loan_date: '2025-01-01',
+          status: 'active' as const
+        }
+      };
+
+      const { getByText, queryByText } = render(
+        <BookListItem book={bookWithLoan} onFilterSelect={mockOnFilterSelect} />
+      );
+
+      // Le badge devrait s'afficher sans la date de retour
+      expect(getByText('📖 Prêté à John Doe')).toBeTruthy();
+      expect(queryByText(/Retour :/)).toBeNull();
+    });
   });
 });

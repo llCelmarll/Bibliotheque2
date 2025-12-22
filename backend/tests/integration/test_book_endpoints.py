@@ -184,6 +184,110 @@ class TestBookEndpoints:
         assert data["title"] == "Same Book"
         # L'isolation utilisateur est assurée par le service
 
+    def test_book_with_active_loan_includes_loan_info(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test que les livres avec prêts actifs incluent les informations de prêt."""
+        from app.models.Borrower import Borrower
+        from app.models.Loan import Loan, LoanStatus
+        from datetime import datetime, timedelta
+
+        # Créer un livre
+        book = create_test_book(session, test_user.id, title="Book with Loan", isbn="1234567890123")
+
+        # Créer un emprunteur
+        borrower = Borrower(
+            name="Test Borrower",
+            email="borrower@test.com",
+            owner_id=test_user.id
+        )
+        session.add(borrower)
+        session.commit()
+        session.refresh(borrower)
+
+        # Créer un prêt actif
+        loan_date = datetime.utcnow()
+        due_date = loan_date + timedelta(days=14)
+        loan = Loan(
+            book_id=book.id,
+            borrower_id=borrower.id,
+            owner_id=test_user.id,
+            loan_date=loan_date,
+            due_date=due_date,
+            status=LoanStatus.ACTIVE
+        )
+        session.add(loan)
+        session.commit()
+        session.refresh(loan)
+
+        # Récupérer le livre via l'API
+        response = authenticated_client.get(f"/books/{book.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Vérifier que les informations de prêt sont présentes
+        assert "base" in data
+        assert "current_loan" in data["base"]
+        assert data["base"]["current_loan"] is not None
+        assert data["base"]["current_loan"]["id"] == loan.id
+        assert data["base"]["current_loan"]["borrower_id"] == borrower.id
+        assert data["base"]["current_loan"]["status"].upper() == "ACTIVE"  # Status peut être en minuscules dans la réponse JSON
+        assert "borrower" in data["base"]["current_loan"]
+        assert data["base"]["current_loan"]["borrower"]["name"] == "Test Borrower"
+
+    def test_book_search_includes_loan_info(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test que la recherche de livres inclut les informations de prêt."""
+        from app.models.Borrower import Borrower
+        from app.models.Loan import Loan, LoanStatus
+        from datetime import datetime, timedelta
+
+        # Créer deux livres
+        book1 = create_test_book(session, test_user.id, title="Loaned Book", isbn="1111111111111")
+        book2 = create_test_book(session, test_user.id, title="Available Book", isbn="2222222222222")
+
+        # Créer un emprunteur
+        borrower = Borrower(
+            name="Test Borrower",
+            email="borrower@test.com",
+            owner_id=test_user.id
+        )
+        session.add(borrower)
+        session.commit()
+        session.refresh(borrower)
+
+        # Créer un prêt actif pour book1
+        loan = Loan(
+            book_id=book1.id,
+            borrower_id=borrower.id,
+            owner_id=test_user.id,
+            loan_date=datetime.utcnow(),
+            due_date=datetime.utcnow() + timedelta(days=14),
+            status=LoanStatus.ACTIVE
+        )
+        session.add(loan)
+        session.commit()
+
+        # Rechercher les livres
+        response = authenticated_client.get("/books/")
+
+        assert response.status_code == 200
+        books = response.json()
+
+        # Trouver les deux livres
+        loaned_book = next((b for b in books if b["id"] == book1.id), None)
+        available_book = next((b for b in books if b["id"] == book2.id), None)
+
+        assert loaned_book is not None
+        assert available_book is not None
+
+        # Vérifier que book1 a les informations de prêt
+        assert "current_loan" in loaned_book
+        assert loaned_book["current_loan"] is not None
+        assert loaned_book["current_loan"]["borrower"]["name"] == "Test Borrower"
+
+        # Vérifier que book2 n'a pas de prêt actif
+        assert "current_loan" in available_book
+        assert available_book["current_loan"] is None
+
 
 @pytest.mark.integration  
 @pytest.mark.books

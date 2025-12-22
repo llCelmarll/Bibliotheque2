@@ -13,6 +13,16 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
     book.google_books?.imageLinks?.thumbnail ||
     undefined;
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
   const renderAuthors = () => {
     // Google Books authors
     if (book.google_books && book.google_books.authors && book.google_books.authors.length > 0) {
@@ -56,12 +66,30 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
           <Text style={styles.title}>{book.base?.title || "Titre inconnu"}</Text>
           {renderAuthors()}
           <Text style={styles.isbn}>ISBN: {book.base?.isbn || "N/A"}</Text>
-          
+
+          {/* Badge de prêt */}
+          {book.base?.current_loan && (
+            <View style={styles.loanBadge}>
+              <Text style={styles.loanBadgeText}>
+                📖 Prêté à {book.base.current_loan.borrower?.name || 'Emprunteur inconnu'}
+              </Text>
+              {book.base.current_loan.due_date && (
+                <Text style={[
+                  styles.loanDateText,
+                  new Date(book.base.current_loan.due_date) < new Date() && styles.loanOverdue
+                ]}>
+                  Retour prévu : {formatDate(book.base.current_loan.due_date)}
+                </Text>
+              )}
+            </View>
+          )}
+
           {/* Actions seulement si le livre existe dans la base */}
           {book.base?.id && (
             <BookActions
               bookId={book.base.id.toString()}
               bookTitle={book.base.title || "Titre inconnu"}
+              currentLoan={book.base.current_loan}
               onBookDeleted={onBookDeleted}
             />
           )}
@@ -109,5 +137,29 @@ const styles = StyleSheet.create({
   isbn: {
     fontSize: 14,
     color: '#888',
+    marginBottom: 8,
+  },
+  loanBadge: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 10,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  loanBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#856404',
+    marginBottom: 4,
+  },
+  loanDateText: {
+    fontSize: 12,
+    color: '#856404',
+  },
+  loanOverdue: {
+    color: '#dc3545',
+    fontWeight: '600',
   },
 });

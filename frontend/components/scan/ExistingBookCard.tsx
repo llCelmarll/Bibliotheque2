@@ -9,6 +9,16 @@ interface ExistingBookCardProps {
 }
 
 export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPress }) => {
+	const formatDate = (dateString?: string) => {
+		if (!dateString) return '';
+		const date = new Date(dateString);
+		return date.toLocaleDateString('fr-FR', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+		});
+	};
+
 	return (
 		<TouchableOpacity style={styles.card} onPress={onPress}>
 			<View style={styles.coverContainer}>
@@ -39,6 +49,23 @@ export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPres
 				)}
 				{book.isbn && (
 					<Text style={styles.isbn}>ISBN: {book.isbn}</Text>
+				)}
+
+				{/* Affichage du statut de prêt */}
+				{book.current_loan && (
+					<View style={styles.loanBadge}>
+						<Text style={styles.loanBadgeText}>
+							📖 Prêté à {book.current_loan.borrower?.name || 'Emprunteur inconnu'}
+						</Text>
+						{book.current_loan.due_date && (
+							<Text style={[
+								styles.loanDateText,
+								new Date(book.current_loan.due_date) < new Date() && styles.loanOverdue
+							]}>
+								Retour prévu : {formatDate(book.current_loan.due_date)}
+							</Text>
+						)}
+					</View>
 				)}
 			</View>
 		</TouchableOpacity>
@@ -118,5 +145,28 @@ const styles = StyleSheet.create({
 		fontSize: 11,
 		color: '#95a5a6',
 		fontFamily: 'monospace',
+		marginBottom: 8,
 	},
-})
+	loanBadge: {
+		marginTop: 8,
+		padding: 8,
+		backgroundColor: '#fff3cd',
+		borderRadius: 6,
+		borderWidth: 1,
+		borderColor: '#ffc107',
+	},
+	loanBadgeText: {
+		fontSize: 12,
+		fontWeight: '600',
+		color: '#856404',
+		marginBottom: 4,
+	},
+	loanDateText: {
+		fontSize: 11,
+		color: '#856404',
+	},
+	loanOverdue: {
+		color: '#dc3545',
+		fontWeight: '600',
+	},
+});

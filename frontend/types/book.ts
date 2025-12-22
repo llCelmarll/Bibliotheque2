@@ -1,4 +1,25 @@
 import { AuthorCreate, AuthorRead, PublisherCreate, PublisherRead, GenreCreate, GenreRead } from './scanTypes';
+import { LoanStatus } from './loan';
+
+/**
+ * Prêt simplifié pour éviter les dépendances circulaires
+ * (sans le champ book)
+ */
+export interface CurrentLoan {
+    id: number;
+    borrower_id: number;
+    borrower?: {
+        id: number;
+        name: string;
+        email?: string;
+        phone?: string;
+    };
+    loan_date: string;
+    due_date?: string;
+    return_date?: string;
+    status: LoanStatus;
+    notes?: string;
+}
 
 /**
  * Représente un auteur de livre
@@ -47,6 +68,7 @@ export interface Genre {
  * @property {Genre[]} [genres] - Liste des genres du livre
  * @property {string} [created_at] - Date d'integration du livre à la bibliothèque
  * @property {string} [updated_at] - Date de dernière modification du livre
+ * @property {CurrentLoan} [current_loan] - Prêt actif si le livre est prêté
  */
 export interface Book {
     id: number;
@@ -60,6 +82,7 @@ export interface Book {
 	genres?: Genre[];
 	created_at?: string;
 	updated_at?: string;
+	current_loan?: CurrentLoan;
 }
 
 export interface BookBase {
@@ -77,6 +100,7 @@ export interface BookBase {
     genre_id: number | null;
     created_at: string;
     updated_at: string | null;
+    current_loan?: CurrentLoan;
 }
 
 export interface GoogleBooksData {

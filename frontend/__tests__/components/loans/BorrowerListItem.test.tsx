@@ -6,6 +6,28 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { BorrowerListItem } from '../../../components/loans/BorrowerListItem';
 import { Borrower } from '../../../types/borrower';
 
+// Mock @expo/vector-icons localement pour ce fichier
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+
+  const createMockIcon = (name: string) => ({ name: iconName, size, color, ...props }: any) =>
+    React.createElement(Text, {
+      ...props,
+      testID: `icon-${iconName}`,
+      style: { fontSize: size, color }
+    }, iconName);
+
+  return {
+    Ionicons: createMockIcon('Ionicons'),
+    MaterialIcons: createMockIcon('MaterialIcons'),
+    AntDesign: createMockIcon('AntDesign'),
+    Feather: createMockIcon('Feather'),
+    FontAwesome: createMockIcon('FontAwesome'),
+    MaterialCommunityIcons: createMockIcon('MaterialCommunityIcons')
+  };
+});
+
 describe('BorrowerListItem', () => {
   const mockBorrower: Borrower = {
     id: 1,
@@ -20,7 +42,8 @@ describe('BorrowerListItem', () => {
   const mockOnPress = jest.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Nettoyer le mock avant chaque test
+    mockOnPress.mockClear();
   });
 
   it('should render borrower name correctly', () => {

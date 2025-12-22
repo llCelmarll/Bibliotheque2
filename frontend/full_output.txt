@@ -1,0 +1,155 @@
+
+> frontend@1.0.0 test
+> jest --runInBand
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+PASS __tests__/components/ClickableTag.test.tsx
+PASS __tests__/components/BookCover.test.tsx
+PASS __tests__/hooks/useLoans.test.ts
+  ● Console
+
+    console.error
+      An update to HookContainer inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+    [0m [90m 47 |[39m       }
+     [90m 48 |[39m
+    [31m[1m>[22m[39m[90m 49 |[39m       setLoans(data)[33m;[39m
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 50 |[39m     } [36mcatch[39m (err) {
+     [90m 51 |[39m       console[33m.[39merror([32m'Erreur lors du chargement des prêts:'[39m[33m,[39m err)[33m;[39m
+     [90m 52 |[39m       setError([32m'Impossible de charger les prêts'[39m)[33m;[39m[0m
+
+      at node_modules/react-test-renderer/cjs/react-test-renderer.development.js:11801:19
+      at runWithFiberInDEV (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:1574:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:11800:9)
+      at scheduleUpdateOnFiber (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:10326:9)
+      at dispatchSetStateInternal (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:4148:13)
+      at dispatchSetState (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:4107:7)
+      at setLoans (hooks/useLoans.ts:49:7)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.error
+      An update to HookContainer inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+    [0m [90m 52 |[39m       setError([32m'Impossible de charger les prêts'[39m)[33m;[39m
+     [90m 53 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 54 |[39m       setLoading([36mfalse[39m)[33m;[39m
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 55 |[39m     }
+     [90m 56 |[39m   }[33m,[39m [isAuthenticated[33m,[39m filterStatus])[33m;[39m
+     [90m 57 |[39m[0m
+
+      at node_modules/react-test-renderer/cjs/react-test-renderer.development.js:11801:19
+      at runWithFiberInDEV (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:1574:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:11800:9)
+      at scheduleUpdateOnFiber (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:10326:9)
+      at dispatchSetStateInternal (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:4148:13)
+      at dispatchSetState (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:4107:7)
+      at setLoading (hooks/useLoans.ts:54:7)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.error
+      An update to HookContainer inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+    [0m [90m 64 |[39m     [36mtry[39m {
+     [90m 65 |[39m       [36mconst[39m stats [33m=[39m [36mawait[39m loanService[33m.[39mgetStatistics()[33m;[39m
+    [31m[1m>[22m[39m[90m 66 |[39m       setStatistics(stats)[33m;[39m
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 67 |[39m     } [36mcatch[39m (err) {
+     [90m 68 |[39m       console[33m.[39merror([32m'Erreur lors du chargement des statistiques:'[39m[33m,[39m err)[33m;[39m
+     [90m 69 |[39m     }[0m
+
+      at node_modules/react-test-renderer/cjs/react-test-renderer.development.js:11801:19
+      at runWithFiberInDEV (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:1574:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:11800:9)
+      at scheduleUpdateOnFiber (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:10326:9)
+      at dispatchSetStateInternal (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:4148:13)
+      at dispatchSetState (node_modules/react-test-renderer/cjs/react-test-renderer.development.js:4107:7)
+      at setStatistics (hooks/useLoans.ts:66:7)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+PASS __tests__/components/SearchBar.test.tsx
+PASS __tests__/components/loans/BorrowerListItem.test.tsx
+PASS __tests__/components/BookListItem.test.tsx
+PASS __tests__/setup.test.ts
+PASS __tests__/components/BookDetail/BookActions.test.tsx
+  ● Console
+
+    console.log
+      📥 Bouton Retourner cliqué
+
+      at log (components/BookDetail/BookActions.tsx:44:13)
+
+    console.log
+      📥 Bouton Retourner cliqué
+
+      at log (components/BookDetail/BookActions.tsx:44:13)
+
+    console.log
+      📥 Bouton Retourner cliqué
+
+      at log (components/BookDetail/BookActions.tsx:44:13)
+
+    console.log
+      📥 Bouton Retourner cliqué
+
+      at log (components/BookDetail/BookActions.tsx:44:13)
+
+    console.log
+      🔧 Bouton Modifier cliqué - Navigation vers l'écran d'édition
+
+      at log (components/BookDetail/BookActions.tsx:26:13)
+
+PASS components/__tests__/StyledText-test.js
+
+ReferenceError: You are trying to `import` a file after the Jest environment has been torn down. From __tests__/components/BookDetail/BookActions.test.tsx.
+
+    [0m [90m 76 |[39m       [36mawait[39m loanService[33m.[39mreturnLoan(currentLoan[33m.[39mid)[33m;[39m
+     [90m 77 |[39m
+    [31m[1m>[22m[39m[90m 78 |[39m       [36mif[39m ([33mPlatform[39m[33m.[39m[33mOS[39m [33m===[39m [32m'web'[39m) {
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 79 |[39m         window[33m.[39malert([32m'Le livre a été retourné avec succès.'[39m)[33m;[39m
+     [90m 80 |[39m         window[33m.[39mlocation[33m.[39mreload()[33m;[39m [90m// Rafraîchir la page[39m
+     [90m 81 |[39m       } [36melse[39m {[0m
+
+      at Object.get Platform [as Platform] (node_modules/react-native/index.js:200:12)
+      at Platform (components/BookDetail/BookActions.tsx:78:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+J:\Bibliotheque2\frontend\components\BookDetail\BookActions.tsx:87
+        if (_reactNative.Platform.OS === 'web') {
+                                  ^
+
+[TypeError: Cannot read properties of undefined (reading 'OS')]
+
+Node.js v22.15.0

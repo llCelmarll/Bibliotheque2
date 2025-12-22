@@ -163,9 +163,11 @@ if ($Frontend -or $All) {
         Write-Info "Lancement des tests frontend..."
         Write-Host ""
 
-        # Options Jest
+        # Options Jest - exécution séquentielle pour éviter les race conditions
+        # La configuration maxWorkers=1 est déjà dans jest.config.json
         if ($Verbose) {
-            & npm test -- --verbose --coverage
+            & npm test:verbose -- --verbose 
+
         } else {
             & npm test -- --coverage
         }

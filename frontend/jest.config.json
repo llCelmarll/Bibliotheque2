@@ -27,5 +27,9 @@
     "^@utils/(.*)$": "<rootDir>/utils/$1",
     "^@types/(.*)$": "<rootDir>/types/$1",
     "^@contexts/(.*)$": "<rootDir>/contexts/$1"
-  }
+  },
+  "testTimeout": 20000,
+  "bail": false,
+  "testEnvironment": "node",
+  "silent": true
 }

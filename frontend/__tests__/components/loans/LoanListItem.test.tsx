@@ -2,55 +2,56 @@
  * Tests pour le composant LoanListItem
  */
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
-import { Platform } from 'react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
+import { Platform, Alert } from 'react-native';
 import { Loan, LoanStatus } from '../../../types/loan';
+import { LoanListItem } from '../../../components/loans/LoanListItem';
 
-// Mock axios
-const mockAxiosInstance = {
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  delete: jest.fn(),
-  interceptors: {
-    request: { use: jest.fn(), eject: jest.fn() },
-    response: { use: jest.fn(), eject: jest.fn() }
-  }
-};
+// Mock expo-secure-store before importing services
+jest.mock('expo-secure-store', () => ({
+  setItemAsync: jest.fn(() => Promise.resolve()),
+  getItemAsync: jest.fn(() => Promise.resolve(null)),
+  deleteItemAsync: jest.fn(() => Promise.resolve()),
+}));
 
-jest.mock('axios', () => {
+// Mock @expo/vector-icons localement pour ce fichier
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+
+  const createMockIcon = (name: string) => ({ name: iconName, size, color, ...props }: any) =>
+    React.createElement(Text, {
+      ...props,
+      testID: `icon-${iconName}`,
+      style: { fontSize: size, color }
+    }, iconName);
+
   return {
-    __esModule: true,
-    default: {
-      create: jest.fn(() => mockAxiosInstance)
-    }
+    Ionicons: createMockIcon('Ionicons'),
+    MaterialIcons: createMockIcon('MaterialIcons'),
+    AntDesign: createMockIcon('AntDesign'),
+    Feather: createMockIcon('Feather'),
+    FontAwesome: createMockIcon('FontAwesome'),
+    MaterialCommunityIcons: createMockIcon('MaterialCommunityIcons')
   };
 });
 
-// Mock setupAuthInterceptor
-jest.mock('../../../services/api/authInterceptor', () => ({
-  setupAuthInterceptor: jest.fn()
-}));
-
-// Mock expo-router
-const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
-}));
-
-import { LoanListItem } from '../../../components/loans/LoanListItem';
-import { Alert } from 'react-native';
-
-// Mock Platform
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'ios',
-  select: jest.fn((obj) => obj.ios),
-}));
-
 // Mock Alert
 jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+// Mock expo-router - mock local pour ce fichier uniquement
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
+const mockBack = jest.fn();
+
+jest.mock('expo-router', () => ({
+  useRouter: jest.fn(() => ({
+    push: mockPush,
+    replace: mockReplace,
+    back: mockBack,
+  })),
+  useLocalSearchParams: jest.fn(() => ({})),
+}));
 
 describe('LoanListItem', () => {
   const mockLoan: Loan = {
@@ -82,7 +83,12 @@ describe('LoanListItem', () => {
   const mockOnReturn = jest.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Nettoyer tous les mocks avant chaque test
+    mockPush.mockClear();
+    mockReplace.mockClear();
+    mockBack.mockClear();
+    mockOnReturn.mockClear();
+    Platform.OS = 'ios';
   });
 
   it('should render loan information correctly', () => {
@@ -167,24 +173,30 @@ describe('LoanListItem', () => {
     expect(queryByText('Retourner')).toBeNull();
   });
 
-  it('should navigate to loan details when pressed', () => {
+  it('should navigate to loan details when pressed', async () => {
     const { getByTestId } = render(
       <LoanListItem loan={mockLoan} onReturn={mockOnReturn} />
     );
 
     const loanItem = getByTestId(`loan-item-${mockLoan.id}`);
-    fireEvent.press(loanItem);
+
+    await act(async () => {
+      fireEvent.press(loanItem);
+    });
 
     expect(mockPush).toHaveBeenCalledWith(`/(tabs)/loans/${mockLoan.id}`);
   });
 
-  it('should show alert when return button is pressed on mobile', () => {
+  it('should show alert when return button is pressed on mobile', async () => {
     const { getByText } = render(
       <LoanListItem loan={mockLoan} onReturn={mockOnReturn} />
     );
 
     const returnButton = getByText('Retourner');
-    fireEvent.press(returnButton);
+
+    await act(async () => {
+      fireEvent.press(returnButton);
+    });
 
     expect(Alert.alert).toHaveBeenCalledWith(
       'Retour du livre',

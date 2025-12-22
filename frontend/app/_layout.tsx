@@ -71,7 +71,7 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
       const isRoot = currentSegment === '' || currentSegment === '/';
       if (isAuthenticated && isRoot) {
         router.replace('/(tabs)/books');
-      } else if (!isAuthenticated && !currentSegment.includes('auth/login')) {
+      } else if (!isAuthenticated && !currentSegment.includes('auth')) {
         router.replace('/auth/login');
       }
     }

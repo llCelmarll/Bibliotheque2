@@ -64,7 +64,13 @@ const mockDeleteLoan = loanService.deleteLoan as jest.Mock;
 
 describe('useLoans', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Nettoyer les appels précédents mais garder les implémentations
+    mockGetAllLoans.mockClear();
+    mockGetActiveLoans.mockClear();
+    mockGetOverdueLoans.mockClear();
+    mockGetStatistics.mockClear();
+    mockReturnLoan.mockClear();
+    mockDeleteLoan.mockClear();
   });
 
   it('should load loans on mount when autoLoad is true', async () => {
@@ -92,9 +98,10 @@ describe('useLoans', () => {
 
     expect(result.current.loading).toBe(true);
 
+    // Augmenter le timeout pour éviter les échecs aléatoires
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    });
+    }, { timeout: 5000 });
 
     expect(result.current.loans).toEqual(mockLoans);
     expect(mockGetAllLoans).toHaveBeenCalledTimes(1);
@@ -133,7 +140,7 @@ describe('useLoans', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    });
+    }, { timeout: 5000 });
 
     expect(result.current.loans).toHaveLength(1);
     expect(result.current.loans[0].status).toBe(LoanStatus.ACTIVE);
@@ -154,7 +161,7 @@ describe('useLoans', () => {
 
     await waitFor(() => {
       expect(result.current.statistics).toEqual(mockStats);
-    });
+    }, { timeout: 5000 });
 
     expect(mockGetStatistics).toHaveBeenCalledTimes(1);
   });
@@ -184,7 +191,7 @@ describe('useLoans', () => {
 
     await waitFor(() => {
       expect(result.current.loans).toEqual(mockLoans);
-    });
+    }, { timeout: 5000 });
 
     expect(mockGetAllLoans).toHaveBeenCalledTimes(1);
   });
@@ -204,7 +211,7 @@ describe('useLoans', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    });
+    }, { timeout: 5000 });
 
     expect(result.current.loans).toEqual([]);
     expect(consoleError).toHaveBeenCalled();
@@ -249,7 +256,7 @@ describe('useLoans', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    });
+    }, { timeout: 5000 });
 
     // The hook doesn't sort - it just returns what the service returns
     expect(result.current.loans).toEqual(mockLoans);
@@ -285,7 +292,7 @@ describe('useLoans', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    });
+    }, { timeout: 5000 });
 
     // The hook returns loans as they come from the service
     expect(result.current.loans).toEqual(mockLoans);

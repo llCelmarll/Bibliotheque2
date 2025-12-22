@@ -20,6 +20,16 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 		router.push(`/(tabs)/books/${book.id}`);
 	}
 
+	const formatDate = (dateString?: string) => {
+		if (!dateString) return '';
+		const date = new Date(dateString);
+		return date.toLocaleDateString('fr-FR', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+		});
+	};
+
 	return (
 		<View style={styles.container}>
 			<TouchableOpacity onPress={handlePress} testID="book-item-touchable">
@@ -34,10 +44,12 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 
 
 			<View style={styles.infoContainer}>
+				{/* Titre du livre */}
 				<TouchableOpacity onPress={handlePress}>
 					<Text style={styles.title}>{book.title}</Text>
 				</TouchableOpacity>
 
+				{/* Auteurs */}
 				{book.authors && book.authors.length > 0 && (
 					<View style={styles.author}>
 						<Text>{book.authors.length > 1? "Auteurs" : "Auteur"} :</Text>
@@ -51,6 +63,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 					</View>
 				)}
 
+				{/* Éditeur */}
 				{book.publisher && (
 					<View style={styles.publisher}>
 						<Text>Editeur : </Text>
@@ -61,6 +74,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 					</View>
 				)}
 
+				{/* Genres */}
 				{book.genres && book.genres.length > 0 && (
 					<View style={styles.genre}>
 						<Text>{book.genres.length > 1? "Genres" : "Genre"} : </Text>
@@ -74,10 +88,28 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 					</View>
 				)}
 
+				{/* Nombre de pages */}
 				{book.page_count && (
 					<Text style={styles.pages}>
 						{book.page_count} pages
 					</Text>
+				)}
+
+				{/* Badge de prêt */}
+				{book.current_loan && (
+					<View style={styles.loanBadge}>
+						<Text style={styles.loanBadgeText}>
+							📖 Prêté à {book.current_loan.borrower?.name || 'Emprunteur inconnu'}
+						</Text>
+						{book.current_loan.due_date && (
+							<Text style={[
+								styles.loanDateText,
+								new Date(book.current_loan.due_date) < new Date() && styles.loanOverdue
+							]}>
+								Retour : {formatDate(book.current_loan.due_date)}
+							</Text>
+						)}
+					</View>
 				)}
 			</View>
 		</View>
@@ -134,5 +166,27 @@ const styles = StyleSheet.create({
 	pages: {
 		color: "#888",
 		fontSize: 12,
+	},
+	loanBadge: {
+		marginTop: 6,
+		padding: 6,
+		backgroundColor: '#fff3cd',
+		borderRadius: 4,
+		borderWidth: 1,
+		borderColor: '#ffc107',
+	},
+	loanBadgeText: {
+		fontSize: 11,
+		fontWeight: '600',
+		color: '#856404',
+		marginBottom: 2,
+	},
+	loanDateText: {
+		fontSize: 10,
+		color: '#856404',
+	},
+	loanOverdue: {
+		color: '#dc3545',
+		fontWeight: '600',
 	},
 });

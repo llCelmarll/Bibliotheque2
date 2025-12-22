@@ -6,11 +6,34 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { ClickableTag } from '../../components/ClickableTag';
 import { BookFilter, FilterType } from '../../types/filter';
 
+// Mock @expo/vector-icons localement pour ce fichier
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+
+  const createMockIcon = (name: string) => ({ name: iconName, size, color, ...props }: any) =>
+    React.createElement(Text, {
+      ...props,
+      testID: `icon-${iconName}`,
+      style: { fontSize: size, color }
+    }, iconName);
+
+  return {
+    Ionicons: createMockIcon('Ionicons'),
+    MaterialIcons: createMockIcon('MaterialIcons'),
+    AntDesign: createMockIcon('AntDesign'),
+    Feather: createMockIcon('Feather'),
+    FontAwesome: createMockIcon('FontAwesome'),
+    MaterialCommunityIcons: createMockIcon('MaterialCommunityIcons')
+  };
+});
+
 describe('ClickableTag', () => {
   const mockOnPress = jest.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Nettoyer le mock avant chaque test
+    mockOnPress.mockClear();
   });
 
   const defaultFilter: BookFilter = {

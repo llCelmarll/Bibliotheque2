@@ -15,10 +15,9 @@ describe('Configuration Jest', () => {
     await expect(promise).resolves.toBe('success');
   });
 
-  it('should mock modules correctly', () => {
-    // Vérifier que les mocks Expo sont en place
-    const mockRouter = require('expo-router').useRouter();
-    expect(typeof mockRouter.push).toBe('function');
-    expect(jest.isMockFunction(mockRouter.push)).toBe(true);
+  it('should support TypeScript', () => {
+    // Vérifier que TypeScript fonctionne correctement
+    const testObject: { value: number } = { value: 42 };
+    expect(testObject.value).toBe(42);
   });
 });

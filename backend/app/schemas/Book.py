@@ -7,6 +7,21 @@ from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 from app.schemas.Genre import GenreRead
 from app.schemas.Other import SortBy, SortOrder, Filter
+from app.schemas.Borrower import BorrowerRead
+from app.models.Loan import LoanStatus
+
+
+# Schéma simplifié pour le prêt actif (sans le champ book pour éviter la circularité)
+class CurrentLoanRead(SQLModel):
+    """Schéma simplifié pour afficher le prêt actif d'un livre"""
+    id: int
+    borrower_id: int
+    borrower: Optional[BorrowerRead] = None
+    loan_date: datetime
+    due_date: Optional[datetime] = None
+    return_date: Optional[datetime] = None
+    status: LoanStatus
+    notes: Optional[str] = None
 
 
 # Schema de lecture
@@ -23,6 +38,7 @@ class BookRead(SQLModel):
     authors: List[AuthorRead] = []
     publisher: Optional[PublisherRead] = None
     genres: List[GenreRead] = []
+    current_loan: Optional[CurrentLoanRead] = None  # Prêt actif si le livre est prêté
 
 # Schema de création
 class BookCreate(SQLModel):
