@@ -17,9 +17,9 @@ ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker stop mabibliot
 Write-Host "Pull de la nouvelle image..." -ForegroundColor Yellow
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker pull llcelmarll/mabibliotheque-frontend:latest"
 
-# Demarrage du nouveau conteneur
+# Demarrage du nouveau conteneur avec volume APK
 Write-Host "Demarrage du conteneur..." -ForegroundColor Yellow
-ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker run -d --name mabibliotheque-frontend --network mabibliotheque_network --restart unless-stopped -p 8080:80 llcelmarll/mabibliotheque-frontend:latest"
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker run -d --name mabibliotheque-frontend --network mabibliotheque_network --restart unless-stopped -p 8080:80 -v /volume1/docker/mabibliotheque/apk:/app/apk:ro llcelmarll/mabibliotheque-frontend:latest"
 
 Write-Host "`nFrontend redeploy !" -ForegroundColor Green
 Write-Host "Accessible sur: https://mabibliotheque.ovh`n" -ForegroundColor Gray

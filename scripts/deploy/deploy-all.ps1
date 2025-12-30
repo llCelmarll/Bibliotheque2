@@ -182,36 +182,17 @@ if (-not $SkipMobile) {
 }
 
 if (-not $SkipApk) {
-    Write-Host "[APK] Récupération et injection du lien APK Android..." -ForegroundColor Yellow
+    Write-Host "[APK] Téléchargement et hébergement de l'APK Android..." -ForegroundColor Yellow
     Write-Host ""
-    # Récupération du lien du dernier build APK EAS
-    Set-Location frontend
-    $apkJson = eas build:list --platform android --profile preview --limit 1 --json --non-interactive
-    if ($LASTEXITCODE -ne 0 -or !$apkJson) {
-        Write-Host "  Erreur lors de la récupération du build APK" -ForegroundColor Red
+
+    # Appeler le script update-apk.ps1 pour télécharger et héberger l'APK
+    & "$PSScriptRoot\update-apk.ps1"
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Erreur lors de la mise à jour de l'APK" -ForegroundColor Red
         exit 1
     }
-    $apkUrl = ($apkJson | ConvertFrom-Json).artifacts.buildUrl
-    Set-Location ..
-    Write-Host "  Lien APK récupéré: $apkUrl" -ForegroundColor Green
 
-    # Mise à jour de nginx-frontend.conf avec le nouveau lien APK
-    Write-Host "Mise à jour de nginx-frontend.conf avec le nouveau lien APK..." -ForegroundColor Yellow
-    $nginxConfPath = "frontend\\nginx-frontend.conf"
-    # Remplace toute la ligne de redirection APK par la nouvelle URL
-    (gc $nginxConfPath) -replace 'return 302 https://expo\.dev/artifacts/eas/.*\.apk;', "return 302 $apkUrl;" | Set-Content $nginxConfPath
-    Write-Host "  nginx-frontend.conf mis à jour !" -ForegroundColor Green
-
-    # Vérification de la mise à jour de l'adresse APK dans nginx-frontend.conf
-    $nginxContent = Get-Content $nginxConfPath
-    $apkLine = $nginxContent | Select-String -Pattern $apkUrl
-    if ($apkLine) {
-        Write-Host "  Vérification OK : L'adresse APK est bien présente dans nginx-frontend.conf" -ForegroundColor Green
-    } else {
-        Write-Host "  Vérification ECHEC : L'adresse APK n'a pas été trouvée dans nginx-frontend.conf" -ForegroundColor Red
-    }
-
-    Write-Host "  APK accessible via: https://mabibliotheque.ovh/bibliotheque.apk" -ForegroundColor Green
     Write-Host ""
 }
 
