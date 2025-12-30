@@ -32,6 +32,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<RegisterForm>>({});
+  const [serverError, setServerError] = useState<string>('');
 
   const router = useRouter();
   const { register: registerUser } = useAuth();
@@ -77,6 +78,7 @@ export default function RegisterScreen() {
     }
 
     setLoading(true);
+    setServerError(''); // Réinitialiser l'erreur serveur
     try {
       // Inscription avec connexion automatique
       await registerUser({
@@ -88,15 +90,12 @@ export default function RegisterScreen() {
 
       // En cas de SUCCÈS : rediriger vers books
       router.replace('/(tabs)/books');
-      
+
     } catch (error: any) {
       const errorMessage = error.message || 'Une erreur est survenue lors de l\'inscription';
-      
-      // Stocker l'erreur temporairement dans AsyncStorage
-      await AsyncStorage.setItem('register_error', errorMessage);
-      
-      // Rediriger vers login
-      router.replace('/auth/login');
+
+      // Afficher l'erreur sur l'écran d'inscription
+      setServerError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -107,6 +106,10 @@ export default function RegisterScreen() {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+    // Clear server error when user starts typing
+    if (serverError) {
+      setServerError('');
     }
   };
 
@@ -119,6 +122,14 @@ export default function RegisterScreen() {
       </View>
 
       <View style={styles.form}>
+        {/* Server Error Message */}
+        {serverError ? (
+          <View style={styles.serverErrorContainer}>
+            <MaterialIcons name="error-outline" size={20} color="#e74c3c" />
+            <Text style={styles.serverErrorText}>{serverError}</Text>
+          </View>
+        ) : null}
+
         {/* Email */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email</Text>
@@ -264,6 +275,22 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 20,
+  },
+  serverErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fee',
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+  },
+  serverErrorText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#c0392b',
+    fontWeight: '500',
   },
   inputContainer: {
     gap: 8,

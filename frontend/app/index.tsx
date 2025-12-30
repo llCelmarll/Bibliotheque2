@@ -13,10 +13,11 @@ export default function Index() {
   useEffect(() => {
     if (!isLoading) {
       const currentSegment = segments.join('/');
+
       setTimeout(() => {
         if (isAuthenticated && !currentSegment.includes('books')) {
           router.replace('/(tabs)/books');
-        } else if (!isAuthenticated && !currentSegment.includes('auth/login')) {
+        } else if (!isAuthenticated && !currentSegment.includes('auth')) {
           router.replace('/auth/login');
         }
       }, 200);

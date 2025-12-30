@@ -57,28 +57,37 @@ export default function RootLayout() {
 
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect as useReactEffect } from 'react';
+import { useEffect as useReactEffect, useRef } from 'react';
 
 function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuth();
+  const initialCheckDone = useRef(false);
 
-  // Redirection uniquement au démarrage (sur la racine)
+  // Redirection uniquement au démarrage de l'app (une seule fois quand isLoading passe à false)
   useReactEffect(() => {
-    if (!isLoading) {
+    // Ne s'exécute qu'une seule fois après le chargement initial
+    if (!isLoading && !initialCheckDone.current) {
+      initialCheckDone.current = true;
+
       const currentSegment = segments.join('/');
       const isRoot = currentSegment === '' || currentSegment === '/';
+
+      // Redirection vers books si authentifié et sur la racine
       if (isAuthenticated && isRoot) {
         router.replace('/(tabs)/books');
-      } else if (!isAuthenticated && !currentSegment.includes('auth')) {
+      }
+      // Redirection vers login si pas authentifié et à la racine
+      else if (!isAuthenticated && isRoot) {
         router.replace('/auth/login');
       }
     }
-  }, [isAuthenticated, isLoading, router, segments]);
+  }, [isLoading, isAuthenticated, segments, router]);
 
-  // Afficher un loader tant que l'authentification n'est pas vérifiée
-  if (isLoading) {
+  // Afficher un loader UNIQUEMENT pendant le check initial d'authentification
+  // Pas pendant les opérations login/register
+  if (isLoading && !initialCheckDone.current) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
         <ActivityIndicator size="large" color="#2196F3" />

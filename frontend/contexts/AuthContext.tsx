@@ -173,14 +173,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (data: RegisterRequest) => {
   try {
       setIsLoading(true);
-      
+
       // Inscription
       const registerResponse = await authService.register(data);
-      
+
       // Stocker le token et les informations utilisateur
       await AsyncStorage.setItem(TOKEN_KEY, registerResponse.token.access_token);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(registerResponse.user));
-      
+
       setToken(registerResponse.token.access_token);
       setUser(registerResponse.user);
     } catch (error) {
