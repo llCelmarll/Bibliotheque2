@@ -209,10 +209,10 @@ class AuthService:
                 detail="Le nom d'utilisateur doit contenir au moins 3 caractères"
             )
         
-        if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+        if not re.match(r'^[\w\s\-]+$', username, re.UNICODE):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores"
+                detail="Le nom d'utilisateur ne peut contenir que des lettres (y compris accentuées), chiffres, espaces, tirets et underscores"
             )
         
         # 6. Créer le nouvel utilisateur

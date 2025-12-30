@@ -177,8 +177,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Inscription
       const registerResponse = await authService.register(data);
 
-      // Stocker le token et les informations utilisateur
-      await AsyncStorage.setItem(TOKEN_KEY, registerResponse.token.access_token);
+      // Stocker le token dans ACCESS_TOKEN_KEY (même clé que login pour cohérence)
+      await setItem(ACCESS_TOKEN_KEY, registerResponse.token.access_token);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(registerResponse.user));
 
       setToken(registerResponse.token.access_token);
@@ -193,11 +193,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async () => {
   try {
       setIsLoading(true);
-      
-      // Supprimer du stockage
+
+      // Supprimer TOUS les tokens du stockage (ancien et nouveau format)
       await AsyncStorage.removeItem(TOKEN_KEY);
       await AsyncStorage.removeItem(USER_KEY);
-      
+      if (Platform.OS === 'web') {
+        await AsyncStorage.removeItem(ACCESS_TOKEN_KEY);
+        await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+      } else {
+        await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      }
+
       // Réinitialiser l'état
       setToken(null);
       setUser(null);
