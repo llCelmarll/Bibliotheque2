@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Text, ActivityIndicator, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -9,12 +9,14 @@ import { bookService } from '@/services/bookService';
 import { BookCreate, SuggestedBook } from '@/types/scanTypes';
 import { BookUpdate } from '@/types/book';
 import { ErrorMessage } from '@/components/ErrorMessage';
+import axios from 'axios';
 
 export default function EditBookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { book, loading, error, refetch } = useBookDetail(id as string);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Convertir les données du livre en format SuggestedBook pour le formulaire
   const convertBookToSuggestedFormat = (): SuggestedBook | null => {
@@ -55,13 +57,16 @@ export default function EditBookScreen() {
 
   const handleFormSubmit = async (values: BookCreate) => {
     try {
+      setSubmitError(null);
       console.log('📝 Modification livre - données reçues:', values);
-      
+
       // Validation côté client
       const validation = bookService.validateBookData(values);
       if (!validation.isValid) {
         console.error('❌ Validation échouée:', validation.errors);
-        // TODO: Afficher les erreurs à l'utilisateur
+        const errorMessage = validation.errors.join('\n');
+        setSubmitError(errorMessage);
+        Alert.alert('Erreur de validation', errorMessage);
         return;
       }
 
@@ -82,15 +87,44 @@ export default function EditBookScreen() {
 
       // Appel API pour modifier le livre
       const updatedBook = await bookService.updateBook(id as string, updateData);
-      
+
       console.log('✅ Livre modifié avec succès!', updatedBook);
-      
+
       // Retour à la page de détail du livre avec rafraîchissement
       router.replace(`/books/${id}?refresh=${Date.now()}`);
-      
+
     } catch (error) {
       console.error('❌ Erreur lors de la modification:', error);
-      // TODO: Afficher un message d'erreur à l'utilisateur
+
+      // Extraire le message d'erreur approprié
+      let errorMessage = 'Une erreur est survenue lors de la modification du livre';
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 422) {
+          // Erreur de validation du backend
+          const detail = error.response?.data?.detail;
+          if (typeof detail === 'string') {
+            errorMessage = detail;
+          } else if (Array.isArray(detail)) {
+            // Format Pydantic ValidationError
+            errorMessage = detail.map((err: any) => {
+              const field = err.loc?.join('.') || 'champ inconnu';
+              return `${field}: ${err.msg}`;
+            }).join('\n');
+          }
+        } else if (error.response?.status === 400) {
+          errorMessage = error.response?.data?.detail || errorMessage;
+        } else if (error.response?.status === 404) {
+          errorMessage = 'Livre introuvable';
+        } else if (error.response) {
+          errorMessage = error.response?.data?.detail || `Erreur ${error.response.status}`;
+        } else if (error.request) {
+          errorMessage = 'Impossible de contacter le serveur';
+        }
+      }
+
+      setSubmitError(errorMessage);
+      Alert.alert('Erreur', errorMessage);
     }
   };
 
@@ -134,12 +168,20 @@ export default function EditBookScreen() {
             <ErrorMessage message="Impossible de charger les données du livre" onRetry={refetch} />
           </ScrollView>
         ) : (
-          <ScrollView 
+          <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={true}
           >
             <Text style={styles.sectionTitle}>Modifier les informations</Text>
+
+            {submitError && (
+              <View style={styles.errorContainer}>
+                <MaterialIcons name="error-outline" size={24} color="#e74c3c" />
+                <Text style={styles.errorMessageText}>{submitError}</Text>
+              </View>
+            )}
+
             <BookForm
               initialData={suggestedData}
               onSubmit={handleFormSubmit}
@@ -210,5 +252,22 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fee',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#e74c3c',
+  },
+  errorMessageText: {
+    flex: 1,
+    marginLeft: 12,
+    color: '#c0392b',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
