@@ -10,7 +10,8 @@ from app.models.Publisher import Publisher
 from app.models.Genre import Genre
 from app.repositories.book_repository import BookRepository
 from app.repositories.loan_repository import LoanRepository
-from app.schemas.Book import BookCreate, BookUpdate, BookRead, CurrentLoanRead, BookSearchParams, BookAdvancedSearchParams
+from app.repositories.borrowed_book_repository import BorrowedBookRepository
+from app.schemas.Book import BookCreate, BookUpdate, BookRead, CurrentLoanRead, CurrentBorrowRead, BookSearchParams, BookAdvancedSearchParams
 from app.schemas.Other import Filter, FilterType
 from app.clients.openlibrary import fetch_openlibrary
 from app.clients.google_books import fetch_google_books
@@ -26,6 +27,7 @@ class BookService:
         self.user_id = user_id
         self.book_repository = BookRepository(session)
         self.loan_repository = LoanRepository(session)
+        self.borrowed_book_repository = BorrowedBookRepository(session)
 
     def create_book(self, book_data: BookCreate) -> Book:
         """Crée un nouveau livre avec ses relations"""
@@ -34,11 +36,18 @@ class BookService:
         logger.info("Create book: title=%s isbn=%s", book_data.title, getattr(book_data, "isbn", None))
         # Validation des données
         self._validate_book_data(book_data)
-        
+
+        # Validation pour les champs d'emprunt
+        if book_data.is_borrowed and not book_data.borrowed_from:
+            raise HTTPException(
+                status_code=400,
+                detail="Le champ 'borrowed_from' est requis si 'is_borrowed' est True"
+            )
+
         # Vérification de l'unicité du titre + ISBN pour l'utilisateur actuel
         if self._book_exists(book_data.title, book_data.isbn):
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Un livre avec ce titre et cet ISBN existe déjà dans votre bibliothèque"
             )
 
@@ -66,16 +75,32 @@ class BookService:
         # Gestion des relations many-to-many
         if book_data.authors:
             self._process_authors_for_book(book, book_data.authors)
-        
+
         if book_data.genres:
             self._process_genres_for_book(book, book_data.genres)
+
+        # Créer automatiquement l'emprunt si demandé
+        if book_data.is_borrowed:
+            from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+            borrowed_book = BorrowedBook(
+                book_id=book.id,
+                user_id=self.user_id,
+                borrowed_from=book_data.borrowed_from,
+                borrowed_date=book_data.borrowed_date or datetime.utcnow(),
+                expected_return_date=book_data.expected_return_date,
+                status=BorrowStatus.ACTIVE,
+                notes=book_data.borrow_notes
+            )
+            self.session.add(borrowed_book)
+            # Log sans caractères spéciaux pour éviter les erreurs d'encodage
+            logger.info("Create borrowed book: book_id=%s", book.id)
 
         # Commit final
         self.session.commit()
         self.session.refresh(book)
         duration_ms = int((perf_counter() - start) * 1000)
         logger.info("Create book OK: id=%s duration_ms=%d", book.id, duration_ms)
-        
+
         return book
 
     async def get_book_by_id(self, book_id: int) -> Dict[str, Any]:
@@ -94,6 +119,11 @@ class BookService:
         active_loan = self.loan_repository.get_active_loan_for_book(base_book.id, self.user_id)
         if active_loan:
             book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
+
+        # Récupérer l'emprunt actif pour ce livre (seulement ACTIF ou OVERDUE, pas RETURNED)
+        active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(base_book.id, self.user_id)
+        if active_borrow:
+            book_read.current_borrow = CurrentBorrowRead.model_validate(active_borrow)
 
         book_data['base'] = book_read.model_dump()
         book_data['google_books'] = await fetch_google_books(base_book.isbn)

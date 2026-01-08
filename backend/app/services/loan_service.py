@@ -59,6 +59,18 @@ class LoanService:
                 detail=f"Ce livre est déjà prêté à {active_loan.borrower.name}"
             )
 
+        # Vérifier que le livre n'est pas emprunté
+        from app.repositories.borrowed_book_repository import BorrowedBookRepository
+        borrowed_book_repo = BorrowedBookRepository(self.session)
+        active_borrow = borrowed_book_repo.get_active_borrow_for_book(
+            loan_data.book_id, self.user_id
+        )
+        if active_borrow:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Impossible de prêter un livre que vous avez emprunté à {active_borrow.borrowed_from}. Veuillez d'abord le retourner."
+            )
+
         # Traiter l'emprunteur (ID, nom, ou objet)
         borrower_id = self._process_borrower(loan_data.borrower)
 

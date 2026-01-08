@@ -9,6 +9,7 @@ from app.schemas.Genre import GenreRead
 from app.schemas.Other import SortBy, SortOrder, Filter
 from app.schemas.Borrower import BorrowerRead
 from app.models.Loan import LoanStatus
+from app.models.BorrowedBook import BorrowStatus
 
 
 # Schéma simplifié pour le prêt actif (sans le champ book pour éviter la circularité)
@@ -21,6 +22,17 @@ class CurrentLoanRead(SQLModel):
     due_date: Optional[datetime] = None
     return_date: Optional[datetime] = None
     status: LoanStatus
+    notes: Optional[str] = None
+
+
+# Schéma simplifié pour l'emprunt actif
+class CurrentBorrowRead(SQLModel):
+    """Schéma simplifié pour afficher l'emprunt actif d'un livre"""
+    id: int
+    borrowed_from: str
+    borrowed_date: datetime
+    expected_return_date: Optional[datetime] = None
+    status: BorrowStatus
     notes: Optional[str] = None
 
 
@@ -39,6 +51,7 @@ class BookRead(SQLModel):
     publisher: Optional[PublisherRead] = None
     genres: List[GenreRead] = []
     current_loan: Optional[CurrentLoanRead] = None  # Prêt actif si le livre est prêté
+    current_borrow: Optional[CurrentBorrowRead] = None  # Emprunt actif si le livre est emprunté
 
 # Schema de création
 class BookCreate(SQLModel):
@@ -58,8 +71,15 @@ class BookCreate(SQLModel):
     
     Exemples :
     - authors: [1, "Nouvel Auteur", {"name": "Victor Hugo", "id": 5, "exists": true}]
-    - publisher: {"name": "Gallimard", "id": 12, "exists": true}  
+    - publisher: {"name": "Gallimard", "id": 12, "exists": true}
     - genres: ["Science-Fiction", {"name": "Roman", "id": 3, "exists": true}]
+
+    Champs d'emprunt optionnels (pour marquer le livre comme emprunté lors de la création) :
+    - is_borrowed: Si True, crée automatiquement un enregistrement d'emprunt
+    - borrowed_from: Source de l'emprunt (requis si is_borrowed=True)
+    - borrowed_date: Date d'emprunt (défaut: maintenant)
+    - expected_return_date: Date de retour prévue
+    - borrow_notes: Notes sur l'emprunt
     """
     title: str
     isbn: Optional[str] = None
@@ -70,6 +90,13 @@ class BookCreate(SQLModel):
     authors: List[int | str | Dict[str, Any]] = []
     publisher: Optional[int | str | Dict[str, Any]] = None
     genres: List[int | str | Dict[str, Any]] = []
+
+    # Champs optionnels pour marquer comme emprunté
+    is_borrowed: Optional[bool] = False
+    borrowed_from: Optional[str] = None
+    borrowed_date: Optional[datetime] = None
+    expected_return_date: Optional[datetime] = None
+    borrow_notes: Optional[str] = None
 
 # Schema de mise à jour
 class BookUpdate(SQLModel):
