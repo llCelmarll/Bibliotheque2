@@ -30,72 +30,101 @@ class BookService:
         self.borrowed_book_repository = BorrowedBookRepository(session)
 
     def create_book(self, book_data: BookCreate) -> Book:
-        """Crée un nouveau livre avec ses relations"""
+        """Crée un nouveau livre avec ses relations ou gère un livre existant"""
         logger = logging.getLogger("app.books")
         start = perf_counter()
         logger.info("Create book: title=%s isbn=%s", book_data.title, getattr(book_data, "isbn", None))
-        # Validation des données
-        self._validate_book_data(book_data)
 
-        # Validation pour les champs d'emprunt
+        # 1. Validation is_borrowed
         if book_data.is_borrowed and not book_data.borrowed_from:
             raise HTTPException(
                 status_code=400,
                 detail="Le champ 'borrowed_from' est requis si 'is_borrowed' est True"
             )
 
-        # Vérification de l'unicité du titre + ISBN pour l'utilisateur actuel
-        if self._book_exists(book_data.title, book_data.isbn):
-            raise HTTPException(
-                status_code=400,
-                detail="Un livre avec ce titre et cet ISBN existe déjà dans votre bibliothèque"
-            )
+        # Validation des données
+        self._validate_book_data(book_data)
 
-        # Traitement de l'éditeur
-        publisher_id = None
-        if book_data.publisher:
-            publisher_id = self._process_publisher_for_book(book_data.publisher)
-
-        # Création du livre
-        book = Book(
-            title=book_data.title,
-            isbn=book_data.isbn,
-            published_date=book_data.published_date,
-            page_count=book_data.page_count,
-            barcode=book_data.barcode,
-            cover_url=book_data.cover_url,
-            publisher_id=publisher_id,
-            owner_id=self.user_id  # Assigner à l'utilisateur actuel
+        # 2. Vérifier si le livre existe déjà
+        existing_book = self.book_repository.get_by_title_isbn_owner(
+            book_data.title, book_data.isbn or "", self.user_id
         )
 
-        # Ajout à la session
-        self.session.add(book)
-        self.session.flush()  # Pour obtenir l'ID du livre
+        if existing_book:
+            book = existing_book
+            logger.info("Book already exists: id=%s", book.id)
 
-        # Gestion des relations many-to-many
-        if book_data.authors:
-            self._process_authors_for_book(book, book_data.authors)
+            # Vérifier si le livre a un historique d'emprunt
+            all_borrows = self.borrowed_book_repository.get_by_book(book.id, self.user_id)
 
-        if book_data.genres:
-            self._process_genres_for_book(book, book_data.genres)
+            if not all_borrows:
+                # Livre possédé sans historique d'emprunt → Bloquer
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Ce livre existe déjà dans votre bibliothèque (ID: {book.id})"
+                )
+            # Si all_borrows existe → C'est un livre avec historique d'emprunt
+            # → On continue (permettre ré-emprunt ou achat)
+        else:
+            # Le livre n'existe pas → Le créer via le repository
+            # Traitement de l'éditeur
+            publisher_id = None
+            if book_data.publisher:
+                publisher_id = self._process_publisher_for_book(book_data.publisher)
 
-        # Créer automatiquement l'emprunt si demandé
+            # Créer avec le publisher_id
+            book_data_dict = book_data.model_dump()
+            book_data_dict["publisher_id"] = publisher_id
+            # Reconstruire BookCreate avec publisher_id
+            from app.schemas.Book import BookCreate
+            book_data_with_publisher = BookCreate(**{**book_data_dict, "publisher_id": publisher_id})
+
+            book = self.book_repository.create(book_data_with_publisher, self.user_id)
+
+            # Gestion des relations many-to-many
+            if book_data.authors:
+                self._process_authors_for_book(book, book_data.authors)
+
+            if book_data.genres:
+                self._process_genres_for_book(book, book_data.genres)
+
+        # 3. Vérifier emprunt actif existant
+        active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(
+            book.id, self.user_id
+        )
+
+        if active_borrow:
+            # Un emprunt ACTIF existe
+            if book_data.is_borrowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Un emprunt actif existe déjà pour ce livre depuis {active_borrow.borrowed_from}"
+                )
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Ce livre est actuellement emprunté à {active_borrow.borrowed_from}. Retournez-le d'abord avant de le marquer comme possédé."
+                )
+
+        # 4. Gérer is_borrowed
         if book_data.is_borrowed:
-            from app.models.BorrowedBook import BorrowedBook, BorrowStatus
-            borrowed_book = BorrowedBook(
+            # Créer nouvel emprunt via le repository
+            self.borrowed_book_repository.create_from_params(
                 book_id=book.id,
                 user_id=self.user_id,
                 borrowed_from=book_data.borrowed_from,
-                borrowed_date=book_data.borrowed_date or datetime.utcnow(),
+                borrowed_date=book_data.borrowed_date,
                 expected_return_date=book_data.expected_return_date,
-                status=BorrowStatus.ACTIVE,
                 notes=book_data.borrow_notes
             )
-            self.session.add(borrowed_book)
-            # Log sans caractères spéciaux pour éviter les erreurs d'encodage
             logger.info("Create borrowed book: book_id=%s", book.id)
+        else:
+            # is_borrowed=False → Supprimer TOUS les emprunts (achat du livre)
+            deleted_count = self.borrowed_book_repository.delete_all_for_book(book.id, self.user_id)
+            if deleted_count > 0:
+                logger.info("Deleted %d borrow records for book: book_id=%s", deleted_count, book.id)
 
-        # Commit final
+        # 5. Commit final
         self.session.commit()
         self.session.refresh(book)
         duration_ms = int((perf_counter() - start) * 1000)

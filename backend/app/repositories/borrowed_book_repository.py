@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlmodel import Session, select, and_, or_
+from sqlmodel import Session, select, and_, or_, delete
 from sqlalchemy.orm import selectinload
 from datetime import datetime
 from app.models.BorrowedBook import BorrowedBook, BorrowStatus
@@ -16,6 +16,30 @@ class BorrowedBookRepository:
         self.session.add(borrowed_book)
         self.session.commit()
         self.session.refresh(borrowed_book)
+        return borrowed_book
+
+    def create_from_params(
+        self,
+        book_id: int,
+        user_id: int,
+        borrowed_from: str,
+        borrowed_date: datetime = None,
+        expected_return_date: datetime = None,
+        notes: str = None
+    ) -> BorrowedBook:
+        """Crée un nouvel emprunt (sans commit pour permettre transactions)"""
+        borrowed_book = BorrowedBook(
+            book_id=book_id,
+            user_id=user_id,
+            borrowed_from=borrowed_from,
+            borrowed_date=borrowed_date or datetime.utcnow(),
+            expected_return_date=expected_return_date,
+            status=BorrowStatus.ACTIVE,
+            notes=notes,
+            created_at=datetime.utcnow()
+        )
+        self.session.add(borrowed_book)
+        self.session.flush()  # Obtenir l'ID mais ne pas commit
         return borrowed_book
 
     def get_by_id(self, borrow_id: int, user_id: int) -> Optional[BorrowedBook]:
@@ -126,6 +150,15 @@ class BorrowedBookRepository:
         """Supprime un emprunt de la base"""
         self.session.delete(borrowed_book)
         self.session.commit()
+
+    def delete_all_for_book(self, book_id: int, user_id: int) -> int:
+        """Supprime TOUS les emprunts pour un livre (utilisé lors de l'achat)"""
+        stmt = delete(BorrowedBook).where(
+            BorrowedBook.book_id == book_id,
+            BorrowedBook.user_id == user_id
+        )
+        result = self.session.exec(stmt)
+        return result.rowcount  # Nombre de lignes supprimées
 
     def count_by_user(self, user_id: int) -> int:
         """Compte le nombre total d'emprunts pour un utilisateur"""

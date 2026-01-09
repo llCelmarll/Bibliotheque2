@@ -471,3 +471,207 @@ class TestBookBorrowIntegration:
         # Doit échouer avec 400 (validation métier)
         assert loan_response.status_code == 400, f"Expected 400 but got {loan_response.status_code}: {loan_response.json()}"
         assert "emprunté" in loan_response.json()["detail"].lower()
+
+
+@pytest.mark.unit
+class TestBookBorrowValidation:
+    """Tests des nouvelles validations pour emprunts multiples"""
+
+    def test_cannot_reborrow_active_book(
+        self,
+        authenticated_client: TestClient,
+        session: Session,
+        test_user: User
+    ):
+        """Test : Ajouter livre (emprunt ACTIF) avec is_borrowed=True → 400"""
+        # Créer un livre emprunté
+        response1 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Reborrow",
+                "isbn": "1111111111111",
+                "authors": ["Author Test"],
+                "is_borrowed": True,
+                "borrowed_from": "Marie"
+            }
+        )
+        assert response1.status_code == 201
+
+        # Tenter de ré-emprunter (même livre, is_borrowed=True)
+        response2 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Reborrow",
+                "isbn": "1111111111111",
+                "authors": ["Author Test"],
+                "is_borrowed": True,
+                "borrowed_from": "Paul"
+            }
+        )
+
+        # Doit échouer
+        assert response2.status_code == 400
+        assert "emprunt actif existe déjà" in response2.json()["detail"].lower()
+
+    def test_cannot_buy_actively_borrowed_book(
+        self,
+        authenticated_client: TestClient,
+        session: Session,
+        test_user: User
+    ):
+        """Test : Ajouter livre (emprunt ACTIF) avec is_borrowed=False → 400"""
+        # Créer un livre emprunté
+        response1 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Buy Active",
+                "isbn": "2222222222222",
+                "authors": ["Author Test"],
+                "is_borrowed": True,
+                "borrowed_from": "Marie"
+            }
+        )
+        assert response1.status_code == 201
+
+        # Tenter de "l'acheter" (is_borrowed=False)
+        response2 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Buy Active",
+                "isbn": "2222222222222",
+                "authors": ["Author Test"],
+                "is_borrowed": False
+            }
+        )
+
+        # Doit échouer
+        assert response2.status_code == 400
+        assert "retournez" in response2.json()["detail"].lower()
+
+    def test_reborrow_after_return_succeeds(
+        self,
+        authenticated_client: TestClient,
+        session: Session,
+        test_user: User
+    ):
+        """Test : Livre (emprunt RETURNED) + is_borrowed=True → Nouveau BorrowedBook"""
+        from app.services.borrowed_book_service import BorrowedBookService
+
+        # Créer un livre emprunté
+        response1 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Reborrow After Return",
+                "isbn": "3333333333333",
+                "authors": ["Author Test"],
+                "is_borrowed": True,
+                "borrowed_from": "Marie"
+            }
+        )
+        assert response1.status_code == 201
+        book_id = response1.json()["id"]
+
+        # Retourner le livre
+        service = BorrowedBookService(session, user_id=test_user.id)
+        borrows = service.get_by_book(book_id)
+        service.return_book(borrows[0].id, None)
+
+        # Ré-emprunter (nouveau BorrowedBook)
+        response2 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Reborrow After Return",
+                "isbn": "3333333333333",
+                "authors": ["Author Test"],
+                "is_borrowed": True,
+                "borrowed_from": "Paul"
+            }
+        )
+
+        # Doit réussir
+        assert response2.status_code == 201
+
+        # Vérifier qu'il y a 2 emprunts dans l'historique
+        borrows_after = service.get_by_book(book_id)
+        assert len(borrows_after) == 2
+
+    def test_buy_returned_book_deletes_history(
+        self,
+        authenticated_client: TestClient,
+        session: Session,
+        test_user: User
+    ):
+        """Test : Livre (emprunt RETURNED) + is_borrowed=False → Suppression des BorrowedBook"""
+        from app.services.borrowed_book_service import BorrowedBookService
+
+        # Créer un livre emprunté
+        response1 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Buy Returned",
+                "isbn": "4444444444444",
+                "authors": ["Author Test"],
+                "is_borrowed": True,
+                "borrowed_from": "Marie"
+            }
+        )
+        assert response1.status_code == 201
+        book_id = response1.json()["id"]
+
+        # Retourner le livre
+        service = BorrowedBookService(session, user_id=test_user.id)
+        borrows = service.get_by_book(book_id)
+        assert len(borrows) == 1
+        service.return_book(borrows[0].id, None)
+
+        # "Acheter" le livre (is_borrowed=False)
+        response2 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Buy Returned",
+                "isbn": "4444444444444",
+                "authors": ["Author Test"],
+                "is_borrowed": False
+            }
+        )
+
+        # Doit réussir
+        assert response2.status_code == 201
+
+        # Vérifier que l'historique est supprimé
+        borrows_after = service.get_by_book(book_id)
+        assert len(borrows_after) == 0
+
+    def test_add_existing_owned_book_returns_existing(
+        self,
+        authenticated_client: TestClient,
+        session: Session,
+        test_user: User
+    ):
+        """Test : Livre possédé (pas d'emprunt) + ajout → 400 "existe déjà" """
+        # Créer un livre possédé (is_borrowed=False)
+        response1 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Owned",
+                "isbn": "5555555555555",
+                "authors": ["Author Test"],
+                "is_borrowed": False
+            }
+        )
+        assert response1.status_code == 201
+
+        # Tenter d'ajouter le même livre
+        response2 = authenticated_client.post(
+            "/books",
+            json={
+                "title": "Livre Test Owned",
+                "isbn": "5555555555555",
+                "authors": ["Author Test"],
+                "is_borrowed": False
+            }
+        )
+
+        # Doit BLOQUER avec 400
+        assert response2.status_code == 400
+        assert "existe déjà" in response2.json()["detail"].lower()

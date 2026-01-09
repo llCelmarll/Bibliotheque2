@@ -153,17 +153,18 @@ class TestBookEndpoints:
         """Test de création d'un livre en double pour le même utilisateur (doit échouer)."""
         # Créer un premier livre
         first_book = create_test_book(session, test_user.id, title="Duplicate Book", isbn="9999999999999")
-        
+
         # Essayer de créer le même livre
         duplicate_data = {
             "title": "Duplicate Book",
             "isbn": "9999999999999"
         }
-        
+
         response = authenticated_client.post("/books", json=duplicate_data)
-        
+
+        # Doit bloquer avec 400
         assert response.status_code == 400
-        assert "existe déjà dans votre bibliothèque" in response.json()["detail"]
+        assert "existe déjà" in response.json()["detail"].lower()
     
     def test_duplicate_book_different_users(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de création d'un livre en double pour des utilisateurs différents (doit réussir)."""

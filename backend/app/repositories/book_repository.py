@@ -1,4 +1,5 @@
 from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 from certifi import where
 from sqlalchemy.orm import selectinload, joinedload
@@ -11,7 +12,7 @@ from app.models.BookGenreLink import BookGenreLink
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
 from app.models.BorrowedBook import BorrowedBook, BorrowStatus
-from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams
+from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams, BookCreate
 from app.schemas.Other import Filter, FilterType, SortBy, SortOrder
 
 class BookRepository:
@@ -37,6 +38,31 @@ class BookRepository:
 			stmt = stmt.where(Book.owner_id == user_id)
 
 		return self.session.exec(stmt).first()
+
+	def get_by_title_isbn_owner(self, title: str, isbn: str, owner_id: int) -> Optional[Book]:
+		"""Récupère un livre par sa combinaison unique title+isbn+owner_id"""
+		stmt = select(Book).where(
+			Book.title == title,
+			Book.isbn == isbn,
+			Book.owner_id == owner_id
+		)
+		return self.session.exec(stmt).first()
+
+	def create(self, book_data: BookCreate, owner_id: int) -> Book:
+		"""Crée un nouveau livre (sans commit pour permettre transactions)"""
+		book = Book(
+			title=book_data.title,
+			isbn=book_data.isbn,
+			published_date=book_data.published_date,
+			page_count=book_data.page_count,
+			barcode=book_data.barcode,
+			cover_url=book_data.cover_url,
+			owner_id=owner_id,
+			created_at=datetime.utcnow()
+		)
+		self.session.add(book)
+		self.session.flush()  # Obtenir l'ID mais ne pas commit
+		return book
 
 	def search_books(self, params: BookSearchParams, user_id: Optional[int] = None) -> List[Book]:
 		"""Recherche simple de tous les champs pour un utilisateur"""
