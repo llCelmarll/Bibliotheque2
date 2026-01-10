@@ -54,6 +54,9 @@ if ([int]$envCheck -lt 2) {
 # 4. Redemarrage du container
 Write-Host ""
 Write-Host "[4/4] Redemarrage du container..." -ForegroundColor Yellow
+# S'assurer que le réseau existe
+ssh "${NAS_USER}@${NAS_HOST}" "sudo /usr/local/bin/docker network create mabibliotheque_network 2>/dev/null || true"
+
 ssh "${NAS_USER}@${NAS_HOST}" "sudo /usr/local/bin/docker run -d --name $CONTAINER_NAME --network mabibliotheque_network --restart unless-stopped -v ${NAS_PATH}/data:/app/data --env-file ${NAS_PATH}/.env llcelmarll/mabibliotheque-backend:latest"
 
 if ($LASTEXITCODE -ne 0) {
