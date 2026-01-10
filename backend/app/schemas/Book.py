@@ -51,7 +51,7 @@ class BookRead(SQLModel):
     publisher: Optional[PublisherRead] = None
     genres: List[GenreRead] = []
     current_loan: Optional[CurrentLoanRead] = None  # Prêt actif si le livre est prêté
-    current_borrow: Optional[CurrentBorrowRead] = None  # Emprunt actif si le livre est emprunté
+    borrowed_book: Optional[CurrentBorrowRead] = None  # Emprunt actif si le livre est emprunté
 
 # Schema de création
 class BookCreate(SQLModel):

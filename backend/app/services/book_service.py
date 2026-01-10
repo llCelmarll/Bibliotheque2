@@ -152,7 +152,7 @@ class BookService:
         # Récupérer l'emprunt actif pour ce livre (seulement ACTIF ou OVERDUE, pas RETURNED)
         active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(base_book.id, self.user_id)
         if active_borrow:
-            book_read.current_borrow = CurrentBorrowRead.model_validate(active_borrow)
+            book_read.borrowed_book = CurrentBorrowRead.model_validate(active_borrow)
 
         book_data['base'] = book_read.model_dump()
         book_data['google_books'] = await fetch_google_books(base_book.isbn)
@@ -226,23 +226,30 @@ class BookService:
         self.session.delete(book)
         self.session.commit()
 
+    def _enrich_book_read(self, book: Book) -> BookRead:
+        """Helper pour enrichir un livre avec prêt actif et emprunt actif"""
+        book_read = BookRead.model_validate(book)
+
+        # Récupérer le prêt actif pour ce livre
+        active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
+        if active_loan:
+            book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
+
+        # Récupérer l'emprunt actif pour ce livre
+        active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(book.id, self.user_id)
+        if active_borrow:
+            book_read.borrowed_book = CurrentBorrowRead.model_validate(active_borrow)
+
+        return book_read
+
     def search_books(self, params: BookSearchParams) -> List[BookRead]:
         """Recherche simple de livres pour l'utilisateur actuel"""
         self._validate_pagination(params.skip, params.limit)
         self._validate_filters(params.filters)
         books = self.book_repository.search_books(params, self.user_id)
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in books]
 
     def advanced_search_books(self, params: BookAdvancedSearchParams) -> List[BookRead]:
         """Recherche avancée de livres pour l'utilisateur actuel"""
@@ -252,17 +259,8 @@ class BookService:
 
         books = self.book_repository.advanced_search_books(params, self.user_id)
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in books]
 
     def get_statistics(self) -> Dict[str, Any]:
         """Récupère les statistiques des livres de l'utilisateur actuel"""
@@ -275,17 +273,8 @@ class BookService:
         if not author:
             raise HTTPException(status_code=404, detail="Auteur non trouvé")
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in author.books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in author.books]
 
     def get_books_by_publisher(self, publisher_id: int) -> List[BookRead]:
         """Récupère tous les livres d'un éditeur"""
@@ -293,17 +282,8 @@ class BookService:
         if not publisher:
             raise HTTPException(status_code=404, detail="Éditeur non trouvé")
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in publisher.books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in publisher.books]
 
     def get_books_by_genre(self, genre_id: int) -> List[BookRead]:
         """Récupère tous les livres d'un genre"""
@@ -311,17 +291,8 @@ class BookService:
         if not genre:
             raise HTTPException(status_code=404, detail="Genre non trouvé")
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in genre.books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in genre.books]
     
     def bulk_create_books(self, books_data: List[BookCreate], skip_errors: bool = False, populate_covers: bool = False) -> Dict[str, Any]:
         """

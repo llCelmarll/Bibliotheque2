@@ -19,8 +19,17 @@ export default function TabLayout() {
         name="loans"
         options={{
           title: "Prêts",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size}) => (
             <Ionicons name="swap-horizontal-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="borrowed"
+        options={{
+          title: "Emprunts",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book" size={size} color={color} />
           ),
         }}
       />

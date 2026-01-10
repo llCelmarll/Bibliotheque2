@@ -11,6 +11,15 @@ import { ImagePreview } from './ImagePreview';
 // Feature flag pour activer les nouveaux sélecteurs d'entités
 const USE_ENTITY_SELECTORS = true;
 
+// Fonction utilitaire pour convertir DD/MM/YYYY -> YYYY-MM-DD
+const convertDateToISO = (dateStr: string): string | undefined => {
+	if (!dateStr || dateStr.trim() === '') return undefined;
+	const match = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+	if (!match) return undefined;
+	const [, day, month, year] = match;
+	return `${year}-${month}-${day}`;
+};
+
 // Interface pour le formulaire - utilise la structure BookCreate pour la création
 interface BookFormData extends Omit<BookCreate, 'authors' | 'publisher' | 'genres'> {
 	authors: Author[] | string;                                    // Array d'entités ou string (selon le flag)
@@ -31,6 +40,16 @@ const validationSchema = Yup.object().shape({
 		.positive('Le nombre de pages doit être positif')
 		.integer('Le nombre de pages doit être un entier'),
 	coverUrl: Yup.string().url('URL invalide'),
+	// Validation emprunt
+	borrowed_from: Yup.string().when('is_borrowed', {
+		is: true,
+		then: (schema) => schema.required('Le champ "Emprunté à" est requis si le livre est emprunté'),
+		otherwise: (schema) => schema.notRequired()
+	}),
+	borrowed_date: Yup.string()
+		.matches(/^\d{2}\/\d{2}\/\d{4}$/, 'Format: JJ/MM/AAAA'),
+	expected_return_date: Yup.string()
+		.matches(/^\d{2}\/\d{2}\/\d{4}$/, 'Format: JJ/MM/AAAA'),
 });
 
 interface BookFormProps {
@@ -49,14 +68,14 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	page_count: suggested.page_count || undefined,
 	barcode: suggested.barcode || '',
 	cover_url: suggested.cover_url || '',
-	authors: USE_ENTITY_SELECTORS 
-		? (suggested.authors?.map(suggestedAuthor => ({ 
+	authors: USE_ENTITY_SELECTORS
+		? (suggested.authors?.map(suggestedAuthor => ({
 				id: suggestedAuthor.id || undefined,
-				name: suggestedAuthor.name, 
-				exists: suggestedAuthor.exists 
+				name: suggestedAuthor.name,
+				exists: suggestedAuthor.exists
 			} as Author)) || [])
 		: (suggested.authors?.map(a => a.name).join(', ') || ''),
-	publisher: USE_ENTITY_SELECTORS 
+	publisher: USE_ENTITY_SELECTORS
 		? (suggested.publisher ? [{
 				id: suggested.publisher.id || undefined,
 				name: suggested.publisher.name,
@@ -70,6 +89,12 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 				exists: suggestedGenre.exists
 			} as Entity<GenreMetadata>)) || [])
 		: (suggested.genres?.map(g => g.name).join(', ') || ''),
+	// Initialiser champs d'emprunt vides
+	is_borrowed: false,
+	borrowed_from: '',
+	borrowed_date: new Date().toLocaleDateString('fr-FR'), // Date d'aujourd'hui par défaut (DD/MM/YYYY)
+	expected_return_date: '',
+	borrow_notes: '',
 });
 
 // Fonction pour convertir BookFormData vers BookCreate
@@ -106,6 +131,12 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 		: typeof formData.genres === 'string' && formData.genres
 		? formData.genres.split(',').map((genre: string) => genre.trim())
 		: [],
+	// Inclure champs d'emprunt (convertir dates DD/MM/YYYY -> YYYY-MM-DD pour le backend)
+	is_borrowed: formData.is_borrowed,
+	borrowed_from: formData.borrowed_from || undefined,
+	borrowed_date: convertDateToISO(formData.borrowed_date),
+	expected_return_date: convertDateToISO(formData.expected_return_date),
+	borrow_notes: formData.borrow_notes || undefined,
 });
 
 export const BookForm: React.FC<BookFormProps> = ({
@@ -264,6 +295,31 @@ export const BookForm: React.FC<BookFormProps> = ({
 							renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)
 						)}
 
+						{/* Section Emprunt */}
+						<View style={styles.sectionContainer}>
+							<Text style={styles.sectionSubtitle}>📚 Emprunt (optionnel)</Text>
+
+							{/* Toggle is_borrowed */}
+							<TouchableOpacity
+								style={styles.toggleContainer}
+								onPress={() => formik.setFieldValue('is_borrowed', !formik.values.is_borrowed)}
+							>
+								<Text style={styles.toggleLabel}>
+									{formik.values.is_borrowed ? '☑️' : '☐'} Ce livre est emprunté
+								</Text>
+							</TouchableOpacity>
+
+							{/* Champs conditionnels si is_borrowed=true */}
+							{formik.values.is_borrowed && (
+								<>
+									{renderFormField('Emprunté à *', 'borrowed_from', formik, 'Nom de la personne ou bibliothèque')}
+									{renderFormField('Date d\'emprunt', 'borrowed_date', formik, 'JJ/MM/AAAA')}
+									{renderFormField('Date de retour prévue', 'expected_return_date', formik, 'JJ/MM/AAAA')}
+									{renderFormField('Notes', 'borrow_notes', formik, 'Notes sur l\'emprunt...', true)}
+								</>
+							)}
+						</View>
+
 						<TouchableOpacity
 							style={[styles.button, styles.submitButton]}
 							onPress={() => formik.handleSubmit()}
@@ -343,5 +399,29 @@ const styles = StyleSheet.create({
 		color: '#ffffff',
 		fontSize: 16,
 		fontWeight: '600',
+	},
+	sectionContainer: {
+		marginTop: 24,
+		paddingTop: 16,
+		borderTopWidth: 1,
+		borderTopColor: '#e0e0e0',
+	},
+	sectionSubtitle: {
+		fontSize: 18,
+		fontWeight: '600',
+		color: '#2c3e50',
+		marginBottom: 12,
+	},
+	toggleContainer: {
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		backgroundColor: '#f0f0f0',
+		borderRadius: 8,
+		marginBottom: 16,
+	},
+	toggleLabel: {
+		fontSize: 16,
+		color: '#2c3e50',
+		fontWeight: '500',
 	},
 });
