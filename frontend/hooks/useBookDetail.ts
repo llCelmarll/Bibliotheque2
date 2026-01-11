@@ -26,7 +26,6 @@ export function useBookDetail(bookId: string) {
 			setLoading(true);
 			const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`);
 			setBook(response.data);
-			console.log(response.data);
 			setError(null);
 		} catch (error) {
 			setError("Impossible de charger les détails du livre: " + error);

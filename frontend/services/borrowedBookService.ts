@@ -29,6 +29,12 @@ export const fetchActiveBorrowedBooks = async (): Promise<BorrowedBook[]> => {
 	return response.data;
 };
 
+// Récupérer un emprunt par ID
+export const getBorrowedBookById = async (id: number): Promise<BorrowedBook> => {
+	const response = await apiClient.get(`/borrowed-books/${id}`);
+	return response.data;
+};
+
 // Créer emprunt
 export const createBorrowedBook = async (data: BorrowedBookCreate): Promise<BorrowedBook> => {
 	const response = await apiClient.post('/borrowed-books', data);
@@ -50,4 +56,15 @@ export const fetchBorrowStatistics = async (): Promise<BorrowStatistics> => {
 // Supprimer emprunt
 export const deleteBorrowedBook = async (id: number): Promise<void> => {
 	await apiClient.delete(`/borrowed-books/${id}`);
+};
+
+// Export default pour utilisation cohérente
+export const borrowedBookService = {
+	fetchBorrowedBooks,
+	fetchActiveBorrowedBooks,
+	getBorrowedBookById,
+	createBorrowedBook,
+	returnBorrowedBook,
+	fetchBorrowStatistics,
+	deleteBorrowedBook,
 };

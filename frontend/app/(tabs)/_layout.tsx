@@ -51,6 +51,12 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="borrows"
+        options={{
+          href: null, // Cache cet onglet de la barre de navigation
+        }}
+      />
     </Tabs>
   );
 }

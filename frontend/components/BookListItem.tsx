@@ -113,7 +113,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 				)}
 
 				{/* Badge emprunt (FROM other) */}
-				{book.borrowed_book && book.borrowed_book.status === 'ACTIVE' && (
+				{book.borrowed_book && book.borrowed_book.status === 'active' && (
 					<View style={styles.loanBadge}>
 						<Text style={styles.loanBadgeText}>
 							📚 Emprunté à {book.borrowed_book.borrowed_from}

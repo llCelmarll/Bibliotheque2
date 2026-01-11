@@ -4,19 +4,23 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { bookService } from '@/services/bookService';
 import { loanService } from '@/services/loanService';
+import { borrowedBookService } from '@/services/borrowedBookService';
 import { CurrentLoan } from '@/types/book';
+import { BorrowedBook } from '@/types/borrowedBook';
 
 interface BookActionsProps {
   bookId: string;
   bookTitle: string;
   currentLoan?: CurrentLoan;
+  borrowedBook?: BorrowedBook;
   onBookDeleted?: () => void;
 }
 
-export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: BookActionsProps) {
+export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, onBookDeleted }: BookActionsProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoanActionLoading, setIsLoanActionLoading] = useState(false);
+  const [isBorrowActionLoading, setIsBorrowActionLoading] = useState(false);
   
   // Détection de la taille de l'écran pour adapter le layout
   const { width } = Dimensions.get('window');
@@ -29,16 +33,36 @@ export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: B
   };
 
   const handleLoanAction = () => {
+    // Si le livre est emprunté, on ne peut pas le prêter
+    if (borrowedBook && borrowedBook.status === 'active') {
+      if (Platform.OS === 'web') {
+        window.alert('Vous ne pouvez pas prêter un livre que vous avez emprunté.');
+      } else {
+        Alert.alert('Impossible', 'Vous ne pouvez pas prêter un livre que vous avez emprunté.');
+      }
+      return;
+    }
+
     if (currentLoan) {
       // Le livre est prêté, proposer de le retourner
-      handleReturnBook();
+      handleReturnLoan();
     } else {
       // Le livre n'est pas prêté, naviguer vers l'écran de prêt
       router.push(`/(tabs)/loans/create?bookId=${bookId}`);
     }
   };
 
-  const handleReturnBook = async () => {
+  const handleBorrowAction = () => {
+    if (borrowedBook && borrowedBook.status === 'active') {
+      // Le livre est emprunté, proposer de le retourner
+      handleReturnBorrow();
+    } else {
+      // Le livre n'est pas emprunté, naviguer vers l'écran d'emprunt
+      router.push(`/(tabs)/borrows/create?bookId=${bookId}`);
+    }
+  };
+
+  const handleReturnLoan = async () => {
     if (!currentLoan) return;
 
     console.log('📥 Bouton Retourner cliqué');
@@ -108,6 +132,77 @@ export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: B
       }, 0);
     } finally {
       setIsLoanActionLoading(false);
+    }
+  };
+
+  const handleReturnBorrow = async () => {
+    if (!borrowedBook) return;
+
+    console.log('📥 Bouton Retourner emprunt cliqué');
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `Marquer comme retourné le livre emprunté à ${borrowedBook.borrowed_from} ?`
+      );
+      if (confirmed) {
+        await confirmReturnBorrow();
+      }
+    } else {
+      Alert.alert(
+        'Retourner le livre',
+        `Marquer comme retourné le livre emprunté à ${borrowedBook.borrowed_from} ?`,
+        [
+          {
+            text: 'Annuler',
+            style: 'cancel'
+          },
+          {
+            text: 'Retourner',
+            onPress: confirmReturnBorrow
+          }
+        ]
+      );
+    }
+  };
+
+  const confirmReturnBorrow = async () => {
+    if (!borrowedBook) return;
+
+    setIsBorrowActionLoading(true);
+    try {
+      await borrowedBookService.returnBorrowedBook(borrowedBook.id);
+
+      setTimeout(() => {
+        if (Platform.OS === 'web') {
+          window.alert('Le livre a été marqué comme retourné avec succès.');
+          window.location.reload();
+        } else {
+          Alert.alert(
+            'Livre retourné',
+            'Le livre a été marqué comme retourné avec succès.',
+            [{
+              text: 'OK',
+              onPress: () => {
+                router.replace(`/(tabs)/books/${bookId}?refresh=true`);
+              }
+            }]
+          );
+        }
+      }, 0);
+    } catch (error) {
+      setTimeout(() => {
+        if (Platform.OS === 'web') {
+          window.alert('Une erreur est survenue lors du retour du livre.');
+        } else {
+          Alert.alert(
+            'Erreur',
+            'Une erreur est survenue lors du retour du livre.',
+            [{ text: 'OK' }]
+          );
+        }
+      }, 0);
+    } finally {
+      setIsBorrowActionLoading(false);
     }
   };
 
@@ -186,6 +281,8 @@ export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: B
     }
   };
 
+  const isBookBorrowed = borrowedBook && borrowedBook.status === 'active';
+
   return (
     <View style={[styles.container, isSmallScreen && styles.containerSmall]}>
       {/* Bouton Prêter/Retourner */}
@@ -193,10 +290,11 @@ export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: B
         style={[
           styles.button,
           currentLoan ? styles.returnButton : styles.loanButton,
-          isSmallScreen && styles.buttonSmall
+          isSmallScreen && styles.buttonSmall,
+          isBookBorrowed && !currentLoan && styles.buttonDisabled
         ]}
         onPress={handleLoanAction}
-        disabled={isDeleting || isLoanActionLoading}
+        disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading || (isBookBorrowed && !currentLoan)}
         activeOpacity={0.8}
       >
         <MaterialIcons
@@ -212,6 +310,30 @@ export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: B
         </Text>
       </TouchableOpacity>
 
+      {/* Bouton Emprunter/Retourner emprunt */}
+      <TouchableOpacity
+        style={[
+          styles.button,
+          borrowedBook?.status === 'active' ? styles.returnButton : styles.borrowButton,
+          isSmallScreen && styles.buttonSmall
+        ]}
+        onPress={handleBorrowAction}
+        disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading}
+        activeOpacity={0.8}
+      >
+        <MaterialIcons
+          name={borrowedBook?.status === 'active' ? "assignment-return" : "book"}
+          size={16}
+          color="#ffffff"
+        />
+        <Text style={[styles.buttonText, isSmallScreen && styles.buttonTextSmall]}>
+          {isBorrowActionLoading
+            ? (borrowedBook?.status === 'active' ? 'Retour...' : 'Emprunt...')
+            : (borrowedBook?.status === 'active' ? 'Retourner' : 'Emprunter')
+          }
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={[
           styles.button,
@@ -219,7 +341,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: B
           isSmallScreen && styles.buttonSmall
         ]}
         onPress={handleEdit}
-        disabled={isDeleting || isLoanActionLoading}
+        disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading}
         activeOpacity={0.8}
       >
         <MaterialIcons name="edit" size={16} color="#ffffff" />
@@ -235,7 +357,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, onBookDeleted }: B
           isSmallScreen && styles.buttonSmall
         ]}
         onPress={handleDelete}
-        disabled={isDeleting || isLoanActionLoading}
+        disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading}
         activeOpacity={0.8}
       >
         <MaterialIcons name="delete" size={16} color="#ffffff" />
@@ -279,6 +401,10 @@ const styles = StyleSheet.create({
     minWidth: 70, // Réduire la largeur minimale
     flexShrink: 1,
   },
+  buttonDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#BDBDBD',
+  },
   editButton: {
     backgroundColor: '#3498db',
     shadowColor: '#2980b9',
@@ -298,6 +424,14 @@ const styles = StyleSheet.create({
   loanButton: {
     backgroundColor: '#27ae60',
     shadowColor: '#229954',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  borrowButton: {
+    backgroundColor: '#9b59b6',
+    shadowColor: '#8e44ad',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,

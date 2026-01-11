@@ -85,7 +85,7 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
           )}
 
           {/* Badge d'emprunt */}
-          {book.base?.borrowed_book && book.base.borrowed_book.status === 'ACTIVE' && (
+          {book.base?.borrowed_book && book.base.borrowed_book.status === 'active' && (
             <View style={styles.borrowBadge}>
               <Text style={styles.borrowBadgeText}>
                 📚 Emprunté à {book.base.borrowed_book.borrowed_from}
@@ -108,6 +108,7 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
               bookId={book.base.id.toString()}
               bookTitle={book.base.title || "Titre inconnu"}
               currentLoan={book.base.current_loan}
+              borrowedBook={book.base.borrowed_book}
               onBookDeleted={onBookDeleted}
             />
           )}

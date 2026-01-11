@@ -2,9 +2,9 @@
 import { BookRead } from './scanTypes';
 
 export enum BorrowStatus {
-	ACTIVE = 'ACTIVE',
-	RETURNED = 'RETURNED',
-	OVERDUE = 'OVERDUE'
+	ACTIVE = 'active',
+	RETURNED = 'returned',
+	OVERDUE = 'overdue'
 }
 
 export interface BorrowedBook {

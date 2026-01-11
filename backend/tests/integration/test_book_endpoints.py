@@ -476,8 +476,8 @@ class TestScanBookSimilarDetection:
         session.add(borrowed_book)
         session.commit()
 
-        # Rechercher les livres
-        response = authenticated_client.post("/books/search/simple", json={})
+        # Rechercher les livres (sans paramètres = tous les livres)
+        response = authenticated_client.post("/books/search/simple")
 
         assert response.status_code == 200
         books = response.json()

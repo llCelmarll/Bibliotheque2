@@ -50,7 +50,7 @@ export const BorrowedBookListItem: React.FC<Props> = ({ borrowedBook }) => {
 	return (
 		<TouchableOpacity
 			style={styles.container}
-			onPress={() => router.push(`/books/${borrowedBook.book_id}`)}
+			onPress={() => router.push(`/(tabs)/borrows/${borrowedBook.id}`)}
 		>
 			<View style={styles.info}>
 				<Text style={styles.title}>{borrowedBook.book?.title || 'Sans titre'}</Text>
@@ -65,7 +65,13 @@ export const BorrowedBookListItem: React.FC<Props> = ({ borrowedBook }) => {
 				)}
 			</View>
 
-			<TouchableOpacity style={styles.returnButton} onPress={handleReturn}>
+			<TouchableOpacity
+				style={styles.returnButton}
+				onPress={(e) => {
+					e.stopPropagation();
+					handleReturn();
+				}}
+			>
 				<Text style={styles.returnButtonText}>Retourner</Text>
 			</TouchableOpacity>
 		</TouchableOpacity>
