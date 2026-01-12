@@ -13,8 +13,8 @@ export default function LoansLayout() {
       <Stack.Screen
         name="(subtabs)"
         options={{
-          title: "Prêts",
-          headerShown: true
+          headerShown: false,
+          presentation: 'card'
         }}
       />
       <Stack.Screen

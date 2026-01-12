@@ -1,4 +1,5 @@
 from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 from certifi import where
 from sqlalchemy.orm import selectinload, joinedload
@@ -10,7 +11,8 @@ from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
-from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams
+from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams, BookCreate
 from app.schemas.Other import Filter, FilterType, SortBy, SortOrder
 
 class BookRepository:
@@ -37,6 +39,31 @@ class BookRepository:
 
 		return self.session.exec(stmt).first()
 
+	def get_by_title_isbn_owner(self, title: str, isbn: str, owner_id: int) -> Optional[Book]:
+		"""Récupère un livre par sa combinaison unique title+isbn+owner_id"""
+		stmt = select(Book).where(
+			Book.title == title,
+			Book.isbn == isbn,
+			Book.owner_id == owner_id
+		)
+		return self.session.exec(stmt).first()
+
+	def create(self, book_data: BookCreate, owner_id: int) -> Book:
+		"""Crée un nouveau livre (sans commit pour permettre transactions)"""
+		book = Book(
+			title=book_data.title,
+			isbn=book_data.isbn,
+			published_date=book_data.published_date,
+			page_count=book_data.page_count,
+			barcode=book_data.barcode,
+			cover_url=book_data.cover_url,
+			owner_id=owner_id,
+			created_at=datetime.utcnow()
+		)
+		self.session.add(book)
+		self.session.flush()  # Obtenir l'ID mais ne pas commit
+		return book
+
 	def search_books(self, params: BookSearchParams, user_id: Optional[int] = None) -> List[Book]:
 		"""Recherche simple de tous les champs pour un utilisateur"""
 		stmt = self._build_base_query()
@@ -44,6 +71,29 @@ class BookRepository:
 		# Filtrer par propriétaire si spécifié
 		if user_id is not None:
 			stmt = stmt.where(Book.owner_id == user_id)
+
+			# Exclure les livres empruntés retournés (avec subqueries pour gérer multiples emprunts)
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt actif
+			has_active_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+				.where(BorrowedBook.status.in_([BorrowStatus.ACTIVE, BorrowStatus.OVERDUE]))
+			).scalar_subquery()
+
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt (peu importe le statut)
+			has_any_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+			).scalar_subquery()
+
+			stmt = stmt.where(
+				or_(
+					# Cas 1: Aucun emprunt = livre possédé
+					~Book.id.in_(has_any_borrow_subquery),
+					# Cas 2: Au moins un emprunt actif/overdue = livre emprunté actuellement
+					Book.id.in_(has_active_borrow_subquery)
+				)
+			)
 
 		if params.search:
 			stmt = self._apply_global_search(stmt, params.search)
@@ -59,11 +109,34 @@ class BookRepository:
 	def advanced_search_books(self, params: BookAdvancedSearchParams, user_id: Optional[int] = None) -> List[Book]:
 		"""Recherche avancée avec filtres spécifiques pour un utilisateur"""
 		stmt = self._build_base_query()
-		
+
 		# Filtrer par propriétaire si spécifié
 		if user_id is not None:
 			stmt = stmt.where(Book.owner_id == user_id)
-		
+
+			# Exclure les livres empruntés retournés (avec subqueries pour gérer multiples emprunts)
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt actif
+			has_active_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+				.where(BorrowedBook.status.in_([BorrowStatus.ACTIVE, BorrowStatus.OVERDUE]))
+			).scalar_subquery()
+
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt (peu importe le statut)
+			has_any_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+			).scalar_subquery()
+
+			stmt = stmt.where(
+				or_(
+					# Cas 1: Aucun emprunt = livre possédé
+					~Book.id.in_(has_any_borrow_subquery),
+					# Cas 2: Au moins un emprunt actif/overdue = livre emprunté actuellement
+					Book.id.in_(has_active_borrow_subquery)
+				)
+			)
+
 		conditions = self._build_advanced_conditions(params)
 
 		if conditions:
@@ -76,30 +149,69 @@ class BookRepository:
 
 	def get_statistics(self, user_id: Optional[int] = None) -> dict:
 		"""Récupère les statistiques des livres pour un utilisateur"""
-		# Base query avec filtrage par utilisateur si spécifié
-		base_filter = Book.owner_id == user_id if user_id is not None else True
-		
-		# Requête pour le nombre total de livres
-		total_books_stmt = select(func.count(Book.id)).where(base_filter)
-		total_books = self.session.exec(total_books_stmt).first()
+		# Construire la requête de base avec filtrage des livres retournés
+		if user_id is not None:
+			base_stmt = (
+				select(Book.id)
+				.where(Book.owner_id == user_id)
+				.outerjoin(
+					BorrowedBook,
+					and_(
+						BorrowedBook.book_id == Book.id,
+						BorrowedBook.user_id == user_id
+					)
+				)
+				.where(
+					or_(
+						BorrowedBook.id == None,
+						BorrowedBook.status != BorrowStatus.RETURNED
+					)
+				)
+			).subquery()
 
-		# Requête pour la moyenne des pages
-		avg_pages_stmt = select(func.avg(Book.page_count)).where(
-			and_(Book.page_count != None, base_filter)
-		)
-		avg_pages = self.session.exec(avg_pages_stmt).first()
+			# Requête pour le nombre total de livres
+			total_books_stmt = select(func.count()).select_from(base_stmt)
+			total_books = self.session.exec(total_books_stmt).first()
 
-		# Requête pour l'année la plus ancienne
-		oldest_year_stmt = select(func.min(Book.published_date)).where(
-			and_(Book.published_date != None, base_filter)
-		)
-		oldest_year = self.session.exec(oldest_year_stmt).first()
+			# Requête pour la moyenne des pages (avec JOIN sur la sous-requête)
+			avg_pages_stmt = (
+				select(func.avg(Book.page_count))
+				.select_from(Book)
+				.join(base_stmt, Book.id == base_stmt.c.id)
+				.where(Book.page_count != None)
+			)
+			avg_pages = self.session.exec(avg_pages_stmt).first()
 
-		# Requête pour l'année la plus récente
-		newest_year_stmt = select(func.max(Book.published_date)).where(
-			and_(Book.published_date != None, base_filter)
-		)
-		newest_year = self.session.exec(newest_year_stmt).first()
+			# Requête pour l'année la plus ancienne
+			oldest_year_stmt = (
+				select(func.min(Book.published_date))
+				.select_from(Book)
+				.join(base_stmt, Book.id == base_stmt.c.id)
+				.where(Book.published_date != None)
+			)
+			oldest_year = self.session.exec(oldest_year_stmt).first()
+
+			# Requête pour l'année la plus récente
+			newest_year_stmt = (
+				select(func.max(Book.published_date))
+				.select_from(Book)
+				.join(base_stmt, Book.id == base_stmt.c.id)
+				.where(Book.published_date != None)
+			)
+			newest_year = self.session.exec(newest_year_stmt).first()
+		else:
+			# Si pas d'user_id, utiliser l'ancienne logique
+			total_books_stmt = select(func.count(Book.id))
+			total_books = self.session.exec(total_books_stmt).first()
+
+			avg_pages_stmt = select(func.avg(Book.page_count)).where(Book.page_count != None)
+			avg_pages = self.session.exec(avg_pages_stmt).first()
+
+			oldest_year_stmt = select(func.min(Book.published_date)).where(Book.published_date != None)
+			oldest_year = self.session.exec(oldest_year_stmt).first()
+
+			newest_year_stmt = select(func.max(Book.published_date)).where(Book.published_date != None)
+			newest_year = self.session.exec(newest_year_stmt).first()
 
 		return {
 			"total_books": total_books or 0,

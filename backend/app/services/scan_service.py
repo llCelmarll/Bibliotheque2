@@ -6,9 +6,11 @@ from app.repositories.book_repository import BookRepository
 from app.repositories.author_repository import AuthorRepository
 from app.repositories.publisher_repository import PublisherRepository
 from app.repositories.loan_repository import LoanRepository
+from app.repositories.borrowed_book_repository import BorrowedBookRepository
 from app.schemas.Book import BookCreate, BookRead, CurrentLoanRead
 from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
+from app.schemas.BorrowedBook import BorrowedBookRead
 
 
 class SuggestedAuthor(SQLModel):
@@ -49,6 +51,12 @@ class ScanResult(SQLModel):
     google_book : dict | None= None
     openlibrary : dict | None= None
 
+    # Flags et données pour emprunts
+    previously_borrowed: bool = False        # Tous emprunts sont RETURNED
+    currently_borrowed: bool = False         # Au moins un emprunt ACTIVE/OVERDUE
+    borrowed_book: BorrowedBookRead | None = None  # Détails emprunt actif
+    can_add_to_library: bool = False         # Peut ajouter en possession permanente
+
 
 class ScanService:
     """Service pour le scan de livres"""
@@ -60,6 +68,7 @@ class ScanService:
         self.author_repository = AuthorRepository(session)
         self.publisher_repository = PublisherRepository(session)
         self.loan_repository = LoanRepository(session)
+        self.borrowed_book_repository = BorrowedBookRepository(session)
 
 
 
@@ -80,10 +89,32 @@ class ScanService:
             # Récupérer le prêt actif pour ce livre
             active_loan = self.loan_repository.get_active_loan_for_book(base_book.id, self.user_id)
 
-            result.base = BookRead.model_validate(base_book)
-            if active_loan:
-                result.base.current_loan = CurrentLoanRead.model_validate(active_loan)
-            # Créer un SuggestedBook à partir du livre existant
+            # Vérifier le statut d'emprunt
+            has_only_returned, has_active, active_borrow = self.borrowed_book_repository.get_borrow_status(
+                base_book.id,
+                self.user_id
+            )
+
+            if has_only_returned:
+                # Cas 1: Livre retourné - ne pas l'afficher comme possédé
+                result.previously_borrowed = True
+                result.can_add_to_library = True
+                result.currently_borrowed = False
+                result.base = None  # Ne pas inclure dans base
+            elif has_active:
+                # Cas 2: Livre actuellement emprunté
+                result.currently_borrowed = True
+                result.borrowed_book = BorrowedBookRead.model_validate(active_borrow)
+                result.previously_borrowed = False
+                result.can_add_to_library = False
+                result.base = None  # Ne pas inclure dans base (pas possédé)
+            else:
+                # Cas 3: Livre possédé - comportement normal
+                result.base = BookRead.model_validate(base_book)
+                if active_loan:
+                    result.base.current_loan = CurrentLoanRead.model_validate(active_loan)
+
+            # Créer un SuggestedBook à partir du livre existant (dans tous les cas)
             result.suggested = SuggestedBook(
                 isbn=base_book.isbn,
                 title=base_book.title,

@@ -5,7 +5,8 @@
       "Bash(for i in 1 2 3 4 5 6 7 8 9 10)",
       "Bash(do npm test)",
       "Bash(done)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Bash(ls:*)"
     ]
   }
 }

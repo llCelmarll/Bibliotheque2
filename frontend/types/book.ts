@@ -1,5 +1,6 @@
 import { AuthorCreate, AuthorRead, PublisherCreate, PublisherRead, GenreCreate, GenreRead } from './scanTypes';
 import { LoanStatus } from './loan';
+import { BorrowedBook } from './borrowedBook';
 
 /**
  * Prêt simplifié pour éviter les dépendances circulaires
@@ -101,6 +102,8 @@ export interface BookBase {
     created_at: string;
     updated_at: string | null;
     current_loan?: CurrentLoan;
+    borrowed_book?: BorrowedBook;
+    has_borrow_history?: boolean;
 }
 
 export interface GoogleBooksData {

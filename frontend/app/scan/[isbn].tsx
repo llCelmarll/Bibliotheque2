@@ -1,6 +1,6 @@
 // app/scan/[isbn].tsx
 import React, { useState, useRef } from 'react';
-import { View, ScrollView, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Animated, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,8 @@ import { ExistingBookCard } from "@/components/scan/ExistingBookCard";
 import { BookForm } from "@/components/scan/BookForm";
 import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
+import { PreviouslyBorrowedCard } from "@/components/scan/PreviouslyBorrowedCard";
+import { CurrentlyBorrowedCard } from "@/components/scan/CurrentlyBorrowedCard";
 import { SuggestedBook } from "@/types/scanTypes";
 import { bookService } from "@/services/bookService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,7 +46,8 @@ export default function ScanResultPage() {
 		message: string;
 		source: string;
 	}>({ visible: false, message: '', source: '' });
-	
+	const [isAddingToLibrary, setIsAddingToLibrary] = useState(false);
+
 	// Animation pour le feedback
 	const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -130,14 +133,14 @@ export default function ScanResultPage() {
 	const handleImportData = (source: 'google' | 'openLibrary', importedData: any) => {
 		try {
 			console.log('Import de données depuis', source, ':', importedData);
-			
+
 			// Compter les champs importés
-			const importedFields = Object.keys(importedData).filter(key => 
-				importedData[key] !== null && 
-				importedData[key] !== undefined && 
+			const importedFields = Object.keys(importedData).filter(key =>
+				importedData[key] !== null &&
+				importedData[key] !== undefined &&
 				importedData[key] !== ''
 			);
-			
+
 			// Fusionner avec les données existantes du formulaire
 			const currentData = formData || data.suggested;
 			const updatedFormData: SuggestedBook = {
@@ -153,12 +156,87 @@ export default function ScanResultPage() {
 				cover_url: importedData.thumbnail || currentData?.cover_url || '',
 				barcode: currentData?.barcode || '',
 			};
-			
+
 			setFormData(updatedFormData);
 			showImportFeedback(source, importedFields.length);
-			
+
 		} catch (error) {
 			console.error('Erreur lors de l\'import:', error);
+		}
+	};
+
+	const handleAddAsBorrow = () => {
+		if (!data?.suggested) return;
+
+		// Naviguer vers création emprunt avec livre suggéré
+		router.push({
+			pathname: '/(tabs)/borrows/create',
+			params: {
+				suggestedBook: JSON.stringify(data.suggested),
+			},
+		});
+	};
+
+	const handleAddToLibrary = async () => {
+		if (!data?.suggested || isAddingToLibrary) return;
+
+		setIsAddingToLibrary(true);
+
+		try {
+			console.log('🏠 Ajout du livre à la bibliothèque:', data.suggested);
+
+			// Créer le livre avec is_borrowed=false (supprimera l'historique d'emprunts)
+			const bookCreate = {
+				title: data.suggested.title,
+				isbn: data.suggested.isbn,
+				authors: data.suggested.authors,
+				publisher: data.suggested.publisher,
+				cover_url: data.suggested.cover_url,
+				published_date: data.suggested.published_date,
+				page_count: data.suggested.page_count,
+				genres: data.suggested.genres,
+				barcode: data.suggested.barcode,
+				is_borrowed: false, // Forcer possession permanente
+			};
+
+			const createdBook = await bookService.createBook(bookCreate);
+			console.log('✅ Livre ajouté à la bibliothèque! ID:', createdBook.id);
+
+			setIsAddingToLibrary(false);
+
+			// Message de succès
+			const message = `"${data.suggested.title}" a été ajouté à votre bibliothèque !`;
+
+			if (Platform.OS === 'web') {
+				window.alert(message);
+				router.push(`/(tabs)/books/${createdBook.id}`);
+			} else {
+				Alert.alert(
+					'Succès',
+					message,
+					[
+						{
+							text: 'Voir le livre',
+							onPress: () => router.push(`/(tabs)/books/${createdBook.id}`),
+						},
+						{
+							text: 'OK',
+							style: 'cancel',
+						},
+					]
+				);
+			}
+
+		} catch (error: any) {
+			setIsAddingToLibrary(false);
+			console.error('❌ Erreur lors de l\'ajout à la bibliothèque:', error);
+			const errorMsg = error.response?.data?.detail || error.message || 'Impossible d\'ajouter le livre';
+
+			if (Platform.OS === 'web') {
+				window.alert(`Erreur: ${errorMsg}`);
+			} else {
+				Alert.alert('Erreur', errorMsg, [{ text: 'OK' }]);
+			}
 		}
 	};
 
@@ -194,7 +272,25 @@ export default function ScanResultPage() {
 			)}
 
 			<ScrollView contentContainerStyle={styles.contentContainer}>
-				{/* Livre existant trouvé */}
+				{/* Carte pour livre actuellement emprunté */}
+				{data.currently_borrowed && data.borrowed_book && data.suggested && (
+					<CurrentlyBorrowedCard
+						suggestedBook={data.suggested}
+						borrowedBook={data.borrowed_book}
+					/>
+				)}
+
+				{/* Carte pour livre retourné */}
+				{data.previously_borrowed && !data.currently_borrowed && data.suggested && (
+					<PreviouslyBorrowedCard
+						suggestedBook={data.suggested}
+						onAddAsBorrow={handleAddAsBorrow}
+						onAddToLibrary={handleAddToLibrary}
+						isAddingToLibrary={isAddingToLibrary}
+					/>
+				)}
+
+				{/* Livre existant trouvé (possédé) */}
 				{data.base && (
 					<View style={styles.section}>
 						<Text style={styles.sectionTitle}>Livre trouvé dans votre bibliothèque</Text>
@@ -209,7 +305,7 @@ export default function ScanResultPage() {
 				)}
 
 				{/* Livres similaires - affichés EN PREMIER si le livre n'existe pas déjà */}
-				{!data.base && data.title_match && data.title_match.length > 0 && (
+				{!data.base && !data.previously_borrowed && !data.currently_borrowed && data.title_match && data.title_match.length > 0 && (
 					<View style={styles.section}>
 						<SimilarBooksSection
 							books={data.title_match}
@@ -220,8 +316,8 @@ export default function ScanResultPage() {
 					</View>
 				)}
 
-				{/* Formulaire de suggestion - seulement si le livre n'existe pas déjà */}
-				{data.suggested && !data.base && (
+				{/* Formulaire de suggestion - seulement si le livre n'existe pas déjà et n'est pas emprunté */}
+				{data.suggested && !data.base && !data.previously_borrowed && !data.currently_borrowed && (
 					<View style={styles.section}>
 						<BookForm
 							initialData={formData || data.suggested}
@@ -231,8 +327,8 @@ export default function ScanResultPage() {
 					</View>
 				)}
 
-				{/* Données externes - seulement si le livre n'existe pas déjà */}
-				{!data.base && (
+				{/* Données externes - seulement si le livre n'existe pas déjà et n'est pas emprunté */}
+				{!data.base && !data.previously_borrowed && !data.currently_borrowed && (
 					<View style={styles.section}>
 						<ExternalDataSection
 							googleData={data.google_book}
