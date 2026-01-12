@@ -52,6 +52,52 @@ class BookRead(SQLModel):
     genres: List[GenreRead] = []
     current_loan: Optional[CurrentLoanRead] = None  # Prêt actif si le livre est prêté
     borrowed_book: Optional[CurrentBorrowRead] = None  # Emprunt actif si le livre est emprunté
+    has_borrow_history: bool = False  # True si le livre a un historique d'emprunts (même retournés)
+
+    model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_orm_with_relationships(cls, book):
+        """Créer un BookRead à partir d'un Book ORM avec gestion des emprunts actifs"""
+        from app.models.BorrowedBook import BorrowStatus
+
+        # Trouver l'emprunt actif s'il existe
+        active_borrow = None
+        if hasattr(book, 'borrows') and book.borrows:
+            active_borrow = next(
+                (b for b in book.borrows if b.status in [BorrowStatus.ACTIVE, BorrowStatus.OVERDUE]),
+                None
+            )
+
+        # Créer le BookRead avec les données de base
+        data = {
+            "id": book.id,
+            "title": book.title,
+            "isbn": book.isbn,
+            "published_date": book.published_date,
+            "page_count": book.page_count,
+            "barcode": book.barcode,
+            "cover_url": book.cover_url,
+            "created_at": book.created_at,
+            "updated_at": book.updated_at,
+            "authors": [AuthorRead.model_validate(a) for a in getattr(book, 'authors', [])],
+            "publisher": PublisherRead.model_validate(book.publisher) if book.publisher else None,
+            "genres": [GenreRead.model_validate(g) for g in getattr(book, 'genres', [])],
+            "current_loan": None,  # TODO: gérer les prêts actifs
+            "borrowed_book": CurrentBorrowRead.model_validate(active_borrow) if active_borrow else None,
+        }
+
+        # Gérer le prêt actif si disponible
+        if hasattr(book, 'loans') and book.loans:
+            from app.schemas.BorrowStatus import BorrowStatus as LoanStatus
+            active_loan = next(
+                (l for l in book.loans if hasattr(l, 'status') and l.status in ['ACTIVE', 'OVERDUE']),
+                None
+            )
+            if active_loan:
+                data["current_loan"] = CurrentLoanRead.model_validate(active_loan)
+
+        return cls(**data)
 
 # Schema de création
 class BookCreate(SQLModel):

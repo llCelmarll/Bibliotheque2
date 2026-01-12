@@ -138,6 +138,44 @@ class BorrowedBookRepository:
         )
         return self.session.exec(statement).first()
 
+    def get_borrow_status(self, book_id: int, user_id: int) -> tuple[bool, bool, Optional[BorrowedBook]]:
+        """
+        Récupère le statut d'emprunt d'un livre.
+
+        Args:
+            book_id: ID du livre
+            user_id: ID de l'utilisateur
+
+        Returns:
+            Tuple (has_only_returned, has_active, active_borrow):
+            - has_only_returned: True si le livre a des emprunts ET tous sont RETURNED
+            - has_active: True si le livre a AU MOINS un emprunt ACTIVE ou OVERDUE
+            - active_borrow: L'emprunt actif si has_active=True, sinon None
+        """
+        statement = (
+            select(BorrowedBook)
+            .where(
+                BorrowedBook.book_id == book_id,
+                BorrowedBook.user_id == user_id
+            )
+        )
+        borrows = list(self.session.exec(statement).all())
+
+        if not borrows:
+            return False, False, None  # Aucun emprunt = livre possédé
+
+        # Trouver un emprunt actif
+        active_borrow = next(
+            (b for b in borrows if b.status in [BorrowStatus.ACTIVE, BorrowStatus.OVERDUE]),
+            None
+        )
+
+        if active_borrow:
+            return False, True, active_borrow  # Emprunt actif trouvé
+
+        # Tous les emprunts sont retournés
+        return True, False, None
+
     def update(self, borrowed_book: BorrowedBook) -> BorrowedBook:
         """Met à jour un emprunt dans la base"""
         borrowed_book.updated_at = datetime.utcnow()

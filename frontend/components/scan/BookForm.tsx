@@ -58,6 +58,7 @@ interface BookFormProps {
 	submitButtonText?: string;
 	submitButtonLoadingText?: string;
 	disableInternalScroll?: boolean;
+	forceOwnership?: boolean;  // Forcer is_borrowed=false (pour livres retournés)
 }
 
 // Fonction pour convertir SuggestedBook vers BookFormData (maintenant synchrone car enrichie par le backend)
@@ -98,7 +99,7 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 });
 
 // Fonction pour convertir BookFormData vers BookCreate
-const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
+const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = false): BookCreate => ({
 	title: formData.title,
 	isbn: formData.isbn || undefined,
 	published_date: formData.published_date || undefined,  // Aligné avec le backend
@@ -132,11 +133,12 @@ const formDataToBookCreate = (formData: BookFormData): BookCreate => ({
 		? formData.genres.split(',').map((genre: string) => genre.trim())
 		: [],
 	// Inclure champs d'emprunt (convertir dates DD/MM/YYYY -> YYYY-MM-DD pour le backend)
-	is_borrowed: formData.is_borrowed,
-	borrowed_from: formData.borrowed_from || undefined,
-	borrowed_date: convertDateToISO(formData.borrowed_date),
-	expected_return_date: convertDateToISO(formData.expected_return_date),
-	borrow_notes: formData.borrow_notes || undefined,
+	// Forcer is_borrowed=false si forceOwnership=true
+	is_borrowed: forceOwnership ? false : formData.is_borrowed,
+	borrowed_from: forceOwnership ? undefined : (formData.borrowed_from || undefined),
+	borrowed_date: forceOwnership ? undefined : convertDateToISO(formData.borrowed_date),
+	expected_return_date: forceOwnership ? undefined : convertDateToISO(formData.expected_return_date),
+	borrow_notes: forceOwnership ? undefined : (formData.borrow_notes || undefined),
 });
 
 export const BookForm: React.FC<BookFormProps> = ({
@@ -144,7 +146,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 																		onSubmit,
 																		submitButtonText = 'Enregistrer le livre',
 																		submitButtonLoadingText = 'Enregistrement...',
-																		disableInternalScroll = false
+																		disableInternalScroll = false,
+																		forceOwnership = false
 																	}) => {
 	const formInitialValues = suggestedBookToFormData(initialData);
 	const formikRef = useRef<FormikProps<BookFormData> | null>(null);
@@ -158,7 +161,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 	}, [initialData]);
 
 	const handleSubmit = async (values: BookFormData) => {
-		const bookCreate = formDataToBookCreate(values);
+		const bookCreate = formDataToBookCreate(values, forceOwnership);
 		await onSubmit(bookCreate);
 	};
 
@@ -295,30 +298,32 @@ export const BookForm: React.FC<BookFormProps> = ({
 							renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)
 						)}
 
-						{/* Section Emprunt */}
-						<View style={styles.sectionContainer}>
-							<Text style={styles.sectionSubtitle}>📚 Emprunt (optionnel)</Text>
+						{/* Section Emprunt - cachée si forceOwnership */}
+						{!forceOwnership && (
+							<View style={styles.sectionContainer}>
+								<Text style={styles.sectionSubtitle}>📚 Emprunt (optionnel)</Text>
 
-							{/* Toggle is_borrowed */}
-							<TouchableOpacity
-								style={styles.toggleContainer}
-								onPress={() => formik.setFieldValue('is_borrowed', !formik.values.is_borrowed)}
-							>
-								<Text style={styles.toggleLabel}>
-									{formik.values.is_borrowed ? '☑️' : '☐'} Ce livre est emprunté
-								</Text>
-							</TouchableOpacity>
+								{/* Toggle is_borrowed */}
+								<TouchableOpacity
+									style={styles.toggleContainer}
+									onPress={() => formik.setFieldValue('is_borrowed', !formik.values.is_borrowed)}
+								>
+									<Text style={styles.toggleLabel}>
+										{formik.values.is_borrowed ? '☑️' : '☐'} Ce livre est emprunté
+									</Text>
+								</TouchableOpacity>
 
-							{/* Champs conditionnels si is_borrowed=true */}
-							{formik.values.is_borrowed && (
-								<>
-									{renderFormField('Emprunté à *', 'borrowed_from', formik, 'Nom de la personne ou bibliothèque')}
-									{renderFormField('Date d\'emprunt', 'borrowed_date', formik, 'JJ/MM/AAAA')}
-									{renderFormField('Date de retour prévue', 'expected_return_date', formik, 'JJ/MM/AAAA')}
-									{renderFormField('Notes', 'borrow_notes', formik, 'Notes sur l\'emprunt...', true)}
-								</>
-							)}
-						</View>
+								{/* Champs conditionnels si is_borrowed=true */}
+								{formik.values.is_borrowed && (
+									<>
+										{renderFormField('Emprunté à *', 'borrowed_from', formik, 'Nom de la personne ou bibliothèque')}
+										{renderFormField('Date d\'emprunt', 'borrowed_date', formik, 'JJ/MM/AAAA')}
+										{renderFormField('Date de retour prévue', 'expected_return_date', formik, 'JJ/MM/AAAA')}
+										{renderFormField('Notes', 'borrow_notes', formik, 'Notes sur l\'emprunt...', true)}
+									</>
+								)}
+							</View>
+						)}
 
 						<TouchableOpacity
 							style={[styles.button, styles.submitButton]}

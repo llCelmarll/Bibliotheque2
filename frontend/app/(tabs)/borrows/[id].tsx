@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -45,28 +46,32 @@ function BorrowDetailScreen() {
     });
   };
 
-  const handleReturn = () => {
-    Alert.alert(
-      'Retour du livre',
-      'Confirmer que vous avez retourné ce livre ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Confirmer',
-          onPress: async () => {
-            setActionLoading(true);
-            try {
-              await returnBorrow();
-              Alert.alert('Succès', 'Le livre a été marqué comme retourné');
-            } catch (error) {
-              Alert.alert('Erreur', 'Impossible de retourner le livre');
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleReturn = async () => {
+    setActionLoading(true);
+    try {
+      await returnBorrow();
+      setActionLoading(false);
+
+      if (Platform.OS === 'web') {
+        window.alert('Le livre a été marqué comme retourné');
+        router.back();
+      } else {
+        Alert.alert(
+          'Succès',
+          'Le livre a été marqué comme retourné',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      }
+    } catch (error: any) {
+      setActionLoading(false);
+      const errorMsg = error.message || 'Impossible de retourner le livre';
+
+      if (Platform.OS === 'web') {
+        window.alert(`Erreur: ${errorMsg}`);
+      } else {
+        Alert.alert('Erreur', errorMsg);
+      }
+    }
   };
 
   const handleDelete = () => {

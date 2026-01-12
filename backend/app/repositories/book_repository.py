@@ -71,17 +71,27 @@ class BookRepository:
 		# Filtrer par propriétaire si spécifié
 		if user_id is not None:
 			stmt = stmt.where(Book.owner_id == user_id)
-			# Exclure les livres empruntés retournés
-			stmt = stmt.outerjoin(
-				BorrowedBook,
-				and_(
-					BorrowedBook.book_id == Book.id,
-					BorrowedBook.user_id == user_id
-				)
-			).where(
+
+			# Exclure les livres empruntés retournés (avec subqueries pour gérer multiples emprunts)
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt actif
+			has_active_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+				.where(BorrowedBook.status.in_([BorrowStatus.ACTIVE, BorrowStatus.OVERDUE]))
+			).scalar_subquery()
+
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt (peu importe le statut)
+			has_any_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+			).scalar_subquery()
+
+			stmt = stmt.where(
 				or_(
-					BorrowedBook.id == None,  # Pas d'emprunt = mon livre
-					BorrowedBook.status != BorrowStatus.RETURNED  # Emprunt actif = je l'ai
+					# Cas 1: Aucun emprunt = livre possédé
+					~Book.id.in_(has_any_borrow_subquery),
+					# Cas 2: Au moins un emprunt actif/overdue = livre emprunté actuellement
+					Book.id.in_(has_active_borrow_subquery)
 				)
 			)
 
@@ -103,17 +113,27 @@ class BookRepository:
 		# Filtrer par propriétaire si spécifié
 		if user_id is not None:
 			stmt = stmt.where(Book.owner_id == user_id)
-			# Exclure les livres empruntés retournés
-			stmt = stmt.outerjoin(
-				BorrowedBook,
-				and_(
-					BorrowedBook.book_id == Book.id,
-					BorrowedBook.user_id == user_id
-				)
-			).where(
+
+			# Exclure les livres empruntés retournés (avec subqueries pour gérer multiples emprunts)
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt actif
+			has_active_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+				.where(BorrowedBook.status.in_([BorrowStatus.ACTIVE, BorrowStatus.OVERDUE]))
+			).scalar_subquery()
+
+			# Subquery pour trouver les livres qui ont AU MOINS un emprunt (peu importe le statut)
+			has_any_borrow_subquery = (
+				select(BorrowedBook.book_id)
+				.where(BorrowedBook.user_id == user_id)
+			).scalar_subquery()
+
+			stmt = stmt.where(
 				or_(
-					BorrowedBook.id == None,  # Pas d'emprunt = mon livre
-					BorrowedBook.status != BorrowStatus.RETURNED  # Emprunt actif = je l'ai
+					# Cas 1: Aucun emprunt = livre possédé
+					~Book.id.in_(has_any_borrow_subquery),
+					# Cas 2: Au moins un emprunt actif/overdue = livre emprunté actuellement
+					Book.id.in_(has_active_borrow_subquery)
 				)
 			)
 

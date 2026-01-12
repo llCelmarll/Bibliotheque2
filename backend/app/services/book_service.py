@@ -154,6 +154,10 @@ class BookService:
         if active_borrow:
             book_read.borrowed_book = CurrentBorrowRead.model_validate(active_borrow)
 
+        # Vérifier si le livre a un historique d'emprunts (même retournés)
+        all_borrows = self.borrowed_book_repository.get_by_book(base_book.id, self.user_id)
+        book_read.has_borrow_history = len(all_borrows) > 0
+
         book_data['base'] = book_read.model_dump()
         book_data['google_books'] = await fetch_google_books(base_book.isbn)
         book_data['open_library'] = await fetch_openlibrary(base_book.isbn)
@@ -239,6 +243,10 @@ class BookService:
         active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(book.id, self.user_id)
         if active_borrow:
             book_read.borrowed_book = CurrentBorrowRead.model_validate(active_borrow)
+
+        # Vérifier si le livre a un historique d'emprunts (même retournés)
+        all_borrows = self.borrowed_book_repository.get_by_book(book.id, self.user_id)
+        book_read.has_borrow_history = len(all_borrows) > 0
 
         return book_read
 

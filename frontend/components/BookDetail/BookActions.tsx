@@ -13,10 +13,11 @@ interface BookActionsProps {
   bookTitle: string;
   currentLoan?: CurrentLoan;
   borrowedBook?: BorrowedBook;
+  hasBorrowHistory?: boolean;
   onBookDeleted?: () => void;
 }
 
-export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, onBookDeleted }: BookActionsProps) {
+export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasBorrowHistory, onBookDeleted }: BookActionsProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoanActionLoading, setIsLoanActionLoading] = useState(false);
@@ -33,12 +34,13 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, onBo
   };
 
   const handleLoanAction = () => {
-    // Si le livre est emprunté, on ne peut pas le prêter
-    if (borrowedBook && borrowedBook.status === 'active') {
+    // Si le livre a un historique d'emprunt (même retourné), on ne peut pas le prêter
+    // car il n'est plus dans notre bibliothèque
+    if (hasBorrowHistory) {
       if (Platform.OS === 'web') {
-        window.alert('Vous ne pouvez pas prêter un livre que vous avez emprunté.');
+        window.alert('Vous ne pouvez pas prêter un livre que vous avez emprunté (même si vous l\'avez retourné).');
       } else {
-        Alert.alert('Impossible', 'Vous ne pouvez pas prêter un livre que vous avez emprunté.');
+        Alert.alert('Impossible', 'Vous ne pouvez pas prêter un livre que vous avez emprunté (même si vous l\'avez retourné).');
       }
       return;
     }
@@ -281,8 +283,6 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, onBo
     }
   };
 
-  const isBookBorrowed = borrowedBook && borrowedBook.status === 'active';
-
   return (
     <View style={[styles.container, isSmallScreen && styles.containerSmall]}>
       {/* Bouton Prêter/Retourner */}
@@ -291,10 +291,10 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, onBo
           styles.button,
           currentLoan ? styles.returnButton : styles.loanButton,
           isSmallScreen && styles.buttonSmall,
-          isBookBorrowed && !currentLoan && styles.buttonDisabled
+          hasBorrowHistory && !currentLoan && styles.buttonDisabled
         ]}
         onPress={handleLoanAction}
-        disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading || (isBookBorrowed && !currentLoan)}
+        disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading || (hasBorrowHistory && !currentLoan)}
         activeOpacity={0.8}
       >
         <MaterialIcons

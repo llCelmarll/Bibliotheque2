@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, Query, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query, status, Body
 from sqlmodel import Session
 
 from app.db import get_session
@@ -124,7 +124,7 @@ async def update_borrowed_book(
 @router.put("/{borrow_id}/return", response_model=BorrowedBookRead)
 async def return_borrowed_book(
     borrow_id: int,
-    return_data: BorrowedBookReturn = None,
+    return_data: Optional[BorrowedBookReturn] = Body(None),
     service: BorrowedBookService = Depends(get_borrowed_book_service)
 ):
     """

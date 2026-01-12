@@ -103,6 +103,7 @@ export interface BookBase {
     updated_at: string | null;
     current_loan?: CurrentLoan;
     borrowed_book?: BorrowedBook;
+    has_borrow_history?: boolean;
 }
 
 export interface GoogleBooksData {

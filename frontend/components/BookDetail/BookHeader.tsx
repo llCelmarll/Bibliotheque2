@@ -109,6 +109,7 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
               bookTitle={book.base.title || "Titre inconnu"}
               currentLoan={book.base.current_loan}
               borrowedBook={book.base.borrowed_book}
+              hasBorrowHistory={book.base.has_borrow_history}
               onBookDeleted={onBookDeleted}
             />
           )}

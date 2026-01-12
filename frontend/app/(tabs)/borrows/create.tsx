@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Book } from '@/types/book';
 import { BorrowedBookCreate } from '@/types/borrowedBook';
+import { SuggestedBook } from '@/types/scanTypes';
 import { borrowedBookService } from '@/services/borrowedBookService';
+import { bookService } from '@/services/bookService';
 import { BookSelector } from '@/components/forms/BookSelector';
 import BookCover from '@/components/BookCover';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -26,6 +28,19 @@ function CreateBorrowScreen() {
 
   // Si un bookId est passé en paramètre
   const preselectedBookId = params.bookId ? parseInt(params.bookId as string) : null;
+
+  // Parser le livre suggéré si fourni
+  const [parsedSuggestedBook, setParsedSuggestedBook] = useState<SuggestedBook | null>(null);
+
+  useEffect(() => {
+    if (params.suggestedBook && typeof params.suggestedBook === 'string') {
+      try {
+        setParsedSuggestedBook(JSON.parse(params.suggestedBook));
+      } catch (e) {
+        console.error('Invalid suggestedBook JSON:', e);
+      }
+    }
+  }, [params.suggestedBook]);
 
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [borrowedFrom, setBorrowedFrom] = useState('');
@@ -76,6 +91,11 @@ function CreateBorrowScreen() {
   };
 
   const handleSubmit = async () => {
+    // Si livre suggéré fourni, créer le livre + emprunt en même temps
+    if (parsedSuggestedBook) {
+      return handleCreateFromSuggested();
+    }
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -132,6 +152,58 @@ function CreateBorrowScreen() {
     }
   };
 
+  const handleCreateFromSuggested = async () => {
+    if (!parsedSuggestedBook || !borrowedFrom.trim()) {
+      Alert.alert('Erreur', 'Veuillez remplir "Emprunté à"');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Créer le livre avec is_borrowed=true
+      const bookCreate = {
+        title: parsedSuggestedBook.title,
+        isbn: parsedSuggestedBook.isbn,
+        authors: parsedSuggestedBook.authors,
+        publisher: parsedSuggestedBook.publisher,
+        cover_url: parsedSuggestedBook.cover_url,
+        published_date: parsedSuggestedBook.published_date,
+        page_count: parsedSuggestedBook.page_count,
+        genres: parsedSuggestedBook.genres,
+        is_borrowed: true,
+        borrowed_from: borrowedFrom,
+        borrowed_date: convertDateToISO(borrowedDate),
+        expected_return_date: convertDateToISO(expectedReturnDate),
+        borrow_notes: notes,
+      };
+
+      // Le backend créera automatiquement le BorrowedBook
+      await bookService.createBook(bookCreate);
+
+      setLoading(false);
+
+      if (Platform.OS === 'web') {
+        window.alert('Livre emprunté à nouveau avec succès');
+        router.replace('/(tabs)/books');
+      } else {
+        Alert.alert('Succès', 'Livre emprunté à nouveau avec succès', [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(tabs)/books'),
+          },
+        ]);
+      }
+    } catch (error: any) {
+      setLoading(false);
+      const message = error.response?.data?.detail || 'Impossible de créer l\'emprunt';
+      if (Platform.OS === 'web') {
+        window.alert(`Erreur: ${message}`);
+      } else {
+        Alert.alert('Erreur', message);
+      }
+    }
+  };
+
   const calculateDefaultReturnDate = (days: number) => {
     const date = new Date();
     date.setDate(date.getDate() + days);
@@ -150,7 +222,7 @@ function CreateBorrowScreen() {
 
       <ScrollView style={styles.content}>
         {/* Sélection du livre */}
-        {!preselectedBookId && (
+        {!preselectedBookId && !parsedSuggestedBook && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Livre</Text>
 
@@ -185,6 +257,31 @@ function CreateBorrowScreen() {
                 error={errors.book}
               />
             )}
+          </View>
+        )}
+
+        {/* Afficher le livre suggéré si fourni */}
+        {parsedSuggestedBook && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Livre à emprunter</Text>
+            <View style={styles.selectedBookContainer}>
+              <BookCover
+                url={parsedSuggestedBook.cover_url}
+                style={styles.bookCover}
+                containerStyle={styles.bookCoverContainer}
+                resizeMode="cover"
+              />
+              <View style={styles.bookInfo}>
+                <Text style={styles.bookTitle} numberOfLines={2}>
+                  {parsedSuggestedBook.title}
+                </Text>
+                {parsedSuggestedBook.authors && parsedSuggestedBook.authors.length > 0 && (
+                  <Text style={styles.bookAuthors} numberOfLines={1}>
+                    {parsedSuggestedBook.authors.map((a) => a.name).join(', ')}
+                  </Text>
+                )}
+              </View>
+            </View>
           </View>
         )}
 

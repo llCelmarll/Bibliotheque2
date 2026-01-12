@@ -1,7 +1,7 @@
 // app/scan/manual.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, Text, Alert, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookForm } from "@/components/scan/BookForm";
 import { BookCreate, SuggestedBook } from "@/types/scanTypes";
@@ -14,12 +14,30 @@ export default function ManualBookAddPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { suggestedBook: suggestedBookParam, isbn, forceOwnership } = useLocalSearchParams<{
+    suggestedBook?: string;
+    isbn?: string;
+    forceOwnership?: string;
+  }>();
+
+  // Parser le livre suggéré si fourni
+  const [parsedSuggestedBook, setParsedSuggestedBook] = useState<SuggestedBook | null>(null);
+
+  useEffect(() => {
+    if (suggestedBookParam) {
+      try {
+        setParsedSuggestedBook(JSON.parse(suggestedBookParam));
+      } catch (e) {
+        console.error('Invalid suggestedBook JSON:', e);
+      }
+    }
+  }, [suggestedBookParam]);
 
   // Protection centralisée
   // Données vides pour le formulaire d'ajout manuel
   const emptyBookData: SuggestedBook = {
     title: '',
-    isbn: '',
+    isbn: isbn || '',
     published_date: '',
     page_count: undefined,
     barcode: '',
@@ -131,11 +149,12 @@ export default function ManualBookAddPage() {
 
           {/* Formulaire d'ajout manuel */}
           <BookForm
-            initialData={emptyBookData}
+            initialData={parsedSuggestedBook || emptyBookData}
             onSubmit={handleSubmit}
             submitButtonText={isSubmitting ? "Ajout en cours..." : "Ajouter le livre"}
             submitButtonLoadingText="Ajout en cours..."
             disableInternalScroll={true}
+            forceOwnership={forceOwnership === 'true'}
           />
         </ScrollView>
       </View>

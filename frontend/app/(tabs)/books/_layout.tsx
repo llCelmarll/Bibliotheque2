@@ -7,14 +7,14 @@ export default function BooksLayout() {
       <Stack.Screen 
         name="index" 
         options={{ 
-          title: "Livres",
-          headerShown: true
+          headerShown: false,
+          presentation: 'card'
         }} 
       />
       <Stack.Screen 
         name="[id]" 
         options={{
-          headerShown: true,
+          headerShown: false,
           presentation: 'card'
         }}
       />

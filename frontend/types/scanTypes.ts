@@ -94,6 +94,12 @@ export interface ScanResult {
 	title_match: BookRead[];    // Plus nullable
 	google_book?: any;
 	openlibrary?: any;
+
+	// Statut emprunt
+	previously_borrowed?: boolean;      // Tous emprunts RETURNED
+	currently_borrowed?: boolean;       // Au moins un emprunt ACTIVE/OVERDUE
+	borrowed_book?: import('./borrowedBook').BorrowedBook;  // Détails emprunt actif
+	can_add_to_library?: boolean;       // Peut ajouter en possession
 }
 
 export interface AuthorRead {
