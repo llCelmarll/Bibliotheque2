@@ -99,39 +99,42 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 });
 
 // Fonction pour convertir BookFormData vers BookCreate
-const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = false): BookCreate => ({
-	title: formData.title,
-	isbn: formData.isbn || undefined,
-	published_date: formData.published_date || undefined,  // Aligné avec le backend
-	page_count: formData.page_count,                       // Aligné avec le backend
-	barcode: formData.barcode || undefined,
-	cover_url: formData.cover_url || undefined,            // Aligné avec le backend
-	authors: USE_ENTITY_SELECTORS && Array.isArray(formData.authors)
-		? formData.authors.map(author =>
-			// Si l'auteur existe, envoyer son ID, sinon envoyer le nom pour création
-			author.exists && author.id ? author.id : { name: author.name }
-		)
-		: typeof formData.authors === 'string' && formData.authors
-		? formData.authors.split(',').map(author => author.trim())
-		: [],
-	publisher: USE_ENTITY_SELECTORS && Array.isArray(formData.publisher)
-		? (formData.publisher.length > 0 ?
-			// Si l'éditeur existe, envoyer son ID, sinon envoyer le nom pour création
-			formData.publisher[0].exists && formData.publisher[0].id
-				? formData.publisher[0].id
-				: { name: formData.publisher[0].name }
-			: undefined)
-		: typeof formData.publisher === 'string' && formData.publisher
-		? formData.publisher
-		: undefined,
-	genres: USE_ENTITY_SELECTORS && Array.isArray(formData.genres)
-		? formData.genres.map(genre =>
-			// Si le genre existe, envoyer son ID, sinon envoyer le nom pour création
-			genre.exists && genre.id ? genre.id : { name: genre.name }
-		)
-		: typeof formData.genres === 'string' && formData.genres
-		? formData.genres.split(',').map((genre: string) => genre.trim())
-		: [],
+const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = false): BookCreate => {
+	const bookCreate: BookCreate = {
+		title: formData.title,
+		isbn: formData.isbn || undefined,
+		published_date: formData.published_date || undefined,  // Aligné avec le backend
+		page_count: formData.page_count,                       // Aligné avec le backend
+		barcode: formData.barcode || undefined,
+		cover_url: formData.cover_url || undefined,            // Aligné avec le backend
+		authors: USE_ENTITY_SELECTORS && Array.isArray(formData.authors)
+			? formData.authors.map(author => {
+				const result = author.exists && author.id ? author.id : { name: author.name };
+				console.log(`📤 Auteur envoyé: exists=${author.exists}, id=${author.id}, name="${author.name}" => ${typeof result === 'number' ? `ID=${result}` : `{name: "${result.name}"}`}`);
+				return result;
+			})
+			: typeof formData.authors === 'string' && formData.authors
+			? formData.authors.split(',').map(author => author.trim())
+			: [],
+		publisher: USE_ENTITY_SELECTORS && Array.isArray(formData.publisher)
+			? (formData.publisher.length > 0 ? (() => {
+				const pub = formData.publisher[0];
+				const result = pub.exists && pub.id ? pub.id : { name: pub.name };
+				console.log(`📤 Éditeur envoyé: exists=${pub.exists}, id=${pub.id}, name="${pub.name}" => ${typeof result === 'number' ? `ID=${result}` : `{name: "${result.name}"}`}`);
+				return result;
+			})() : undefined)
+			: typeof formData.publisher === 'string' && formData.publisher
+			? formData.publisher
+			: undefined,
+		genres: USE_ENTITY_SELECTORS && Array.isArray(formData.genres)
+			? formData.genres.map(genre => {
+				const result = genre.exists && genre.id ? genre.id : { name: genre.name };
+				console.log(`📤 Genre envoyé: exists=${genre.exists}, id=${genre.id}, name="${genre.name}" => ${typeof result === 'number' ? `ID=${result}` : `{name: "${result.name}"}`}`);
+				return result;
+			})
+			: typeof formData.genres === 'string' && formData.genres
+			? formData.genres.split(',').map((genre: string) => genre.trim())
+			: [],
 	// Inclure champs d'emprunt (convertir dates DD/MM/YYYY -> YYYY-MM-DD pour le backend)
 	// Forcer is_borrowed=false si forceOwnership=true
 	is_borrowed: forceOwnership ? false : formData.is_borrowed,
@@ -139,7 +142,11 @@ const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = 
 	borrowed_date: forceOwnership ? undefined : convertDateToISO(formData.borrowed_date),
 	expected_return_date: forceOwnership ? undefined : convertDateToISO(formData.expected_return_date),
 	borrow_notes: forceOwnership ? undefined : (formData.borrow_notes || undefined),
-});
+	};
+
+	console.log('📦 BookCreate final:', JSON.stringify(bookCreate, null, 2));
+	return bookCreate;
+};
 
 export const BookForm: React.FC<BookFormProps> = ({
 																		initialData,
