@@ -10,7 +10,8 @@ from app.models.Publisher import Publisher
 from app.models.Genre import Genre
 from app.repositories.book_repository import BookRepository
 from app.repositories.loan_repository import LoanRepository
-from app.schemas.Book import BookCreate, BookUpdate, BookRead, CurrentLoanRead, BookSearchParams, BookAdvancedSearchParams
+from app.repositories.borrowed_book_repository import BorrowedBookRepository
+from app.schemas.Book import BookCreate, BookUpdate, BookRead, CurrentLoanRead, CurrentBorrowRead, BookSearchParams, BookAdvancedSearchParams
 from app.schemas.Other import Filter, FilterType
 from app.clients.openlibrary import fetch_openlibrary
 from app.clients.google_books import fetch_google_books
@@ -26,56 +27,109 @@ class BookService:
         self.user_id = user_id
         self.book_repository = BookRepository(session)
         self.loan_repository = LoanRepository(session)
+        self.borrowed_book_repository = BorrowedBookRepository(session)
 
     def create_book(self, book_data: BookCreate) -> Book:
-        """Crée un nouveau livre avec ses relations"""
+        """Crée un nouveau livre avec ses relations ou gère un livre existant"""
         logger = logging.getLogger("app.books")
         start = perf_counter()
         logger.info("Create book: title=%s isbn=%s", book_data.title, getattr(book_data, "isbn", None))
-        # Validation des données
-        self._validate_book_data(book_data)
-        
-        # Vérification de l'unicité du titre + ISBN pour l'utilisateur actuel
-        if self._book_exists(book_data.title, book_data.isbn):
+
+        # 1. Validation is_borrowed
+        if book_data.is_borrowed and not book_data.borrowed_from:
             raise HTTPException(
-                status_code=400, 
-                detail="Un livre avec ce titre et cet ISBN existe déjà dans votre bibliothèque"
+                status_code=400,
+                detail="Le champ 'borrowed_from' est requis si 'is_borrowed' est True"
             )
 
-        # Traitement de l'éditeur
-        publisher_id = None
-        if book_data.publisher:
-            publisher_id = self._process_publisher_for_book(book_data.publisher)
+        # Validation des données
+        self._validate_book_data(book_data)
 
-        # Création du livre
-        book = Book(
-            title=book_data.title,
-            isbn=book_data.isbn,
-            published_date=book_data.published_date,
-            page_count=book_data.page_count,
-            barcode=book_data.barcode,
-            cover_url=book_data.cover_url,
-            publisher_id=publisher_id,
-            owner_id=self.user_id  # Assigner à l'utilisateur actuel
+        # 2. Vérifier si le livre existe déjà
+        existing_book = self.book_repository.get_by_title_isbn_owner(
+            book_data.title, book_data.isbn or "", self.user_id
         )
 
-        # Ajout à la session
-        self.session.add(book)
-        self.session.flush()  # Pour obtenir l'ID du livre
+        if existing_book:
+            book = existing_book
+            logger.info("Book already exists: id=%s", book.id)
 
-        # Gestion des relations many-to-many
-        if book_data.authors:
-            self._process_authors_for_book(book, book_data.authors)
-        
-        if book_data.genres:
-            self._process_genres_for_book(book, book_data.genres)
+            # Vérifier si le livre a un historique d'emprunt
+            all_borrows = self.borrowed_book_repository.get_by_book(book.id, self.user_id)
 
-        # Commit final
+            if not all_borrows:
+                # Livre possédé sans historique d'emprunt → Bloquer
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Ce livre existe déjà dans votre bibliothèque (ID: {book.id})"
+                )
+            # Si all_borrows existe → C'est un livre avec historique d'emprunt
+            # → On continue (permettre ré-emprunt ou achat)
+        else:
+            # Le livre n'existe pas → Le créer via le repository
+            # Traitement de l'éditeur
+            publisher_id = None
+            if book_data.publisher:
+                publisher_id = self._process_publisher_for_book(book_data.publisher)
+
+            # Créer avec le publisher_id
+            book_data_dict = book_data.model_dump()
+            book_data_dict["publisher_id"] = publisher_id
+            # Reconstruire BookCreate avec publisher_id
+            from app.schemas.Book import BookCreate
+            book_data_with_publisher = BookCreate(**{**book_data_dict, "publisher_id": publisher_id})
+
+            book = self.book_repository.create(book_data_with_publisher, self.user_id)
+
+            # Gestion des relations many-to-many
+            if book_data.authors:
+                self._process_authors_for_book(book, book_data.authors)
+
+            if book_data.genres:
+                self._process_genres_for_book(book, book_data.genres)
+
+        # 3. Vérifier emprunt actif existant
+        active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(
+            book.id, self.user_id
+        )
+
+        if active_borrow:
+            # Un emprunt ACTIF existe
+            if book_data.is_borrowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Un emprunt actif existe déjà pour ce livre depuis {active_borrow.borrowed_from}"
+                )
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Ce livre est actuellement emprunté à {active_borrow.borrowed_from}. Retournez-le d'abord avant de le marquer comme possédé."
+                )
+
+        # 4. Gérer is_borrowed
+        if book_data.is_borrowed:
+            # Créer nouvel emprunt via le repository
+            self.borrowed_book_repository.create_from_params(
+                book_id=book.id,
+                user_id=self.user_id,
+                borrowed_from=book_data.borrowed_from,
+                borrowed_date=book_data.borrowed_date,
+                expected_return_date=book_data.expected_return_date,
+                notes=book_data.borrow_notes
+            )
+            logger.info("Create borrowed book: book_id=%s", book.id)
+        else:
+            # is_borrowed=False → Supprimer TOUS les emprunts (achat du livre)
+            deleted_count = self.borrowed_book_repository.delete_all_for_book(book.id, self.user_id)
+            if deleted_count > 0:
+                logger.info("Deleted %d borrow records for book: book_id=%s", deleted_count, book.id)
+
+        # 5. Commit final
         self.session.commit()
         self.session.refresh(book)
         duration_ms = int((perf_counter() - start) * 1000)
         logger.info("Create book OK: id=%s duration_ms=%d", book.id, duration_ms)
-        
+
         return book
 
     async def get_book_by_id(self, book_id: int) -> Dict[str, Any]:
@@ -94,6 +148,15 @@ class BookService:
         active_loan = self.loan_repository.get_active_loan_for_book(base_book.id, self.user_id)
         if active_loan:
             book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
+
+        # Récupérer l'emprunt actif pour ce livre (seulement ACTIF ou OVERDUE, pas RETURNED)
+        active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(base_book.id, self.user_id)
+        if active_borrow:
+            book_read.borrowed_book = CurrentBorrowRead.model_validate(active_borrow)
+
+        # Vérifier si le livre a un historique d'emprunts (même retournés)
+        all_borrows = self.borrowed_book_repository.get_by_book(base_book.id, self.user_id)
+        book_read.has_borrow_history = len(all_borrows) > 0
 
         book_data['base'] = book_read.model_dump()
         book_data['google_books'] = await fetch_google_books(base_book.isbn)
@@ -167,23 +230,34 @@ class BookService:
         self.session.delete(book)
         self.session.commit()
 
+    def _enrich_book_read(self, book: Book) -> BookRead:
+        """Helper pour enrichir un livre avec prêt actif et emprunt actif"""
+        book_read = BookRead.model_validate(book)
+
+        # Récupérer le prêt actif pour ce livre
+        active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
+        if active_loan:
+            book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
+
+        # Récupérer l'emprunt actif pour ce livre
+        active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(book.id, self.user_id)
+        if active_borrow:
+            book_read.borrowed_book = CurrentBorrowRead.model_validate(active_borrow)
+
+        # Vérifier si le livre a un historique d'emprunts (même retournés)
+        all_borrows = self.borrowed_book_repository.get_by_book(book.id, self.user_id)
+        book_read.has_borrow_history = len(all_borrows) > 0
+
+        return book_read
+
     def search_books(self, params: BookSearchParams) -> List[BookRead]:
         """Recherche simple de livres pour l'utilisateur actuel"""
         self._validate_pagination(params.skip, params.limit)
         self._validate_filters(params.filters)
         books = self.book_repository.search_books(params, self.user_id)
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in books]
 
     def advanced_search_books(self, params: BookAdvancedSearchParams) -> List[BookRead]:
         """Recherche avancée de livres pour l'utilisateur actuel"""
@@ -193,17 +267,8 @@ class BookService:
 
         books = self.book_repository.advanced_search_books(params, self.user_id)
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in books]
 
     def get_statistics(self) -> Dict[str, Any]:
         """Récupère les statistiques des livres de l'utilisateur actuel"""
@@ -216,17 +281,8 @@ class BookService:
         if not author:
             raise HTTPException(status_code=404, detail="Auteur non trouvé")
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in author.books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in author.books]
 
     def get_books_by_publisher(self, publisher_id: int) -> List[BookRead]:
         """Récupère tous les livres d'un éditeur"""
@@ -234,17 +290,8 @@ class BookService:
         if not publisher:
             raise HTTPException(status_code=404, detail="Éditeur non trouvé")
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in publisher.books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in publisher.books]
 
     def get_books_by_genre(self, genre_id: int) -> List[BookRead]:
         """Récupère tous les livres d'un genre"""
@@ -252,17 +299,8 @@ class BookService:
         if not genre:
             raise HTTPException(status_code=404, detail="Genre non trouvé")
 
-        # Enrichir chaque livre avec les informations de prêt actif
-        book_reads = []
-        for book in genre.books:
-            book_read = BookRead.model_validate(book)
-            # Récupérer le prêt actif pour ce livre
-            active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
-            if active_loan:
-                book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
-            book_reads.append(book_read)
-
-        return book_reads
+        # Enrichir chaque livre avec les informations de prêt et emprunt actifs
+        return [self._enrich_book_read(book) for book in genre.books]
     
     def bulk_create_books(self, books_data: List[BookCreate], skip_errors: bool = False, populate_covers: bool = False) -> Dict[str, Any]:
         """

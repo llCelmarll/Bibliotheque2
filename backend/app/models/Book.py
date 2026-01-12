@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.Publisher import Publisher
     from app.models.Genre import Genre
     from app.models.Loan import Loan
+    from app.models.BorrowedBook import BorrowedBook
 
 class Book(SQLModel, table=True):
     __tablename__ = "books"
@@ -39,7 +40,16 @@ class Book(SQLModel, table=True):
     owner: Optional["User"] = Relationship(back_populates="books")
 
     # Prêts
-    loans: List["Loan"] = Relationship(back_populates="book")
+    loans: List["Loan"] = Relationship(
+        back_populates="book",
+        cascade_delete=True
+    )
+
+    # Emprunts (livres empruntés par l'utilisateur)
+    borrows: List["BorrowedBook"] = Relationship(
+        back_populates="book",
+        cascade_delete=True
+    )
 
     # Couverture du livre
     cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))

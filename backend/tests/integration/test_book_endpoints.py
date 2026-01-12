@@ -153,17 +153,18 @@ class TestBookEndpoints:
         """Test de création d'un livre en double pour le même utilisateur (doit échouer)."""
         # Créer un premier livre
         first_book = create_test_book(session, test_user.id, title="Duplicate Book", isbn="9999999999999")
-        
+
         # Essayer de créer le même livre
         duplicate_data = {
             "title": "Duplicate Book",
             "isbn": "9999999999999"
         }
-        
+
         response = authenticated_client.post("/books", json=duplicate_data)
-        
+
+        # Doit bloquer avec 400
         assert response.status_code == 400
-        assert "existe déjà dans votre bibliothèque" in response.json()["detail"]
+        assert "existe déjà" in response.json()["detail"].lower()
     
     def test_duplicate_book_different_users(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de création d'un livre en double pour des utilisateurs différents (doit réussir)."""
@@ -412,3 +413,88 @@ class TestScanBookSimilarDetection:
         if 'title_match' in data and len(data['title_match']) > 0:
             similar_isbns = [book['isbn'] for book in data['title_match']]
             assert other_book.isbn not in similar_isbns
+
+    def test_book_with_active_borrow_includes_borrow_info(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test que les livres avec emprunts actifs incluent les informations d'emprunt."""
+        from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+        from datetime import datetime, timedelta
+
+        # Créer un livre
+        book = create_test_book(session, test_user.id, title="Borrowed Book", isbn="9998887776665")
+
+        # Créer un emprunt actif
+        borrowed_date = datetime.utcnow()
+        expected_return_date = borrowed_date + timedelta(days=30)
+        borrowed_book = BorrowedBook(
+            book_id=book.id,
+            user_id=test_user.id,
+            borrowed_from="Marie Dupont",
+            borrowed_date=borrowed_date,
+            expected_return_date=expected_return_date,
+            status=BorrowStatus.ACTIVE,
+            notes="Emprunté à la bibliothèque"
+        )
+        session.add(borrowed_book)
+        session.commit()
+        session.refresh(borrowed_book)
+
+        # Récupérer le livre via l'API
+        response = authenticated_client.get(f"/books/{book.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Vérifier que les informations d'emprunt sont présentes
+        assert "base" in data
+        assert "borrowed_book" in data["base"]
+        assert data["base"]["borrowed_book"] is not None
+        assert data["base"]["borrowed_book"]["id"] == borrowed_book.id
+        assert data["base"]["borrowed_book"]["borrowed_from"] == "Marie Dupont"
+        assert data["base"]["borrowed_book"]["status"].upper() == "ACTIVE"
+        assert data["base"]["borrowed_book"]["notes"] == "Emprunté à la bibliothèque"
+
+    def test_book_search_includes_borrow_info(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test que la recherche de livres inclut les informations d'emprunt."""
+        from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+        from datetime import datetime, timedelta
+
+        # Créer deux livres
+        book1 = create_test_book(session, test_user.id, title="Livre Emprunté", isbn="5554443332221")
+        book2 = create_test_book(session, test_user.id, title="Livre Possédé", isbn="6665554443332")
+
+        # Créer un emprunt actif pour le premier livre
+        borrowed_date = datetime.utcnow()
+        expected_return_date = borrowed_date + timedelta(days=21)
+        borrowed_book = BorrowedBook(
+            book_id=book1.id,
+            user_id=test_user.id,
+            borrowed_from="Bibliothèque Municipale",
+            borrowed_date=borrowed_date,
+            expected_return_date=expected_return_date,
+            status=BorrowStatus.ACTIVE
+        )
+        session.add(borrowed_book)
+        session.commit()
+
+        # Rechercher les livres (sans paramètres = tous les livres)
+        response = authenticated_client.post("/books/search/simple")
+
+        assert response.status_code == 200
+        books = response.json()
+
+        # Trouver le livre emprunté dans les résultats
+        borrowed_book_result = next((b for b in books if b["id"] == book1.id), None)
+        owned_book_result = next((b for b in books if b["id"] == book2.id), None)
+
+        assert borrowed_book_result is not None
+        assert owned_book_result is not None
+
+        # Le livre emprunté doit avoir les informations d'emprunt
+        assert "borrowed_book" in borrowed_book_result
+        assert borrowed_book_result["borrowed_book"] is not None
+        assert borrowed_book_result["borrowed_book"]["borrowed_from"] == "Bibliothèque Municipale"
+        assert borrowed_book_result["borrowed_book"]["status"].upper() == "ACTIVE"
+
+        # Le livre possédé ne doit pas avoir d'emprunt
+        assert "borrowed_book" in owned_book_result
+        assert owned_book_result["borrowed_book"] is None

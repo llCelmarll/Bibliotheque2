@@ -19,6 +19,8 @@ from app.models.Book import Book
 from app.models.Author import Author
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
+from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+from app.models.Borrower import Borrower
 
 # Import des factories (commenté temporairement)
 # from tests.factories.user_factory import UserFactory
@@ -203,12 +205,57 @@ def create_test_book(session: Session, owner_id: int, title: str = "Test Book", 
         "isbn": isbn or "9781234567890",
         "owner_id": owner_id
     }
-    
+
     if barcode:
         book_data["barcode"] = barcode
-    
+
     book = Book(**book_data)
     session.add(book)
     session.commit()
     session.refresh(book)
     return book
+
+
+def create_test_borrowed_book(
+    session: Session,
+    book_id: int,
+    user_id: int,
+    borrowed_from: str = "Test Source",
+    status: BorrowStatus = BorrowStatus.ACTIVE
+) -> BorrowedBook:
+    """Helper pour créer un livre emprunté de test."""
+    from datetime import datetime, timedelta
+
+    borrowed_book = BorrowedBook(
+        book_id=book_id,
+        user_id=user_id,
+        borrowed_from=borrowed_from,
+        borrowed_date=datetime.utcnow(),
+        expected_return_date=datetime.utcnow() + timedelta(days=30),
+        status=status,
+        created_at=datetime.utcnow()
+    )
+
+    session.add(borrowed_book)
+    session.commit()
+    session.refresh(borrowed_book)
+    return borrowed_book
+
+
+def create_test_borrower(
+    session: Session,
+    user_id: int,
+    name: str = "Test Borrower",
+    email: str = "borrower@test.com"
+) -> Borrower:
+    """Helper pour créer un emprunteur de test."""
+    borrower = Borrower(
+        name=name,
+        email=email,
+        owner_id=user_id
+    )
+
+    session.add(borrower)
+    session.commit()
+    session.refresh(borrower)
+    return borrower

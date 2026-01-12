@@ -1,6 +1,8 @@
 // services/api/types.ts
 
-// Import des types de prêt pour éviter les dépendances circulaires
+// Import des types de prêt et d'emprunt pour éviter les dépendances circulaires
+import { BorrowedBook } from './borrowedBook';
+
 export interface LoanRead {
 	id: number;
 	book_id: number;
@@ -31,7 +33,8 @@ export interface BookRead {
 	authors?: AuthorRead[];
 	publisher?: PublisherRead;
 	genres?: GenreRead[];
-	current_loan?: LoanRead;  // Prêt actif si le livre est prêté
+	current_loan?: LoanRead;  // Prêt actif (TO other) - livre prêté à quelqu'un
+	borrowed_book?: BorrowedBook;  // Emprunt actif (FROM other) - livre emprunté de quelqu'un
 }
 
 export interface BookCreate {
@@ -44,6 +47,13 @@ export interface BookCreate {
 	authors?: (number | string | {name: string; id?: number; exists?: boolean})[];
 	publisher?: number | string | {name: string; id?: number; exists?: boolean};
 	genres?: (number | string | {name: string; id?: number; exists?: boolean})[];
+
+	// Champs d'emprunt
+	is_borrowed?: boolean;
+	borrowed_from?: string;
+	borrowed_date?: string;  // Format: YYYY-MM-DD
+	expected_return_date?: string;  // Format: YYYY-MM-DD
+	borrow_notes?: string;
 }
 
 // Types enrichis pour les entités suggérées
@@ -84,6 +94,12 @@ export interface ScanResult {
 	title_match: BookRead[];    // Plus nullable
 	google_book?: any;
 	openlibrary?: any;
+
+	// Statut emprunt
+	previously_borrowed?: boolean;      // Tous emprunts RETURNED
+	currently_borrowed?: boolean;       // Au moins un emprunt ACTIVE/OVERDUE
+	borrowed_book?: import('./borrowedBook').BorrowedBook;  // Détails emprunt actif
+	can_add_to_library?: boolean;       // Peut ajouter en possession
 }
 
 export interface AuthorRead {

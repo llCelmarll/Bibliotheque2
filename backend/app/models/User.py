@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from app.models.Book import Book
     from app.models.Loan import Loan
     from app.models.Borrower import Borrower
+    from app.models.BorrowedBook import BorrowedBook
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -33,6 +34,7 @@ class User(SQLModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "Loan.owner_id"}
     )
     borrowers: List["Borrower"] = Relationship(back_populates="owner")
+    borrowed_books: List["BorrowedBook"] = Relationship(back_populates="user")
 
     # Contraintes
     __table_args__ = (

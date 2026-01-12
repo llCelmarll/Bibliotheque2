@@ -12,17 +12,17 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LoanStatus, Loan } from '@/types/loan';
-import { useLoans } from '@/hooks/useLoans';
-import { LoanListItem } from '@/components/loans/LoanListItem';
+import { BorrowStatus, BorrowedBook } from '@/types/borrowedBook';
+import { useBorrows } from '@/hooks/useBorrows';
+import { BorrowListItem } from '@/components/borrows/BorrowListItem';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
-type SortOption = 'date' | 'borrower' | 'book' | 'dueDate';
+type SortOption = 'date' | 'borrowedFrom' | 'book' | 'dueDate';
 
-function LoansScreen() {
+function BorrowedBooksScreen() {
   const router = useRouter();
-  const [filterStatus, setFilterStatus] = useState<LoanStatus | 'all'>('all');
-  const { loans, loading, refresh } = useLoans({ filterStatus });
+  const [filterStatus, setFilterStatus] = useState<BorrowStatus | 'all'>('all');
+  const { borrows, loading, refresh } = useBorrows({ filterStatus });
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
@@ -33,47 +33,42 @@ function LoansScreen() {
     setRefreshing(false);
   };
 
-  const handleCreateLoan = () => {
-    router.push('/(tabs)/loans/create');
+  const handleCreateBorrow = () => {
+    router.push('/(tabs)/borrows/create');
   };
 
-  // Filtrer et trier les prêts
-  const filteredAndSortedLoans = useMemo(() => {
-    let filtered = [...loans];
+  // Filtrer et trier les emprunts
+  const filteredAndSortedBorrows = useMemo(() => {
+    let filtered = [...borrows];
 
     // Recherche
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(loan =>
-        loan.book.title.toLowerCase().includes(query) ||
-        loan.borrower.name.toLowerCase().includes(query) ||
-        loan.book.authors?.some(a => a.name.toLowerCase().includes(query))
+      filtered = filtered.filter(borrow =>
+        borrow.book?.title.toLowerCase().includes(query) ||
+        borrow.borrowed_from.toLowerCase().includes(query) ||
+        borrow.book?.authors?.some(a => a.name.toLowerCase().includes(query))
       );
     }
 
     // Tri
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'borrower':
-          return a.borrower.name.localeCompare(b.borrower.name);
+        case 'borrowedFrom':
+          return a.borrowed_from.localeCompare(b.borrowed_from);
         case 'book':
-          return a.book.title.localeCompare(b.book.title);
+          return (a.book?.title || '').localeCompare(b.book?.title || '');
         case 'dueDate':
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
-          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+          if (!a.expected_return_date) return 1;
+          if (!b.expected_return_date) return -1;
+          return new Date(a.expected_return_date).getTime() - new Date(b.expected_return_date).getTime();
         case 'date':
         default:
           // Tri par défaut: priorité au statut puis date d'emprunt
-          // 1. En retard (OVERDUE) en premier
-          // 2. En cours (ACTIVE) ensuite
-          // 3. Retournés (RETURNED) à la fin
-          // Puis par date d'emprunt (plus récent en premier)
-
-          const statusPriority: Record<LoanStatus, number> = {
-            [LoanStatus.OVERDUE]: 0,
-            [LoanStatus.ACTIVE]: 1,
-            [LoanStatus.RETURNED]: 2,
+          const statusPriority: Record<BorrowStatus, number> = {
+            [BorrowStatus.OVERDUE]: 0,
+            [BorrowStatus.ACTIVE]: 1,
+            [BorrowStatus.RETURNED]: 2,
           };
 
           const priorityDiff = statusPriority[a.status] - statusPriority[b.status];
@@ -82,15 +77,15 @@ function LoansScreen() {
           }
 
           // Même statut, trier par date d'emprunt (plus récent en premier)
-          return new Date(b.loan_date).getTime() - new Date(a.loan_date).getTime();
+          return new Date(b.borrowed_date).getTime() - new Date(a.borrowed_date).getTime();
       }
     });
 
     return filtered;
-  }, [loans, searchQuery, sortBy]);
+  }, [borrows, searchQuery, sortBy]);
 
   const renderFilterButton = (
-    status: LoanStatus | 'all',
+    status: BorrowStatus | 'all',
     label: string,
     icon: string
   ) => {
@@ -120,14 +115,14 @@ function LoansScreen() {
   const renderEmptyState = () => {
     if (loading) return null;
 
-    let message = 'Aucun prêt';
+    let message = 'Aucun emprunt';
     let icon = 'library-books';
 
-    if (filterStatus === LoanStatus.ACTIVE) {
-      message = 'Aucun prêt en cours';
+    if (filterStatus === BorrowStatus.ACTIVE) {
+      message = 'Aucun emprunt en cours';
       icon = 'check-circle';
-    } else if (filterStatus === LoanStatus.OVERDUE) {
-      message = 'Aucun prêt en retard';
+    } else if (filterStatus === BorrowStatus.OVERDUE) {
+      message = 'Aucun emprunt en retard';
       icon = 'thumb-up';
     }
 
@@ -135,8 +130,8 @@ function LoansScreen() {
       <View style={styles.emptyState}>
         <MaterialIcons name={icon as any} size={64} color="#E0E0E0" />
         <Text style={styles.emptyStateText}>{message}</Text>
-        <TouchableOpacity style={styles.emptyStateButton} onPress={handleCreateLoan}>
-          <Text style={styles.emptyStateButtonText}>Créer un prêt</Text>
+        <TouchableOpacity style={styles.emptyStateButton} onPress={handleCreateBorrow}>
+          <Text style={styles.emptyStateButtonText}>Créer un emprunt</Text>
         </TouchableOpacity>
       </View>
     );
@@ -147,8 +142,8 @@ function LoansScreen() {
       {/* Filtres de statut */}
       <View style={styles.filtersContainer}>
         {renderFilterButton('all', 'Tous', 'list')}
-        {renderFilterButton(LoanStatus.ACTIVE, 'En cours', 'schedule')}
-        {renderFilterButton(LoanStatus.OVERDUE, 'En retard', 'warning')}
+        {renderFilterButton(BorrowStatus.ACTIVE, 'En cours', 'schedule')}
+        {renderFilterButton(BorrowStatus.OVERDUE, 'En retard', 'warning')}
       </View>
 
       {/* Barre de recherche et tri */}
@@ -157,7 +152,7 @@ function LoansScreen() {
           <MaterialIcons name="search" size={20} color="#757575" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Rechercher un livre ou emprunteur..."
+            placeholder="Rechercher un livre..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#9E9E9E"
@@ -180,11 +175,11 @@ function LoansScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.sortButton, sortBy === 'borrower' && styles.sortButtonActive]}
-            onPress={() => setSortBy('borrower')}
+            style={[styles.sortButton, sortBy === 'borrowedFrom' && styles.sortButtonActive]}
+            onPress={() => setSortBy('borrowedFrom')}
           >
-            <Text style={[styles.sortButtonText, sortBy === 'borrower' && styles.sortButtonTextActive]}>
-              Emprunteur
+            <Text style={[styles.sortButtonText, sortBy === 'borrowedFrom' && styles.sortButtonTextActive]}>
+              Source
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -206,33 +201,31 @@ function LoansScreen() {
         </View>
       </View>
 
-      {/* Liste des prêts */}
+      {/* Liste des emprunts */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
         </View>
       ) : (
         <FlatList
-          data={filteredAndSortedLoans}
+          data={filteredAndSortedBorrows}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <LoanListItem loan={item} onReturn={refresh} />}
+          renderItem={({ item }) => <BorrowListItem borrow={item} onReturn={refresh} />}
           ListEmptyComponent={renderEmptyState}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           contentContainerStyle={
-            filteredAndSortedLoans.length === 0 ? styles.emptyListContainer : undefined
+            filteredAndSortedBorrows.length === 0 ? styles.emptyListContainer : undefined
           }
         />
       )}
 
-      {/* Bouton Flottant pour créer un prêt */}
+      {/* Bouton Flottant pour créer un emprunt */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={handleCreateLoan}
-        accessibilityLabel="Créer un nouveau prêt"
-        // @ts-ignore - title works on web for tooltip
-        title="Créer un nouveau prêt"
+        onPress={handleCreateBorrow}
+        accessibilityLabel="Créer un nouvel emprunt"
       >
         <MaterialIcons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
@@ -243,7 +236,7 @@ function LoansScreen() {
 export default function Index() {
   return (
     <ProtectedRoute>
-      <LoansScreen />
+      <BorrowedBooksScreen />
     </ProtectedRoute>
   );
 }

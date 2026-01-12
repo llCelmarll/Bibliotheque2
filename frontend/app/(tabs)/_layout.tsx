@@ -19,8 +19,17 @@ export default function TabLayout() {
         name="loans"
         options={{
           title: "Prêts",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size}) => (
             <Ionicons name="swap-horizontal-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="borrowed"
+        options={{
+          title: "Emprunts",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book" size={size} color={color} />
           ),
         }}
       />
@@ -40,6 +49,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="borrows"
+        options={{
+          href: null, // Cache cet onglet de la barre de navigation
         }}
       />
     </Tabs>

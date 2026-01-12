@@ -95,7 +95,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 					</Text>
 				)}
 
-				{/* Badge de prêt */}
+				{/* Badge de prêt (TO other) */}
 				{book.current_loan && (
 					<View style={styles.loanBadge}>
 						<Text style={styles.loanBadgeText}>
@@ -107,6 +107,24 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 								new Date(book.current_loan.due_date) < new Date() && styles.loanOverdue
 							]}>
 								Retour : {formatDate(book.current_loan.due_date)}
+							</Text>
+						)}
+					</View>
+				)}
+
+				{/* Badge emprunt (FROM other) */}
+				{book.borrowed_book && book.borrowed_book.status === 'active' && (
+					<View style={styles.loanBadge}>
+						<Text style={styles.loanBadgeText}>
+							📚 Emprunté à {book.borrowed_book.borrowed_from}
+						</Text>
+						{book.borrowed_book.expected_return_date && (
+							<Text style={[
+								styles.loanDateText,
+								new Date(book.borrowed_book.expected_return_date) < new Date() && styles.loanOverdue
+							]}>
+								{new Date(book.borrowed_book.expected_return_date) < new Date() ? '⚠️ ' : ''}
+								Retour: {formatDate(book.borrowed_book.expected_return_date)}
 							</Text>
 						)}
 					</View>

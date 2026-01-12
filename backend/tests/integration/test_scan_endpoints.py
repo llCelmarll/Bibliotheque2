@@ -275,3 +275,112 @@ class TestScanWithBarcode:
         # Les APIs externes ne sont PAS appelées quand le livre existe déjà
         mock_google_books.assert_not_called()
         mock_openlibrary.assert_not_called()
+
+
+@pytest.mark.integration
+@pytest.mark.scan
+class TestScanBorrowedBooks:
+    """Tests de scan pour livres empruntés."""
+
+    @patch('app.services.scan_service.fetch_google_books')
+    @patch('app.services.scan_service.fetch_openlibrary')
+    def test_scan_previously_borrowed_book(
+        self,
+        mock_openlibrary: AsyncMock,
+        mock_google_books: AsyncMock,
+        authenticated_client: TestClient
+    ):
+        """Test: Scanner un livre qui a été emprunté puis retourné doit retourner previously_borrowed=True"""
+        # Mock des APIs externes
+        mock_google_books.return_value = {"title": "Google Result"}
+        mock_openlibrary.return_value = {"title": "OL Result"}
+
+        # 1. Créer un livre emprunté
+        book_data = {
+            "title": "Test Previously Borrowed Book",
+            "isbn": "9781111111111",
+            "is_borrowed": True,
+            "borrowed_from": "Marie",
+            "borrowed_date": "2025-01-01",
+        }
+        create_response = authenticated_client.post("/books", json=book_data)
+        assert create_response.status_code == 201
+        book = create_response.json()
+        borrow_id = book["borrowed_book"]["id"]
+
+        # 2. Retourner le livre
+        return_response = authenticated_client.put(f"/borrowed-books/{borrow_id}/return")
+        assert return_response.status_code == 200
+
+        # 3. Scanner le livre
+        scan_response = authenticated_client.post("/scan", params={"isbn": "9781111111111"})
+        assert scan_response.status_code == 200
+        scan_result = scan_response.json()
+
+        # ✅ Vérifications
+        assert scan_result["previously_borrowed"] is True
+        assert scan_result["currently_borrowed"] is False
+        assert scan_result["borrowed_book"] is None
+        assert scan_result["can_add_to_library"] is True
+        assert scan_result["base"] is None  # Ne doit PAS être considéré comme possédé
+        assert scan_result["suggested"] is not None
+
+        # 4. Vérifier que le livre n'apparaît PAS dans la liste
+        list_response = authenticated_client.post("/books/search/simple", json=[])
+        assert list_response.status_code == 200
+        books = list_response.json()
+
+        # Le livre ne doit PAS être dans la liste
+        assert not any(b.get("isbn") == "9781111111111" for b in books)
+
+    @patch('app.services.scan_service.fetch_google_books')
+    @patch('app.services.scan_service.fetch_openlibrary')
+    def test_scan_currently_borrowed_book(
+        self,
+        mock_openlibrary: AsyncMock,
+        mock_google_books: AsyncMock,
+        authenticated_client: TestClient
+    ):
+        """Test: Scanner un livre qui est actuellement emprunté doit retourner currently_borrowed=True avec les détails"""
+        # Mock des APIs externes
+        mock_google_books.return_value = {"title": "Google Result"}
+        mock_openlibrary.return_value = {"title": "OL Result"}
+
+        # 1. Créer un livre emprunté
+        book_data = {
+            "title": "Test Currently Borrowed Book",
+            "isbn": "9782222222222",
+            "is_borrowed": True,
+            "borrowed_from": "Paul",
+            "borrowed_date": "2026-01-01",
+            "expected_return_date": "2026-02-01",
+        }
+        create_response = authenticated_client.post("/books", json=book_data)
+        assert create_response.status_code == 201
+
+        # 2. Scanner le livre (sans le retourner)
+        scan_response = authenticated_client.post("/scan", params={"isbn": "9782222222222"})
+        assert scan_response.status_code == 200
+        scan_result = scan_response.json()
+
+        # ✅ Vérifications
+        assert scan_result["currently_borrowed"] is True
+        assert scan_result["previously_borrowed"] is False
+        assert scan_result["can_add_to_library"] is False
+        assert scan_result["base"] is None  # Ne doit PAS être considéré comme possédé
+        assert scan_result["suggested"] is not None
+
+        # Vérifier les détails de l'emprunt
+        assert scan_result["borrowed_book"] is not None
+        assert scan_result["borrowed_book"]["borrowed_from"] == "Paul"
+        assert scan_result["borrowed_book"]["status"] == "active"
+
+        # 3. Vérifier que le livre apparaît dans la liste (avec badge)
+        list_response = authenticated_client.post("/books/search/simple", json=[])
+        assert list_response.status_code == 200
+        books = list_response.json()
+
+        # Le livre DOIT être dans la liste car actuellement emprunté
+        book_in_list = next((b for b in books if b.get("isbn") == "9782222222222"), None)
+        assert book_in_list is not None
+        assert book_in_list["borrowed_book"] is not None

@@ -84,12 +84,32 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
             </View>
           )}
 
+          {/* Badge d'emprunt */}
+          {book.base?.borrowed_book && book.base.borrowed_book.status === 'active' && (
+            <View style={styles.borrowBadge}>
+              <Text style={styles.borrowBadgeText}>
+                📚 Emprunté à {book.base.borrowed_book.borrowed_from}
+              </Text>
+              {book.base.borrowed_book.expected_return_date && (
+                <Text style={[
+                  styles.borrowDateText,
+                  new Date(book.base.borrowed_book.expected_return_date) < new Date() && styles.borrowOverdue
+                ]}>
+                  {new Date(book.base.borrowed_book.expected_return_date) < new Date() ? '⚠️ ' : ''}
+                  Retour prévu : {formatDate(book.base.borrowed_book.expected_return_date)}
+                </Text>
+              )}
+            </View>
+          )}
+
           {/* Actions seulement si le livre existe dans la base */}
           {book.base?.id && (
             <BookActions
               bookId={book.base.id.toString()}
               bookTitle={book.base.title || "Titre inconnu"}
               currentLoan={book.base.current_loan}
+              borrowedBook={book.base.borrowed_book}
+              hasBorrowHistory={book.base.has_borrow_history}
               onBookDeleted={onBookDeleted}
             />
           )}
@@ -159,6 +179,29 @@ const styles = StyleSheet.create({
     color: '#856404',
   },
   loanOverdue: {
+    color: '#dc3545',
+    fontWeight: '600',
+  },
+  borrowBadge: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 10,
+    backgroundColor: '#d1ecf1',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#17a2b8',
+  },
+  borrowBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0c5460',
+    marginBottom: 4,
+  },
+  borrowDateText: {
+    fontSize: 12,
+    color: '#0c5460',
+  },
+  borrowOverdue: {
     color: '#dc3545',
     fontWeight: '600',
   },

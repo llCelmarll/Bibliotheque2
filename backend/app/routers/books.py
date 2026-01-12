@@ -352,4 +352,5 @@ def create_book(
     - **publisher**: ID de l'éditeur (optionnel)
     - **genre**: Liste des IDs des genres (optionnel)
     """
-    return service.create_book(book_data)
+    book = service.create_book(book_data)
+    return BookRead.from_orm_with_relationships(book)
