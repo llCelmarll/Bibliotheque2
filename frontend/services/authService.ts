@@ -128,7 +128,7 @@ class AuthService {
   }
 
   async refreshAccessToken(): Promise<string | null> {
-  const refreshToken = await getItem(REFRESH_TOKEN_KEY);
+    const refreshToken = await getItem(REFRESH_TOKEN_KEY);
     if (!refreshToken) return null;
     const response = await this.makeRequest<LoginResponse>('/auth/refresh', {
       method: 'POST',
@@ -137,6 +137,10 @@ class AuthService {
     });
     if (response.access_token) {
       await setItem(ACCESS_TOKEN_KEY, response.access_token);
+      // Stocker aussi le nouveau refresh_token pour prolonger la session
+      if (response.refresh_token) {
+        await setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+      }
       return response.access_token;
     }
     return null;

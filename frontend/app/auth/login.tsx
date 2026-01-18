@@ -33,7 +33,8 @@ async function setItem(key: string, value: string) {
 }
 
 export default function LoginScreen() {
-  const [rememberMe, setRememberMe] = useState(false);
+  // Sur mobile, activer "Se souvenir de moi" par défaut pour des sessions longues
+  const [rememberMe, setRememberMe] = useState(Platform.OS !== 'web');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

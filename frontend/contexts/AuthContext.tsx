@@ -38,7 +38,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -70,63 +69,78 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const checkAuth = async () => {
-  try {
+    try {
       // Essaye d'abord SecureStore (remember me)
       let storedToken = await getItem(ACCESS_TOKEN_KEY);
-      let storedUser = await AsyncStorage.getItem(USER_KEY);
-      if (storedToken) {
-        try {
-          const [, payload] = storedToken.split('.');
-          const decoded = JSON.parse(atob(payload));
-        } catch (e) {
-        }
-      }
-      // Si pas de token, essaye AsyncStorage (session simple)
+      const storedUser = await AsyncStorage.getItem(USER_KEY);
+
+      // Si pas de token, l'utilisateur n'est pas connecté
       if (!storedToken) {
-        storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+        setIsLoading(false);
+        return;
       }
-      // Si pas de token ou expiré, essaye de renouveler avec le refresh token
-      if (!storedToken || isTokenExpired(storedToken)) {
+
+      // Si token expiré, essayer de le renouveler
+      if (isTokenExpired(storedToken)) {
         const storedRefreshToken = await getItem(REFRESH_TOKEN_KEY);
         if (storedRefreshToken) {
-          const newToken = await authService.refreshAccessToken();
-          if (newToken) {
-            setToken(newToken);
-            storedToken = newToken;
-            // Après refresh, récupérer et stocker l'utilisateur
-            try {
-              const currentUser = await authService.getCurrentUser(newToken);
-              setUser(currentUser);
-              await AsyncStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-              storedUser = JSON.stringify(currentUser);
-            } catch (error) {
+          try {
+            const newToken = await authService.refreshAccessToken();
+            if (newToken) {
+              storedToken = newToken;
+              setToken(newToken);
+            } else {
+              // Refresh token invalide ou expiré - seul cas où on logout
               await logout();
               setIsLoading(false);
               return;
             }
-          } else {
-            await logout();
+          } catch (refreshError) {
+            // Erreur réseau pendant le refresh - NE PAS logout, garder l'état actuel
+            console.warn('Erreur réseau pendant le refresh, on garde la session:', refreshError);
+            if (storedUser) {
+              setToken(storedToken);
+              setUser(JSON.parse(storedUser));
+            }
             setIsLoading(false);
             return;
           }
         } else {
+          // Pas de refresh token - logout
           await logout();
           setIsLoading(false);
           return;
         }
       }
-      if (storedToken && storedUser) {
+
+      // Token valide, récupérer les infos utilisateur
+      if (storedToken) {
         try {
           const currentUser = await authService.getCurrentUser(storedToken);
           setToken(storedToken);
           setUser(currentUser);
+          await AsyncStorage.setItem(USER_KEY, JSON.stringify(currentUser));
         } catch (error: any) {
-          if (error && typeof error === 'object' && 'response' in error) {
-            // Axios-like error
-            // @ts-ignore
+          // Distinguer erreur réseau vs erreur auth
+          const isNetworkError = !error?.message?.includes('401') &&
+                                 !error?.message?.includes('403') &&
+                                 (error?.message?.includes('Network') ||
+                                  error?.message?.includes('fetch') ||
+                                  error?.message?.includes('timeout') ||
+                                  error?.name === 'AbortError');
+
+          if (isNetworkError) {
+            // Erreur réseau - NE PAS logout, utiliser les données en cache
+            console.warn('Erreur réseau, utilisation du cache:', error);
+            if (storedUser) {
+              setToken(storedToken);
+              setUser(JSON.parse(storedUser));
+            }
           } else {
+            // Erreur d'authentification (401/403) - logout
+            console.warn('Erreur auth, déconnexion:', error);
+            await logout();
           }
-          await logout();
         }
       }
     } catch (error) {
@@ -191,11 +205,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = async () => {
-  try {
+    try {
       setIsLoading(true);
 
-      // Supprimer TOUS les tokens du stockage (ancien et nouveau format)
-      await AsyncStorage.removeItem(TOKEN_KEY);
+      // Supprimer TOUS les tokens du stockage
       await AsyncStorage.removeItem(USER_KEY);
       if (Platform.OS === 'web') {
         await AsyncStorage.removeItem(ACCESS_TOKEN_KEY);
@@ -204,6 +217,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
         await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       }
+      // Nettoyer aussi les anciennes clés pour migration
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('auth_user');
 
       // Réinitialiser l'état
       setToken(null);

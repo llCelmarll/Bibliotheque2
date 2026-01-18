@@ -41,3 +41,7 @@ scripts/check-http-covers.ps1
 .gitignore
 scripts/fix-http-covers.ps1
 
+# Claude Code temporary directories
+tmpclaude-*-cwd
+**/tmpclaude-*-cwd/
+

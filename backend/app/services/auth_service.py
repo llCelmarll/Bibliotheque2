@@ -31,13 +31,16 @@ class AuthService:
     def generate_tokens(self, user_id: str, remember_me: bool = False):
         """
         Génère un access token et un refresh token selon l'option 'Se souvenir de moi'.
+        Sessions longues pour éviter les déconnexions intempestives.
         """
         if remember_me:
-            access_token_expires = timedelta(days=30)
-            refresh_token_expires = timedelta(days=60)
+            # Mobile: sessions très longues (6 mois)
+            access_token_expires = timedelta(days=90)
+            refresh_token_expires = timedelta(days=180)
         else:
-            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-            refresh_token_expires = timedelta(days=1)
+            # Web: sessions moyennes (7 jours access, 30 jours refresh)
+            access_token_expires = timedelta(days=7)
+            refresh_token_expires = timedelta(days=30)
         access_token = self.create_access_token(
             data={"sub": user_id}, expires_delta=access_token_expires
         )
@@ -52,18 +55,28 @@ class AuthService:
 
     def renew_access_token(self, refresh_token: str):
         """
-        Renouvelle le token d'accès à partir du refresh token.
+        Renouvelle le token d'accès et le refresh token à partir du refresh token.
+        Retourne les deux tokens pour prolonger la session.
         """
         payload = self.verify_refresh_token(refresh_token)
         if not payload:
             from fastapi import HTTPException
             raise HTTPException(status_code=401, detail="Refresh token invalide ou expiré")
         user_id = payload.get("sub")
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        # Prolonger la session avec de nouveaux tokens (7 jours access, 30 jours refresh)
+        access_token_expires = timedelta(days=7)
+        refresh_token_expires = timedelta(days=30)
         access_token = self.create_access_token(
             data={"sub": user_id}, expires_delta=access_token_expires
         )
-        return {"access_token": access_token, "token_type": "bearer"}
+        new_refresh_token = self.create_refresh_token(
+            data={"sub": user_id}, expires_delta=refresh_token_expires
+        )
+        return {
+            "access_token": access_token,
+            "refresh_token": new_refresh_token,
+            "token_type": "bearer"
+        }
     def create_refresh_token(self, data: dict, expires_delta: Optional[timedelta] = None):
         """Créer un refresh token JWT"""
         to_encode = data.copy()

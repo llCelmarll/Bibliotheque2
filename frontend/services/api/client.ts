@@ -83,17 +83,9 @@ class ApiClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Si 401 (Unauthorized), supprimer le token expiré
-        if (response.status === 401) {
-          try {
-            await AsyncStorage.removeItem(TOKEN_KEY);
-            await AsyncStorage.removeItem('auth_user');
-            console.warn('Token expiré, supprimé du stockage');
-          } catch (storageError) {
-            console.error('Erreur lors de la suppression du token:', storageError);
-          }
-        }
-
+        // Note: La gestion des 401 avec refresh automatique est faite dans authInterceptor.ts
+        // Ce client n'utilise pas l'intercepteur Axios, donc on ne supprime plus le token ici
+        // pour éviter les déconnexions intempestives
         throw new ApiError(
           `API Error: ${response.status}`,
           response.status,
