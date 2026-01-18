@@ -48,7 +48,7 @@ class BookRepository:
 		)
 		return self.session.exec(stmt).first()
 
-	def create(self, book_data: BookCreate, owner_id: int) -> Book:
+	def create(self, book_data: BookCreate, owner_id: int, publisher_id: Optional[int] = None) -> Book:
 		"""Crée un nouveau livre (sans commit pour permettre transactions)"""
 		book = Book(
 			title=book_data.title,
@@ -58,6 +58,7 @@ class BookRepository:
 			barcode=book_data.barcode,
 			cover_url=book_data.cover_url,
 			owner_id=owner_id,
+			publisher_id=publisher_id,
 			created_at=datetime.utcnow()
 		)
 		self.session.add(book)

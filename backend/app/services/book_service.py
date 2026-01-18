@@ -72,14 +72,7 @@ class BookService:
             if book_data.publisher:
                 publisher_id = self._process_publisher_for_book(book_data.publisher)
 
-            # Créer avec le publisher_id
-            book_data_dict = book_data.model_dump()
-            book_data_dict["publisher_id"] = publisher_id
-            # Reconstruire BookCreate avec publisher_id
-            from app.schemas.Book import BookCreate
-            book_data_with_publisher = BookCreate(**{**book_data_dict, "publisher_id": publisher_id})
-
-            book = self.book_repository.create(book_data_with_publisher, self.user_id)
+            book = self.book_repository.create(book_data, self.user_id, publisher_id)
 
             # Gestion des relations many-to-many
             if book_data.authors:
