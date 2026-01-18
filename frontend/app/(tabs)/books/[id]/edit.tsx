@@ -188,6 +188,7 @@ export default function EditBookScreen() {
               submitButtonText="Modifier le livre"
               submitButtonLoadingText="Modification..."
               disableInternalScroll={true}
+              isEditMode={true}
             />
           </ScrollView>
         )}

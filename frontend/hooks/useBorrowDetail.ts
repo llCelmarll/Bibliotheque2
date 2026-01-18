@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BorrowedBook, BorrowStatus } from '@/types/borrowedBook';
+import { BorrowedBook, BorrowedBookUpdate, BorrowStatus } from '@/types/borrowedBook';
 import { borrowedBookService } from '@/services/borrowedBookService';
 
 interface UseBorrowDetailProps {
@@ -51,6 +51,17 @@ export function useBorrowDetail({ borrowId }: UseBorrowDetailProps) {
     }
   }, [borrow]);
 
+  const updateBorrow = useCallback(async (data: BorrowedBookUpdate) => {
+    if (!borrow) return;
+
+    try {
+      await borrowedBookService.updateBorrowedBook(borrow.id, data);
+      await fetchBorrow();
+    } catch (err: any) {
+      throw new Error(err.response?.data?.detail || 'Impossible de modifier l\'emprunt');
+    }
+  }, [borrow, fetchBorrow]);
+
   const getDaysOverdue = useCallback((): number => {
     if (!borrow?.expected_return_date) return 0;
 
@@ -96,6 +107,7 @@ export function useBorrowDetail({ borrowId }: UseBorrowDetailProps) {
     borrow,
     loading,
     error,
+    updateBorrow,
     returnBorrow,
     deleteBorrow,
     getDaysOverdue,

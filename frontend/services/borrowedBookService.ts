@@ -1,7 +1,7 @@
 // services/borrowedBookService.ts
 import axios from 'axios';
 import { setupAuthInterceptor } from '@/services/api/authInterceptor';
-import { BorrowedBook, BorrowedBookCreate, BorrowStatistics } from '@/types/borrowedBook';
+import { BorrowedBook, BorrowedBookCreate, BorrowedBookUpdate, BorrowStatistics } from '@/types/borrowedBook';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -47,6 +47,12 @@ export const returnBorrowedBook = async (id: number): Promise<BorrowedBook> => {
 	return response.data;
 };
 
+// Modifier un emprunt
+export const updateBorrowedBook = async (id: number, data: BorrowedBookUpdate): Promise<BorrowedBook> => {
+	const response = await apiClient.put(`/borrowed-books/${id}`, data);
+	return response.data;
+};
+
 // Statistiques
 export const fetchBorrowStatistics = async (): Promise<BorrowStatistics> => {
 	const response = await apiClient.get('/borrowed-books/statistics');
@@ -64,6 +70,7 @@ export const borrowedBookService = {
 	fetchActiveBorrowedBooks,
 	getBorrowedBookById,
 	createBorrowedBook,
+	updateBorrowedBook,
 	returnBorrowedBook,
 	fetchBorrowStatistics,
 	deleteBorrowedBook,

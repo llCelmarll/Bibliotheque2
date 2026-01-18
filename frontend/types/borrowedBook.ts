@@ -32,6 +32,13 @@ export interface BorrowedBookCreate {
 	notes?: string;
 }
 
+export interface BorrowedBookUpdate {
+	borrowed_from?: string;
+	borrowed_date?: string;
+	expected_return_date?: string;
+	notes?: string;
+}
+
 export interface BorrowStatistics {
 	total: number;
 	active: number;
