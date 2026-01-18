@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import * as Updates from 'expo-updates';
 import ImportCSV from "@/components/ImportCSV";
+import { CalendarPreferencesSection } from "@/components/settings/CalendarPreferencesSection";
 
 export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
@@ -123,13 +124,16 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Section Rappels calendrier */}
+        <CalendarPreferencesSection />
+
         {/* Section Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>
 
           {Platform.OS !== 'web' && (
-            <TouchableOpacity 
-              style={[styles.actionButton, { marginBottom: 12 }]} 
+            <TouchableOpacity
+              style={[styles.actionButton, { marginBottom: 12 }]}
               onPress={checkForUpdates}
               disabled={isCheckingUpdates}
             >
@@ -145,8 +149,8 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity 
-            style={styles.actionButton} 
+          <TouchableOpacity
+            style={styles.actionButton}
             onPress={async () => {
               try {
                 await logout();

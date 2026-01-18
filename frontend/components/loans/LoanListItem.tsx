@@ -6,6 +6,7 @@ import { LoanStatusBadge } from './LoanStatusBadge';
 import BookCover from '@/components/BookCover';
 import { useRouter } from 'expo-router';
 import { loanService } from '@/services/loanService';
+import { calendarService } from '@/services/calendarService';
 
 interface LoanListItemProps {
   loan: Loan;
@@ -50,6 +51,16 @@ export const LoanListItem: React.FC<LoanListItemProps> = ({ loan, onReturn }) =>
   const confirmReturn = async () => {
     setReturning(true);
     try {
+      // Si un rappel calendrier existe, le supprimer automatiquement
+      if (loan.calendar_event_id) {
+        try {
+          await calendarService.deleteBookReturnReminder(loan.calendar_event_id);
+        } catch (error) {
+          console.warn('Impossible de supprimer le rappel calendrier:', error);
+          // Ne pas bloquer le retour du livre si la suppression échoue
+        }
+      }
+
       await loanService.returnLoan(loan.id);
       if (Platform.OS === 'web') {
         window.alert('Le livre a été retourné avec succès.');

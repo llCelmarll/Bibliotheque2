@@ -58,6 +58,22 @@ export const deleteBorrowedBook = async (id: number): Promise<void> => {
 	await apiClient.delete(`/borrowed-books/${id}`);
 };
 
+// Mettre à jour calendar_event_id
+export const updateCalendarEventId = async (id: number, calendarEventId: string | null): Promise<BorrowedBook> => {
+	console.log('📅 Mise à jour calendar_event_id - ID emprunt:', id, 'eventId:', calendarEventId);
+
+	try {
+		const response = await apiClient.put(`/borrowed-books/${id}`, {
+			calendar_event_id: calendarEventId
+		});
+		console.log('✅ calendar_event_id mis à jour avec succès');
+		return response.data;
+	} catch (error) {
+		console.error('❌ Erreur lors de la mise à jour du calendar_event_id:', error);
+		throw error;
+	}
+};
+
 // Export default pour utilisation cohérente
 export const borrowedBookService = {
 	fetchBorrowedBooks,
@@ -67,4 +83,5 @@ export const borrowedBookService = {
 	returnBorrowedBook,
 	fetchBorrowStatistics,
 	deleteBorrowedBook,
+	updateCalendarEventId,
 };

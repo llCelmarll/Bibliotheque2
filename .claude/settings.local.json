@@ -6,7 +6,8 @@
       "Bash(do npm test)",
       "Bash(done)",
       "Bash(powershell.exe:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(alembic revision:*)"
     ]
   }
 }

@@ -113,6 +113,9 @@ class BorrowedBookService:
             borrowed_book.status = borrow_data.status
         if borrow_data.notes is not None:
             borrowed_book.notes = borrow_data.notes
+        # Permettre de définir ou supprimer le calendar_event_id
+        if borrow_data.calendar_event_id is not None or hasattr(borrow_data, 'calendar_event_id'):
+            borrowed_book.calendar_event_id = borrow_data.calendar_event_id
 
         borrowed_book = self.borrowed_book_repository.update(borrowed_book)
         return BorrowedBookRead.model_validate(borrowed_book)

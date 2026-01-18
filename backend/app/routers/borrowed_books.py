@@ -117,7 +117,7 @@ async def update_borrowed_book(
     borrow: BorrowedBookUpdate,
     service: BorrowedBookService = Depends(get_borrowed_book_service)
 ):
-    """Met à jour un enregistrement d'emprunt (dates, source, statut, notes)"""
+    """Met à jour un enregistrement d'emprunt (dates, source, statut, notes, calendar_event_id)"""
     return service.update(borrow_id, borrow)
 
 

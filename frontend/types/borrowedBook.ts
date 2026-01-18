@@ -19,6 +19,7 @@ export interface BorrowedBook {
 	notes?: string;
 	created_at: string;
 	updated_at: string;
+	calendar_event_id?: string;
 
 	// Relations
 	book?: BookRead;  // Import depuis scanTypes
@@ -30,6 +31,13 @@ export interface BorrowedBookCreate {
 	borrowed_date?: string;
 	expected_return_date?: string;
 	notes?: string;
+	calendar_event_id?: string;
+}
+
+export interface BorrowedBookUpdate {
+	expected_return_date?: string;
+	notes?: string;
+	calendar_event_id?: string;
 }
 
 export interface BorrowStatistics {

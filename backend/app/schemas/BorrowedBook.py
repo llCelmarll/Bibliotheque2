@@ -15,6 +15,7 @@ class BorrowedBookRead(SQLModel):
     actual_return_date: Optional[datetime] = None
     status: BorrowStatus
     notes: Optional[str] = None
+    calendar_event_id: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -36,6 +37,7 @@ class BorrowedBookUpdate(SQLModel):
     actual_return_date: Optional[datetime] = None
     status: Optional[BorrowStatus] = None
     notes: Optional[str] = None
+    calendar_event_id: Optional[str] = None
 
 
 class BorrowedBookReturn(SQLModel):

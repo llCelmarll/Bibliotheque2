@@ -287,6 +287,24 @@ class LoanService {
     const diffTime = dueDate.getTime() - now.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
+
+  /**
+   * Met à jour uniquement le calendar_event_id d'un prêt
+   */
+  async updateCalendarEventId(id: number, calendarEventId: string | null): Promise<Loan> {
+    console.log('📅 Mise à jour calendar_event_id - ID prêt:', id, 'eventId:', calendarEventId);
+
+    try {
+      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.LOANS}/${id}`, {
+        calendar_event_id: calendarEventId
+      });
+      console.log('✅ calendar_event_id mis à jour avec succès');
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du calendar_event_id:', error);
+      throw error;
+    }
+  }
 }
 
 export const loanService = new LoanService();

@@ -40,6 +40,7 @@ export interface Loan {
     return_date?: string;
     status: LoanStatus;
     notes?: string;
+    calendar_event_id?: string;
 }
 
 /**
@@ -67,6 +68,7 @@ export interface LoanCreate {
     loan_date?: string;
     due_date?: string;
     notes?: string;
+    calendar_event_id?: string;
 }
 
 /**
@@ -79,6 +81,7 @@ export interface LoanCreate {
 export interface LoanUpdate {
     due_date?: string;
     notes?: string;
+    calendar_event_id?: string;
 }
 
 /**

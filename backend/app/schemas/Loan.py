@@ -18,6 +18,7 @@ class LoanRead(SQLModel):
     return_date: Optional[datetime] = None
     status: LoanStatus
     notes: Optional[str] = None
+    calendar_event_id: Optional[str] = None
 
 
 class LoanCreate(SQLModel):
@@ -51,6 +52,7 @@ class LoanUpdate(SQLModel):
     return_date: Optional[datetime] = None
     status: Optional[LoanStatus] = None
     notes: Optional[str] = None
+    calendar_event_id: Optional[str] = None
 
 
 class LoanReturn(SQLModel):

@@ -6,6 +6,7 @@ import { BorrowStatusBadge } from './BorrowStatusBadge';
 import BookCover from '@/components/BookCover';
 import { useRouter } from 'expo-router';
 import { borrowedBookService } from '@/services/borrowedBookService';
+import { calendarService } from '@/services/calendarService';
 
 interface BorrowListItemProps {
   borrow: BorrowedBook;
@@ -48,6 +49,16 @@ export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn
   const confirmReturn = async () => {
     setReturning(true);
     try {
+      // Si un rappel calendrier existe, le supprimer automatiquement
+      if (borrow.calendar_event_id) {
+        try {
+          await calendarService.deleteBookReturnReminder(borrow.calendar_event_id);
+        } catch (error) {
+          console.warn('Impossible de supprimer le rappel calendrier:', error);
+          // Ne pas bloquer le retour du livre si la suppression échoue
+        }
+      }
+
       await borrowedBookService.returnBorrowedBook(borrow.id);
       if (Platform.OS === 'web') {
         window.alert('Le livre a été marqué comme retourné avec succès.');

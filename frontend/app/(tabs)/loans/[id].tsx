@@ -16,6 +16,9 @@ import { LoanStatusBadge } from '@/components/loans/LoanStatusBadge';
 import BookCover from '@/components/BookCover';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { LoanStatus } from '@/types/loan';
+import { CalendarReminderManager } from '@/components/calendar/CalendarReminderManager';
+import { loanService } from '@/services/loanService';
+import { calendarService } from '@/services/calendarService';
 
 function LoanDetailScreen() {
   const router = useRouter();
@@ -25,6 +28,7 @@ function LoanDetailScreen() {
   const {
     loan,
     loading,
+    loadLoan,
     returnLoan,
     deleteLoan,
     getDaysOverdue,
@@ -56,6 +60,16 @@ function LoanDetailScreen() {
           onPress: async () => {
             setActionLoading(true);
             try {
+              // Si un rappel calendrier existe, le supprimer automatiquement
+              if (loan?.calendar_event_id) {
+                try {
+                  await calendarService.deleteBookReturnReminder(loan.calendar_event_id);
+                } catch (error) {
+                  console.warn('Impossible de supprimer le rappel calendrier:', error);
+                  // Ne pas bloquer le retour du livre si la suppression échoue
+                }
+              }
+
               await returnLoan();
               Alert.alert('Succès', 'Le livre a été retourné');
             } catch (error) {
@@ -101,6 +115,36 @@ function LoanDetailScreen() {
   const handleViewBook = () => {
     if (loan?.book_id) {
       router.push(`/(tabs)/books/${loan.book_id}`);
+    }
+  };
+
+  const handleReminderCreated = async (eventId: string) => {
+    try {
+      await loanService.updateCalendarEventId(loanId, eventId);
+      // Recharger le prêt pour obtenir le calendar_event_id mis à jour
+      await loadLoan();
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du calendar_event_id:', error);
+    }
+  };
+
+  const handleReminderUpdated = async (eventId: string) => {
+    try {
+      await loanService.updateCalendarEventId(loanId, eventId);
+      // Recharger le prêt
+      await loadLoan();
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du calendar_event_id:', error);
+    }
+  };
+
+  const handleReminderDeleted = async () => {
+    try {
+      await loanService.updateCalendarEventId(loanId, null);
+      // Recharger le prêt
+      await loadLoan();
+    } catch (error) {
+      console.error('Erreur lors de la suppression du calendar_event_id:', error);
     }
   };
 
@@ -256,6 +300,18 @@ function LoanDetailScreen() {
             <Text style={styles.notesText}>{loan.notes}</Text>
           </View>
         )}
+
+        {/* Rappel calendrier */}
+        <CalendarReminderManager
+          bookTitle={loan.book.title}
+          dueDate={loan.due_date}
+          borrowerName={loan.borrower.name}
+          existingEventId={loan.calendar_event_id}
+          onReminderCreated={handleReminderCreated}
+          onReminderUpdated={handleReminderUpdated}
+          onReminderDeleted={handleReminderDeleted}
+          type="loan"
+        />
       </ScrollView>
 
       {/* Actions */}

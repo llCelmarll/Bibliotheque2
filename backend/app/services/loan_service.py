@@ -134,6 +134,9 @@ class LoanService:
             loan.status = loan_data.status
         if loan_data.notes is not None:
             loan.notes = loan_data.notes
+        # Permettre de définir ou supprimer le calendar_event_id
+        if loan_data.calendar_event_id is not None or hasattr(loan_data, 'calendar_event_id'):
+            loan.calendar_event_id = loan_data.calendar_event_id
 
         loan = self.loan_repository.update(loan)
         return LoanRead.model_validate(loan)

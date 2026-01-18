@@ -124,7 +124,7 @@ async def update_loan(
     loan: LoanUpdate,
     service: LoanService = Depends(get_loan_service)
 ):
-    """Met à jour un prêt (dates, statut, notes)"""
+    """Met à jour un prêt (dates, statut, notes, calendar_event_id)"""
     return service.update(loan_id, loan)
 
 

@@ -56,3 +56,9 @@ class Loan(SQLModel, table=True):
         default=None,
         sa_column=Column(String, nullable=True)
     )
+
+    # Calendar event ID for reminders
+    calendar_event_id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String, nullable=True)
+    )
