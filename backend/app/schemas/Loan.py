@@ -48,6 +48,7 @@ class LoanCreate(SQLModel):
 
 class LoanUpdate(SQLModel):
     """Schéma de mise à jour pour un prêt"""
+    loan_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     return_date: Optional[datetime] = None
     status: Optional[LoanStatus] = None

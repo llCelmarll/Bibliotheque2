@@ -17,10 +17,10 @@ import { useBorrowDetail } from '@/hooks/useBorrowDetail';
 import { BorrowStatusBadge } from '@/components/borrows/BorrowStatusBadge';
 import BookCover from '@/components/BookCover';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { BorrowStatus } from '@/types/borrowedBook';
 import { CalendarReminderManager } from '@/components/calendar/CalendarReminderManager';
 import { borrowedBookService } from '@/services/borrowedBookService';
 import { calendarService } from '@/services/calendarService';
+import { calendarPreferencesService } from '@/services/calendarPreferences';
 import { BorrowStatus, BorrowedBookUpdate } from '@/types/borrowedBook';
 
 function BorrowDetailScreen() {
@@ -105,6 +105,15 @@ function BorrowDetailScreen() {
           onPress: async () => {
             setActionLoading(true);
             try {
+              // Supprimer le rappel calendrier s'il existe
+              if (borrow?.calendar_event_id) {
+                try {
+                  await calendarService.deleteBookReturnReminder(borrow.calendar_event_id);
+                } catch (error) {
+                  console.warn('Impossible de supprimer le rappel calendrier:', error);
+                }
+              }
+
               await deleteBorrow();
               Alert.alert(
                 'Succès',
@@ -156,6 +165,8 @@ function BorrowDetailScreen() {
     } catch (error) {
       console.error('Erreur lors de la suppression du calendar_event_id:', error);
     }
+  };
+
   const handleEdit = () => {
     if (!borrow) return;
     setEditData({
@@ -186,14 +197,63 @@ function BorrowDetailScreen() {
         borrowed_date: formatDateToApi(editData.borrowed_date),
         expected_return_date: formatDateToApi(editData.expected_return_date),
       };
+
+      // Vérifier si la date de retour a changé ET qu'un rappel existe
+      const oldReturnDate = borrow?.expected_return_date?.split('T')[0];
+      const newReturnDate = dataToSend.expected_return_date;
+      const hasReminderAndDateChanged =
+        borrow?.calendar_event_id &&
+        oldReturnDate !== newReturnDate &&
+        newReturnDate;
+
       await updateBorrow(dataToSend);
       setEditMode(false);
       setEditData({});
 
-      if (Platform.OS === 'web') {
-        window.alert('Emprunt modifié avec succès');
+      // Proposer de mettre à jour le rappel si la date a changé
+      if (hasReminderAndDateChanged) {
+        Alert.alert(
+          'Mettre à jour le rappel ?',
+          'La date de retour a changé. Voulez-vous mettre à jour le rappel calendrier ?',
+          [
+            { text: 'Non', style: 'cancel' },
+            {
+              text: 'Oui',
+              onPress: async () => {
+                try {
+                  const prefs = await calendarPreferencesService.getPreferences();
+
+                  // Supprimer l'ancien rappel
+                  await calendarService.deleteBookReturnReminder(borrow.calendar_event_id!);
+
+                  // Créer un nouveau rappel avec la nouvelle date
+                  const newEventId = await calendarService.createBookReturnReminder({
+                    bookTitle: borrow.book?.title || 'Livre',
+                    lenderName: borrow.borrowed_from,
+                    dueDate: new Date(newReturnDate!),
+                    reminderOffsetDays: prefs.defaultReminderOffsetDays,
+                    calendarId: prefs.defaultCalendarId || '',
+                  });
+
+                  if (newEventId) {
+                    await borrowedBookService.updateCalendarEventId(borrowId, newEventId);
+                    await refetch();
+                    Alert.alert('Succès', 'Le rappel a été mis à jour');
+                  }
+                } catch (error) {
+                  console.error('Erreur mise à jour rappel:', error);
+                  Alert.alert('Erreur', 'Impossible de mettre à jour le rappel');
+                }
+              },
+            },
+          ]
+        );
       } else {
-        Alert.alert('Succès', 'Emprunt modifié avec succès');
+        if (Platform.OS === 'web') {
+          window.alert('Emprunt modifié avec succès');
+        } else {
+          Alert.alert('Succès', 'Emprunt modifié avec succès');
+        }
       }
     } catch (error: any) {
       const errorMsg = error.message || 'Impossible de modifier l\'emprunt';

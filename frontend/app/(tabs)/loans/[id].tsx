@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -15,10 +17,11 @@ import { useLoanDetail } from '@/hooks/useLoanDetail';
 import { LoanStatusBadge } from '@/components/loans/LoanStatusBadge';
 import BookCover from '@/components/BookCover';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { LoanStatus } from '@/types/loan';
+import { LoanStatus, LoanUpdate } from '@/types/loan';
 import { CalendarReminderManager } from '@/components/calendar/CalendarReminderManager';
 import { loanService } from '@/services/loanService';
 import { calendarService } from '@/services/calendarService';
+import { calendarPreferencesService } from '@/services/calendarPreferences';
 
 function LoanDetailScreen() {
   const router = useRouter();
@@ -29,6 +32,7 @@ function LoanDetailScreen() {
     loan,
     loading,
     loadLoan,
+    updateLoan,
     returnLoan,
     deleteLoan,
     getDaysOverdue,
@@ -37,6 +41,8 @@ function LoanDetailScreen() {
   } = useLoanDetail({ loanId });
 
   const [actionLoading, setActionLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState<LoanUpdate>({});
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Non définie';
@@ -95,6 +101,15 @@ function LoanDetailScreen() {
           onPress: async () => {
             setActionLoading(true);
             try {
+              // Supprimer le rappel calendrier s'il existe
+              if (loan?.calendar_event_id) {
+                try {
+                  await calendarService.deleteBookReturnReminder(loan.calendar_event_id);
+                } catch (error) {
+                  console.warn('Impossible de supprimer le rappel calendrier:', error);
+                }
+              }
+
               await deleteLoan();
               Alert.alert(
                 'Succès',
@@ -148,6 +163,116 @@ function LoanDetailScreen() {
     }
   };
 
+  // Convertir YYYY-MM-DD vers JJ/MM/AAAA pour l'affichage dans le formulaire
+  const formatDateToDisplay = (dateString?: string): string => {
+    if (!dateString) return '';
+    const isoDate = dateString.split('T')[0]; // YYYY-MM-DD
+    const parts = isoDate.split('-');
+    if (parts.length !== 3) return '';
+    return `${parts[2]}/${parts[1]}/${parts[0]}`; // JJ/MM/AAAA
+  };
+
+  // Convertir JJ/MM/AAAA vers YYYY-MM-DD pour l'API
+  const formatDateToApi = (dateString?: string): string => {
+    if (!dateString) return '';
+    const parts = dateString.split('/');
+    if (parts.length !== 3) return dateString; // Retourner tel quel si format invalide
+    return `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+  };
+
+  const handleEdit = () => {
+    if (!loan) return;
+    setEditData({
+      loan_date: formatDateToDisplay(loan.loan_date),
+      due_date: formatDateToDisplay(loan.due_date),
+      notes: loan.notes || '',
+    });
+    setEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditData({});
+  };
+
+  const handleSaveEdit = async () => {
+    setActionLoading(true);
+    try {
+      const dataToSend: LoanUpdate = {
+        loan_date: formatDateToApi(editData.loan_date) || undefined,
+        due_date: formatDateToApi(editData.due_date) || undefined,
+        notes: editData.notes || undefined,
+      };
+
+      // Vérifier si la date de retour a changé ET qu'un rappel existe
+      const oldDueDate = loan?.due_date?.split('T')[0];
+      const newDueDate = dataToSend.due_date;
+      const hasReminderAndDateChanged =
+        loan?.calendar_event_id &&
+        oldDueDate !== newDueDate &&
+        newDueDate;
+
+      await updateLoan(dataToSend);
+      setEditMode(false);
+      setEditData({});
+
+      // Proposer de mettre à jour le rappel si la date a changé
+      if (hasReminderAndDateChanged) {
+        Alert.alert(
+          'Mettre à jour le rappel ?',
+          'La date de retour a changé. Voulez-vous mettre à jour le rappel calendrier ?',
+          [
+            { text: 'Non', style: 'cancel' },
+            {
+              text: 'Oui',
+              onPress: async () => {
+                try {
+                  const prefs = await calendarPreferencesService.getPreferences();
+
+                  // Supprimer l'ancien rappel
+                  await calendarService.deleteBookReturnReminder(loan.calendar_event_id!);
+
+                  // Créer un nouveau rappel avec la nouvelle date
+                  const newEventId = await calendarService.createBookReturnReminder({
+                    bookTitle: loan.book?.title || 'Livre',
+                    borrowerName: loan.borrower.name,
+                    dueDate: new Date(newDueDate!),
+                    reminderOffsetDays: prefs.defaultReminderOffsetDays,
+                    calendarId: prefs.defaultCalendarId || '',
+                  });
+
+                  if (newEventId) {
+                    await loanService.updateCalendarEventId(loanId, newEventId);
+                    await loadLoan();
+                    Alert.alert('Succès', 'Le rappel a été mis à jour');
+                  }
+                } catch (error) {
+                  console.error('Erreur mise à jour rappel:', error);
+                  Alert.alert('Erreur', 'Impossible de mettre à jour le rappel');
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        if (Platform.OS === 'web') {
+          window.alert('Prêt modifié avec succès');
+        } else {
+          Alert.alert('Succès', 'Prêt modifié avec succès');
+        }
+      }
+    } catch (error: any) {
+      const errorMsg = error.message || 'Impossible de modifier le prêt';
+      if (Platform.OS === 'web') {
+        window.alert(`Erreur: ${errorMsg}`);
+      } else {
+        Alert.alert('Erreur', errorMsg);
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -177,25 +302,33 @@ function LoanDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={editMode ? handleCancelEdit : () => router.back()}
           style={styles.headerBackButton}
-          accessibilityLabel="Retour"
-          // @ts-ignore - title works on web for tooltip
-          title="Retour"
+          accessibilityLabel={editMode ? "Annuler" : "Retour"}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#212121" />
+          <MaterialIcons name={editMode ? "close" : "arrow-back"} size={24} color="#212121" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Détails du prêt</Text>
-        <TouchableOpacity
-          onPress={handleDelete}
-          style={styles.headerDeleteButton}
-          accessibilityLabel="Supprimer le prêt"
-          accessibilityHint="Supprime définitivement ce prêt"
-          // @ts-ignore - title works on web for tooltip
-          title="Supprimer le prêt"
-        >
-          <MaterialIcons name="delete" size={24} color="#F44336" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{editMode ? "Modifier le prêt" : "Détails du prêt"}</Text>
+        <View style={styles.headerActions}>
+          {!editMode && loan.status !== LoanStatus.RETURNED && (
+            <TouchableOpacity
+              onPress={handleEdit}
+              style={styles.headerEditButton}
+              accessibilityLabel="Modifier le prêt"
+            >
+              <MaterialIcons name="edit" size={24} color="#2196F3" />
+            </TouchableOpacity>
+          )}
+          {!editMode && (
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.headerDeleteButton}
+              accessibilityLabel="Supprimer le prêt"
+            >
+              <MaterialIcons name="delete" size={24} color="#F44336" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -258,46 +391,83 @@ function LoanDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Dates</Text>
 
-          <View style={styles.dateRow}>
-            <MaterialIcons name="calendar-today" size={20} color="#757575" />
-            <View style={styles.dateInfo}>
-              <Text style={styles.dateLabel}>Date de prêt</Text>
-              <Text style={styles.dateValue}>{formatDate(loan.loan_date)}</Text>
-            </View>
-          </View>
-
-          {loan.due_date && (
-            <View style={styles.dateRow}>
-              <MaterialIcons
-                name="event"
-                size={20}
-                color={isLoanOverdue ? '#F44336' : '#757575'}
-              />
-              <View style={styles.dateInfo}>
-                <Text style={styles.dateLabel}>Retour prévu</Text>
-                <Text style={[styles.dateValue, isLoanOverdue && styles.dateOverdue]}>
-                  {formatDate(loan.due_date)}
-                </Text>
+          {editMode ? (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Date de prêt</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.loan_date}
+                  onChangeText={(text) => setEditData({ ...editData, loan_date: text })}
+                  placeholder="JJ/MM/AAAA"
+                />
               </View>
-            </View>
-          )}
 
-          {loan.return_date && (
-            <View style={styles.dateRow}>
-              <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
-              <View style={styles.dateInfo}>
-                <Text style={styles.dateLabel}>Date de retour</Text>
-                <Text style={styles.dateValue}>{formatDate(loan.return_date)}</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Date de retour prévue</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.due_date}
+                  onChangeText={(text) => setEditData({ ...editData, due_date: text })}
+                  placeholder="JJ/MM/AAAA"
+                />
               </View>
-            </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.dateRow}>
+                <MaterialIcons name="calendar-today" size={20} color="#757575" />
+                <View style={styles.dateInfo}>
+                  <Text style={styles.dateLabel}>Date de prêt</Text>
+                  <Text style={styles.dateValue}>{formatDate(loan.loan_date)}</Text>
+                </View>
+              </View>
+
+              {loan.due_date && (
+                <View style={styles.dateRow}>
+                  <MaterialIcons
+                    name="event"
+                    size={20}
+                    color={isLoanOverdue ? '#F44336' : '#757575'}
+                  />
+                  <View style={styles.dateInfo}>
+                    <Text style={styles.dateLabel}>Retour prévu</Text>
+                    <Text style={[styles.dateValue, isLoanOverdue && styles.dateOverdue]}>
+                      {formatDate(loan.due_date)}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {loan.return_date && (
+                <View style={styles.dateRow}>
+                  <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
+                  <View style={styles.dateInfo}>
+                    <Text style={styles.dateLabel}>Date de retour</Text>
+                    <Text style={styles.dateValue}>{formatDate(loan.return_date)}</Text>
+                  </View>
+                </View>
+              )}
+            </>
           )}
         </View>
 
         {/* Notes */}
-        {loan.notes && (
+        {(loan.notes || editMode) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Notes</Text>
-            <Text style={styles.notesText}>{loan.notes}</Text>
+            {editMode ? (
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={editData.notes}
+                onChangeText={(text) => setEditData({ ...editData, notes: text })}
+                placeholder="Notes sur le prêt..."
+                multiline
+                numberOfLines={4}
+              />
+            ) : (
+              <Text style={styles.notesText}>{loan.notes}</Text>
+            )}
           </View>
         )}
 
@@ -315,7 +485,24 @@ function LoanDetailScreen() {
       </ScrollView>
 
       {/* Actions */}
-      {(loan.status === LoanStatus.ACTIVE || loan.status === LoanStatus.OVERDUE) && (
+      {editMode ? (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.saveButton, actionLoading && styles.buttonDisabled]}
+            onPress={handleSaveEdit}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialIcons name="check" size={20} color="#FFFFFF" />
+                <Text style={styles.saveButtonText}>Enregistrer</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      ) : (loan.status === LoanStatus.ACTIVE || loan.status === LoanStatus.OVERDUE) && (
         <View style={styles.footer}>
           <TouchableOpacity
             style={[styles.returnButton, actionLoading && styles.buttonDisabled]}
@@ -366,6 +553,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#212121',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerEditButton: {
+    padding: 4,
+    marginRight: 8,
   },
   headerDeleteButton: {
     padding: 4,
@@ -524,5 +719,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     marginLeft: 8,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2196F3',
+    paddingVertical: 14,
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#212121',
+    backgroundColor: '#FAFAFA',
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 12,
+    color: '#9E9E9E',
+    marginBottom: 4,
   },
 });

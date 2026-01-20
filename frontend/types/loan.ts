@@ -79,6 +79,7 @@ export interface LoanCreate {
  * @property {string} [notes] - Nouvelles notes (optionnel)
  */
 export interface LoanUpdate {
+    loan_date?: string;
     due_date?: string;
     notes?: string;
     calendar_event_id?: string;

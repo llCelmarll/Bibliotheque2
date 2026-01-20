@@ -104,6 +104,13 @@ class BorrowedBookService:
             borrowed_book.borrowed_date = borrow_data.borrowed_date
         if borrow_data.expected_return_date is not None:
             borrowed_book.expected_return_date = borrow_data.expected_return_date
+            # Recalculer le statut si l'emprunt n'est pas déjà retourné
+            if borrowed_book.status != BorrowStatus.RETURNED:
+                now = datetime.utcnow()
+                if borrowed_book.expected_return_date < now:
+                    borrowed_book.status = BorrowStatus.OVERDUE
+                else:
+                    borrowed_book.status = BorrowStatus.ACTIVE
         if borrow_data.actual_return_date is not None:
             borrowed_book.actual_return_date = borrow_data.actual_return_date
             # Si une date de retour est définie, marquer comme retourné

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -65,6 +65,24 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
     date: string;
     calendarName: string;
   } | null>(null);
+
+  // Options de délai disponibles (0 = jour même)
+  const OFFSET_OPTIONS = [0, 1, 2, 3, 7];
+
+  // Calculer les options de délai valides (celles qui ne sont pas dans le passé)
+  const validOffsetOptions = useMemo(() => {
+    if (!dueDate) return OFFSET_OPTIONS;
+
+    const dueDateObj = new Date(dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dueDateObj.setHours(0, 0, 0, 0);
+
+    const daysRemaining = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Retourner seulement les options où le rappel serait dans le futur (ou aujourd'hui)
+    return OFFSET_OPTIONS.filter(offset => daysRemaining >= offset);
+  }, [dueDate]);
 
   // Charger les préférences au montage
   useEffect(() => {
@@ -408,23 +426,47 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
               {/* Sélection du timing */}
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>Rappeler</Text>
-                {[1, 2, 3, 7].map((days) => (
-                  <TouchableOpacity
-                    key={days}
-                    style={[
-                      styles.timingOption,
-                      reminderOffsetDays === days && styles.timingOptionSelected,
-                    ]}
-                    onPress={() => setReminderOffsetDays(days)}
-                  >
-                    <Text style={styles.timingText}>
-                      {days === 1 ? '1 jour avant' : `${days} jours avant`}
+                {validOffsetOptions.length === 0 ? (
+                  <View style={styles.warningContainer}>
+                    <MaterialIcons name="warning" size={20} color="#FF9800" />
+                    <Text style={styles.warningText}>
+                      La date de retour est passée, impossible de configurer un rappel.
                     </Text>
-                    {reminderOffsetDays === days && (
-                      <MaterialIcons name="check-circle" size={20} color="#2196F3" />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                  </View>
+                ) : (
+                  OFFSET_OPTIONS.map((days) => {
+                    const isValid = validOffsetOptions.includes(days);
+                    const getLabel = (d: number) => {
+                      if (d === 0) return 'Le jour même';
+                      if (d === 1) return '1 jour avant';
+                      return `${d} jours avant`;
+                    };
+                    return (
+                      <TouchableOpacity
+                        key={days}
+                        style={[
+                          styles.timingOption,
+                          reminderOffsetDays === days && styles.timingOptionSelected,
+                          !isValid && styles.timingOptionDisabled,
+                        ]}
+                        onPress={() => isValid && setReminderOffsetDays(days)}
+                        disabled={!isValid}
+                      >
+                        <View style={styles.timingTextContainer}>
+                          <Text style={[styles.timingText, !isValid && styles.timingTextDisabled]}>
+                            {getLabel(days)}
+                          </Text>
+                          {!isValid && (
+                            <Text style={styles.timingDisabledHint}>(passé)</Text>
+                          )}
+                        </View>
+                        {reminderOffsetDays === days && isValid && (
+                          <MaterialIcons name="check-circle" size={20} color="#2196F3" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
               </View>
 
               {/* Aperçu */}
@@ -447,9 +489,9 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton, isCreating && styles.buttonDisabled]}
+                style={[styles.modalButton, styles.confirmButton, (isCreating || validOffsetOptions.length === 0) && styles.buttonDisabled]}
                 onPress={existingEventId ? handleModifyReminder : handleCreateReminder}
-                disabled={isCreating || !selectedCalendarId}
+                disabled={isCreating || !selectedCalendarId || validOffsetOptions.length === 0}
               >
                 {isCreating ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
@@ -623,9 +665,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2196F3',
   },
+  timingTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   timingText: {
     fontSize: 14,
     color: '#212121',
+  },
+  timingTextDisabled: {
+    color: '#9E9E9E',
+  },
+  timingOptionDisabled: {
+    backgroundColor: '#EEEEEE',
+    opacity: 0.7,
+  },
+  timingDisabledHint: {
+    fontSize: 12,
+    color: '#9E9E9E',
+    fontStyle: 'italic',
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    gap: 8,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#E65100',
   },
   previewSection: {
     flexDirection: 'row',

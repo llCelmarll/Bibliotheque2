@@ -123,8 +123,17 @@ class LoanService:
             )
 
         # Mettre à jour les champs
+        if loan_data.loan_date is not None:
+            loan.loan_date = loan_data.loan_date
         if loan_data.due_date is not None:
             loan.due_date = loan_data.due_date
+            # Recalculer le statut si le prêt n'est pas déjà retourné
+            if loan.status != LoanStatus.RETURNED:
+                now = datetime.utcnow()
+                if loan.due_date < now:
+                    loan.status = LoanStatus.OVERDUE
+                else:
+                    loan.status = LoanStatus.ACTIVE
         if loan_data.return_date is not None:
             loan.return_date = loan_data.return_date
             # Si une date de retour est définie, marquer comme retourné
