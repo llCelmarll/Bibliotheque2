@@ -59,6 +59,7 @@ interface BookFormProps {
 	submitButtonLoadingText?: string;
 	disableInternalScroll?: boolean;
 	forceOwnership?: boolean;  // Forcer is_borrowed=false (pour livres retournés)
+	isEditMode?: boolean;      // Masquer la section emprunt en mode modification
 }
 
 // Fonction pour convertir SuggestedBook vers BookFormData (maintenant synchrone car enrichie par le backend)
@@ -154,7 +155,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 																		submitButtonText = 'Enregistrer le livre',
 																		submitButtonLoadingText = 'Enregistrement...',
 																		disableInternalScroll = false,
-																		forceOwnership = false
+																		forceOwnership = false,
+																		isEditMode = false
 																	}) => {
 	const formInitialValues = suggestedBookToFormData(initialData);
 	const formikRef = useRef<FormikProps<BookFormData> | null>(null);
@@ -305,8 +307,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 							renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)
 						)}
 
-						{/* Section Emprunt - cachée si forceOwnership */}
-						{!forceOwnership && (
+						{/* Section Emprunt - cachée si forceOwnership ou en mode modification */}
+						{!forceOwnership && !isEditMode && (
 							<View style={styles.sectionContainer}>
 								<Text style={styles.sectionSubtitle}>📚 Emprunt (optionnel)</Text>
 
