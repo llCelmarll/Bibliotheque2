@@ -21,7 +21,11 @@ if (-not $ApkUrl) {
     }
 
     $buildInfo = $apkJson | ConvertFrom-Json
-    $ApkUrl = $buildInfo.artifacts.buildUrl
+    if ($buildInfo -is [array]) {
+        $ApkUrl = $buildInfo[0].artifacts.buildUrl
+    } else {
+        $ApkUrl = $buildInfo.artifacts.buildUrl
+    }
 
     Set-Location "$PSScriptRoot\..\.."
 }
@@ -47,16 +51,16 @@ Write-Host ""
 Write-Host "Upload de l'APK sur le serveur..." -ForegroundColor Yellow
 
 # Créer le répertoire s'il n'existe pas
-ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/apk"
+ssh "$env:SYNOLOGY_USER@$env:SYNOLOGY_IP" "mkdir -p $env:SYNOLOGY_PATH/apk"
 
 # Copier l'APK sur le serveur
-scp $tempApk "${SYNOLOGY_USER}@${SYNOLOGY_IP}:${SYNOLOGY_PATH}/apk/bibliotheque.apk"
+scp $tempApk "$env:SYNOLOGY_USER@$env:SYNOLOGY_IP`:$env:SYNOLOGY_PATH/apk/bibliotheque.apk"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "  APK uploadé avec succès !" -ForegroundColor Green
 
     # Vérifier la taille sur le serveur
-    $remoteSize = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "ls -lh ${SYNOLOGY_PATH}/apk/bibliotheque.apk | awk '{print `$5}'"
+    $remoteSize = ssh "$env:SYNOLOGY_USER@$env:SYNOLOGY_IP" "ls -lh $env:SYNOLOGY_PATH/apk/bibliotheque.apk | awk '{print `$5}'"
     Write-Host "  Taille sur le serveur: $remoteSize" -ForegroundColor Gray
 } else {
     Write-Host "  Erreur lors de l'upload de l'APK" -ForegroundColor Red

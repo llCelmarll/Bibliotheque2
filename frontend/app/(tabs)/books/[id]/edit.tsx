@@ -185,7 +185,7 @@ export default function EditBookScreen() {
             <BookForm
               initialData={suggestedData}
               onSubmit={handleFormSubmit}
-              submitButtonText="Modifier le livre"
+              submitButtonText="Enregistrer les modifications"
               submitButtonLoadingText="Modification..."
               disableInternalScroll={true}
               isEditMode={true}
