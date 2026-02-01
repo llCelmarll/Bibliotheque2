@@ -1,8 +1,22 @@
 # Script de rebuild et redeploy du frontend uniquement
 # Utilise pour mettre a jour rapidement le frontend sans toucher au backend
 
-$SYNOLOGY_USER = "QuentinDDC"
-$SYNOLOGY_IP = "192.168.1.124"
+# Chargement des variables de deploiement
+$envFile = Join-Path $PSScriptRoot "..\..\. env.deploy"
+if (-not (Test-Path $envFile)) {
+    $envFile = Join-Path $PSScriptRoot ".env.deploy"
+}
+if (-not (Test-Path $envFile)) {
+    Write-Host "Erreur: fichier .env.deploy introuvable" -ForegroundColor Red
+    Write-Host "Copiez .env.deploy.example vers .env.deploy et configurez vos valeurs" -ForegroundColor Yellow
+    exit 1
+}
+Get-Content $envFile | ForEach-Object {
+    if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+        Set-Variable -Name $Matches[1].Trim() -Value $Matches[2].Trim()
+        [Environment]::SetEnvironmentVariable($Matches[1].Trim(), $Matches[2].Trim(), "Process")
+    }
+}
 
 Write-Host "`nRedeploy Frontend uniquement" -ForegroundColor Cyan
 Write-Host "=============================" -ForegroundColor Cyan
