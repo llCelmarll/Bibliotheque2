@@ -34,6 +34,16 @@ export default function SubTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="borrows-list"
+        options={{
+          title: 'Emprunts',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="borrowers-list"
         options={{
           title: 'Emprunteurs',

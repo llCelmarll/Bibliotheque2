@@ -18,7 +18,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="loans"
         options={{
-          title: "Prêts",
+          title: "Prêts & Emprunts",
           tabBarIcon: ({ color, size}) => (
             <Ionicons name="swap-horizontal-outline" size={size} color={color} />
           ),
@@ -27,10 +27,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="borrowed"
         options={{
-          title: "Emprunts",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" size={size} color={color} />
-          ),
+          href: null, // Masqué - intégré dans l'onglet Prêts & Emprunts
         }}
       />
       <Tabs.Screen

@@ -35,7 +35,7 @@ export const BorrowedBookListItem: React.FC<Props> = ({ borrowedBook }) => {
 							await returnBorrowedBook(borrowedBook.id);
 							Alert.alert('Succès', 'Livre retourné avec succès');
 							// Rafraîchir la liste (via navigation)
-							router.replace('/borrowed');
+							router.replace('/(tabs)/loans');
 						} catch (error) {
 							Alert.alert('Erreur', 'Impossible de retourner le livre');
 						}
