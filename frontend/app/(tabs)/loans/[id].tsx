@@ -364,9 +364,9 @@ function LoanDetailScreen() {
           />
         </View>
 
-        {/* Emprunteur */}
+        {/* Contact */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emprunteur</Text>
+          <Text style={styles.sectionTitle}>Contact</Text>
           <View style={styles.borrowerContainer}>
             <MaterialIcons name="person" size={32} color="#2196F3" />
             <View style={styles.borrowerInfo}>

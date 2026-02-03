@@ -2,7 +2,7 @@
 # Utilise pour mettre a jour rapidement le frontend sans toucher au backend
 
 # Chargement des variables de deploiement
-$envFile = Join-Path $PSScriptRoot "..\..\. env.deploy"
+$envFile = Join-Path $PSScriptRoot "..\..\.env.deploy"
 if (-not (Test-Path $envFile)) {
     $envFile = Join-Path $PSScriptRoot ".env.deploy"
 }

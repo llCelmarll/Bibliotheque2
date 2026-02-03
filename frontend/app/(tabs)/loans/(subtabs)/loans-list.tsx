@@ -157,7 +157,7 @@ function LoansScreen() {
           <MaterialIcons name="search" size={20} color="#757575" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Rechercher un livre ou emprunteur..."
+            placeholder="Rechercher un livre ou contact..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#9E9E9E"
@@ -184,7 +184,7 @@ function LoansScreen() {
             onPress={() => setSortBy('contact')}
           >
             <Text style={[styles.sortButtonText, sortBy === 'contact' && styles.sortButtonTextActive]}>
-              Emprunteur
+              Contact
             </Text>
           </TouchableOpacity>
           <TouchableOpacity

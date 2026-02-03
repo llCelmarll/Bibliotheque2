@@ -76,7 +76,7 @@ function Start-DockerIfNeeded {
 }
 
 # Chargement des variables de deploiement
-$envFile = Join-Path $PSScriptRoot "..\..\. env.deploy"
+$envFile = Join-Path $PSScriptRoot "..\..\.env.deploy"
 if (-not (Test-Path $envFile)) {
     $envFile = Join-Path $PSScriptRoot ".env.deploy"
 }

@@ -2,7 +2,7 @@
 # Redemarre le container backend sur le NAS Synology avec la derniere image
 
 # Chargement des variables de deploiement
-$envFile = Join-Path $PSScriptRoot "..\..\. env.deploy"
+$envFile = Join-Path $PSScriptRoot "..\..\.env.deploy"
 if (-not (Test-Path $envFile)) {
     $envFile = Join-Path $PSScriptRoot ".env.deploy"
 }

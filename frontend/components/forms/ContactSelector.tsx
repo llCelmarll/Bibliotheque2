@@ -72,7 +72,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
                 <Text style={styles.selectedEmail}>{selectedContact.email}</Text>
               )}
               {typeof selectedContact === 'string' && (
-                <Text style={styles.selectedEmail}>Nouveau (sera cr\u00e9\u00e9)</Text>
+                <Text style={styles.selectedEmail}>Nouveau (sera créé)</Text>
               )}
             </View>
           </View>
@@ -114,7 +114,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Rechercher ou cr\u00e9er un contact..."
+              placeholder="Rechercher ou créer un contact..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
@@ -129,7 +129,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
             <TouchableOpacity style={styles.createButton} onPress={handleCreateNew}>
               <MaterialIcons name="add-circle" size={24} color="#4CAF50" />
               <Text style={styles.createButtonText}>
-                Cr\u00e9er "{searchQuery}"
+                Créer "{searchQuery}"
               </Text>
             </TouchableOpacity>
           )}
@@ -152,11 +152,11 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>
-                    {searchQuery ? 'Aucun contact trouv\u00e9' : 'Aucun contact'}
+                    {searchQuery ? 'Aucun contact trouvé' : 'Aucun contact'}
                   </Text>
                   {searchQuery && (
                     <Text style={styles.emptyHint}>
-                      Appuyez sur "Cr\u00e9er" pour ajouter ce contact
+                      Appuyez sur "Créer" pour ajouter ce contact
                     </Text>
                   )}
                 </View>

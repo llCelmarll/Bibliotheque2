@@ -12,14 +12,13 @@ export default function SubTabsLayout() {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E0E0E0',
-          height: Platform.OS === 'web' ? 60 : 50,
+          height: Platform.OS === 'web' ? 60 : 56,
+          paddingBottom: Platform.OS === 'web' ? 0 : 4,
+          paddingTop: Platform.OS === 'web' ? 0 : 4,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-        },
-        tabBarIconStyle: {
-          marginTop: Platform.OS === 'web' ? 0 : -4,
         },
       }}
     >

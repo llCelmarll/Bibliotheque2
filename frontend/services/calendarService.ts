@@ -172,7 +172,7 @@ class CalendarService {
       // Créer les notes de l'événement
       let eventNotes = `Rappel de retour de livre`;
       if (borrowerName) {
-        eventNotes += `\nEmprunteur: ${borrowerName}`;
+        eventNotes += `\nContact: ${borrowerName}`;
       }
       if (lenderName) {
         eventNotes += `\nPrêteur: ${lenderName}`;
