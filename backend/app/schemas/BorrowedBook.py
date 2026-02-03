@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import Optional, Dict, Any
 from sqlmodel import SQLModel
 from datetime import datetime
 from app.models.BorrowedBook import BorrowStatus
+from app.schemas.Contact import ContactRead
 
 
 class BorrowedBookRead(SQLModel):
@@ -9,7 +10,9 @@ class BorrowedBookRead(SQLModel):
     id: int
     book_id: int
     book: Optional["BookRead"] = None
-    borrowed_from: str
+    contact_id: Optional[int] = None
+    contact: Optional[ContactRead] = None
+    borrowed_from: str  # Legacy, gardé pour rétrocompatibilité
     borrowed_date: datetime
     expected_return_date: Optional[datetime] = None
     actual_return_date: Optional[datetime] = None
@@ -21,9 +24,15 @@ class BorrowedBookRead(SQLModel):
 
 
 class BorrowedBookCreate(SQLModel):
-    """Schema for creating a borrowed book record"""
+    """Schema for creating a borrowed book record.
+
+    Le champ contact accepte plusieurs formats :
+    - int : ID d'un contact existant
+    - str : Nom d'un contact (sera créé s'il n'existe pas)
+    - dict : Objet avec 'name' et optionnellement 'email', 'phone', 'notes'
+    """
     book_id: int
-    borrowed_from: str
+    contact: int | str | Dict[str, Any]
     borrowed_date: Optional[datetime] = None  # Defaults to now
     expected_return_date: Optional[datetime] = None
     notes: Optional[str] = None
@@ -31,7 +40,7 @@ class BorrowedBookCreate(SQLModel):
 
 class BorrowedBookUpdate(SQLModel):
     """Schema for updating a borrowed book record"""
-    borrowed_from: Optional[str] = None
+    contact: Optional[int | str | Dict[str, Any]] = None
     borrowed_date: Optional[datetime] = None
     expected_return_date: Optional[datetime] = None
     actual_return_date: Optional[datetime] = None

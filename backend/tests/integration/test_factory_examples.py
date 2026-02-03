@@ -39,12 +39,12 @@ class TestFactoryIntegration:
         books_data = [BookFactory.build(owner_id=test_user.id) for _ in range(3)]
         
         created_books = []
-        for book_data in books_data:
+        for i, book_data in enumerate(books_data):
             book_payload = {
                 "title": book_data.title,
                 "isbn": book_data.isbn,
-                "authors": ["Generated Author"],
-                "publisher": "Generated Publisher"
+                "authors": [f"Generated Author {i}"],
+                "publisher": f"Generated Publisher {i}"
             }
             
             response = authenticated_client.post("/books", json=book_payload)

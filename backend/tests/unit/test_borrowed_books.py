@@ -57,7 +57,7 @@ class TestBorrowedBookService:
 
         borrow_data = BorrowedBookCreate(
             book_id=test_book.id,
-            borrowed_from="Marie Martin",
+            contact="Marie Martin",
             borrowed_date=datetime.utcnow(),
             expected_return_date=datetime.utcnow() + timedelta(days=30),
             notes="Test emprunt"
@@ -77,7 +77,7 @@ class TestBorrowedBookService:
         # Créer un emprunt
         borrow_data = BorrowedBookCreate(
             book_id=test_book.id,
-            borrowed_from="Test Source"
+            contact="Test Source"
         )
         created = service.create(borrow_data)
 
@@ -97,8 +97,8 @@ class TestBorrowedBookService:
         book1 = create_test_book(session, test_user.id, "Book 1", "1111111111111")
         book2 = create_test_book(session, test_user.id, "Book 2", "2222222222222")
 
-        service.create(BorrowedBookCreate(book_id=book1.id, borrowed_from="Source 1"))
-        service.create(BorrowedBookCreate(book_id=book2.id, borrowed_from="Source 2"))
+        service.create(BorrowedBookCreate(book_id=book1.id, contact="Source 1"))
+        service.create(BorrowedBookCreate(book_id=book2.id, contact="Source 2"))
 
         # Récupérer tous
         results = service.get_all(skip=0, limit=100)
@@ -114,13 +114,13 @@ class TestBorrowedBookService:
         # Créer un emprunt actif
         book1 = create_test_book(session, test_user.id, "Active Book", "1111111111111")
         active_borrow = service.create(
-            BorrowedBookCreate(book_id=book1.id, borrowed_from="Active Source")
+            BorrowedBookCreate(book_id=book1.id, contact="Active Source")
         )
 
         # Créer un emprunt retourné
         book2 = create_test_book(session, test_user.id, "Returned Book", "2222222222222")
         returned_borrow = service.create(
-            BorrowedBookCreate(book_id=book2.id, borrowed_from="Returned Source")
+            BorrowedBookCreate(book_id=book2.id, contact="Returned Source")
         )
         service.return_book(returned_borrow.id, None)
 
@@ -137,7 +137,7 @@ class TestBorrowedBookService:
         # Créer un emprunt avec une date de retour dépassée
         borrow_data = BorrowedBookCreate(
             book_id=test_book.id,
-            borrowed_from="Overdue Source",
+            contact="Overdue Source",
             borrowed_date=datetime.utcnow() - timedelta(days=40),
             expected_return_date=datetime.utcnow() - timedelta(days=10)
         )
@@ -157,7 +157,7 @@ class TestBorrowedBookService:
         # Créer un emprunt
         borrow_data = BorrowedBookCreate(
             book_id=test_book.id,
-            borrowed_from="Return Test"
+            contact="Return Test"
         )
         created = service.create(borrow_data)
         assert created.status == BorrowStatus.ACTIVE
@@ -174,12 +174,12 @@ class TestBorrowedBookService:
 
         # Créer un emprunt
         created = service.create(
-            BorrowedBookCreate(book_id=test_book.id, borrowed_from="Original")
+            BorrowedBookCreate(book_id=test_book.id, contact="Original")
         )
 
         # Mettre à jour
         update_data = BorrowedBookUpdate(
-            borrowed_from="Updated Source",
+            contact="Updated Source",
             notes="Updated notes"
         )
         updated = service.update(created.id, update_data)
@@ -193,7 +193,7 @@ class TestBorrowedBookService:
 
         # Créer un emprunt
         created = service.create(
-            BorrowedBookCreate(book_id=test_book.id, borrowed_from="Delete Test")
+            BorrowedBookCreate(book_id=test_book.id, contact="Delete Test")
         )
 
         # Supprimer
@@ -214,11 +214,11 @@ class TestBorrowedBookService:
         book2 = create_test_book(session, test_user.id, "Book 2", "2222222222222")
         book3 = create_test_book(session, test_user.id, "Book 3", "3333333333333")
 
-        borrow1 = service.create(BorrowedBookCreate(book_id=book1.id, borrowed_from="S1"))
-        borrow2 = service.create(BorrowedBookCreate(book_id=book2.id, borrowed_from="S2"))
+        borrow1 = service.create(BorrowedBookCreate(book_id=book1.id, contact="S1"))
+        borrow2 = service.create(BorrowedBookCreate(book_id=book2.id, contact="S2"))
         borrow3 = service.create(BorrowedBookCreate(
             book_id=book3.id,
-            borrowed_from="S3",
+            contact="S3",
             expected_return_date=datetime.utcnow() - timedelta(days=1)
         ))
 
@@ -249,7 +249,7 @@ class TestBorrowedBookAPI:
             "/borrowed-books",
             json={
                 "book_id": test_book.id,
-                "borrowed_from": "API Test",
+                "contact": "API Test",
                 "notes": "Test via API"
             }
         )
@@ -257,7 +257,7 @@ class TestBorrowedBookAPI:
         assert response.status_code == 201
         data = response.json()
         assert data["book_id"] == test_book.id
-        assert data["borrowed_from"] == "API Test"
+        assert data["contact"]["name"] == "API Test"
         assert data["status"] == "active"
 
     def test_get_borrowed_books_endpoint(
@@ -270,7 +270,7 @@ class TestBorrowedBookAPI:
         """Test de récupération de tous les emprunts via l'API."""
         # Créer un emprunt
         service = BorrowedBookService(session, user_id=test_user.id)
-        service.create(BorrowedBookCreate(book_id=test_book.id, borrowed_from="API Test"))
+        service.create(BorrowedBookCreate(book_id=test_book.id, contact="API Test"))
 
         response = authenticated_client.get("/borrowed-books")
 
@@ -293,8 +293,8 @@ class TestBorrowedBookAPI:
         book1 = create_test_book(session, test_user.id, "Active", "1111111111111")
         book2 = create_test_book(session, test_user.id, "Returned", "2222222222222")
 
-        service.create(BorrowedBookCreate(book_id=book1.id, borrowed_from="Active"))
-        returned = service.create(BorrowedBookCreate(book_id=book2.id, borrowed_from="Returned"))
+        service.create(BorrowedBookCreate(book_id=book1.id, contact="Active"))
+        returned = service.create(BorrowedBookCreate(book_id=book2.id, contact="Returned"))
         service.return_book(returned.id, None)
 
         response = authenticated_client.get("/borrowed-books/active")
@@ -314,7 +314,7 @@ class TestBorrowedBookAPI:
         # Créer un emprunt
         service = BorrowedBookService(session, user_id=test_user.id)
         created = service.create(
-            BorrowedBookCreate(book_id=test_book.id, borrowed_from="Return Test")
+            BorrowedBookCreate(book_id=test_book.id, contact="Return Test")
         )
 
         response = authenticated_client.put(
@@ -337,7 +337,7 @@ class TestBorrowedBookAPI:
         """Test de récupération des statistiques via l'API."""
         # Créer un emprunt
         service = BorrowedBookService(session, user_id=test_user.id)
-        service.create(BorrowedBookCreate(book_id=test_book.id, borrowed_from="Stats Test"))
+        service.create(BorrowedBookCreate(book_id=test_book.id, contact="Stats Test"))
 
         response = authenticated_client.get("/borrowed-books/statistics")
 
@@ -447,15 +447,15 @@ class TestBookBorrowIntegration:
         )
         book_id = response.json()["id"]
 
-        # Créer un emprunteur
-        borrower_response = authenticated_client.post(
-            "/borrowers",
+        # Créer un contact
+        contact_response = authenticated_client.post(
+            "/contacts",
             json={
                 "name": "Jean Test",
                 "email": "jean@test.com"
             }
         )
-        borrower_id = borrower_response.json()["id"]
+        contact_id = contact_response.json()["id"]
 
         # Tenter de prêter le livre avec tous les champs requis
         from datetime import datetime
@@ -463,7 +463,7 @@ class TestBookBorrowIntegration:
             "/loans",
             json={
                 "book_id": book_id,
-                "borrower": borrower_id,  # Utiliser 'borrower' au lieu de 'borrower_id'
+                "contact": contact_id,
                 "loan_date": datetime.utcnow().isoformat()
             }
         )

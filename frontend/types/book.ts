@@ -8,8 +8,8 @@ import { BorrowedBook } from './borrowedBook';
  */
 export interface CurrentLoan {
     id: number;
-    borrower_id: number;
-    borrower?: {
+    contact_id: number;
+    contact?: {
         id: number;
         name: string;
         email?: string;

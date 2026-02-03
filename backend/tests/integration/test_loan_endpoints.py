@@ -8,29 +8,29 @@ from sqlmodel import Session
 from datetime import datetime, timedelta
 
 from tests.conftest import create_test_user, create_test_book
-from app.models.Borrower import Borrower
+from app.models.Contact import Contact
 from app.models.Loan import Loan, LoanStatus
 
 
-def create_test_borrower(session: Session, owner_id: int, name: str = "Test Borrower", **kwargs) -> Borrower:
-    """Helper pour créer un emprunteur de test."""
-    borrower_data = {
+def create_test_contact(session: Session, owner_id: int, name: str = "Test Contact", **kwargs) -> Contact:
+    """Helper pour créer un contact de test."""
+    contact_data = {
         "name": name,
         "owner_id": owner_id,
         **kwargs
     }
-    borrower = Borrower(**borrower_data)
-    session.add(borrower)
+    contact = Contact(**contact_data)
+    session.add(contact)
     session.commit()
-    session.refresh(borrower)
-    return borrower
+    session.refresh(contact)
+    return contact
 
 
-def create_test_loan(session: Session, owner_id: int, book_id: int, borrower_id: int, **kwargs) -> Loan:
+def create_test_loan(session: Session, owner_id: int, book_id: int, contact_id: int, **kwargs) -> Loan:
     """Helper pour créer un prêt de test."""
     loan_data = {
         "book_id": book_id,
-        "borrower_id": borrower_id,
+        "contact_id": contact_id,
         "owner_id": owner_id,
         "loan_date": datetime.utcnow(),
         "status": LoanStatus.ACTIVE,
@@ -48,14 +48,14 @@ def create_test_loan(session: Session, owner_id: int, book_id: int, borrower_id:
 class TestLoanEndpoints:
     """Tests des endpoints de gestion des prêts."""
 
-    def test_create_loan_with_borrower_id(self, authenticated_client: TestClient, session: Session, test_user):
-        """Test de création de prêt avec ID d'emprunteur existant."""
+    def test_create_loan_with_contact_id(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de création de prêt avec ID de contact existant."""
         book = create_test_book(session, test_user.id, title="Book to Lend")
-        borrower = create_test_borrower(session, test_user.id, name="Marie Dupont")
+        contact = create_test_contact(session, test_user.id, name="Marie Dupont")
 
         loan_data = {
             "book_id": book.id,
-            "borrower": borrower.id,
+            "contact": contact.id,
             "due_date": (datetime.utcnow() + timedelta(days=14)).isoformat()
         }
 
@@ -64,38 +64,38 @@ class TestLoanEndpoints:
         assert response.status_code == 201
         data = response.json()
         assert data["book_id"] == book.id
-        assert data["borrower_id"] == borrower.id
+        assert data["contact_id"] == contact.id
         assert data["status"] == "active"
         assert "id" in data
 
-    def test_create_loan_with_borrower_name(self, authenticated_client: TestClient, session: Session, test_user):
-        """Test de création de prêt avec nom d'emprunteur (création automatique)."""
+    def test_create_loan_with_contact_name(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de création de prêt avec nom de contact (création automatique)."""
         book = create_test_book(session, test_user.id, title="Book to Lend")
 
         loan_data = {
             "book_id": book.id,
-            "borrower": "Jean Martin"  # Nouvel emprunteur
+            "contact": "Jean Martin"  # Nouveau contact
         }
 
         response = authenticated_client.post("/loans", json=loan_data)
 
         assert response.status_code == 201
         data = response.json()
-        assert data["borrower"]["name"] == "Jean Martin"
+        assert data["contact"]["name"] == "Jean Martin"
 
-        # Vérifier que l'emprunteur a été créé
-        response = authenticated_client.get("/borrowers/search?query=Jean")
-        borrowers = response.json()
-        assert len(borrowers) >= 1
-        assert any(b["name"] == "Jean Martin" for b in borrowers)
+        # Vérifier que le contact a été créé
+        response = authenticated_client.get("/contacts/search?query=Jean")
+        contacts = response.json()
+        assert len(contacts) >= 1
+        assert any(c["name"] == "Jean Martin" for c in contacts)
 
-    def test_create_loan_with_borrower_object(self, authenticated_client: TestClient, session: Session, test_user):
-        """Test de création de prêt avec objet emprunteur complet."""
+    def test_create_loan_with_contact_object(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de création de prêt avec objet contact complet."""
         book = create_test_book(session, test_user.id, title="Book to Lend")
 
         loan_data = {
             "book_id": book.id,
-            "borrower": {
+            "contact": {
                 "name": "Sophie Durand",
                 "email": "sophie@example.com",
                 "phone": "0123456789"
@@ -106,22 +106,22 @@ class TestLoanEndpoints:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["borrower"]["name"] == "Sophie Durand"
-        assert data["borrower"]["email"] == "sophie@example.com"
+        assert data["contact"]["name"] == "Sophie Durand"
+        assert data["contact"]["email"] == "sophie@example.com"
 
     def test_create_loan_book_already_loaned(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de création de prêt pour un livre déjà prêté (doit échouer)."""
         book = create_test_book(session, test_user.id, title="Already Loaned Book")
-        borrower1 = create_test_borrower(session, test_user.id, name="Borrower 1")
-        borrower2 = create_test_borrower(session, test_user.id, name="Borrower 2")
+        contact1 = create_test_contact(session, test_user.id, name="Contact 1")
+        contact2 = create_test_contact(session, test_user.id, name="Contact 2")
 
         # Créer le premier prêt
-        create_test_loan(session, test_user.id, book.id, borrower1.id)
+        create_test_loan(session, test_user.id, book.id, contact1.id)
 
         # Essayer de créer un second prêt
         loan_data = {
             "book_id": book.id,
-            "borrower": borrower2.id
+            "contact": contact2.id
         }
 
         response = authenticated_client.post("/loans", json=loan_data)
@@ -133,7 +133,7 @@ class TestLoanEndpoints:
         """Test de création de prêt avec livre inexistant."""
         loan_data = {
             "book_id": 99999,
-            "borrower": "Test Borrower"
+            "contact": "Test Contact"
         }
 
         response = authenticated_client.post("/loans", json=loan_data)
@@ -145,7 +145,7 @@ class TestLoanEndpoints:
         """Test de création sans authentification."""
         loan_data = {
             "book_id": 1,
-            "borrower": "Test"
+            "contact": "Test"
         }
         response = client.post("/loans", json=loan_data)
 
@@ -155,16 +155,16 @@ class TestLoanEndpoints:
         """Test de récupération de tous les prêts."""
         book1 = create_test_book(session, test_user.id, title="Book 1")
         book2 = create_test_book(session, test_user.id, title="Book 2")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
+        contact = create_test_contact(session, test_user.id, name="Contact")
 
-        loan1 = create_test_loan(session, test_user.id, book1.id, borrower.id)
-        loan2 = create_test_loan(session, test_user.id, book2.id, borrower.id)
+        loan1 = create_test_loan(session, test_user.id, book1.id, contact.id)
+        loan2 = create_test_loan(session, test_user.id, book2.id, contact.id)
 
         # Créer un prêt pour un autre utilisateur (ne doit pas apparaître)
         other_user = create_test_user(session, email="other@example.com", username="otheruser")
         other_book = create_test_book(session, other_user.id, title="Other Book")
-        other_borrower = create_test_borrower(session, other_user.id, name="Other Borrower")
-        create_test_loan(session, other_user.id, other_book.id, other_borrower.id)
+        other_contact = create_test_contact(session, other_user.id, name="Other Contact")
+        create_test_loan(session, other_user.id, other_book.id, other_contact.id)
 
         response = authenticated_client.get("/loans")
 
@@ -178,12 +178,12 @@ class TestLoanEndpoints:
         """Test de récupération des prêts actifs uniquement."""
         book1 = create_test_book(session, test_user.id, title="Book 1")
         book2 = create_test_book(session, test_user.id, title="Book 2")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
+        contact = create_test_contact(session, test_user.id, name="Contact")
 
         # Prêt actif
-        create_test_loan(session, test_user.id, book1.id, borrower.id, status=LoanStatus.ACTIVE)
+        create_test_loan(session, test_user.id, book1.id, contact.id, status=LoanStatus.ACTIVE)
         # Prêt retourné
-        create_test_loan(session, test_user.id, book2.id, borrower.id, status=LoanStatus.RETURNED)
+        create_test_loan(session, test_user.id, book2.id, contact.id, status=LoanStatus.RETURNED)
 
         response = authenticated_client.get("/loans/active")
 
@@ -195,11 +195,11 @@ class TestLoanEndpoints:
     def test_get_overdue_loans(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de récupération des prêts en retard."""
         book = create_test_book(session, test_user.id, title="Overdue Book")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
+        contact = create_test_contact(session, test_user.id, name="Contact")
 
         # Prêt en retard (due_date dans le passé)
         past_date = datetime.utcnow() - timedelta(days=7)
-        create_test_loan(session, test_user.id, book.id, borrower.id, due_date=past_date)
+        create_test_loan(session, test_user.id, book.id, contact.id, due_date=past_date)
 
         response = authenticated_client.get("/loans/overdue")
 
@@ -211,10 +211,10 @@ class TestLoanEndpoints:
         """Test de récupération des statistiques."""
         book1 = create_test_book(session, test_user.id, title="Book 1")
         book2 = create_test_book(session, test_user.id, title="Book 2")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
+        contact = create_test_contact(session, test_user.id, name="Contact")
 
-        create_test_loan(session, test_user.id, book1.id, borrower.id, status=LoanStatus.ACTIVE)
-        create_test_loan(session, test_user.id, book2.id, borrower.id, status=LoanStatus.RETURNED)
+        create_test_loan(session, test_user.id, book1.id, contact.id, status=LoanStatus.ACTIVE)
+        create_test_loan(session, test_user.id, book2.id, contact.id, status=LoanStatus.RETURNED)
 
         response = authenticated_client.get("/loans/statistics")
 
@@ -230,8 +230,8 @@ class TestLoanEndpoints:
     def test_return_loan(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de retour d'un livre."""
         book = create_test_book(session, test_user.id, title="Book to Return")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
-        loan = create_test_loan(session, test_user.id, book.id, borrower.id)
+        contact = create_test_contact(session, test_user.id, name="Contact")
+        loan = create_test_loan(session, test_user.id, book.id, contact.id)
 
         response = authenticated_client.put(f"/loans/{loan.id}/return")
 
@@ -243,8 +243,8 @@ class TestLoanEndpoints:
     def test_return_loan_already_returned(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de retour d'un livre déjà retourné (doit échouer)."""
         book = create_test_book(session, test_user.id, title="Already Returned")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
-        loan = create_test_loan(session, test_user.id, book.id, borrower.id, status=LoanStatus.RETURNED)
+        contact = create_test_contact(session, test_user.id, name="Contact")
+        loan = create_test_loan(session, test_user.id, book.id, contact.id, status=LoanStatus.RETURNED)
 
         response = authenticated_client.put(f"/loans/{loan.id}/return")
 
@@ -254,8 +254,8 @@ class TestLoanEndpoints:
     def test_update_loan(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de mise à jour d'un prêt."""
         book = create_test_book(session, test_user.id, title="Book")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
-        loan = create_test_loan(session, test_user.id, book.id, borrower.id)
+        contact = create_test_contact(session, test_user.id, name="Contact")
+        loan = create_test_loan(session, test_user.id, book.id, contact.id)
 
         new_due_date = (datetime.utcnow() + timedelta(days=30)).isoformat()
         update_data = {
@@ -272,8 +272,8 @@ class TestLoanEndpoints:
     def test_delete_loan(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de suppression d'un prêt."""
         book = create_test_book(session, test_user.id, title="Book")
-        borrower = create_test_borrower(session, test_user.id, name="Borrower")
-        loan = create_test_loan(session, test_user.id, book.id, borrower.id)
+        contact = create_test_contact(session, test_user.id, name="Contact")
+        loan = create_test_loan(session, test_user.id, book.id, contact.id)
 
         response = authenticated_client.delete(f"/loans/{loan.id}")
 
@@ -286,13 +286,13 @@ class TestLoanEndpoints:
     def test_get_loans_by_book(self, authenticated_client: TestClient, session: Session, test_user):
         """Test de récupération de l'historique des prêts pour un livre."""
         book = create_test_book(session, test_user.id, title="Popular Book")
-        borrower1 = create_test_borrower(session, test_user.id, name="Borrower 1")
-        borrower2 = create_test_borrower(session, test_user.id, name="Borrower 2")
+        contact1 = create_test_contact(session, test_user.id, name="Contact 1")
+        contact2 = create_test_contact(session, test_user.id, name="Contact 2")
 
         # Ancien prêt retourné
-        create_test_loan(session, test_user.id, book.id, borrower1.id, status=LoanStatus.RETURNED)
+        create_test_loan(session, test_user.id, book.id, contact1.id, status=LoanStatus.RETURNED)
         # Prêt actuel
-        create_test_loan(session, test_user.id, book.id, borrower2.id, status=LoanStatus.ACTIVE)
+        create_test_loan(session, test_user.id, book.id, contact2.id, status=LoanStatus.ACTIVE)
 
         response = authenticated_client.get(f"/loans/by-book/{book.id}")
 
@@ -300,16 +300,16 @@ class TestLoanEndpoints:
         loans = response.json()
         assert len(loans) == 2
 
-    def test_get_loans_by_borrower(self, authenticated_client: TestClient, session: Session, test_user):
-        """Test de récupération de l'historique des prêts pour un emprunteur."""
+    def test_get_loans_by_contact(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de récupération de l'historique des prêts pour un contact."""
         book1 = create_test_book(session, test_user.id, title="Book 1")
         book2 = create_test_book(session, test_user.id, title="Book 2")
-        borrower = create_test_borrower(session, test_user.id, name="Regular Borrower")
+        contact = create_test_contact(session, test_user.id, name="Regular Contact")
 
-        create_test_loan(session, test_user.id, book1.id, borrower.id)
-        create_test_loan(session, test_user.id, book2.id, borrower.id)
+        create_test_loan(session, test_user.id, book1.id, contact.id)
+        create_test_loan(session, test_user.id, book2.id, contact.id)
 
-        response = authenticated_client.get(f"/loans/by-borrower/{borrower.id}")
+        response = authenticated_client.get(f"/loans/by-contact/{contact.id}")
 
         assert response.status_code == 200
         loans = response.json()
@@ -320,8 +320,8 @@ class TestLoanEndpoints:
         # Créer un prêt pour un autre utilisateur
         other_user = create_test_user(session, email="other@example.com", username="otheruser")
         other_book = create_test_book(session, other_user.id, title="Other Book")
-        other_borrower = create_test_borrower(session, other_user.id, name="Other Borrower")
-        other_loan = create_test_loan(session, other_user.id, other_book.id, other_borrower.id)
+        other_contact = create_test_contact(session, other_user.id, name="Other Contact")
+        other_loan = create_test_loan(session, other_user.id, other_book.id, other_contact.id)
 
         # Essayer d'accéder au prêt de l'autre utilisateur
         response = authenticated_client.get(f"/loans/{other_loan.id}")

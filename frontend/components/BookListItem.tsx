@@ -99,7 +99,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 				{book.current_loan && (
 					<View style={styles.loanBadge}>
 						<Text style={styles.loanBadgeText}>
-							📖 Prêté à {book.current_loan.borrower?.name || 'Emprunteur inconnu'}
+							📖 Prêté à {book.current_loan.contact?.name || 'Contact inconnu'}
 						</Text>
 						{book.current_loan.due_date && (
 							<Text style={[

@@ -7,6 +7,8 @@ import { SuggestedBook, BookCreate } from "@/types/scanTypes";
 import { AuthorSelector, PublisherSelector, GenreSelector } from '@/components/forms';
 import { Author, Publisher, Genre, Entity, PublisherMetadata, GenreMetadata } from '@/types/entityTypes';
 import { ImagePreview } from './ImagePreview';
+import { Contact } from '@/types/contact';
+import { ContactSelector } from '@/components/forms/ContactSelector';
 
 // Feature flag pour activer les nouveaux sélecteurs d'entités
 const USE_ENTITY_SELECTORS = true;
@@ -40,12 +42,7 @@ const validationSchema = Yup.object().shape({
 		.positive('Le nombre de pages doit être positif')
 		.integer('Le nombre de pages doit être un entier'),
 	coverUrl: Yup.string().url('URL invalide'),
-	// Validation emprunt
-	borrowed_from: Yup.string().when('is_borrowed', {
-		is: true,
-		then: (schema) => schema.required('Le champ "Emprunté à" est requis si le livre est emprunté'),
-		otherwise: (schema) => schema.notRequired()
-	}),
+	// Validation emprunt - le contact est géré par ContactSelector
 	borrowed_date: Yup.string()
 		.matches(/^\d{2}\/\d{2}\/\d{4}$/, 'Format: JJ/MM/AAAA'),
 	expected_return_date: Yup.string()
@@ -97,6 +94,7 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	borrowed_date: new Date().toLocaleDateString('fr-FR'), // Date d'aujourd'hui par défaut (DD/MM/YYYY)
 	expected_return_date: '',
 	borrow_notes: '',
+	contact: undefined,
 });
 
 // Fonction pour convertir BookFormData vers BookCreate
@@ -139,6 +137,7 @@ const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = 
 	// Inclure champs d'emprunt (convertir dates DD/MM/YYYY -> YYYY-MM-DD pour le backend)
 	// Forcer is_borrowed=false si forceOwnership=true
 	is_borrowed: forceOwnership ? false : formData.is_borrowed,
+	contact: forceOwnership ? undefined : (formData.contact || undefined),
 	borrowed_from: forceOwnership ? undefined : (formData.borrowed_from || undefined),
 	borrowed_date: forceOwnership ? undefined : convertDateToISO(formData.borrowed_date),
 	expected_return_date: forceOwnership ? undefined : convertDateToISO(formData.expected_return_date),
@@ -325,7 +324,20 @@ export const BookForm: React.FC<BookFormProps> = ({
 								{/* Champs conditionnels si is_borrowed=true */}
 								{formik.values.is_borrowed && (
 									<>
-										{renderFormField('Emprunté à *', 'borrowed_from', formik, 'Nom de la personne ou bibliothèque')}
+										<ContactSelector
+											selectedContact={formik.values.contact as Contact | string | null}
+											onContactChange={(contact) => {
+												formik.setFieldValue('contact', contact);
+												// Garder borrowed_from en sync pour legacy
+												if (typeof contact === 'string') {
+													formik.setFieldValue('borrowed_from', contact);
+												} else if (contact && typeof contact === 'object') {
+													formik.setFieldValue('borrowed_from', contact.name);
+												}
+											}}
+											label="Emprunté à *"
+											disabled={formik.isSubmitting}
+										/>
 										{renderFormField('Date d\'emprunt', 'borrowed_date', formik, 'JJ/MM/AAAA')}
 										{renderFormField('Date de retour prévue', 'expected_return_date', formik, 'JJ/MM/AAAA')}
 										{renderFormField('Notes', 'borrow_notes', formik, 'Notes sur l\'emprunt...', true)}

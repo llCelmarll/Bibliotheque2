@@ -1,5 +1,5 @@
 import { Book } from './book';
-import { Borrower } from './borrower';
+import { Contact } from './contact';
 
 /**
  * Types pour la gestion des prêts de livres
@@ -21,8 +21,8 @@ export enum LoanStatus {
  * @property {number} id - Identifiant unique du prêt
  * @property {number} book_id - ID du livre prêté
  * @property {Book} book - Données complètes du livre prêté
- * @property {number} borrower_id - ID de l'emprunteur
- * @property {Borrower} borrower - Données complètes de l'emprunteur
+ * @property {number} contact_id - ID du contact
+ * @property {Contact} contact - Données complètes du contact
  * @property {string} loan_date - Date de début du prêt (ISO 8601)
  * @property {string} [due_date] - Date d'échéance du prêt (ISO 8601, optionnel)
  * @property {string} [return_date] - Date de retour effective (ISO 8601, optionnel)
@@ -33,8 +33,8 @@ export interface Loan {
     id: number;
     book_id: number;
     book: Book;
-    borrower_id: number;
-    borrower: Borrower;
+    contact_id: number;
+    contact: Contact;
     loan_date: string;
     due_date?: string;
     return_date?: string;
@@ -45,21 +45,21 @@ export interface Loan {
 
 /**
  * Interface pour créer un nouveau prêt
- * Le champ borrower accepte 3 formats différents :
- * - number : ID d'un emprunteur existant
- * - string : Nom d'un emprunteur (sera créé automatiquement s'il n'existe pas)
- * - object : Données complètes pour créer un nouvel emprunteur
+ * Le champ contact accepte 3 formats différents :
+ * - number : ID d'un contact existant
+ * - string : Nom d'un contact (sera créé automatiquement s'il n'existe pas)
+ * - object : Données complètes pour créer un nouveau contact
  *
  * @interface LoanCreate
  * @property {number} book_id - ID du livre à prêter (requis)
- * @property {number | string | BorrowerCreate} borrower - Emprunteur (3 formats possibles)
+ * @property {number | string | ContactCreate} contact - Contact (3 formats possibles)
  * @property {string} [loan_date] - Date de début du prêt (optionnel, défaut: maintenant)
  * @property {string} [due_date] - Date d'échéance du prêt (optionnel)
  * @property {string} [notes] - Notes libres sur le prêt (optionnel)
  */
 export interface LoanCreate {
     book_id: number;
-    borrower: number | string | {
+    contact: number | string | {
         name: string;
         email?: string;
         phone?: string;

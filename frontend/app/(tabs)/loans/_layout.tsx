@@ -32,7 +32,7 @@ export default function LoansLayout() {
         }}
       />
       <Stack.Screen
-        name="borrowers"
+        name="contacts"
         options={{
           headerShown: false
         }}

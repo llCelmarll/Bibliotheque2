@@ -17,7 +17,7 @@ import { useLoans } from '@/hooks/useLoans';
 import { LoanListItem } from '@/components/loans/LoanListItem';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
-type SortOption = 'date' | 'borrower' | 'book' | 'dueDate';
+type SortOption = 'date' | 'contact' | 'book' | 'dueDate';
 
 function LoansScreen() {
   const router = useRouter();
@@ -46,7 +46,7 @@ function LoansScreen() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(loan =>
         loan.book.title.toLowerCase().includes(query) ||
-        loan.borrower.name.toLowerCase().includes(query) ||
+        loan.contact.name.toLowerCase().includes(query) ||
         loan.book.authors?.some(a => a.name.toLowerCase().includes(query))
       );
     }
@@ -54,8 +54,8 @@ function LoansScreen() {
     // Tri
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'borrower':
-          return a.borrower.name.localeCompare(b.borrower.name);
+        case 'contact':
+          return a.contact.name.localeCompare(b.contact.name);
         case 'book':
           return a.book.title.localeCompare(b.book.title);
         case 'dueDate':
@@ -180,10 +180,10 @@ function LoansScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.sortButton, sortBy === 'borrower' && styles.sortButtonActive]}
-            onPress={() => setSortBy('borrower')}
+            style={[styles.sortButton, sortBy === 'contact' && styles.sortButtonActive]}
+            onPress={() => setSortBy('contact')}
           >
-            <Text style={[styles.sortButtonText, sortBy === 'borrower' && styles.sortButtonTextActive]}>
+            <Text style={[styles.sortButtonText, sortBy === 'contact' && styles.sortButtonTextActive]}>
               Emprunteur
             </Text>
           </TouchableOpacity>

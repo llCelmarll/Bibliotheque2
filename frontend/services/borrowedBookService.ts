@@ -59,6 +59,12 @@ export const fetchBorrowStatistics = async (): Promise<BorrowStatistics> => {
 	return response.data;
 };
 
+// Lister emprunts par contact
+export const fetchBorrowsByContact = async (contactId: number): Promise<BorrowedBook[]> => {
+	const response = await apiClient.get(`/borrowed-books/by-contact/${contactId}`);
+	return response.data;
+};
+
 // Supprimer emprunt
 export const deleteBorrowedBook = async (id: number): Promise<void> => {
 	await apiClient.delete(`/borrowed-books/${id}`);
@@ -89,6 +95,7 @@ export const borrowedBookService = {
 	updateBorrowedBook,
 	returnBorrowedBook,
 	fetchBorrowStatistics,
+	fetchBorrowsByContact,
 	deleteBorrowedBook,
 	updateCalendarEventId,
 };

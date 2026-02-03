@@ -235,7 +235,7 @@ function LoanDetailScreen() {
                   // Créer un nouveau rappel avec la nouvelle date
                   const newEventId = await calendarService.createBookReturnReminder({
                     bookTitle: loan.book?.title || 'Livre',
-                    borrowerName: loan.borrower.name,
+                    borrowerName: loan.contact.name,
                     dueDate: new Date(newDueDate!),
                     reminderOffsetDays: prefs.defaultReminderOffsetDays,
                     calendarId: prefs.defaultCalendarId || '',
@@ -370,17 +370,17 @@ function LoanDetailScreen() {
           <View style={styles.borrowerContainer}>
             <MaterialIcons name="person" size={32} color="#2196F3" />
             <View style={styles.borrowerInfo}>
-              <Text style={styles.borrowerName}>{loan.borrower.name}</Text>
-              {loan.borrower.email && (
+              <Text style={styles.borrowerName}>{loan.contact.name}</Text>
+              {loan.contact.email && (
                 <View style={styles.contactRow}>
                   <MaterialIcons name="email" size={16} color="#757575" />
-                  <Text style={styles.contactText}>{loan.borrower.email}</Text>
+                  <Text style={styles.contactText}>{loan.contact.email}</Text>
                 </View>
               )}
-              {loan.borrower.phone && (
+              {loan.contact.phone && (
                 <View style={styles.contactRow}>
                   <MaterialIcons name="phone" size={16} color="#757575" />
-                  <Text style={styles.contactText}>{loan.borrower.phone}</Text>
+                  <Text style={styles.contactText}>{loan.contact.phone}</Text>
                 </View>
               )}
             </View>
@@ -475,7 +475,7 @@ function LoanDetailScreen() {
         <CalendarReminderManager
           bookTitle={loan.book.title}
           dueDate={loan.due_date}
-          borrowerName={loan.borrower.name}
+          borrowerName={loan.contact.name}
           existingEventId={loan.calendar_event_id}
           onReminderCreated={handleReminderCreated}
           onReminderUpdated={handleReminderUpdated}

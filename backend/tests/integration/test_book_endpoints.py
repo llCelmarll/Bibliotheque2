@@ -187,29 +187,29 @@ class TestBookEndpoints:
 
     def test_book_with_active_loan_includes_loan_info(self, authenticated_client: TestClient, session: Session, test_user):
         """Test que les livres avec prêts actifs incluent les informations de prêt."""
-        from app.models.Borrower import Borrower
+        from app.models.Contact import Contact
         from app.models.Loan import Loan, LoanStatus
         from datetime import datetime, timedelta
 
         # Créer un livre
         book = create_test_book(session, test_user.id, title="Book with Loan", isbn="1234567890123")
 
-        # Créer un emprunteur
-        borrower = Borrower(
-            name="Test Borrower",
-            email="borrower@test.com",
+        # Créer un contact
+        contact = Contact(
+            name="Test Contact",
+            email="contact@test.com",
             owner_id=test_user.id
         )
-        session.add(borrower)
+        session.add(contact)
         session.commit()
-        session.refresh(borrower)
+        session.refresh(contact)
 
         # Créer un prêt actif
         loan_date = datetime.utcnow()
         due_date = loan_date + timedelta(days=14)
         loan = Loan(
             book_id=book.id,
-            borrower_id=borrower.id,
+            contact_id=contact.id,
             owner_id=test_user.id,
             loan_date=loan_date,
             due_date=due_date,
@@ -230,14 +230,14 @@ class TestBookEndpoints:
         assert "current_loan" in data["base"]
         assert data["base"]["current_loan"] is not None
         assert data["base"]["current_loan"]["id"] == loan.id
-        assert data["base"]["current_loan"]["borrower_id"] == borrower.id
-        assert data["base"]["current_loan"]["status"].upper() == "ACTIVE"  # Status peut être en minuscules dans la réponse JSON
-        assert "borrower" in data["base"]["current_loan"]
-        assert data["base"]["current_loan"]["borrower"]["name"] == "Test Borrower"
+        assert data["base"]["current_loan"]["contact_id"] == contact.id
+        assert data["base"]["current_loan"]["status"].upper() == "ACTIVE"
+        assert "contact" in data["base"]["current_loan"]
+        assert data["base"]["current_loan"]["contact"]["name"] == "Test Contact"
 
     def test_book_search_includes_loan_info(self, authenticated_client: TestClient, session: Session, test_user):
         """Test que la recherche de livres inclut les informations de prêt."""
-        from app.models.Borrower import Borrower
+        from app.models.Contact import Contact
         from app.models.Loan import Loan, LoanStatus
         from datetime import datetime, timedelta
 
@@ -245,20 +245,20 @@ class TestBookEndpoints:
         book1 = create_test_book(session, test_user.id, title="Loaned Book", isbn="1111111111111")
         book2 = create_test_book(session, test_user.id, title="Available Book", isbn="2222222222222")
 
-        # Créer un emprunteur
-        borrower = Borrower(
-            name="Test Borrower",
-            email="borrower@test.com",
+        # Créer un contact
+        contact = Contact(
+            name="Test Contact",
+            email="contact@test.com",
             owner_id=test_user.id
         )
-        session.add(borrower)
+        session.add(contact)
         session.commit()
-        session.refresh(borrower)
+        session.refresh(contact)
 
         # Créer un prêt actif pour book1
         loan = Loan(
             book_id=book1.id,
-            borrower_id=borrower.id,
+            contact_id=contact.id,
             owner_id=test_user.id,
             loan_date=datetime.utcnow(),
             due_date=datetime.utcnow() + timedelta(days=14),
@@ -283,7 +283,7 @@ class TestBookEndpoints:
         # Vérifier que book1 a les informations de prêt
         assert "current_loan" in loaned_book
         assert loaned_book["current_loan"] is not None
-        assert loaned_book["current_loan"]["borrower"]["name"] == "Test Borrower"
+        assert loaned_book["current_loan"]["contact"]["name"] == "Test Contact"
 
         # Vérifier que book2 n'a pas de prêt actif
         assert "current_loan" in available_book

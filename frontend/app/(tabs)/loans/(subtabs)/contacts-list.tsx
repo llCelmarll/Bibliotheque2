@@ -12,15 +12,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useBorrowers } from '@/hooks/useBorrowers';
-import { BorrowerListItem } from '@/components/loans/BorrowerListItem';
+import { useContacts } from '@/hooks/useContacts';
+import { ContactListItem } from '@/components/loans/ContactListItem';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { Borrower } from '@/types/borrower';
+import { Contact } from '@/types/contact';
 import { useLoans } from '@/hooks/useLoans';
 
-function BorrowersScreen() {
+function ContactsScreen() {
   const router = useRouter();
-  const { borrowers, loading, refresh, searchQuery, setSearchQuery, handleSearch } = useBorrowers();
+  const { contacts, loading, refresh, searchQuery, setSearchQuery, handleSearch } = useContacts();
   const { statistics: loanStats } = useLoans({ autoLoad: true });
   const [refreshing, setRefreshing] = useState(false);
 
@@ -30,12 +30,12 @@ function BorrowersScreen() {
     setRefreshing(false);
   };
 
-  const handleCreateBorrower = () => {
-    router.push('/(tabs)/loans/borrowers/create');
+  const handleCreateContact = () => {
+    router.push('/(tabs)/loans/contacts/create');
   };
 
-  const handleBorrowerPress = (borrower: Borrower) => {
-    router.push(`/(tabs)/loans/borrowers/${borrower.id}`);
+  const handleContactPress = (contact: Contact) => {
+    router.push(`/(tabs)/loans/contacts/${contact.id}`);
   };
 
   const renderEmptyState = () => {
@@ -45,11 +45,11 @@ function BorrowersScreen() {
       <View style={styles.emptyState}>
         <MaterialIcons name="people" size={64} color="#E0E0E0" />
         <Text style={styles.emptyStateText}>
-          {searchQuery ? 'Aucun emprunteur trouvé' : 'Aucun emprunteur'}
+          {searchQuery ? 'Aucun contact trouvé' : 'Aucun contact'}
         </Text>
         {!searchQuery && (
-          <TouchableOpacity style={styles.emptyStateButton} onPress={handleCreateBorrower}>
-            <Text style={styles.emptyStateButtonText}>Créer un emprunteur</Text>
+          <TouchableOpacity style={styles.emptyStateButton} onPress={handleCreateContact}>
+            <Text style={styles.emptyStateButtonText}>Créer un contact</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -62,15 +62,15 @@ function BorrowersScreen() {
       <View style={styles.header}>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{borrowers.length}</Text>
-            <Text style={styles.statLabel}>Emprunteurs</Text>
+            <Text style={styles.statValue}>{contacts.length}</Text>
+            <Text style={styles.statLabel}>Contacts</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>
-              {borrowers.filter(b => b.active_loans_count && b.active_loans_count > 0).length}
+              {contacts.filter(c => (c.active_loans_count && c.active_loans_count > 0) || (c.active_borrows_count && c.active_borrows_count > 0)).length}
             </Text>
-            <Text style={styles.statLabel}>Avec prêts actifs</Text>
+            <Text style={styles.statLabel}>Avec activité</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
@@ -92,7 +92,7 @@ function BorrowersScreen() {
         <MaterialIcons name="search" size={20} color="#757575" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Rechercher un emprunteur..."
+          placeholder="Rechercher un contact..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
@@ -104,19 +104,19 @@ function BorrowersScreen() {
         )}
       </View>
 
-      {/* Liste des emprunteurs */}
-      {loading && borrowers.length === 0 ? (
+      {/* Liste des contacts */}
+      {loading && contacts.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
         </View>
       ) : (
         <FlatList
-          data={borrowers}
+          data={contacts}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <BorrowerListItem
-              borrower={item}
-              onPress={handleBorrowerPress}
+            <ContactListItem
+              contact={item}
+              onPress={handleContactPress}
               showStats={true}
             />
           )}
@@ -125,23 +125,23 @@ function BorrowersScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           contentContainerStyle={
-            borrowers.length === 0 ? styles.emptyListContainer : styles.listContent
+            contacts.length === 0 ? styles.emptyListContainer : styles.listContent
           }
         />
       )}
 
-      {/* Bouton Flottant pour créer un emprunteur */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreateBorrower}>
+      {/* Bouton Flottant pour créer un contact */}
+      <TouchableOpacity style={styles.fab} onPress={handleCreateContact}>
         <MaterialIcons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
 }
 
-export default function BorrowersList() {
+export default function ContactsList() {
   return (
     <ProtectedRoute>
-      <BorrowersScreen />
+      <ContactsScreen />
     </ProtectedRoute>
   );
 }

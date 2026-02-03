@@ -112,7 +112,7 @@ export const LoanListItem: React.FC<LoanListItemProps> = ({ loan, onReturn }) =>
         </Text>
 
         <Text style={styles.borrowerName}>
-          Prêté à : <Text style={styles.borrowerNameBold}>{loan.borrower.name}</Text>
+          Prêté à : <Text style={styles.borrowerNameBold}>{loan.contact.name}</Text>
         </Text>
 
         <View style={styles.datesContainer}>

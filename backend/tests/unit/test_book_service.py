@@ -43,6 +43,11 @@ class TestBookService:
         book_service.loan_repository = Mock()
         book_service.loan_repository.get_active_loan_for_book.return_value = None
 
+        # Mock du borrowed_book repository
+        book_service.borrowed_book_repository = Mock()
+        book_service.borrowed_book_repository.get_active_borrow_for_book.return_value = None
+        book_service.borrowed_book_repository.get_by_book.return_value = []
+
         params = BookSearchParams(search="Python")
         result = book_service.search_books(params)
 
@@ -66,6 +71,11 @@ class TestBookService:
         book_service.loan_repository = Mock()
         book_service.loan_repository.get_active_loan_for_book.return_value = None
 
+        # Mock du borrowed_book repository
+        book_service.borrowed_book_repository = Mock()
+        book_service.borrowed_book_repository.get_active_borrow_for_book.return_value = None
+        book_service.borrowed_book_repository.get_by_book.return_value = []
+
         params = BookSearchParams(search="")  # Requête vide
         result = book_service.search_books(params)
 
@@ -83,6 +93,11 @@ class TestBookService:
         # Mock du loan repository
         book_service.loan_repository = Mock()
         book_service.loan_repository.get_active_loan_for_book.return_value = None
+
+        # Mock du borrowed_book repository
+        book_service.borrowed_book_repository = Mock()
+        book_service.borrowed_book_repository.get_active_borrow_for_book.return_value = None
+        book_service.borrowed_book_repository.get_by_book.return_value = []
 
         params = BookSearchParams(search="NonExistentBook")
         result = book_service.search_books(params)
@@ -106,6 +121,11 @@ class TestBookService:
         # Mock du loan repository
         book_service.loan_repository = Mock()
         book_service.loan_repository.get_active_loan_for_book.return_value = None
+
+        # Mock du borrowed_book repository
+        book_service.borrowed_book_repository = Mock()
+        book_service.borrowed_book_repository.get_active_borrow_for_book.return_value = None
+        book_service.borrowed_book_repository.get_by_book.return_value = []
 
         params = BookSearchParams()  # Pas de critères de recherche
         result = book_service.search_books(params)

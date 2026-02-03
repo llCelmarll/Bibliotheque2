@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 from datetime import datetime
 from app.models.Loan import Loan, LoanStatus
 from app.models.Book import Book
-from app.models.Borrower import Borrower
+from app.models.Contact import Contact
 
 
 class LoanRepository:
@@ -27,7 +27,7 @@ class LoanRepository:
             .where(Loan.id == loan_id, Loan.owner_id == owner_id)
             .options(
                 selectinload(Loan.book),
-                selectinload(Loan.borrower)
+                selectinload(Loan.contact)
             )
         )
         return self.session.exec(statement).first()
@@ -39,7 +39,7 @@ class LoanRepository:
             .where(Loan.owner_id == owner_id)
             .options(
                 selectinload(Loan.book),
-                selectinload(Loan.borrower)
+                selectinload(Loan.contact)
             )
             .offset(skip)
             .limit(limit)
@@ -62,7 +62,7 @@ class LoanRepository:
             )
             .options(
                 selectinload(Loan.book),
-                selectinload(Loan.borrower)
+                selectinload(Loan.contact)
             )
             .offset(skip)
             .limit(limit)
@@ -88,7 +88,7 @@ class LoanRepository:
             )
             .options(
                 selectinload(Loan.book),
-                selectinload(Loan.borrower)
+                selectinload(Loan.contact)
             )
             .offset(skip)
             .limit(limit)
@@ -107,24 +107,24 @@ class LoanRepository:
             )
             .options(
                 selectinload(Loan.book),
-                selectinload(Loan.borrower)
+                selectinload(Loan.contact)
             )
             .order_by(Loan.loan_date.desc())
         )
         results = self.session.exec(statement)
         return list(results)
 
-    def get_loans_by_borrower(self, borrower_id: int, owner_id: int) -> List[Loan]:
-        """Retourne tous les prêts pour un emprunteur spécifique"""
+    def get_loans_by_contact(self, contact_id: int, owner_id: int) -> List[Loan]:
+        """Retourne tous les prêts pour un contact spécifique"""
         statement = (
             select(Loan)
             .where(
-                Loan.borrower_id == borrower_id,
+                Loan.contact_id == contact_id,
                 Loan.owner_id == owner_id
             )
             .options(
                 selectinload(Loan.book),
-                selectinload(Loan.borrower)
+                selectinload(Loan.contact)
             )
             .order_by(Loan.loan_date.desc())
         )
@@ -146,7 +146,7 @@ class LoanRepository:
             )
             .options(
                 selectinload(Loan.book),
-                selectinload(Loan.borrower)
+                selectinload(Loan.contact)
             )
         )
         return self.session.exec(statement).first()

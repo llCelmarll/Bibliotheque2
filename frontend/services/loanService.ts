@@ -117,25 +117,25 @@ class LoanService {
   /**
    * Récupère l'historique des prêts pour un emprunteur spécifique
    */
-  async getLoansByBorrower(borrowerId: number): Promise<Loan[]> {
-    console.log('👤 Récupération des prêts pour l\'emprunteur - ID:', borrowerId);
+  async getLoansByContact(contactId: number): Promise<Loan[]> {
+    console.log('👤 Récupération des prêts pour le contact - ID:', contactId);
 
     try {
-      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.LOANS}/by-borrower/${borrowerId}`);
-      console.log('✅ Prêts de l\'emprunteur récupérés:', response.data.length);
+      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.LOANS}/by-contact/${contactId}`);
+      console.log('✅ Prêts du contact récupérés:', response.data.length);
       return response.data;
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération des prêts de l\'emprunteur:', error);
+      console.error('❌ Erreur lors de la récupération des prêts du contact:', error);
       throw error;
     }
   }
 
   /**
    * Crée un nouveau prêt
-   * Le champ borrower accepte 3 formats:
-   * - number: ID d'un emprunteur existant
+   * Le champ contact accepte 3 formats:
+   * - number: ID d'un contact existant
    * - string: Nom (sera créé automatiquement s'il n'existe pas)
-   * - object: Données complètes pour créer un nouvel emprunteur
+   * - object: Données complètes pour créer un nouveau contact
    */
   async createLoan(loanData: LoanCreate): Promise<Loan> {
     console.log('➕ Création prêt - données:', JSON.stringify(loanData, null, 2));
@@ -208,19 +208,19 @@ class LoanService {
       errors.push('Le livre est obligatoire');
     }
 
-    // borrower obligatoire
-    if (!loanData.borrower) {
-      errors.push('L\'emprunteur est obligatoire');
+    // contact obligatoire
+    if (!loanData.contact) {
+      errors.push('Le contact est obligatoire');
     }
 
-    // Si borrower est un objet, valider le nom
-    if (typeof loanData.borrower === 'object' && !loanData.borrower.name?.trim()) {
-      errors.push('Le nom de l\'emprunteur est obligatoire');
+    // Si contact est un objet, valider le nom
+    if (typeof loanData.contact === 'object' && !loanData.contact.name?.trim()) {
+      errors.push('Le nom du contact est obligatoire');
     }
 
-    // Si borrower est une string, vérifier qu'elle n'est pas vide
-    if (typeof loanData.borrower === 'string' && !loanData.borrower.trim()) {
-      errors.push('Le nom de l\'emprunteur ne peut pas être vide');
+    // Si contact est une string, vérifier qu'elle n'est pas vide
+    if (typeof loanData.contact === 'string' && !loanData.contact.trim()) {
+      errors.push('Le nom du contact ne peut pas être vide');
     }
 
     // Valider les dates si fournies

@@ -7,7 +7,7 @@ from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 from app.schemas.Genre import GenreRead
 from app.schemas.Other import SortBy, SortOrder, Filter
-from app.schemas.Borrower import BorrowerRead
+from app.schemas.Contact import ContactRead
 from app.models.Loan import LoanStatus
 from app.models.BorrowedBook import BorrowStatus
 
@@ -16,8 +16,8 @@ from app.models.BorrowedBook import BorrowStatus
 class CurrentLoanRead(SQLModel):
     """Schéma simplifié pour afficher le prêt actif d'un livre"""
     id: int
-    borrower_id: int
-    borrower: Optional[BorrowerRead] = None
+    contact_id: int
+    contact: Optional[ContactRead] = None
     loan_date: datetime
     due_date: Optional[datetime] = None
     return_date: Optional[datetime] = None
@@ -29,7 +29,9 @@ class CurrentLoanRead(SQLModel):
 class CurrentBorrowRead(SQLModel):
     """Schéma simplifié pour afficher l'emprunt actif d'un livre"""
     id: int
-    borrowed_from: str
+    contact_id: Optional[int] = None
+    contact: Optional[ContactRead] = None
+    borrowed_from: str  # Legacy
     borrowed_date: datetime
     expected_return_date: Optional[datetime] = None
     status: BorrowStatus
@@ -139,7 +141,8 @@ class BookCreate(SQLModel):
 
     # Champs optionnels pour marquer comme emprunté
     is_borrowed: Optional[bool] = False
-    borrowed_from: Optional[str] = None
+    contact: Optional[int | str | Dict[str, Any]] = None  # Contact source de l'emprunt
+    borrowed_from: Optional[str] = None  # Legacy fallback
     borrowed_date: Optional[datetime] = None
     expected_return_date: Optional[datetime] = None
     borrow_notes: Optional[str] = None

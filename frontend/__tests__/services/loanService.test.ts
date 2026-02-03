@@ -49,7 +49,7 @@ describe('loanService', () => {
     it('should validate correct loan data', () => {
       const loanData: LoanCreate = {
         book_id: 1,
-        borrower: 1,
+        contact: 1,
         due_date: '2025-12-31',
       };
 
@@ -61,7 +61,7 @@ describe('loanService', () => {
 
     it('should reject loan without book_id', () => {
       const loanData = {
-        borrower: 1,
+        contact: 1,
       } as LoanCreate;
 
       const result = loanService.validateLoanData(loanData);
@@ -70,7 +70,7 @@ describe('loanService', () => {
       expect(result.errors).toContain('Le livre est obligatoire');
     });
 
-    it('should reject loan without borrower', () => {
+    it('should reject loan without contact', () => {
       const loanData = {
         book_id: 1,
       } as LoanCreate;
@@ -78,13 +78,13 @@ describe('loanService', () => {
       const result = loanService.validateLoanData(loanData);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain("L'emprunteur est obligatoire");
+      expect(result.errors).toContain("Le contact est obligatoire");
     });
 
-    it('should accept borrower as string (new borrower name)', () => {
+    it('should accept contact as string (new contact name)', () => {
       const loanData: LoanCreate = {
         book_id: 1,
-        borrower: 'Jean Martin',
+        contact: 'Jean Martin',
       };
 
       const result = loanService.validateLoanData(loanData);
@@ -92,10 +92,10 @@ describe('loanService', () => {
       expect(result.isValid).toBe(true);
     });
 
-    it('should accept borrower as number (existing borrower id)', () => {
+    it('should accept contact as number (existing contact id)', () => {
       const loanData: LoanCreate = {
         book_id: 1,
-        borrower: 123,
+        contact: 123,
       };
 
       const result = loanService.validateLoanData(loanData);
@@ -106,7 +106,7 @@ describe('loanService', () => {
     it('should accept loan without due_date', () => {
       const loanData: LoanCreate = {
         book_id: 1,
-        borrower: 1,
+        contact: 1,
       };
 
       const result = loanService.validateLoanData(loanData);
@@ -117,7 +117,7 @@ describe('loanService', () => {
     it('should accept loan with notes', () => {
       const loanData: LoanCreate = {
         book_id: 1,
-        borrower: 1,
+        contact: 1,
         notes: 'Prêt de courte durée',
       };
 
@@ -131,7 +131,7 @@ describe('loanService', () => {
     it('should create a loan successfully', async () => {
       const loanData: LoanCreate = {
         book_id: 1,
-        borrower: 1,
+        contact: 1,
         due_date: '2025-12-31',
       };
 
@@ -139,7 +139,7 @@ describe('loanService', () => {
         data: {
           id: 1,
           book_id: 1,
-          borrower_id: 1,
+          contact_id: 1,
           loan_date: '2025-01-01',
           due_date: '2025-12-31',
           status: LoanStatus.ACTIVE,
@@ -157,7 +157,7 @@ describe('loanService', () => {
     it('should handle API error when creating loan', async () => {
       const loanData: LoanCreate = {
         book_id: 1,
-        borrower: 1,
+        contact: 1,
       };
 
       const errorResponse = {
@@ -216,13 +216,13 @@ describe('loanService', () => {
           {
             id: 1,
             book_id: 1,
-            borrower_id: 1,
+            contact_id: 1,
             status: LoanStatus.ACTIVE,
           },
           {
             id: 2,
             book_id: 2,
-            borrower_id: 1,
+            contact_id: 1,
             status: LoanStatus.RETURNED,
           },
         ],
@@ -237,16 +237,16 @@ describe('loanService', () => {
     });
   });
 
-  describe('getLoansByBorrower', () => {
-    it('should fetch loans for a specific borrower', async () => {
-      const borrowerId = 1;
+  describe('getLoansByContact', () => {
+    it('should fetch loans for a specific contact', async () => {
+      const contactId = 1;
 
       const mockResponse = {
         data: [
           {
             id: 1,
             book_id: 1,
-            borrower_id: 1,
+            contact_id: 1,
             status: LoanStatus.ACTIVE,
           },
         ],
@@ -254,10 +254,10 @@ describe('loanService', () => {
 
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await loanService.getLoansByBorrower(borrowerId);
+      const result = await loanService.getLoansByContact(contactId);
 
       expect(result).toEqual(mockResponse.data);
-      expect(mockGet).toHaveBeenCalledWith(`/loans/by-borrower/${borrowerId}`);
+      expect(mockGet).toHaveBeenCalledWith(`/loans/by-contact/${contactId}`);
     });
   });
 

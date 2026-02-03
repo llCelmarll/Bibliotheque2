@@ -6,8 +6,8 @@ import { BorrowedBook } from './borrowedBook';
 export interface LoanRead {
 	id: number;
 	book_id: number;
-	borrower_id: number;
-	borrower?: {
+	contact_id: number;
+	contact?: {
 		id: number;
 		name: string;
 		email?: string;
@@ -50,7 +50,8 @@ export interface BookCreate {
 
 	// Champs d'emprunt
 	is_borrowed?: boolean;
-	borrowed_from?: string;
+	contact?: number | string | { name: string; email?: string; phone?: string; notes?: string };
+	borrowed_from?: string; // Legacy
 	borrowed_date?: string;  // Format: YYYY-MM-DD
 	expected_return_date?: string;  // Format: YYYY-MM-DD
 	borrow_notes?: string;

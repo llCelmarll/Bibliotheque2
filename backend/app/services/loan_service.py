@@ -6,9 +6,9 @@ from datetime import datetime
 from app.models.Loan import Loan, LoanStatus
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.book_repository import BookRepository
-from app.repositories.borrower_repository import BorrowerRepository
+from app.repositories.contact_repository import ContactRepository
 from app.schemas.Loan import LoanCreate, LoanRead, LoanUpdate, LoanReturn
-from app.services.borrower_service import BorrowerService
+from app.services.contact_service import ContactService
 
 
 class LoanService:
@@ -19,8 +19,8 @@ class LoanService:
         self.user_id = user_id
         self.loan_repository = LoanRepository(session)
         self.book_repository = BookRepository(session)
-        self.borrower_repository = BorrowerRepository(session)
-        self.borrower_service = BorrowerService(session, user_id)
+        self.contact_repository = ContactRepository(session)
+        self.contact_service = ContactService(session, user_id)
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[LoanRead]:
         """Récupère tous les prêts de l'utilisateur"""
@@ -56,11 +56,10 @@ class LoanService:
         if active_loan:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ce livre est déjà prêté à {active_loan.borrower.name}"
+                detail=f"Ce livre est déjà prêté à {active_loan.contact.name}"
             )
 
         # Vérifier que le livre n'a pas d'historique d'emprunt (même retourné)
-        # Un livre emprunté (même retourné) ne fait plus partie de votre bibliothèque
         from app.repositories.borrowed_book_repository import BorrowedBookRepository
         borrowed_book_repo = BorrowedBookRepository(self.session)
 
@@ -69,9 +68,10 @@ class LoanService:
             loan_data.book_id, self.user_id
         )
         if active_borrow:
+            contact_name = active_borrow.contact.name if active_borrow.contact else active_borrow.borrowed_from
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Impossible de prêter un livre que vous avez emprunté à {active_borrow.borrowed_from}. Veuillez d'abord le retourner."
+                detail=f"Impossible de prêter un livre que vous avez emprunté à {contact_name}. Veuillez d'abord le retourner."
             )
 
         # Ensuite vérifier s'il y a un historique d'emprunts (même retournés)
@@ -82,13 +82,13 @@ class LoanService:
                 detail="Impossible de prêter un livre que vous avez emprunté (même si vous l'avez retourné). Ce livre ne fait plus partie de votre bibliothèque."
             )
 
-        # Traiter l'emprunteur (ID, nom, ou objet)
-        borrower_id = self._process_borrower(loan_data.borrower)
+        # Traiter le contact (ID, nom, ou objet)
+        contact_id = self._process_contact(loan_data.contact)
 
         # Créer le prêt
         loan = Loan(
             book_id=loan_data.book_id,
-            borrower_id=borrower_id,
+            contact_id=contact_id,
             owner_id=self.user_id,
             loan_date=loan_data.loan_date or datetime.utcnow(),
             due_date=loan_data.due_date,
@@ -195,16 +195,16 @@ class LoanService:
         loans = self.loan_repository.get_loans_by_book(book_id, self.user_id)
         return [LoanRead.model_validate(loan) for loan in loans]
 
-    def get_loans_by_borrower(self, borrower_id: int) -> List[LoanRead]:
-        """Récupère l'historique des prêts pour un emprunteur"""
-        borrower = self.borrower_repository.get_by_id(borrower_id, self.user_id)
-        if not borrower:
+    def get_loans_by_contact(self, contact_id: int) -> List[LoanRead]:
+        """Récupère l'historique des prêts pour un contact"""
+        contact = self.contact_repository.get_by_id(contact_id, self.user_id)
+        if not contact:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Emprunteur introuvable"
+                detail="Contact introuvable"
             )
 
-        loans = self.loan_repository.get_loans_by_borrower(borrower_id, self.user_id)
+        loans = self.loan_repository.get_loans_by_contact(contact_id, self.user_id)
         return [LoanRead.model_validate(loan) for loan in loans]
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -221,55 +221,55 @@ class LoanService:
             "returned_loans": total - active
         }
 
-    def _process_borrower(self, borrower_input: int | str | Dict[str, Any]) -> int:
+    def _process_contact(self, contact_input: int | str | Dict[str, Any]) -> int:
         """
-        Traite l'input borrower et retourne l'ID.
+        Traite l'input contact et retourne l'ID.
         Accepte: int (ID), str (nom), ou Dict (objet avec name, email, etc.)
         """
         # Si c'est un ID
-        if isinstance(borrower_input, int):
-            borrower = self.borrower_repository.get_by_id(borrower_input, self.user_id)
-            if not borrower:
+        if isinstance(contact_input, int):
+            contact = self.contact_repository.get_by_id(contact_input, self.user_id)
+            if not contact:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Emprunteur introuvable"
+                    detail="Contact introuvable"
                 )
-            return borrower.id
+            return contact.id
 
         # Si c'est un nom (string)
-        if isinstance(borrower_input, str):
-            borrower = self.borrower_service.get_or_create_by_name(borrower_input)
-            return borrower.id
+        if isinstance(contact_input, str):
+            contact = self.contact_service.get_or_create_by_name(contact_input)
+            return contact.id
 
         # Si c'est un objet dict
-        if isinstance(borrower_input, dict):
-            name = borrower_input.get("name")
+        if isinstance(contact_input, dict):
+            name = contact_input.get("name")
             if not name:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Le nom de l'emprunteur est requis"
+                    detail="Le nom du contact est requis"
                 )
 
-            # Vérifier si l'emprunteur existe déjà par nom
-            existing = self.borrower_repository.get_by_name(name, self.user_id)
+            # Vérifier si le contact existe déjà par nom
+            existing = self.contact_repository.get_by_name(name, self.user_id)
             if existing:
                 return existing.id
 
-            # Créer un nouvel emprunteur avec toutes les infos
-            from app.models.Borrower import Borrower
-            new_borrower = Borrower(
+            # Créer un nouveau contact avec toutes les infos
+            from app.models.Contact import Contact
+            new_contact = Contact(
                 name=name,
-                email=borrower_input.get("email"),
-                phone=borrower_input.get("phone"),
-                notes=borrower_input.get("notes"),
+                email=contact_input.get("email"),
+                phone=contact_input.get("phone"),
+                notes=contact_input.get("notes"),
                 owner_id=self.user_id
             )
-            borrower = self.borrower_repository.create(new_borrower)
-            return borrower.id
+            contact = self.contact_repository.create(new_contact)
+            return contact.id
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Format d'emprunteur invalide"
+            detail="Format de contact invalide"
         )
 
     def _update_overdue_status(self, loans: List[Loan]) -> None:

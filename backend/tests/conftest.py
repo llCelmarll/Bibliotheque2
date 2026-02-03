@@ -20,7 +20,7 @@ from app.models.Author import Author
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
 from app.models.BorrowedBook import BorrowedBook, BorrowStatus
-from app.models.Borrower import Borrower
+from app.models.Contact import Contact
 
 # Import des factories (commenté temporairement)
 # from tests.factories.user_factory import UserFactory
@@ -221,6 +221,7 @@ def create_test_borrowed_book(
     book_id: int,
     user_id: int,
     borrowed_from: str = "Test Source",
+    contact_id: int = None,
     status: BorrowStatus = BorrowStatus.ACTIVE
 ) -> BorrowedBook:
     """Helper pour créer un livre emprunté de test."""
@@ -230,6 +231,7 @@ def create_test_borrowed_book(
         book_id=book_id,
         user_id=user_id,
         borrowed_from=borrowed_from,
+        contact_id=contact_id,
         borrowed_date=datetime.utcnow(),
         expected_return_date=datetime.utcnow() + timedelta(days=30),
         status=status,
@@ -242,20 +244,20 @@ def create_test_borrowed_book(
     return borrowed_book
 
 
-def create_test_borrower(
+def create_test_contact(
     session: Session,
     user_id: int,
-    name: str = "Test Borrower",
-    email: str = "borrower@test.com"
-) -> Borrower:
-    """Helper pour créer un emprunteur de test."""
-    borrower = Borrower(
+    name: str = "Test Contact",
+    email: str = "contact@test.com"
+) -> Contact:
+    """Helper pour créer un contact de test."""
+    contact = Contact(
         name=name,
         email=email,
         owner_id=user_id
     )
 
-    session.add(borrower)
+    session.add(contact)
     session.commit()
-    session.refresh(borrower)
-    return borrower
+    session.refresh(contact)
+    return contact

@@ -170,7 +170,6 @@ function BorrowDetailScreen() {
   const handleEdit = () => {
     if (!borrow) return;
     setEditData({
-      borrowed_from: borrow.borrowed_from,
       borrowed_date: formatDateToDisplay(borrow.borrowed_date),
       expected_return_date: formatDateToDisplay(borrow.expected_return_date),
       notes: borrow.notes || '',
@@ -184,11 +183,6 @@ function BorrowDetailScreen() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editData.borrowed_from?.trim()) {
-      Alert.alert('Erreur', 'Le champ "Emprunté à" est requis');
-      return;
-    }
-
     setActionLoading(true);
     try {
       // Convertir les dates au format API (YYYY-MM-DD)
@@ -229,7 +223,7 @@ function BorrowDetailScreen() {
                   // Créer un nouveau rappel avec la nouvelle date
                   const newEventId = await calendarService.createBookReturnReminder({
                     bookTitle: borrow.book?.title || 'Livre',
-                    lenderName: borrow.borrowed_from,
+                    lenderName: borrow.contact?.name || borrow.borrowed_from,
                     dueDate: new Date(newReturnDate!),
                     reminderOffsetDays: prefs.defaultReminderOffsetDays,
                     calendarId: prefs.defaultCalendarId || '',
@@ -379,22 +373,16 @@ function BorrowDetailScreen() {
 
         {/* Emprunté à */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emprunté à {editMode && '*'}</Text>
-          {editMode ? (
-            <TextInput
-              style={styles.input}
-              value={editData.borrowed_from}
-              onChangeText={(text) => setEditData({ ...editData, borrowed_from: text })}
-              placeholder="Nom de la personne ou bibliothèque"
-            />
-          ) : (
-            <View style={styles.borrowFromContainer}>
-              <MaterialIcons name="person" size={32} color="#2196F3" />
-              <View style={styles.borrowFromInfo}>
-                <Text style={styles.borrowFromName}>{borrow.borrowed_from}</Text>
-              </View>
+          <Text style={styles.sectionTitle}>Emprunté à</Text>
+          <View style={styles.borrowFromContainer}>
+            <MaterialIcons name="person" size={32} color="#2196F3" />
+            <View style={styles.borrowFromInfo}>
+              <Text style={styles.borrowFromName}>{borrow.contact?.name || borrow.borrowed_from}</Text>
+              {borrow.contact?.email && (
+                <Text style={styles.borrowFromEmail}>{borrow.contact.email}</Text>
+              )}
             </View>
-          )}
+          </View>
         </View>
 
         {/* Dates */}
@@ -486,7 +474,7 @@ function BorrowDetailScreen() {
           <CalendarReminderManager
             bookTitle={borrow.book.title}
             dueDate={borrow.expected_return_date}
-            lenderName={borrow.borrowed_from}
+            lenderName={borrow.contact?.name || borrow.borrowed_from}
             existingEventId={borrow.calendar_event_id}
             onReminderCreated={handleReminderCreated}
             onReminderUpdated={handleReminderUpdated}
@@ -671,6 +659,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#212121',
     marginBottom: 4,
+  },
+  borrowFromEmail: {
+    fontSize: 13,
+    color: '#757575',
   },
   dateRow: {
     flexDirection: 'row',

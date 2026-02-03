@@ -6,7 +6,7 @@ from enum import Enum
 if TYPE_CHECKING:
     from app.models.Book import Book
     from app.models.User import User
-    from app.models.Borrower import Borrower
+    from app.models.Contact import Contact
 
 class LoanStatus(str, Enum):
     """Statut d'un prêt"""
@@ -18,7 +18,7 @@ class Loan(SQLModel, table=True):
     __tablename__ = "loans"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    
+
     # Relations
     book_id: int = Field(foreign_key="books.id", index=True)
     book: Optional["Book"] = Relationship(back_populates="loans")
@@ -29,8 +29,8 @@ class Loan(SQLModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "[Loan.owner_id]"}
     )
 
-    borrower_id: int = Field(foreign_key="borrowers.id", index=True)
-    borrower: Optional["Borrower"] = Relationship(back_populates="loans")
+    contact_id: int = Field(foreign_key="contacts.id", index=True)
+    contact: Optional["Contact"] = Relationship(back_populates="loans")
 
     # Dates et statut
     loan_date: datetime = Field(

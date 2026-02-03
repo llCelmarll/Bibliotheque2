@@ -71,7 +71,7 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
           {book.base?.current_loan && (
             <View style={styles.loanBadge}>
               <Text style={styles.loanBadgeText}>
-                📖 Prêté à {book.base.current_loan.borrower?.name || 'Emprunteur inconnu'}
+                📖 Prêté à {book.base.current_loan.contact?.name || 'Contact inconnu'}
               </Text>
               {book.base.current_loan.due_date && (
                 <Text style={[
@@ -88,7 +88,7 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
           {book.base?.borrowed_book && book.base.borrowed_book.status === 'active' && (
             <View style={styles.borrowBadge}>
               <Text style={styles.borrowBadgeText}>
-                📚 Emprunté à {book.base.borrowed_book.borrowed_from}
+                📚 Emprunté à {book.base.borrowed_book.contact?.name || book.base.borrowed_book.borrowed_from}
               </Text>
               {book.base.borrowed_book.expected_return_date && (
                 <Text style={[

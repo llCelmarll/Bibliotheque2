@@ -23,6 +23,7 @@ class BorrowedBookRepository:
         book_id: int,
         user_id: int,
         borrowed_from: str,
+        contact_id: int = None,
         borrowed_date: datetime = None,
         expected_return_date: datetime = None,
         notes: str = None
@@ -32,6 +33,7 @@ class BorrowedBookRepository:
             book_id=book_id,
             user_id=user_id,
             borrowed_from=borrowed_from,
+            contact_id=contact_id,
             borrowed_date=borrowed_date or datetime.utcnow(),
             expected_return_date=expected_return_date,
             status=BorrowStatus.ACTIVE,
@@ -47,7 +49,7 @@ class BorrowedBookRepository:
         statement = (
             select(BorrowedBook)
             .where(BorrowedBook.id == borrow_id, BorrowedBook.user_id == user_id)
-            .options(selectinload(BorrowedBook.book))
+            .options(selectinload(BorrowedBook.book), selectinload(BorrowedBook.contact))
         )
         return self.session.exec(statement).first()
 
@@ -56,7 +58,7 @@ class BorrowedBookRepository:
         statement = (
             select(BorrowedBook)
             .where(BorrowedBook.user_id == user_id)
-            .options(selectinload(BorrowedBook.book))
+            .options(selectinload(BorrowedBook.book), selectinload(BorrowedBook.contact))
             .offset(skip)
             .limit(limit)
             .order_by(BorrowedBook.borrowed_date.desc())
@@ -76,7 +78,7 @@ class BorrowedBookRepository:
                     BorrowedBook.status == BorrowStatus.OVERDUE
                 )
             )
-            .options(selectinload(BorrowedBook.book))
+            .options(selectinload(BorrowedBook.book), selectinload(BorrowedBook.contact))
             .offset(skip)
             .limit(limit)
             .order_by(BorrowedBook.borrowed_date.desc())
@@ -99,10 +101,24 @@ class BorrowedBookRepository:
                     )
                 )
             )
-            .options(selectinload(BorrowedBook.book))
+            .options(selectinload(BorrowedBook.book), selectinload(BorrowedBook.contact))
             .offset(skip)
             .limit(limit)
             .order_by(BorrowedBook.expected_return_date)
+        )
+        results = self.session.exec(statement)
+        return list(results)
+
+    def get_by_contact(self, contact_id: int, user_id: int) -> List[BorrowedBook]:
+        """Retourne tous les emprunts pour un contact spécifique"""
+        statement = (
+            select(BorrowedBook)
+            .where(
+                BorrowedBook.contact_id == contact_id,
+                BorrowedBook.user_id == user_id
+            )
+            .options(selectinload(BorrowedBook.book), selectinload(BorrowedBook.contact))
+            .order_by(BorrowedBook.borrowed_date.desc())
         )
         results = self.session.exec(statement)
         return list(results)
@@ -115,7 +131,7 @@ class BorrowedBookRepository:
                 BorrowedBook.book_id == book_id,
                 BorrowedBook.user_id == user_id
             )
-            .options(selectinload(BorrowedBook.book))
+            .options(selectinload(BorrowedBook.book), selectinload(BorrowedBook.contact))
             .order_by(BorrowedBook.borrowed_date.desc())
         )
         results = self.session.exec(statement)
@@ -134,7 +150,7 @@ class BorrowedBookRepository:
                     BorrowedBook.status == BorrowStatus.OVERDUE
                 )
             )
-            .options(selectinload(BorrowedBook.book))
+            .options(selectinload(BorrowedBook.book), selectinload(BorrowedBook.contact))
         )
         return self.session.exec(statement).first()
 

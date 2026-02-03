@@ -55,7 +55,7 @@ export const BorrowedBookListItem: React.FC<Props> = ({ borrowedBook }) => {
 			<View style={styles.info}>
 				<Text style={styles.title}>{borrowedBook.book?.title || 'Sans titre'}</Text>
 				<Text style={styles.borrowedFrom}>
-					📚 Emprunté à {borrowedBook.borrowed_from}
+					📚 Emprunté à {borrowedBook.contact?.name || borrowedBook.borrowed_from}
 				</Text>
 
 				{borrowedBook.expected_return_date && (

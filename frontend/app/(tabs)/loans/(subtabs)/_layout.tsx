@@ -44,9 +44,9 @@ export default function SubTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="borrowers-list"
+        name="contacts-list"
         options={{
-          title: 'Emprunteurs',
+          title: 'Contacts',
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" size={size} color={color} />

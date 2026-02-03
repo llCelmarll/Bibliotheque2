@@ -36,10 +36,10 @@ class BookService:
         logger.info("Create book: title=%s isbn=%s", book_data.title, getattr(book_data, "isbn", None))
 
         # 1. Validation is_borrowed
-        if book_data.is_borrowed and not book_data.borrowed_from:
+        if book_data.is_borrowed and not book_data.contact and not book_data.borrowed_from:
             raise HTTPException(
                 status_code=400,
-                detail="Le champ 'borrowed_from' est requis si 'is_borrowed' est True"
+                detail="Le champ 'contact' est requis si 'is_borrowed' est True"
             )
 
         # Validation des données
@@ -98,21 +98,46 @@ class BookService:
             if book_data.is_borrowed:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Un emprunt actif existe déjà pour ce livre depuis {active_borrow.borrowed_from}"
+                    detail=f"Un emprunt actif existe déjà pour ce livre depuis {active_borrow.contact.name if active_borrow.contact else active_borrow.borrowed_from}"
                 )
             else:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Ce livre est actuellement emprunté à {active_borrow.borrowed_from}. Retournez-le d'abord avant de le marquer comme possédé."
+                    detail=f"Ce livre est actuellement emprunté à {active_borrow.contact.name if active_borrow.contact else active_borrow.borrowed_from}. Retournez-le d'abord avant de le marquer comme possédé."
                 )
 
         # 4. Gérer is_borrowed
         if book_data.is_borrowed:
+            # Résoudre le contact
+            contact_input = book_data.contact or book_data.borrowed_from
+            contact_id = None
+            contact_name = str(contact_input) if contact_input else ""
+            if contact_input:
+                from app.services.contact_service import ContactService
+                contact_svc = ContactService(self.session, self.user_id)
+                if isinstance(contact_input, int):
+                    from app.repositories.contact_repository import ContactRepository
+                    contact_repo = ContactRepository(self.session)
+                    c = contact_repo.get_by_id(contact_input, self.user_id)
+                    if c:
+                        contact_id = c.id
+                        contact_name = c.name
+                elif isinstance(contact_input, str):
+                    c = contact_svc.get_or_create_by_name(contact_input)
+                    contact_id = c.id
+                    contact_name = c.name
+                elif isinstance(contact_input, dict):
+                    name = contact_input.get("name", "")
+                    c = contact_svc.get_or_create_by_name(name)
+                    contact_id = c.id
+                    contact_name = c.name
+
             # Créer nouvel emprunt via le repository
             self.borrowed_book_repository.create_from_params(
                 book_id=book.id,
                 user_id=self.user_id,
-                borrowed_from=book_data.borrowed_from,
+                borrowed_from=contact_name,
+                contact_id=contact_id,
                 borrowed_date=book_data.borrowed_date,
                 expected_return_date=book_data.expected_return_date,
                 notes=book_data.borrow_notes

@@ -1,11 +1,13 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 from app.models.BorrowedBook import BorrowedBook, BorrowStatus
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
 from app.repositories.book_repository import BookRepository
+from app.repositories.contact_repository import ContactRepository
+from app.services.contact_service import ContactService
 from app.schemas.BorrowedBook import (
     BorrowedBookCreate, BorrowedBookRead, BorrowedBookUpdate,
     BorrowedBookReturn, BorrowedBookStats
@@ -20,6 +22,8 @@ class BorrowedBookService:
         self.user_id = user_id
         self.borrowed_book_repository = BorrowedBookRepository(session)
         self.book_repository = BookRepository(session)
+        self.contact_repository = ContactRepository(session)
+        self.contact_service = ContactService(session, user_id)
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[BorrowedBookRead]:
         """Récupère tous les emprunts de l'utilisateur"""
@@ -55,16 +59,21 @@ class BorrowedBookService:
             borrow_data.book_id, self.user_id
         )
         if active_borrow:
+            contact_name = active_borrow.contact.name if active_borrow.contact else active_borrow.borrowed_from
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ce livre est déjà marqué comme emprunté à {active_borrow.borrowed_from}"
+                detail=f"Ce livre est déjà marqué comme emprunté à {contact_name}"
             )
+
+        # Résoudre le contact (ID, nom, ou objet)
+        contact_id, contact_name = self._process_contact(borrow_data.contact)
 
         # Créer l'emprunt
         borrowed_book = BorrowedBook(
             book_id=borrow_data.book_id,
             user_id=self.user_id,
-            borrowed_from=borrow_data.borrowed_from,
+            contact_id=contact_id,
+            borrowed_from=contact_name,  # Legacy field
             borrowed_date=borrow_data.borrowed_date or datetime.utcnow(),
             expected_return_date=borrow_data.expected_return_date,
             status=BorrowStatus.ACTIVE,
@@ -97,9 +106,12 @@ class BorrowedBookService:
                 detail="Emprunt introuvable"
             )
 
-        # Mettre à jour les champs
-        if borrow_data.borrowed_from is not None:
-            borrowed_book.borrowed_from = borrow_data.borrowed_from
+        # Mettre à jour le contact si spécifié
+        if borrow_data.contact is not None:
+            contact_id, contact_name = self._process_contact(borrow_data.contact)
+            borrowed_book.contact_id = contact_id
+            borrowed_book.borrowed_from = contact_name
+
         if borrow_data.borrowed_date is not None:
             borrowed_book.borrowed_date = borrow_data.borrowed_date
         if borrow_data.expected_return_date is not None:
@@ -163,6 +175,19 @@ class BorrowedBookService:
 
         self.borrowed_book_repository.delete(borrowed_book)
 
+    def get_by_contact(self, contact_id: int) -> List[BorrowedBookRead]:
+        """Récupère l'historique des emprunts pour un contact"""
+        contact = self.contact_repository.get_by_id(contact_id, self.user_id)
+        if not contact:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Contact introuvable"
+            )
+
+        borrows = self.borrowed_book_repository.get_by_contact(contact_id, self.user_id)
+        self._update_overdue_status(borrows)
+        return [BorrowedBookRead.model_validate(b) for b in borrows]
+
     def get_by_book(self, book_id: int) -> List[BorrowedBookRead]:
         """Récupère l'historique des emprunts pour un livre"""
         book = self.book_repository.get_by_id(book_id, self.user_id)
@@ -187,6 +212,57 @@ class BorrowedBookService:
             currently_borrowed=active,
             overdue=overdue,
             returned=total - active
+        )
+
+    def _process_contact(self, contact_input: int | str | Dict[str, Any]) -> tuple[int, str]:
+        """
+        Traite l'input contact et retourne (contact_id, contact_name).
+        Accepte: int (ID), str (nom), ou Dict (objet avec name, email, etc.)
+        """
+        # Si c'est un ID
+        if isinstance(contact_input, int):
+            contact = self.contact_repository.get_by_id(contact_input, self.user_id)
+            if not contact:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Contact introuvable"
+                )
+            return contact.id, contact.name
+
+        # Si c'est un nom (string)
+        if isinstance(contact_input, str):
+            contact = self.contact_service.get_or_create_by_name(contact_input)
+            return contact.id, contact.name
+
+        # Si c'est un objet dict
+        if isinstance(contact_input, dict):
+            name = contact_input.get("name")
+            if not name:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Le nom du contact est requis"
+                )
+
+            # Vérifier si le contact existe déjà par nom
+            existing = self.contact_repository.get_by_name(name, self.user_id)
+            if existing:
+                return existing.id, existing.name
+
+            # Créer un nouveau contact avec toutes les infos
+            from app.models.Contact import Contact
+            new_contact = Contact(
+                name=name,
+                email=contact_input.get("email"),
+                phone=contact_input.get("phone"),
+                notes=contact_input.get("notes"),
+                owner_id=self.user_id
+            )
+            contact = self.contact_repository.create(new_contact)
+            return contact.id, contact.name
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Format de contact invalide"
         )
 
     def _update_overdue_status(self, borrows: List[BorrowedBook]) -> None:

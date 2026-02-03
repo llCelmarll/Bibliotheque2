@@ -19,8 +19,10 @@ import { SuggestedBook } from '@/types/scanTypes';
 import { borrowedBookService } from '@/services/borrowedBookService';
 import { bookService } from '@/services/bookService';
 import { BookSelector } from '@/components/forms/BookSelector';
+import { ContactSelector } from '@/components/forms/ContactSelector';
 import BookCover from '@/components/BookCover';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { Contact } from '@/types/contact';
 
 function CreateBorrowScreen() {
   const router = useRouter();
@@ -43,7 +45,7 @@ function CreateBorrowScreen() {
   }, [params.suggestedBook]);
 
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [borrowedFrom, setBorrowedFrom] = useState('');
+  const [selectedContact, setSelectedContact] = useState<Contact | string | null>(null);
   const [borrowedDate, setBorrowedDate] = useState(new Date().toLocaleDateString('fr-FR'));
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -72,8 +74,8 @@ function CreateBorrowScreen() {
       newErrors.book = 'Veuillez sélectionner un livre';
     }
 
-    if (!borrowedFrom.trim()) {
-      newErrors.borrowedFrom = 'Veuillez indiquer de qui vous avez emprunté le livre';
+    if (!selectedContact) {
+      newErrors.contact = 'Veuillez indiquer de qui vous avez emprunté le livre';
     }
 
     if (!borrowedDate.trim()) {
@@ -106,9 +108,13 @@ function CreateBorrowScreen() {
         throw new Error('Aucun livre sélectionné');
       }
 
+      const contactValue = typeof selectedContact === 'string'
+        ? selectedContact
+        : (selectedContact as Contact).id;
+
       const borrowData: BorrowedBookCreate = {
         book_id: bookId,
-        borrowed_from: borrowedFrom,
+        contact: contactValue,
         borrowed_date: convertDateToISO(borrowedDate),
         expected_return_date: convertDateToISO(expectedReturnDate),
         notes: notes || undefined,
@@ -153,13 +159,17 @@ function CreateBorrowScreen() {
   };
 
   const handleCreateFromSuggested = async () => {
-    if (!parsedSuggestedBook || !borrowedFrom.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir "Emprunté à"');
+    if (!parsedSuggestedBook || !selectedContact) {
+      Alert.alert('Erreur', 'Veuillez sélectionner un contact');
       return;
     }
 
     setLoading(true);
     try {
+      const contactValue = typeof selectedContact === 'string'
+        ? selectedContact
+        : (selectedContact as Contact).id;
+
       // Créer le livre avec is_borrowed=true
       const bookCreate = {
         title: parsedSuggestedBook.title,
@@ -171,7 +181,8 @@ function CreateBorrowScreen() {
         page_count: parsedSuggestedBook.page_count,
         genres: parsedSuggestedBook.genres,
         is_borrowed: true,
-        borrowed_from: borrowedFrom,
+        contact: contactValue,
+        borrowed_from: typeof selectedContact === 'string' ? selectedContact : (selectedContact as Contact).name,
         borrowed_date: convertDateToISO(borrowedDate),
         expected_return_date: convertDateToISO(expectedReturnDate),
         borrow_notes: notes,
@@ -287,14 +298,17 @@ function CreateBorrowScreen() {
 
         {/* Emprunté à */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Emprunté à *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nom de la personne ou bibliothèque..."
-            value={borrowedFrom}
-            onChangeText={setBorrowedFrom}
+          <ContactSelector
+            selectedContact={selectedContact}
+            onContactChange={(contact) => {
+              setSelectedContact(contact);
+              if (errors.contact) {
+                setErrors((prev) => ({ ...prev, contact: '' }));
+              }
+            }}
+            label="Emprunté à *"
+            error={errors.contact}
           />
-          {errors.borrowedFrom && <Text style={styles.errorText}>{errors.borrowedFrom}</Text>}
         </View>
 
         {/* Date d'emprunt */}

@@ -25,7 +25,7 @@ const API_CONFIG = {
     PUBLISHERS: '/publishers',
     GENRES: '/genres',
     LOANS: '/loans',
-    BORROWERS: '/borrowers',
+    CONTACTS: '/contacts',
   }
 };
 

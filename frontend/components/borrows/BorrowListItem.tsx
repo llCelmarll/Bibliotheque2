@@ -140,7 +140,7 @@ export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn
         </Text>
 
         <Text style={styles.borrowedFromText}>
-          Emprunté à : <Text style={styles.borrowedFromBold}>{borrow.borrowed_from}</Text>
+          Emprunté à : <Text style={styles.borrowedFromBold}>{borrow.contact?.name || borrow.borrowed_from}</Text>
         </Text>
 
         <View style={styles.datesContainer}>

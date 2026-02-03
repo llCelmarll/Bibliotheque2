@@ -57,7 +57,7 @@ describe('LoanListItem', () => {
   const mockLoan: Loan = {
     id: 1,
     book_id: 1,
-    borrower_id: 1,
+    contact_id: 1,
     loan_date: '2025-01-01',
     due_date: '2025-01-15',
     return_date: null,
@@ -69,9 +69,9 @@ describe('LoanListItem', () => {
       authors: [{ id: 1, name: 'Test Author' }],
       cover_url: null,
     },
-    borrower: {
+    contact: {
       id: 1,
-      name: 'Test Borrower',
+      name: 'Test Contact',
       email: 'test@example.com',
       phone: null,
       notes: null,
@@ -97,7 +97,7 @@ describe('LoanListItem', () => {
     );
 
     expect(getByText('Test Book')).toBeTruthy();
-    expect(getByText('Test Borrower')).toBeTruthy();
+    expect(getByText('Test Contact')).toBeTruthy();
     expect(getByText('Prêté le 01/01/2025')).toBeTruthy();
     expect(getByText('Retour prévu : 15/01/2025')).toBeTruthy();
   });

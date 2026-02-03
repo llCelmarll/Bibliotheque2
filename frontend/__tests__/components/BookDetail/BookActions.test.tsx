@@ -86,8 +86,8 @@ describe('BookActions', () => {
     it('should display "Retourner" when book is loaned', () => {
       const currentLoan = {
         id: 1,
-        borrower_id: 1,
-        borrower: {
+        contact_id: 1,
+        contact: {
           id: 1,
           name: 'John Doe',
         },
@@ -115,8 +115,8 @@ describe('BookActions', () => {
     it('should show return confirmation when clicking "Retourner"', async () => {
       const currentLoan = {
         id: 1,
-        borrower_id: 1,
-        borrower: {
+        contact_id: 1,
+        contact: {
           id: 1,
           name: 'John Doe',
         },
@@ -142,8 +142,8 @@ describe('BookActions', () => {
     it('should call returnLoan service when confirming return', async () => {
       const currentLoan = {
         id: 1,
-        borrower_id: 1,
-        borrower: {
+        contact_id: 1,
+        contact: {
           id: 1,
           name: 'John Doe',
         },
@@ -187,8 +187,8 @@ describe('BookActions', () => {
     it('should show loading state when returning book', async () => {
       const currentLoan = {
         id: 1,
-        borrower_id: 1,
-        borrower: {
+        contact_id: 1,
+        contact: {
           id: 1,
           name: 'John Doe',
         },
@@ -221,8 +221,8 @@ describe('BookActions', () => {
     it('should handle return error gracefully', async () => {
       const currentLoan = {
         id: 1,
-        borrower_id: 1,
-        borrower: {
+        contact_id: 1,
+        contact: {
           id: 1,
           name: 'John Doe',
         },

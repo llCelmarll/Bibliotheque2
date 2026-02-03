@@ -73,6 +73,15 @@ async def get_borrowed_books_statistics(
     return service.get_statistics()
 
 
+@router.get("/by-contact/{contact_id}", response_model=List[BorrowedBookRead])
+async def get_borrowed_books_by_contact(
+    contact_id: int,
+    service: BorrowedBookService = Depends(get_borrowed_book_service)
+):
+    """Récupère l'historique des emprunts pour un contact spécifique"""
+    return service.get_by_contact(contact_id)
+
+
 @router.get("/by-book/{book_id}", response_model=List[BorrowedBookRead])
 async def get_borrowed_books_by_book(
     book_id: int,

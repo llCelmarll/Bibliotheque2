@@ -57,7 +57,7 @@ export const CurrentlyBorrowedCard: React.FC<Props> = ({
       <View style={styles.borrowDetails}>
         <View style={styles.detailRow}>
           <MaterialIcons name="person" size={16} color="#757575" />
-          <Text style={styles.detailText}>Emprunté à: {borrowedBook.borrowed_from}</Text>
+          <Text style={styles.detailText}>Emprunté à: {borrowedBook.contact?.name || borrowedBook.borrowed_from}</Text>
         </View>
         <View style={styles.detailRow}>
           <MaterialIcons name="calendar-today" size={16} color="#757575" />

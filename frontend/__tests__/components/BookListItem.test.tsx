@@ -165,8 +165,8 @@ describe('BookListItem', () => {
         ...mockBook,
         current_loan: {
           id: 1,
-          borrower_id: 1,
-          borrower: {
+          contact_id: 1,
+          contact: {
             id: 1,
             name: 'John Doe',
             email: 'john@example.com'
@@ -195,12 +195,12 @@ describe('BookListItem', () => {
       expect(queryByText(/Prêté à/)).toBeNull();
     });
 
-    it('should display loan badge without borrower name when borrower is unknown', () => {
+    it('should display loan badge without contact name when contact is unknown', () => {
       const bookWithLoan = {
         ...mockBook,
         current_loan: {
           id: 1,
-          borrower_id: 1,
+          contact_id: 1,
           loan_date: '2025-01-01',
           status: 'active' as const
         }
@@ -211,7 +211,7 @@ describe('BookListItem', () => {
       );
 
       // Vérifier que le message par défaut est affiché
-      expect(getByText('📖 Prêté à Emprunteur inconnu')).toBeTruthy();
+      expect(getByText('📖 Prêté à Contact inconnu')).toBeTruthy();
     });
 
     it('should format due date correctly', () => {
@@ -219,8 +219,8 @@ describe('BookListItem', () => {
         ...mockBook,
         current_loan: {
           id: 1,
-          borrower_id: 1,
-          borrower: {
+          contact_id: 1,
+          contact: {
             id: 1,
             name: 'John Doe'
           },
@@ -243,8 +243,8 @@ describe('BookListItem', () => {
         ...mockBook,
         current_loan: {
           id: 1,
-          borrower_id: 1,
-          borrower: {
+          contact_id: 1,
+          contact: {
             id: 1,
             name: 'John Doe'
           },

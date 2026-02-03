@@ -13,12 +13,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Borrower } from '@/types/borrower';
+import { Contact } from '@/types/contact';
 import { Book } from '@/types/book';
 import { LoanCreate } from '@/types/loan';
 import { loanService } from '@/services/loanService';
-import { borrowerService } from '@/services/borrowerService';
-import { BorrowerSelector } from '@/components/forms/BorrowerSelector';
+import { contactService } from '@/services/contactService';
+import { ContactSelector } from '@/components/forms/ContactSelector';
 import { BookSelector } from '@/components/forms/BookSelector';
 import BookCover from '@/components/BookCover';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -28,32 +28,32 @@ function CreateLoanScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  // Si un bookId ou borrowerId est passé en paramètre
+  // Si un bookId ou contactId est passé en paramètre
   const preselectedBookId = params.bookId ? parseInt(params.bookId as string) : null;
-  const preselectedBorrowerId = params.borrowerId ? parseInt(params.borrowerId as string) : null;
+  const preselectedContactId = params.contactId ? parseInt(params.contactId as string) : null;
 
   const [selectedBooks, setSelectedBooks] = useState<Book[]>([]);
-  const [selectedBorrower, setSelectedBorrower] = useState<Borrower | string | null>(null);
+  const [selectedContact, setSelectedContact] = useState<Contact | string | null>(null);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Charger l'emprunteur présélectionné
+  // Charger le contact présélectionné
   useEffect(() => {
-    if (preselectedBorrowerId) {
-      borrowerService.getBorrowerById(preselectedBorrowerId)
-        .then((borrower) => setSelectedBorrower(borrower))
+    if (preselectedContactId) {
+      contactService.getContactById(preselectedContactId)
+        .then((contact) => setSelectedContact(contact))
         .catch((error) => {
-          console.error('Erreur lors du chargement de l\'emprunteur:', error);
+          console.error('Erreur lors du chargement du contact:', error);
         });
     }
-  }, [preselectedBorrowerId]);
+  }, [preselectedContactId]);
 
-  const handleBorrowerChange = (borrower: Borrower | string) => {
-    setSelectedBorrower(borrower);
-    if (errors.borrower) {
-      setErrors((prev) => ({ ...prev, borrower: '' }));
+  const handleContactChange = (contact: Contact | string) => {
+    setSelectedContact(contact);
+    if (errors.contact) {
+      setErrors((prev) => ({ ...prev, contact: '' }));
     }
   };
 
@@ -77,8 +77,8 @@ function CreateLoanScreen() {
       newErrors.books = 'Veuillez sélectionner au moins un livre';
     }
 
-    if (!selectedBorrower) {
-      newErrors.borrower = 'Veuillez sélectionner un emprunteur';
+    if (!selectedContact) {
+      newErrors.contact = 'Veuillez sélectionner un contact';
     }
 
     if (dueDate) {
@@ -104,15 +104,15 @@ function CreateLoanScreen() {
 
     try {
       const booksToLoan = preselectedBookId ? [{ id: preselectedBookId }] : selectedBooks;
-      const borrowerValue = typeof selectedBorrower === 'string'
-        ? selectedBorrower
-        : (selectedBorrower as Borrower).id;
+      const contactValue = typeof selectedContact === 'string'
+        ? selectedContact
+        : (selectedContact as Contact).id;
 
       // Créer un prêt pour chaque livre
       const loanPromises = booksToLoan.map(book => {
         const loanData: LoanCreate = {
           book_id: book.id,
-          borrower: borrowerValue,
+          contact: contactValue,
           due_date: dueDate || undefined,
           notes: notes || undefined,
         };
@@ -269,12 +269,12 @@ function CreateLoanScreen() {
           </View>
         )}
 
-        {/* Sélection de l'emprunteur */}
+        {/* Sélection du contact */}
         <View style={styles.section}>
-          <BorrowerSelector
-            selectedBorrower={selectedBorrower}
-            onBorrowerChange={handleBorrowerChange}
-            error={errors.borrower}
+          <ContactSelector
+            selectedContact={selectedContact}
+            onContactChange={handleContactChange}
+            error={errors.contact}
           />
         </View>
 

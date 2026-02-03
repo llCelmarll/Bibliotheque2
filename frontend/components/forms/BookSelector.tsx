@@ -50,7 +50,7 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
         return {
           ...book,
           isLoaned: !!activeLoan,
-          loanedTo: activeLoan?.borrower.name
+          loanedTo: activeLoan?.contact.name
         };
       });
 

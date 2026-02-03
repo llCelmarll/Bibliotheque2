@@ -78,11 +78,11 @@ describe('useLoans', () => {
       {
         id: 1,
         book_id: 1,
-        borrower_id: 1,
+        contact_id: 1,
         status: LoanStatus.ACTIVE,
         loan_date: '2025-01-01',
         book: { id: 1, title: 'Test Book', authors: [] },
-        borrower: { id: 1, name: 'Test Borrower' },
+        contact: { id: 1, name: 'Test Contact' },
       },
     ];
 
@@ -122,7 +122,7 @@ describe('useLoans', () => {
         status: LoanStatus.ACTIVE,
         loan_date: '2025-01-01',
         book: { id: 1, title: 'Book 1', authors: [] },
-        borrower: { id: 1, name: 'Borrower 1' },
+        contact: { id: 1, name: 'Contact 1' },
       },
     ];
 
@@ -173,7 +173,7 @@ describe('useLoans', () => {
         status: LoanStatus.ACTIVE,
         loan_date: '2025-01-01',
         book: { id: 1, title: 'Test', authors: [] },
-        borrower: { id: 1, name: 'Test' },
+        contact: { id: 1, name: 'Test' },
       },
     ];
 
@@ -226,21 +226,21 @@ describe('useLoans', () => {
         status: LoanStatus.RETURNED,
         loan_date: '2025-01-01',
         book: { id: 1, title: 'Book 1', authors: [] },
-        borrower: { id: 1, name: 'Test' },
+        contact: { id: 1, name: 'Test' },
       },
       {
         id: 2,
         status: LoanStatus.OVERDUE,
         loan_date: '2025-01-02',
         book: { id: 2, title: 'Book 2', authors: [] },
-        borrower: { id: 1, name: 'Test' },
+        contact: { id: 1, name: 'Test' },
       },
       {
         id: 3,
         status: LoanStatus.ACTIVE,
         loan_date: '2025-01-03',
         book: { id: 3, title: 'Book 3', authors: [] },
-        borrower: { id: 1, name: 'Test' },
+        contact: { id: 1, name: 'Test' },
       },
     ];
 
@@ -269,14 +269,14 @@ describe('useLoans', () => {
         status: LoanStatus.ACTIVE,
         loan_date: '2025-01-01',
         book: { id: 1, title: 'Book 1', authors: [] },
-        borrower: { id: 1, name: 'Test' },
+        contact: { id: 1, name: 'Test' },
       },
       {
         id: 2,
         status: LoanStatus.ACTIVE,
         loan_date: '2025-01-03',
         book: { id: 2, title: 'Book 2', authors: [] },
-        borrower: { id: 1, name: 'Test' },
+        contact: { id: 1, name: 'Test' },
       },
     ];
 

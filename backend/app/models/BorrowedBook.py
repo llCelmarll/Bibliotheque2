@@ -6,6 +6,7 @@ from enum import Enum
 if TYPE_CHECKING:
     from app.models.Book import Book
     from app.models.User import User
+    from app.models.Contact import Contact
 
 
 class BorrowStatus(str, Enum):
@@ -28,10 +29,14 @@ class BorrowedBook(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", index=True)
     user: Optional["User"] = Relationship(back_populates="borrowed_books")
 
-    # Source information
+    # Contact (source de l'emprunt)
+    contact_id: Optional[int] = Field(default=None, foreign_key="contacts.id", index=True)
+    contact: Optional["Contact"] = Relationship(back_populates="borrowed_books")
+
+    # Legacy: gardé pour rétrocompatibilité pendant la transition
     borrowed_from: str = Field(
         sa_column=Column(String, nullable=False, index=True)
-    )  # e.g., "Jean", "Municipal Library"
+    )
 
     # Date tracking
     borrowed_date: datetime = Field(

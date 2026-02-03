@@ -71,7 +71,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
 
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(
-        `Retourner le livre prêté à ${currentLoan.borrower?.name || 'Emprunteur inconnu'} ?`
+        `Retourner le livre prêté à ${currentLoan.contact?.name || 'Contact inconnu'} ?`
       );
       if (confirmed) {
         await confirmReturn();
@@ -79,7 +79,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
     } else {
       Alert.alert(
         'Retourner le livre',
-        `Retourner le livre prêté à ${currentLoan.borrower?.name || 'Emprunteur inconnu'} ?`,
+        `Retourner le livre prêté à ${currentLoan.contact?.name || 'Contact inconnu'} ?`,
         [
           {
             text: 'Annuler',
@@ -144,7 +144,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
 
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(
-        `Marquer comme retourné le livre emprunté à ${borrowedBook.borrowed_from} ?`
+        `Marquer comme retourné le livre emprunté à ${borrowedBook.contact?.name || borrowedBook.borrowed_from} ?`
       );
       if (confirmed) {
         await confirmReturnBorrow();
@@ -152,7 +152,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
     } else {
       Alert.alert(
         'Retourner le livre',
-        `Marquer comme retourné le livre emprunté à ${borrowedBook.borrowed_from} ?`,
+        `Marquer comme retourné le livre emprunté à ${borrowedBook.contact?.name || borrowedBook.borrowed_from} ?`,
         [
           {
             text: 'Annuler',

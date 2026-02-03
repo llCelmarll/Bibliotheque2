@@ -46,7 +46,7 @@ function BorrowedBooksScreen() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(borrow =>
         borrow.book?.title.toLowerCase().includes(query) ||
-        borrow.borrowed_from.toLowerCase().includes(query) ||
+        (borrow.contact?.name || borrow.borrowed_from).toLowerCase().includes(query) ||
         borrow.book?.authors?.some(a => a.name.toLowerCase().includes(query))
       );
     }
@@ -55,7 +55,7 @@ function BorrowedBooksScreen() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'borrowedFrom':
-          return a.borrowed_from.localeCompare(b.borrowed_from);
+          return (a.contact?.name || a.borrowed_from).localeCompare(b.contact?.name || b.borrowed_from);
         case 'book':
           return (a.book?.title || '').localeCompare(b.book?.title || '');
         case 'dueDate':
