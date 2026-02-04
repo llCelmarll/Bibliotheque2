@@ -1,7 +1,7 @@
 import axios from 'axios';
 import API_CONFIG from "@/config/api";
 import { FilterType, BookFilter } from "@/types/filter";
-import { Author, Publisher, Genre } from "@/types/book";
+import { Author, Publisher, Genre, BookSeries } from "@/types/book";
 
 // Configuration de base pour axios
 const apiClient = axios.create({
@@ -56,20 +56,33 @@ export async function fetchGenres(): Promise<Genre[]> {
 }
 
 /**
+ * Récupère la liste des séries pour le filtre
+ */
+export async function fetchSeries(): Promise<BookSeries[]> {
+	try {
+		const response = await apiClient.get(API_CONFIG.ENDPOINTS.SERIES);
+		return response.data;
+	} catch (error) {
+		console.error("Erreur lors de la récupération des séries :", error);
+		return [];
+	}
+}
+
+/**
  * Récupère tous les filtres disponibles
- * @returns {Promise<{authors: Author[], publishers: Publisher[], genres: Genre[]}>}
  */
 export async function fetchAllFilters() {
 	try {
-		const [authors, publishers, genres] = await Promise.all([
+		const [authors, publishers, genres, series] = await Promise.all([
 			fetchAuthors(),
 			fetchPublishers(),
-			fetchGenres()
+			fetchGenres(),
+			fetchSeries()
 		]);
-		return { authors, publishers, genres };
+		return { authors, publishers, genres, series };
 	} catch (error) {
-		console.error("Erreur lors de la récupération des filtes:", error);
-		return { authors: [], publishers: [], genres: []}
+		console.error("Erreur lors de la récupération des filtres:", error);
+		return { authors: [], publishers: [], genres: [], series: []}
 	}
 }
 
@@ -81,7 +94,7 @@ export async function fetchAllFilters() {
  */
 export function createFilter(
 	type: FilterType,
-	item: Author | Publisher | Genre
+	item: Author | Publisher | Genre | BookSeries | { id: number; name: string }
 ): BookFilter {
 	return {
 		type,

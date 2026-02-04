@@ -49,6 +49,12 @@ export default function EditBookScreen() {
         id: genre.id,
         exists: true
       })) || [],
+      series: book.base.series?.map(s => ({
+        name: s.name,
+        id: s.id,
+        exists: true,
+        volume_number: s.volume_number
+      })) || [],
       is_read: book.base.is_read ?? undefined,
       read_date: book.base.read_date || undefined,
     };
@@ -83,6 +89,7 @@ export default function EditBookScreen() {
         authors: values.authors,
         publisher: values.publisher,
         genres: values.genres,
+        series: values.series,
         is_read: values.is_read ?? null,
         read_date: values.read_date || null,
       };

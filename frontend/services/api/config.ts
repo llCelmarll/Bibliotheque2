@@ -25,4 +25,9 @@ export const API_ENDPOINTS = {
     CREATE: '/genres',
     GET_ALL: '/genres',
   },
+  SERIES: {
+    SEARCH: '/series/search',
+    CREATE: '/series',
+    GET_ALL: '/series',
+  },
 } as const;

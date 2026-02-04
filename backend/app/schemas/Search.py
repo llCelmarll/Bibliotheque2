@@ -4,6 +4,7 @@ from sqlmodel import SQLModel
 from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 from app.schemas.Genre import GenreRead
+from app.schemas.Series import SeriesRead
 
 T = TypeVar('T')
 
@@ -35,6 +36,12 @@ class PublisherSearchResult(SQLModel):
 
 class GenreSearchResult(SQLModel):
     results: List[GenreRead]
+    total: int
+    query: str
+    limit: int
+
+class SeriesSearchResult(SQLModel):
+    results: List[SeriesRead]
     total: int
     query: str
     limit: int

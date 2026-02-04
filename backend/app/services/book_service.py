@@ -8,6 +8,8 @@ from app.models.Book import Book
 from app.models.Author import Author
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
+from app.models.Series import Series
+from app.models.BookSeriesLink import BookSeriesLink
 from app.repositories.book_repository import BookRepository
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
@@ -72,14 +74,7 @@ class BookService:
             if book_data.publisher:
                 publisher_id = self._process_publisher_for_book(book_data.publisher)
 
-            # Créer avec le publisher_id
-            book_data_dict = book_data.model_dump()
-            book_data_dict["publisher_id"] = publisher_id
-            # Reconstruire BookCreate avec publisher_id
-            from app.schemas.Book import BookCreate
-            book_data_with_publisher = BookCreate(**{**book_data_dict, "publisher_id": publisher_id})
-
-            book = self.book_repository.create(book_data_with_publisher, self.user_id)
+            book = self.book_repository.create(book_data, self.user_id, publisher_id=publisher_id)
 
             # Gestion des relations many-to-many
             if book_data.authors:
@@ -87,6 +82,9 @@ class BookService:
 
             if book_data.genres:
                 self._process_genres_for_book(book, book_data.genres)
+
+            if book_data.series:
+                self._process_series_for_book(book, book_data.series)
 
         # 3. Vérifier emprunt actif existant
         active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(
@@ -168,6 +166,7 @@ class BookService:
 
         from app.schemas.Book import BookRead
         book_read = BookRead.from_orm(base_book)
+        book_read.series = BookRead._build_series_with_volumes(base_book)
 
         # Récupérer le prêt actif pour ce livre
         active_loan = self.loan_repository.get_active_loan_for_book(base_book.id, self.user_id)
@@ -207,7 +206,7 @@ class BookService:
                 )
 
         # Mise à jour des champs simples (excluant les entités)
-        update_data = book_data.model_dump(exclude_unset=True, exclude={'authors', 'publisher', 'genres'})
+        update_data = book_data.model_dump(exclude_unset=True, exclude={'authors', 'publisher', 'genres', 'series'})
         for field, value in update_data.items():
             setattr(book, field, value)
 
@@ -238,6 +237,21 @@ class BookService:
             if book_data.genres:
                 self._process_genres_for_book(book, book_data.genres)
 
+        # Gestion des séries si fourni
+        if book_data.series is not None:
+            # Supprimer les anciennes relations via la table de liaison
+            from app.models.BookSeriesLink import BookSeriesLink
+            from sqlmodel import select as sql_select
+            old_links = self.session.exec(
+                sql_select(BookSeriesLink).where(BookSeriesLink.book_id == book.id)
+            ).all()
+            for link in old_links:
+                self.session.delete(link)
+            self.session.flush()
+            book.series.clear()
+            if book_data.series:
+                self._process_series_for_book(book, book_data.series)
+
         self.session.commit()
         self.session.refresh(book)
         
@@ -258,6 +272,7 @@ class BookService:
     def _enrich_book_read(self, book: Book) -> BookRead:
         """Helper pour enrichir un livre avec prêt actif et emprunt actif"""
         book_read = BookRead.model_validate(book)
+        book_read.series = BookRead._build_series_with_volumes(book)
 
         # Récupérer le prêt actif pour ce livre
         active_loan = self.loan_repository.get_active_loan_for_book(book.id, self.user_id)
@@ -480,7 +495,9 @@ class BookService:
         if existing_book:
             # Si le livre existe, retourner les données comme pour get_book_by_id
             from app.schemas.Book import BookRead
-            book_dict = BookRead.from_orm(existing_book).model_dump()
+            book_read = BookRead.from_orm(existing_book)
+            book_read.series = BookRead._build_series_with_volumes(existing_book)
+            book_dict = book_read.model_dump()
             book_data['base'] = book_dict
             return book_data
         else:
@@ -504,6 +521,7 @@ class BookService:
             title_match_list = []
             for similar_book in similar_books:
                 book_read = BookReadSchema.model_validate(similar_book)
+                book_read.series = BookReadSchema._build_series_with_volumes(similar_book)
                 title_match_list.append(book_read.model_dump())
             book_data['title_match'] = title_match_list
 
@@ -700,6 +718,73 @@ class BookService:
 
             if genre:
                 book.genres.append(genre)
+
+    def _process_series_for_book(self, book: Book, series_data) -> None:
+        """
+        Traite les séries et les ajoute au livre via BookSeriesLink (avec volume_number).
+
+        Formats d'entrée supportés :
+        - int : ID d'une série existante
+        - str : Nom de série (sera créée si elle n'existe pas)
+        - dict : Objet avec 'id' ou 'name', et optionnellement 'volume_number'
+        """
+        from app.repositories.series_repository import SeriesRepository
+        series_repo = SeriesRepository(self.session)
+        logger = logging.getLogger("app.books")
+
+        for series_item in series_data:
+            series = None
+            volume_number = None
+
+            if isinstance(series_item, int):
+                series = self.session.get(Series, series_item)
+                if not series:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Série avec l'ID {series_item} non trouvée"
+                    )
+                logger.info("✅ Série existante utilisée (ID): id=%s name='%s'", series.id, series.name)
+
+            elif isinstance(series_item, str):
+                logger.info("🆕 Création/récupération série (str): name='%s'", series_item)
+                series = series_repo.get_or_create(series_item, self.user_id)
+
+            elif isinstance(series_item, dict):
+                volume_number = series_item.get('volume_number')
+
+                if 'id' in series_item and series_item['id']:
+                    series = self.session.get(Series, series_item['id'])
+                    if not series:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Série avec l'ID {series_item['id']} non trouvée"
+                        )
+                    logger.info("✅ Série existante utilisée (dict.id): id=%s name='%s'", series.id, series.name)
+                elif series_item.get('exists', False):
+                    logger.error("❌ Série marquée exists=true sans ID: %s", series_item)
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Série marquée comme existante mais sans ID valide: {series_item.get('name', 'inconnu')}"
+                    )
+                elif 'name' in series_item:
+                    series_name = series_item['name']
+                    logger.info("🆕 Création/récupération série (dict.name): name='%s'", series_name)
+                    series = series_repo.get_or_create(series_name, self.user_id)
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Objet série invalide (doit contenir 'id' ou 'name'): {series_item}"
+                    )
+
+            if series:
+                # Créer le lien avec volume_number
+                link = BookSeriesLink(
+                    book_id=book.id,
+                    series_id=series.id,
+                    volume_number=volume_number
+                )
+                self.session.add(link)
+                self.session.flush()
 
     def _process_publisher_for_book(self, publisher_data) -> Optional[int]:
         """

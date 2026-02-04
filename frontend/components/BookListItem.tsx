@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet, Image, TouchableOpacity} from "react-native";
-import {Author, Book, Genre} from "@/types/book";
+import {Author, Book, Genre, BookSeries} from "@/types/book";
 import BookCover from "@/components/BookCover";
 import {ClickableTag} from "@/components/ClickableTag";
 import {BookFilter, FilterType} from "@/types/filter";
@@ -44,10 +44,22 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 
 
 			<View style={styles.infoContainer}>
-				{/* Titre du livre */}
-				<TouchableOpacity onPress={handlePress}>
-					<Text style={styles.title}>{book.title}</Text>
-				</TouchableOpacity>
+				{/* Titre + badge lecture */}
+				<View style={styles.titleRow}>
+					<TouchableOpacity onPress={handlePress} style={styles.titleTouchable}>
+						<Text style={styles.title}>{book.title}</Text>
+					</TouchableOpacity>
+					{book.is_read === true && (
+						<View style={styles.readBadge}>
+							<Text style={styles.readBadgeText}>Lu</Text>
+						</View>
+					)}
+					{book.is_read === false && (
+						<View style={styles.unreadBadge}>
+							<Text style={styles.unreadBadgeText}>Non lu</Text>
+						</View>
+					)}
+				</View>
 
 				{/* Auteurs */}
 				{book.authors && book.authors.length > 0 && (
@@ -82,6 +94,23 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 							<ClickableTag
 								key={genre.id}
 								filter={createFilter("genre", genre)}
+								onPress={onFilterSelect}
+							/>
+						))}
+					</View>
+				)}
+
+				{/* Séries */}
+				{book.series && book.series.length > 0 && (
+					<View style={styles.series}>
+						<Text>{book.series.length > 1 ? "Séries" : "Série"} : </Text>
+						{book.series.map((s: BookSeries) => (
+							<ClickableTag
+								key={s.id}
+								filter={createFilter("series", {
+									...s,
+									name: s.volume_number ? s.name + ' — T.' + s.volume_number : s.name
+								})}
 								onPress={onFilterSelect}
 							/>
 						))}
@@ -155,10 +184,41 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'space-between',
 	},
+	titleRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 4,
+		flexWrap: 'wrap',
+		gap: 6,
+	},
+	titleTouchable: {
+		flexShrink: 1,
+	},
 	title: {
 		fontWeight: "bold",
 		fontSize: 16,
-		marginBottom: 4,
+	},
+	readBadge: {
+		backgroundColor: '#d4edda',
+		borderRadius: 8,
+		paddingHorizontal: 6,
+		paddingVertical: 2,
+	},
+	readBadgeText: {
+		fontSize: 10,
+		fontWeight: '600',
+		color: '#155724',
+	},
+	unreadBadge: {
+		backgroundColor: '#e9ecef',
+		borderRadius: 8,
+		paddingHorizontal: 6,
+		paddingVertical: 2,
+	},
+	unreadBadgeText: {
+		fontSize: 10,
+		fontWeight: '600',
+		color: '#6c757d',
 	},
 	author: {
 		color: "#666",
@@ -175,6 +235,13 @@ const styles = StyleSheet.create({
 		flexWrap: "wrap"
 	},
 	genre: {
+		color: "#666",
+		fontSize: 13,
+		marginBottom: 2,
+		flexDirection: "row",
+		flexWrap: "wrap"
+	},
+	series: {
 		color: "#666",
 		fontSize: 13,
 		marginBottom: 2,

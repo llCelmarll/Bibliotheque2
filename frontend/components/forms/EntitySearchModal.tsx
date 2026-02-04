@@ -58,6 +58,10 @@ export const EntitySearchModal = <T,>({
 					console.log('🏷️ Appel service genres...');
 					results = await entityService.searchGenres(query, 10);
 					break;
+				case 'series':
+					console.log('📚 Appel service séries...');
+					results = await entityService.searchSeries(query, 10);
+					break;
 			}
 			
 			console.log(`✅ Résultats ${entityType}:`, results.length, 'trouvés');

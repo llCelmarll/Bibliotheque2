@@ -23,6 +23,7 @@ class FilterType(Enum):
 	AUTHOR = "author"
 	PUBLISHER = "publisher"
 	GENRE = "genre"
+	SERIES = "series"
 
 class Filter(BaseModel):
 	type: FilterType

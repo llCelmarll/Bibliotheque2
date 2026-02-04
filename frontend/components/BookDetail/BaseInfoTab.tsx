@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert } from "rea
 import { BookDetail } from "@/types/book";
 import { InfoRow } from "@/components/BookDetail/InfoRow";
 import { useRoute } from "@react-navigation/native";
-import { formatDate } from "@/utils/dateFormatter";
+import { formatDate, formatDateOnly } from "@/utils/dateFormatter";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { ClickableTag } from "@/components/ClickableTag";
 import { createFilter } from "@/services/filtersService";
@@ -93,8 +93,28 @@ export function BaseInfoTab() {
     ));
   };
 
-  const statusOptions: { key: ReadStatus; label: string }[] = [
-    { key: 'unset', label: 'Non renseigné' },
+  const getSeriesLabel = (count: number | undefined) => {
+    if (count === undefined) return "Série";
+    return count > 1 ? "Séries" : "Série";
+  };
+
+  const renderSeries = () => {
+    if (!book.base.series || book.base.series.length === 0) {
+      return null;
+    }
+    return book.base.series.map(s => (
+      <ClickableTag
+        key={s.id}
+        filter={createFilter("series", {
+          ...s,
+          name: s.volume_number ? `${s.name} — T.${s.volume_number}` : s.name
+        })}
+        onPress={handleFilterSelect}
+      />
+    ));
+  };
+
+  const clickableStatusOptions: { key: ReadStatus; label: string }[] = [
     { key: 'read', label: 'Lu' },
     { key: 'unread', label: 'Non lu' },
   ];
@@ -148,6 +168,19 @@ export function BaseInfoTab() {
           </View>
         </View>
 
+        {book.base.series && book.base.series.length > 0 && (
+          <View style={styles.infoRow}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>
+                {getSeriesLabel(book.base.series?.length)}
+              </Text>
+            </View>
+            <View style={styles.valueContainer}>
+              {renderSeries()}
+            </View>
+          </View>
+        )}
+
         <InfoRow
           label="Nombre de pages"
           value={book.base.page_count?.toString() || "Non renseigné"}
@@ -160,7 +193,14 @@ export function BaseInfoTab() {
             <Text style={styles.label}>Statut</Text>
           </View>
           <View style={styles.segmentedContainer}>
-            {statusOptions.map((option) => (
+            {readStatus === 'unset' && (
+              <View style={[styles.segmentedButton, styles.segmentedButtonActive]}>
+                <Text style={[styles.segmentedButtonText, styles.segmentedButtonTextActive]}>
+                  Non renseigné
+                </Text>
+              </View>
+            )}
+            {clickableStatusOptions.map((option) => (
               <TouchableOpacity
                 key={option.key}
                 style={[
@@ -182,7 +222,7 @@ export function BaseInfoTab() {
           </View>
         </View>
         {readStatus === 'read' && readDate && (
-          <InfoRow label="Date de lecture" value={formatDate(readDate)} />
+          <InfoRow label="Date de lecture" value={formatDateOnly(readDate)} />
         )}
       </CollapsibleSection>
 

@@ -3,7 +3,7 @@
  * Types de filtres disponibles pour les livres
  * @typedef {("author" | "genre" | "publisher")} FilterType
  */
-export type FilterType = "author" | "genre" | "publisher";
+export type FilterType = "author" | "genre" | "publisher" | "series";
 
 /**
  * Représente un filtre actif

@@ -3,16 +3,19 @@ import { apiClient } from './client';
 import { API_ENDPOINTS } from './config';
 import {
   AuthorSearchResult,
-  PublisherSearchResult, 
+  PublisherSearchResult,
   GenreSearchResult,
+  SeriesSearchResult,
   ApiAuthor,
   ApiPublisher,
   ApiGenre,
+  ApiSeries,
   CreateAuthorRequest,
   CreatePublisherRequest,
   CreateGenreRequest,
+  CreateSeriesRequest,
 } from './types';
-import { Author, Publisher, Genre } from '@/types/entityTypes';
+import { Author, Publisher, Genre, Series } from '@/types/entityTypes';
 
 class EntityService {
   // === AUTHORS ===
@@ -102,6 +105,35 @@ class EntityService {
     }
   }
 
+  // === SERIES ===
+  async searchSeries(query: string, limit: number = 10): Promise<Series[]> {
+    try {
+      const result = await apiClient.get<SeriesSearchResult>(
+        API_ENDPOINTS.SERIES.SEARCH,
+        { query, limit }
+      );
+
+      return result.results.map(this.mapApiSeriesToSeries);
+    } catch (error) {
+      console.error('Error searching series:', error);
+      throw error;
+    }
+  }
+
+  async createSeries(name: string): Promise<Series> {
+    try {
+      const apiSeries = await apiClient.post<ApiSeries>(
+        API_ENDPOINTS.SERIES.CREATE,
+        { name } as CreateSeriesRequest
+      );
+
+      return this.mapApiSeriesToSeries(apiSeries);
+    } catch (error) {
+      console.error('Error creating series:', error);
+      throw error;
+    }
+  }
+
   // === MAPPERS ===
   private mapApiAuthorToAuthor(apiAuthor: ApiAuthor): Author {
     return {
@@ -126,7 +158,14 @@ class EntityService {
       id: apiGenre.id,
       name: apiGenre.name,
       exists: true,
-      // Pas de metadata pour le moment
+    };
+  }
+
+  private mapApiSeriesToSeries(apiSeries: ApiSeries): Series {
+    return {
+      id: apiSeries.id,
+      name: apiSeries.name,
+      exists: true,
     };
   }
 }

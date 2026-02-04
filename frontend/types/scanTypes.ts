@@ -33,6 +33,7 @@ export interface BookRead {
 	authors?: AuthorRead[];
 	publisher?: PublisherRead;
 	genres?: GenreRead[];
+	series?: { id: number; name: string; volume_number?: number }[];
 	is_read?: boolean | null;     // Statut de lecture (null = non renseigné)
 	read_date?: string;           // Date de lecture
 	current_loan?: LoanRead;  // Prêt actif (TO other) - livre prêté à quelqu'un
@@ -49,6 +50,7 @@ export interface BookCreate {
 	authors?: (number | string | {name: string; id?: number; exists?: boolean})[];
 	publisher?: number | string | {name: string; id?: number; exists?: boolean};
 	genres?: (number | string | {name: string; id?: number; exists?: boolean})[];
+	series?: (number | string | {name: string; id?: number; exists?: boolean; volume_number?: number})[];
 
 	// Statut de lecture
 	is_read?: boolean | null;
@@ -83,6 +85,13 @@ export interface SuggestedGenre {
 }
 
 // Nouveau type pour le livre suggéré dans le scan - correspond au backend enrichi
+export interface SuggestedSeries {
+	name: string;
+	exists: boolean;
+	id?: number;
+	volume_number?: number;
+}
+
 export interface SuggestedBook {
 	isbn?: string;
 	title?: string;
@@ -93,6 +102,7 @@ export interface SuggestedBook {
 	authors: SuggestedAuthor[];
 	publisher?: SuggestedPublisher;
 	genres: SuggestedGenre[];
+	series?: SuggestedSeries[];
 	is_read?: boolean | null;
 	read_date?: string;
 }
@@ -135,5 +145,14 @@ export interface PublisherRead {
 }
 
 export interface PublisherCreate {
+	name: string;
+}
+
+export interface SeriesRead {
+	id: number;
+	name: string;
+}
+
+export interface SeriesCreate {
 	name: string;
 }

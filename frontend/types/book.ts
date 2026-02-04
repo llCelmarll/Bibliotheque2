@@ -1,4 +1,4 @@
-import { AuthorCreate, AuthorRead, PublisherCreate, PublisherRead, GenreCreate, GenreRead } from './scanTypes';
+import { AuthorCreate, AuthorRead, PublisherCreate, PublisherRead, GenreCreate, GenreRead, SeriesCreate, SeriesRead } from './scanTypes';
 import { LoanStatus } from './loan';
 import { BorrowedBook } from './borrowedBook';
 
@@ -56,6 +56,15 @@ export interface Genre {
 }
 
 /**
+ * Représente une série de livres avec numéro de tome optionnel
+ */
+export interface BookSeries {
+    id: number;
+    name: string;
+    volume_number?: number;
+}
+
+/**
  * Représente un livre avec toutes ses propriétés
  * @interface Book
  * @property {number} id - Identifiant unique du livre
@@ -83,6 +92,7 @@ export interface Book {
 	is_read?: boolean | null;
 	read_date?: string;
 	genres?: Genre[];
+	series?: BookSeries[];
 	created_at?: string;
 	updated_at?: string;
 	current_loan?: CurrentLoan;
@@ -95,6 +105,7 @@ export interface BookBase {
     publisher?: Publisher;
     authors?: Author[];
     genres?: Genre[];
+    series?: BookSeries[];
     published_date: string;
     page_count?: number;
     cover_url: string | null;
@@ -173,4 +184,5 @@ export interface BookUpdate {
     authors?: (AuthorCreate | AuthorRead)[];
     publisher?: PublisherCreate | PublisherRead;
     genres?: (GenreCreate | GenreRead)[];
+    series?: (SeriesCreate | SeriesRead | { id: number; name: string; volume_number?: number })[];
 }

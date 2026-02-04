@@ -7,6 +7,7 @@ export const FEATURE_FLAGS = {
   USE_API_AUTHORS: true,
   USE_API_PUBLISHERS: true,  // ✅ Activé pour tester
   USE_API_GENRES: true,      // ✅ Activé pour tester
+  USE_API_SERIES: true,      // ✅ Activé pour tester
   
   // Debug & Development
   ENABLE_DEBUG_LOGS: __DEV__,

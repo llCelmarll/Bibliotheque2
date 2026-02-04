@@ -6,6 +6,7 @@ from datetime import datetime
 from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 from app.schemas.Genre import GenreRead
+from app.schemas.Series import BookSeriesRead
 from app.schemas.Other import SortBy, SortOrder, Filter
 from app.schemas.Contact import ContactRead
 from app.models.Loan import LoanStatus
@@ -54,6 +55,7 @@ class BookRead(SQLModel):
     authors: List[AuthorRead] = []
     publisher: Optional[PublisherRead] = None
     genres: List[GenreRead] = []
+    series: List[BookSeriesRead] = []
     current_loan: Optional[CurrentLoanRead] = None  # Prêt actif si le livre est prêté
     borrowed_book: Optional[CurrentBorrowRead] = None  # Emprunt actif si le livre est emprunté
     has_borrow_history: bool = False  # True si le livre a un historique d'emprunts (même retournés)
@@ -89,6 +91,7 @@ class BookRead(SQLModel):
             "authors": [AuthorRead.model_validate(a) for a in getattr(book, 'authors', [])],
             "publisher": PublisherRead.model_validate(book.publisher) if book.publisher else None,
             "genres": [GenreRead.model_validate(g) for g in getattr(book, 'genres', [])],
+            "series": cls._build_series_with_volumes(book),
             "current_loan": None,  # TODO: gérer les prêts actifs
             "borrowed_book": CurrentBorrowRead.model_validate(active_borrow) if active_borrow else None,
         }
@@ -104,6 +107,29 @@ class BookRead(SQLModel):
                 data["current_loan"] = CurrentLoanRead.model_validate(active_loan)
 
         return cls(**data)
+
+    @staticmethod
+    def _build_series_with_volumes(book) -> list:
+        """Construire la liste des séries avec volume_number depuis la table de liaison"""
+        from app.models.BookSeriesLink import BookSeriesLink
+        series_list = []
+        for s in getattr(book, 'series', []):
+            # Chercher le volume_number dans la table de liaison
+            volume_number = None
+            if hasattr(book, '_sa_instance_state'):
+                from sqlmodel import Session, select
+                session = object.__getattribute__(book, '_sa_instance_state').session
+                if session:
+                    link = session.exec(
+                        select(BookSeriesLink).where(
+                            BookSeriesLink.book_id == book.id,
+                            BookSeriesLink.series_id == s.id
+                        )
+                    ).first()
+                    if link:
+                        volume_number = link.volume_number
+            series_list.append(BookSeriesRead(id=s.id, name=s.name, volume_number=volume_number))
+        return series_list
 
 # Schema de création
 class BookCreate(SQLModel):
@@ -144,6 +170,7 @@ class BookCreate(SQLModel):
     authors: List[int | str | Dict[str, Any]] = []
     publisher: Optional[int | str | Dict[str, Any]] = None
     genres: List[int | str | Dict[str, Any]] = []
+    series: List[int | str | Dict[str, Any]] = []
 
     # Champs optionnels pour marquer comme emprunté
     is_borrowed: Optional[bool] = False
@@ -184,6 +211,7 @@ class BookUpdate(SQLModel):
     authors: Optional[List[Union[int, Dict[str, Any]]]] = None
     publisher: Optional[Union[int, Dict[str, Any]]] = None
     genres: Optional[List[Union[int, Dict[str, Any]]]] = None
+    series: Optional[List[Union[int, Dict[str, Any]]]] = None
 
 #Schema de recherche
 

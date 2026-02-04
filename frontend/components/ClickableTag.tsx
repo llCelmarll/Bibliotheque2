@@ -15,6 +15,7 @@ export function ClickableTag(props: ClickableTagProps) {
     if (props.filter.type === "author") iconName = "person-outline";
     else if (props.filter.type === "genre") iconName = "bookmark-outline";
     else if (props.filter.type === "publisher") iconName = "book-outline";
+    else if (props.filter.type === "series") iconName = "layers-outline";
     
     // Déterminer la couleur en fonction du type
     let tagColor = "#eef";
@@ -28,6 +29,9 @@ export function ClickableTag(props: ClickableTagProps) {
     } else if (props.filter.type === "publisher") {
         tagColor = "#fff3e0";
         textColor = "#ff9800";
+    } else if (props.filter.type === "series") {
+        tagColor = "#f3e5f5";
+        textColor = "#7b1fa2";
     }
     
     return (

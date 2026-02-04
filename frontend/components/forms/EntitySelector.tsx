@@ -143,8 +143,7 @@ export const EntitySelector = <T,>({
 			{/* Message d'aide */}
 			{selectedEntities.length === 0 && !error ? (
 				<Text style={styles.helpText}>
-					Cliquez sur "+" pour ajouter {config.multiple ? 'des' : 'un'} {config.entityType}
-					{config.multiple ? 's' : ''}
+					Cliquez sur "+" pour ajouter {config.multiple ? 'des' : 'un'} {config.entityType === 'series' ? 'série' : config.entityType}{config.multiple && config.entityType !== 'series' ? 's' : ''}
 				</Text>
 			) : null}
 
@@ -154,10 +153,12 @@ export const EntitySelector = <T,>({
 				onClose={() => setIsModalOpen(false)}
 				onSelectEntity={handleSelectFromModal}
 				entityType={config.entityType}
-				title={`Rechercher ${config.entityType === 'author' ? 'un auteur' : 
-					config.entityType === 'publisher' ? 'un éditeur' : 'un genre'}`}
-				placeholder={`Tapez le nom d${config.entityType === 'author' ? "'un auteur" : 
-					config.entityType === 'publisher' ? "'un éditeur" : "'un genre"}...`}
+				title={`Rechercher ${config.entityType === 'author' ? 'un auteur' :
+					config.entityType === 'publisher' ? 'un éditeur' :
+					config.entityType === 'series' ? 'une série' : 'un genre'}`}
+				placeholder={`Tapez le nom d${config.entityType === 'author' ? "'un auteur" :
+					config.entityType === 'publisher' ? "'un éditeur" :
+					config.entityType === 'series' ? "'une série" : "'un genre"}...`}
 			/>
 		</View>
 	);

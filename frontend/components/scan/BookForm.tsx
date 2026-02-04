@@ -4,8 +4,8 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 
 import { Formik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { SuggestedBook, BookCreate } from "@/types/scanTypes";
-import { AuthorSelector, PublisherSelector, GenreSelector } from '@/components/forms';
-import { Author, Publisher, Genre, Entity, PublisherMetadata, GenreMetadata } from '@/types/entityTypes';
+import { AuthorSelector, PublisherSelector, GenreSelector, SeriesSelector } from '@/components/forms';
+import { Author, Publisher, Genre, Series, Entity, PublisherMetadata, GenreMetadata, SeriesMetadata } from '@/types/entityTypes';
 import { ImagePreview } from './ImagePreview';
 import { Contact } from '@/types/contact';
 import { ContactSelector } from '@/components/forms/ContactSelector';
@@ -23,10 +23,11 @@ const convertDateToISO = (dateStr: string): string | undefined => {
 };
 
 // Interface pour le formulaire - utilise la structure BookCreate pour la création
-interface BookFormData extends Omit<BookCreate, 'authors' | 'publisher' | 'genres'> {
-	authors: Author[] | string;                                    // Array d'entités ou string (selon le flag)
-	publisher: Entity<PublisherMetadata>[] | string;              // Array d'entités ou string (selon le flag)
-	genres: Entity<GenreMetadata>[] | string;                     // Array d'entités ou string (selon le flag)
+interface BookFormData extends Omit<BookCreate, 'authors' | 'publisher' | 'genres' | 'series'> {
+	authors: Author[] | string;
+	publisher: Entity<PublisherMetadata>[] | string;
+	genres: Entity<GenreMetadata>[] | string;
+	series: Entity<SeriesMetadata>[] | string;
 }
 
 // Schéma de validation
@@ -88,8 +89,14 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 				exists: suggestedGenre.exists
 			} as Entity<GenreMetadata>)) || [])
 		: (suggested.genres?.map(g => g.name).join(', ') || ''),
-	// Initialiser champs de lecture
-	is_read: suggested.is_read ?? undefined,
+	series: suggested.series?.map(s => ({
+			id: s.id || undefined,
+			name: s.name,
+			exists: s.exists,
+			metadata: { volume_number: s.volume_number }
+		} as Entity<SeriesMetadata>)) || [],
+	// Initialiser champs de lecture (défaut: Non lu pour les nouveaux livres)
+	is_read: suggested.is_read ?? false,
 	read_date: suggested.read_date || '',
 	// Initialiser champs d'emprunt vides
 	is_borrowed: false,
@@ -136,6 +143,11 @@ const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = 
 			})
 			: typeof formData.genres === 'string' && formData.genres
 			? formData.genres.split(',').map((genre: string) => genre.trim())
+			: [],
+	series: USE_ENTITY_SELECTORS && Array.isArray(formData.series)
+			? formData.series.map(s => {
+				return s.exists && s.id ? { id: s.id, volume_number: s.metadata?.volume_number } : { name: s.name, volume_number: s.metadata?.volume_number };
+			})
 			: [],
 	// Inclure champs de lecture
 	is_read: formData.is_read ?? undefined,
@@ -261,7 +273,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 						
 						{renderFormField('ISBN', 'isbn', formik, '978XXXXXXXXX')}
 						
-						{renderFormField('Date de publication', 'published_date', formik, 'YYYY-MM-DD')}
+						{renderFormField('Date de publication', 'published_date', formik, 'Ex: 2023, Janvier 2023...')}
 						
 						{renderFormField('Nombre de pages', 'page_count', formik, '0', false, 'numeric')}
 						
@@ -312,12 +324,21 @@ export const BookForm: React.FC<BookFormProps> = ({
 							renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)
 						)}
 
+						{/* Champ Séries */}
+						{USE_ENTITY_SELECTORS && (
+							<SeriesSelector
+								selectedEntities={Array.isArray(formik.values.series) ? formik.values.series : []}
+								onEntitiesChange={(series) => formik.setFieldValue('series', series)}
+								disabled={formik.isSubmitting}
+								error={formik.touched.series && typeof formik.errors.series === 'string' ? formik.errors.series : undefined}
+							/>
+						)}
+
 						{/* Section Lecture */}
 						<View style={styles.sectionContainer}>
 							<Text style={styles.sectionSubtitle}>Statut de lecture</Text>
 							<View style={styles.readStatusRow}>
 								{([
-									{ key: undefined, label: 'Non renseigné' },
 									{ key: true, label: 'Lu' },
 									{ key: false, label: 'Non lu' },
 								] as { key: boolean | undefined; label: string }[]).map((option) => (
@@ -348,7 +369,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 								))}
 							</View>
 							{formik.values.is_read === true && (
-								renderFormField('Date de lecture', 'read_date', formik, 'YYYY-MM-DD')
+								renderFormField('Date de lecture', 'read_date', formik, 'JJ/MM/AAAA')
 							)}
 						</View>
 

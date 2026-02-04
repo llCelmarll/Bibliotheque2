@@ -33,6 +33,16 @@ export interface CreateGenreRequest {
   name: string;
 }
 
+export interface ApiSeries {
+  id: number;
+  name: string;
+}
+
+export interface CreateSeriesRequest {
+  name: string;
+}
+
 export type AuthorSearchResult = ApiSearchResult<ApiAuthor>;
 export type PublisherSearchResult = ApiSearchResult<ApiPublisher>;
 export type GenreSearchResult = ApiSearchResult<ApiGenre>;
+export type SeriesSearchResult = ApiSearchResult<ApiSeries>;

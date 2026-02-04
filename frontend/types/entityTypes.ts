@@ -1,5 +1,5 @@
 // types/entityTypes.ts
-export type EntityType = 'author' | 'publisher' | 'genre';
+export type EntityType = 'author' | 'publisher' | 'genre' | 'series';
 
 // Interface générique pour toutes les entités
 export interface Entity<T = {}> {
@@ -25,10 +25,16 @@ export interface GenreMetadata {
 	isMainGenre?: boolean;
 }
 
+export interface SeriesMetadata {
+	bookCount?: number;
+	volume_number?: number;
+}
+
 // Types spécialisés (ce sont des alias, pas des extensions)
 export type Author = Entity<AuthorMetadata>;
 export type Publisher = Entity<PublisherMetadata>;
 export type Genre = Entity<GenreMetadata>;
+export type Series = Entity<SeriesMetadata>;
 
 // Configuration pour EntitySelector
 export interface EntitySelectorConfig {
@@ -69,6 +75,13 @@ export interface PublisherSelectorProps {
 export interface GenreSelectorProps {
 	selectedEntities: Genre[];
 	onEntitiesChange: (entities: Genre[]) => void;
+	disabled?: boolean;
+	error?: string;
+}
+
+export interface SeriesSelectorProps {
+	selectedEntities: Series[];
+	onEntitiesChange: (entities: Series[]) => void;
 	disabled?: boolean;
 	error?: string;
 }

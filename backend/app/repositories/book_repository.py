@@ -11,6 +11,8 @@ from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
+from app.models.Series import Series
+from app.models.BookSeriesLink import BookSeriesLink
 from app.models.BorrowedBook import BorrowedBook, BorrowStatus
 from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams, BookCreate
 from app.schemas.Other import Filter, FilterType, SortBy, SortOrder
@@ -29,7 +31,8 @@ class BookRepository:
 			.options(
 				selectinload(Book.publisher),
 				selectinload(Book.authors).selectinload(Author.books),
-				selectinload(Book.genres).selectinload(Genre.books)
+				selectinload(Book.genres).selectinload(Genre.books),
+				selectinload(Book.series)
 			)
 		)
 
@@ -48,7 +51,7 @@ class BookRepository:
 		)
 		return self.session.exec(stmt).first()
 
-	def create(self, book_data: BookCreate, owner_id: int) -> Book:
+	def create(self, book_data: BookCreate, owner_id: int, publisher_id: Optional[int] = None) -> Book:
 		"""Crée un nouveau livre (sans commit pour permettre transactions)"""
 		book = Book(
 			title=book_data.title,
@@ -57,6 +60,9 @@ class BookRepository:
 			page_count=book_data.page_count,
 			barcode=book_data.barcode,
 			cover_url=book_data.cover_url,
+			is_read=book_data.is_read,
+			read_date=book_data.read_date,
+			publisher_id=publisher_id,
 			owner_id=owner_id,
 			created_at=datetime.utcnow()
 		)
@@ -228,7 +234,8 @@ class BookRepository:
 			.options(
 				selectinload(Book.publisher),
 				selectinload(Book.authors).selectinload(Author.books),
-				selectinload(Book.genres).selectinload(Genre.books)
+				selectinload(Book.genres).selectinload(Genre.books),
+				selectinload(Book.series)
 			)
 		)
 		if user_id is not None:
@@ -243,7 +250,8 @@ class BookRepository:
 			.options(
 				selectinload(Book.publisher),
 				selectinload(Book.authors).selectinload(Author.books),
-				selectinload(Book.genres).selectinload(Genre.books)
+				selectinload(Book.genres).selectinload(Genre.books),
+				selectinload(Book.series)
 			)
 		)
 		
@@ -266,7 +274,8 @@ class BookRepository:
 			.options(
 				selectinload(Book.publisher),
 				selectinload(Book.authors),
-				selectinload(Book.genres)
+				selectinload(Book.genres),
+				selectinload(Book.series)
 			)
 		)
 
@@ -280,7 +289,8 @@ class BookRepository:
 		"""Construit la requête de base avec les jointures"""
 		return select(Book).join(Author, Book.authors, isouter=True) \
 			.join(Publisher, Book.publisher, isouter=True) \
-			.join(Genre, Book.genres, isouter=True)  # Corrigé : Book.genres au lieu de Book.genre
+			.join(Genre, Book.genres, isouter=True) \
+			.join(Series, Book.series, isouter=True)
 
 	def _apply_global_search(self, stmt, search_term: str) -> select:
 		"""
@@ -299,6 +309,7 @@ class BookRepository:
 				func.lower(Author.name).like(search_pattern),
 				func.lower(Publisher.name).like(search_pattern),
 				func.lower(Genre.name).like(search_pattern),
+			func.lower(Series.name).like(search_pattern),
 			)
 		)
 
@@ -321,6 +332,9 @@ class BookRepository:
 				filter_conditions.append(Publisher.id == filter.id)
 			elif filter.type == FilterType.GENRE:
 				filter_conditions.append(Genre.id == filter.id)
+			elif filter.type == FilterType.SERIES:
+				stmt = stmt.join(BookSeriesLink, BookSeriesLink.book_id == Book.id)
+				filter_conditions.append(BookSeriesLink.series_id == filter.id)
 			else:
 				raise ValueError(f"Type de filtre inconnu: {filter.type}")
 

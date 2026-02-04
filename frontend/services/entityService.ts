@@ -1,5 +1,5 @@
 // services/entityService.ts - Service unifié avec fallback mock/API
-import { Author, Publisher, Genre } from '@/types/entityTypes';
+import { Author, Publisher, Genre, Series } from '@/types/entityTypes';
 import { FEATURE_FLAGS } from '@/utils/featureFlags';
 
 // Import des services
@@ -108,6 +108,31 @@ class UnifiedEntityService {
     return this.createMockGenre(name);
   }
 
+  // === SERIES ===
+  async searchSeries(query: string, limit: number = 10): Promise<Series[]> {
+    if (FEATURE_FLAGS.USE_API_SERIES) {
+      try {
+        return await apiEntityService.searchSeries(query, limit);
+      } catch (error) {
+        console.warn('API Series failed, falling back to empty:', error);
+        return [];
+      }
+    }
+    return [];
+  }
+
+  async createSeries(name: string): Promise<Series> {
+    if (FEATURE_FLAGS.USE_API_SERIES) {
+      try {
+        return await apiEntityService.createSeries(name);
+      } catch (error) {
+        console.warn('API Series creation failed:', error);
+        return this.createMockSeries(name);
+      }
+    }
+    return this.createMockSeries(name);
+  }
+
   // === MOCK CREATORS (pour fallback) ===
   private createMockAuthor(name: string): Author {
     const existingIds = MOCK_AUTHORS.map(a => a.id).filter((id): id is number => id != null);
@@ -139,12 +164,21 @@ class UnifiedEntityService {
     };
   }
 
+  private createMockSeries(name: string): Series {
+    return {
+      id: Date.now(),
+      name,
+      exists: false,
+    };
+  }
+
   // === UTILS ===
-  isUsingApiFor(entityType: 'authors' | 'publishers' | 'genres'): boolean {
+  isUsingApiFor(entityType: 'authors' | 'publishers' | 'genres' | 'series'): boolean {
     switch (entityType) {
       case 'authors': return FEATURE_FLAGS.USE_API_AUTHORS;
       case 'publishers': return FEATURE_FLAGS.USE_API_PUBLISHERS;
       case 'genres': return FEATURE_FLAGS.USE_API_GENRES;
+      case 'series': return FEATURE_FLAGS.USE_API_SERIES;
       default: return false;
     }
   }

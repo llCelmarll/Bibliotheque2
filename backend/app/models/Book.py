@@ -3,6 +3,7 @@ from typing import Optional, List, TYPE_CHECKING
 from sqlmodel import Field, SQLModel, Column, String, Boolean, UniqueConstraint, Relationship, DateTime
 from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
+from app.models.BookSeriesLink import BookSeriesLink
 from datetime import datetime
 
 if TYPE_CHECKING:
@@ -10,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.Author import Author
     from app.models.Publisher import Publisher
     from app.models.Genre import Genre
+    from app.models.Series import Series
     from app.models.Loan import Loan
     from app.models.BorrowedBook import BorrowedBook
 
@@ -34,6 +36,7 @@ class Book(SQLModel, table=True):
     publisher: Optional["Publisher"] = Relationship(back_populates="books")
     genre_id: Optional[int] = Field(default=None, foreign_key="genres.id")
     genres: List["Genre"] = Relationship(back_populates="books", link_model=BookGenreLink)
+    series: List["Series"] = Relationship(back_populates="books", link_model=BookSeriesLink)
     
     # Propriétaire du livre
     owner_id: Optional[int] = Field(default=None, foreign_key="users.id")
