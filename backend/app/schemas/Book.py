@@ -47,6 +47,8 @@ class BookRead(SQLModel):
     page_count: Optional[int] = None
     barcode: Optional[str] = None
     cover_url: Optional[str] = None
+    is_read: Optional[bool] = None
+    read_date: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     authors: List[AuthorRead] = []
@@ -80,6 +82,8 @@ class BookRead(SQLModel):
             "page_count": book.page_count,
             "barcode": book.barcode,
             "cover_url": book.cover_url,
+            "is_read": book.is_read,
+            "read_date": book.read_date,
             "created_at": book.created_at,
             "updated_at": book.updated_at,
             "authors": [AuthorRead.model_validate(a) for a in getattr(book, 'authors', [])],
@@ -135,6 +139,8 @@ class BookCreate(SQLModel):
     page_count: Optional[int] = None
     barcode: Optional[str] = None
     cover_url: Optional[str] = None
+    is_read: Optional[bool] = None
+    read_date: Optional[datetime] = None
     authors: List[int | str | Dict[str, Any]] = []
     publisher: Optional[int | str | Dict[str, Any]] = None
     genres: List[int | str | Dict[str, Any]] = []
@@ -173,6 +179,8 @@ class BookUpdate(SQLModel):
     page_count: Optional[int] = None
     barcode: Optional[str] = None
     cover_url: Optional[str] = None
+    is_read: Optional[bool] = None
+    read_date: Optional[datetime] = None
     authors: Optional[List[Union[int, Dict[str, Any]]]] = None
     publisher: Optional[Union[int, Dict[str, Any]]] = None
     genres: Optional[List[Union[int, Dict[str, Any]]]] = None

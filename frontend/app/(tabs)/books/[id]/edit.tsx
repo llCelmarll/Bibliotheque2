@@ -48,7 +48,9 @@ export default function EditBookScreen() {
         name: genre.name,
         id: genre.id,
         exists: true
-      })) || []
+      })) || [],
+      is_read: book.base.is_read ?? undefined,
+      read_date: book.base.read_date || undefined,
     };
     
     console.log('✅ Données converties:', converted);
@@ -81,6 +83,8 @@ export default function EditBookScreen() {
         authors: values.authors,
         publisher: values.publisher,
         genres: values.genres,
+        is_read: values.is_read ?? null,
+        read_date: values.read_date || null,
       };
 
       console.log('📝 Données envoyées à l\'API:', updateData);

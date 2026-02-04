@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View, Text } from "react-native";
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert } from "react-native";
 import { BookDetail } from "@/types/book";
 import { InfoRow } from "@/components/BookDetail/InfoRow";
 import { useRoute } from "@react-navigation/native";
@@ -8,14 +8,53 @@ import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { ClickableTag } from "@/components/ClickableTag";
 import { createFilter } from "@/services/filtersService";
 import { BookFilter } from "@/types/filter";
+import { bookService } from "@/services/bookService";
+
+type ReadStatus = 'unset' | 'read' | 'unread';
+
+function getReadStatus(isRead: boolean | null | undefined): ReadStatus {
+  if (isRead === true) return 'read';
+  if (isRead === false) return 'unread';
+  return 'unset';
+}
+
+function readStatusToIsRead(status: ReadStatus): boolean | null {
+  if (status === 'read') return true;
+  if (status === 'unread') return false;
+  return null;
+}
 
 // Dans BaseInfoTab.tsx
 export function BaseInfoTab() {
   const route = useRoute();
   const { book } = route.params as { book: BookDetail };
 
+  const [readStatus, setReadStatus] = useState<ReadStatus>(getReadStatus(book.base.is_read));
+  const [readDate, setReadDate] = useState<string | null>(book.base.read_date || null);
+
   const handleFilterSelect = (filter: BookFilter) => {
     console.log('Filter selected:', filter);
+  };
+
+  const handleReadStatusChange = async (newStatus: ReadStatus) => {
+    const previousStatus = readStatus;
+    const previousDate = readDate;
+
+    setReadStatus(newStatus);
+    const newDate = newStatus === 'read' ? (readDate || new Date().toISOString()) : null;
+    setReadDate(newDate);
+
+    try {
+      await bookService.toggleReadStatus(
+        book.base.id.toString(),
+        readStatusToIsRead(newStatus),
+        newDate
+      );
+    } catch (error) {
+      setReadStatus(previousStatus);
+      setReadDate(previousDate);
+      Alert.alert('Erreur', 'Impossible de mettre à jour le statut de lecture.');
+    }
   };
 
   const getAuthorLabel = (count: number | undefined) => {
@@ -54,6 +93,12 @@ export function BaseInfoTab() {
     ));
   };
 
+  const statusOptions: { key: ReadStatus; label: string }[] = [
+    { key: 'unset', label: 'Non renseigné' },
+    { key: 'read', label: 'Lu' },
+    { key: 'unread', label: 'Non lu' },
+  ];
+
   return (
     <ScrollView style={styles.container}>
       <CollapsibleSection title="Informations générales">
@@ -70,7 +115,7 @@ export function BaseInfoTab() {
 
         <InfoRow label="ISBN" value={book.base.isbn || "Non renseigné"} />
         <InfoRow label="Code-barres" value={book.base.barcode || 'Non renseigné'} />
-        
+
         <View style={styles.infoRow}>
           <View style={styles.labelContainer}>
             <Text style={styles.label}>Éditeur</Text>
@@ -88,8 +133,8 @@ export function BaseInfoTab() {
         </View>
 
         <InfoRow
-          label="Date de publication" 
-          value={formatDate(book.base.published_date)} 
+          label="Date de publication"
+          value={formatDate(book.base.published_date)}
         />
 
         <View style={styles.infoRow}>
@@ -104,9 +149,41 @@ export function BaseInfoTab() {
         </View>
 
         <InfoRow
-          label="Nombre de pages" 
+          label="Nombre de pages"
           value={book.base.page_count?.toString() || "Non renseigné"}
         />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Lecture">
+        <View style={styles.infoRow}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.label}>Statut</Text>
+          </View>
+          <View style={styles.segmentedContainer}>
+            {statusOptions.map((option) => (
+              <TouchableOpacity
+                key={option.key}
+                style={[
+                  styles.segmentedButton,
+                  readStatus === option.key && styles.segmentedButtonActive,
+                  readStatus === option.key && option.key === 'read' && styles.segmentedButtonRead,
+                  readStatus === option.key && option.key === 'unread' && styles.segmentedButtonUnread,
+                ]}
+                onPress={() => handleReadStatusChange(option.key)}
+              >
+                <Text style={[
+                  styles.segmentedButtonText,
+                  readStatus === option.key && styles.segmentedButtonTextActive,
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+        {readStatus === 'read' && readDate && (
+          <InfoRow label="Date de lecture" value={formatDate(readDate)} />
+        )}
       </CollapsibleSection>
 
       <CollapsibleSection title="Métadonnées" defaultExpanded={false}>
@@ -153,5 +230,39 @@ const styles = StyleSheet.create({
   },
   tag: {
     marginBottom: 4,
+  },
+  segmentedContainer: {
+    flex: 2,
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  segmentedButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  segmentedButtonActive: {
+    backgroundColor: '#e9ecef',
+    borderColor: '#6c757d',
+  },
+  segmentedButtonRead: {
+    backgroundColor: '#d4edda',
+    borderColor: '#28a745',
+  },
+  segmentedButtonUnread: {
+    backgroundColor: '#e9ecef',
+    borderColor: '#6c757d',
+  },
+  segmentedButtonText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  segmentedButtonTextActive: {
+    color: '#333',
+    fontWeight: '600',
   },
 });

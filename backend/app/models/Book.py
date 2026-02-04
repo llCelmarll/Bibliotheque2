@@ -1,6 +1,6 @@
 import datetime as dt
 from typing import Optional, List, TYPE_CHECKING
-from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship, DateTime
+from sqlmodel import Field, SQLModel, Column, String, Boolean, UniqueConstraint, Relationship, DateTime
 from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
 from datetime import datetime
@@ -53,6 +53,10 @@ class Book(SQLModel, table=True):
 
     # Couverture du livre
     cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
+
+    # Statut de lecture (None = non renseigné, True = lu, False = non lu)
+    is_read: Optional[bool] = Field(default=None, sa_column=Column(Boolean, nullable=True))
+    read_date: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
     # Champs de timestamp
     created_at: datetime = Field(

@@ -102,6 +102,20 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
             </View>
           )}
 
+          {/* Badge de lecture */}
+          {book.base?.is_read === true && (
+            <View style={styles.readBadge}>
+              <Text style={styles.readBadgeText}>
+                ✓ Lu {book.base.read_date ? `le ${formatDate(book.base.read_date)}` : ''}
+              </Text>
+            </View>
+          )}
+          {book.base?.is_read === false && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadBadgeText}>Non lu</Text>
+            </View>
+          )}
+
           {/* Actions seulement si le livre existe dans la base */}
           {book.base?.id && (
             <BookActions
@@ -204,5 +218,33 @@ const styles = StyleSheet.create({
   borrowOverdue: {
     color: '#dc3545',
     fontWeight: '600',
+  },
+  readBadge: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 10,
+    backgroundColor: '#d4edda',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#28a745',
+  },
+  readBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#155724',
+  },
+  unreadBadge: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 10,
+    backgroundColor: '#e9ecef',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#6c757d',
+  },
+  unreadBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#495057',
   },
 });

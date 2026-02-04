@@ -67,6 +67,20 @@ export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPres
 						)}
 					</View>
 				)}
+
+				{/* Affichage du statut de lecture */}
+				{book.is_read === true && (
+					<View style={styles.readBadge}>
+						<Text style={styles.readBadgeText}>
+							✓ Lu {book.read_date ? `le ${formatDate(book.read_date)}` : ''}
+						</Text>
+					</View>
+				)}
+				{book.is_read === false && (
+					<View style={styles.unreadBadge}>
+						<Text style={styles.unreadBadgeText}>Non lu</Text>
+					</View>
+				)}
 			</View>
 		</TouchableOpacity>
 	);
@@ -168,5 +182,31 @@ const styles = StyleSheet.create({
 	loanOverdue: {
 		color: '#dc3545',
 		fontWeight: '600',
+	},
+	readBadge: {
+		marginTop: 8,
+		padding: 8,
+		backgroundColor: '#d4edda',
+		borderRadius: 6,
+		borderWidth: 1,
+		borderColor: '#28a745',
+	},
+	readBadgeText: {
+		fontSize: 12,
+		fontWeight: '600',
+		color: '#155724',
+	},
+	unreadBadge: {
+		marginTop: 8,
+		padding: 8,
+		backgroundColor: '#e9ecef',
+		borderRadius: 6,
+		borderWidth: 1,
+		borderColor: '#6c757d',
+	},
+	unreadBadgeText: {
+		fontSize: 12,
+		fontWeight: '600',
+		color: '#495057',
 	},
 });

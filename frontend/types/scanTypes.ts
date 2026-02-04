@@ -33,6 +33,8 @@ export interface BookRead {
 	authors?: AuthorRead[];
 	publisher?: PublisherRead;
 	genres?: GenreRead[];
+	is_read?: boolean | null;     // Statut de lecture (null = non renseigné)
+	read_date?: string;           // Date de lecture
 	current_loan?: LoanRead;  // Prêt actif (TO other) - livre prêté à quelqu'un
 	borrowed_book?: BorrowedBook;  // Emprunt actif (FROM other) - livre emprunté de quelqu'un
 }
@@ -47,6 +49,10 @@ export interface BookCreate {
 	authors?: (number | string | {name: string; id?: number; exists?: boolean})[];
 	publisher?: number | string | {name: string; id?: number; exists?: boolean};
 	genres?: (number | string | {name: string; id?: number; exists?: boolean})[];
+
+	// Statut de lecture
+	is_read?: boolean | null;
+	read_date?: string;
 
 	// Champs d'emprunt
 	is_borrowed?: boolean;
@@ -87,6 +93,8 @@ export interface SuggestedBook {
 	authors: SuggestedAuthor[];
 	publisher?: SuggestedPublisher;
 	genres: SuggestedGenre[];
+	is_read?: boolean | null;
+	read_date?: string;
 }
 
 export interface ScanResult {

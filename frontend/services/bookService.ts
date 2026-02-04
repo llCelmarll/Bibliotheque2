@@ -167,6 +167,22 @@ class BookService {
   }
 
   /**
+   * Met à jour le statut de lecture d'un livre
+   */
+  async toggleReadStatus(bookId: string, isRead: boolean | null, readDate?: string | null): Promise<BookRead> {
+    try {
+      const response = await apiClient.patch(
+        `${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}/read-status`,
+        { is_read: isRead, read_date: readDate || null }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du statut de lecture:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Valide les données du livre avant envoi
    */
   validateBookData(bookData: BookCreate): { isValid: boolean; errors: string[] } {

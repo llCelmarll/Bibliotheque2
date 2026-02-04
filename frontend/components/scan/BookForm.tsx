@@ -88,6 +88,9 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 				exists: suggestedGenre.exists
 			} as Entity<GenreMetadata>)) || [])
 		: (suggested.genres?.map(g => g.name).join(', ') || ''),
+	// Initialiser champs de lecture
+	is_read: suggested.is_read ?? undefined,
+	read_date: suggested.read_date || '',
 	// Initialiser champs d'emprunt vides
 	is_borrowed: false,
 	borrowed_from: '',
@@ -134,6 +137,9 @@ const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = 
 			: typeof formData.genres === 'string' && formData.genres
 			? formData.genres.split(',').map((genre: string) => genre.trim())
 			: [],
+	// Inclure champs de lecture
+	is_read: formData.is_read ?? undefined,
+	read_date: formData.read_date || undefined,
 	// Inclure champs d'emprunt (convertir dates DD/MM/YYYY -> YYYY-MM-DD pour le backend)
 	// Forcer is_borrowed=false si forceOwnership=true
 	is_borrowed: forceOwnership ? false : formData.is_borrowed,
@@ -306,6 +312,46 @@ export const BookForm: React.FC<BookFormProps> = ({
 							renderFormField('Genres', 'genres', formik, 'Genre1, Genre2, Genre3', true)
 						)}
 
+						{/* Section Lecture */}
+						<View style={styles.sectionContainer}>
+							<Text style={styles.sectionSubtitle}>Statut de lecture</Text>
+							<View style={styles.readStatusRow}>
+								{([
+									{ key: undefined, label: 'Non renseigné' },
+									{ key: true, label: 'Lu' },
+									{ key: false, label: 'Non lu' },
+								] as { key: boolean | undefined; label: string }[]).map((option) => (
+									<TouchableOpacity
+										key={String(option.key)}
+										style={[
+											styles.readStatusButton,
+											formik.values.is_read === option.key && styles.readStatusButtonActive,
+											formik.values.is_read === option.key && option.key === true && styles.readStatusButtonRead,
+											formik.values.is_read === option.key && option.key === false && styles.readStatusButtonUnread,
+										]}
+										onPress={() => {
+											formik.setFieldValue('is_read', option.key);
+											if (option.key === true && !formik.values.read_date) {
+												formik.setFieldValue('read_date', new Date().toISOString().split('T')[0]);
+											} else if (option.key !== true) {
+												formik.setFieldValue('read_date', '');
+											}
+										}}
+									>
+										<Text style={[
+											styles.readStatusButtonText,
+											formik.values.is_read === option.key && styles.readStatusButtonTextActive,
+										]}>
+											{option.label}
+										</Text>
+									</TouchableOpacity>
+								))}
+							</View>
+							{formik.values.is_read === true && (
+								renderFormField('Date de lecture', 'read_date', formik, 'YYYY-MM-DD')
+							)}
+						</View>
+
 						{/* Section Emprunt - cachée si forceOwnership ou en mode modification */}
 						{!forceOwnership && !isEditMode && (
 							<View style={styles.sectionContainer}>
@@ -449,5 +495,39 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: '#2c3e50',
 		fontWeight: '500',
+	},
+	readStatusRow: {
+		flexDirection: 'row',
+		gap: 8,
+		flexWrap: 'wrap',
+		marginBottom: 12,
+	},
+	readStatusButton: {
+		paddingHorizontal: 14,
+		paddingVertical: 8,
+		borderRadius: 16,
+		backgroundColor: '#f0f0f0',
+		borderWidth: 1,
+		borderColor: '#ddd',
+	},
+	readStatusButtonActive: {
+		backgroundColor: '#e9ecef',
+		borderColor: '#6c757d',
+	},
+	readStatusButtonRead: {
+		backgroundColor: '#d4edda',
+		borderColor: '#28a745',
+	},
+	readStatusButtonUnread: {
+		backgroundColor: '#e9ecef',
+		borderColor: '#6c757d',
+	},
+	readStatusButtonText: {
+		fontSize: 14,
+		color: '#666',
+	},
+	readStatusButtonTextActive: {
+		color: '#333',
+		fontWeight: '600',
 	},
 });

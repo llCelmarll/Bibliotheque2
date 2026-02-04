@@ -80,6 +80,8 @@ export interface Book {
     authors?: Author[];
     publisher?: Publisher;
     cover_url?: string;
+	is_read?: boolean | null;
+	read_date?: string;
 	genres?: Genre[];
 	created_at?: string;
 	updated_at?: string;
@@ -96,6 +98,8 @@ export interface BookBase {
     published_date: string;
     page_count?: number;
     cover_url: string | null;
+    is_read: boolean | null;
+    read_date?: string | null;
     publisher_id: number;
     barcode: string | null;
     genre_id: number | null;
@@ -164,6 +168,8 @@ export interface BookUpdate {
     page_count?: number;
     barcode?: string;
     cover_url?: string;
+    is_read?: boolean | null;
+    read_date?: string | null;
     authors?: (AuthorCreate | AuthorRead)[];
     publisher?: PublisherCreate | PublisherRead;
     genres?: (GenreCreate | GenreRead)[];

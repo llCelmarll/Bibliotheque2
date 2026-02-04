@@ -1,15 +1,17 @@
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from pydantic import BaseModel
 from sqlmodel import Session
+from datetime import datetime
 from app.db import get_session
 from app.services.book_service import BookService
 from app.services.auth_service import get_current_user
 from app.models.User import User
 from app.schemas.Book import (
-    BookRead, 
-    BookCreate, 
-    BookUpdate, 
-    BookSearchParams, 
+    BookRead,
+    BookCreate,
+    BookUpdate,
+    BookSearchParams,
     BookAdvancedSearchParams,
     SortBy,
     SortOrder
@@ -307,6 +309,28 @@ async def get_book(
     Récupère un livre par son ID.
     """
     return await service.get_book_by_id(book_id)
+
+
+class ReadStatusUpdate(BaseModel):
+    """Schéma pour la mise à jour du statut de lecture"""
+    is_read: Optional[bool] = None
+    read_date: Optional[datetime] = None
+
+
+@router.patch("/{book_id}/read-status", response_model=BookRead)
+def update_read_status(
+        book_id: int,
+        data: ReadStatusUpdate,
+        service: BookService = Depends(get_book_service)
+):
+    """
+    Met à jour le statut de lecture d'un livre.
+
+    - **is_read**: null (non renseigné), true (lu) ou false (non lu)
+    - **read_date**: Date de lecture (optionnel, pertinent si is_read=true)
+    """
+    update = BookUpdate(is_read=data.is_read, read_date=data.read_date)
+    return service.update_book(book_id, update)
 
 
 @router.put("/{book_id}", response_model=BookRead)
