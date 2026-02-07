@@ -51,6 +51,10 @@ class ScanResult(SQLModel):
     google_book : dict | None= None
     openlibrary : dict | None= None
 
+    # Erreurs des services externes
+    google_book_error: str | None = None
+    openlibrary_error: str | None = None
+
     # Flags et données pour emprunts
     previously_borrowed: bool = False        # Tous emprunts sont RETURNED
     currently_borrowed: bool = False         # Au moins un emprunt ACTIVE/OVERDUE
@@ -82,8 +86,12 @@ class ScanService:
 
 
         #Check google_books et openLibrary
-        result.google_book = await fetch_google_books(isbn)
-        result.openlibrary = await fetch_openlibrary(isbn)
+        google_data, google_error = await fetch_google_books(isbn)
+        openlibrary_data, openlibrary_error = await fetch_openlibrary(isbn)
+        result.google_book = google_data
+        result.google_book_error = google_error
+        result.openlibrary = openlibrary_data
+        result.openlibrary_error = openlibrary_error
 
         if base_book:
             # Récupérer le prêt actif pour ce livre

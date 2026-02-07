@@ -114,6 +114,10 @@ export interface ScanResult {
 	google_book?: any;
 	openlibrary?: any;
 
+	// Erreurs des services externes
+	google_book_error?: string;
+	openlibrary_error?: string;
+
 	// Statut emprunt
 	previously_borrowed?: boolean;      // Tous emprunts RETURNED
 	currently_borrowed?: boolean;       // Au moins un emprunt ACTIVE/OVERDUE

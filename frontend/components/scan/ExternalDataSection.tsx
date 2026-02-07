@@ -8,12 +8,16 @@ import { Author, Publisher, Genre } from '@/types/entityTypes';
 interface ExternalDataSectionProps {
 	googleData?: any;
 	openLibraryData?: any;
+	googleError?: string;
+	openLibraryError?: string;
 	onImportData: (source: 'google' | 'openLibrary', selectedData: any) => void;
 }
 
 export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 																			googleData,
 																			openLibraryData,
+																			googleError,
+																			openLibraryError,
 																			onImportData
 																		}) => {
 	const [activeTab, setActiveTab] = useState<'google' | 'openLibrary'>('google');
@@ -515,11 +519,15 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 	};
 
 	const renderBookInfo = (data: any, source: 'google' | 'openLibrary') => {
+		const hasError = source === 'google' ? googleError : openLibraryError;
+		const sourceName = source === 'google' ? 'Google Books' : 'OpenLibrary';
 		if (!data) {
+			// Si erreur service, le bandeau est déjà affiché au-dessus — pas besoin de "aucune donnée"
+			if (hasError) return null;
 			return (
 				<View style={styles.noDataContainer}>
 					<Text style={styles.noDataText}>
-						Aucune donnée disponible depuis {source === 'google' ? 'Google Books' : 'OpenLibrary'}
+						Livre non trouvé sur {sourceName}
 					</Text>
 				</View>
 			);
@@ -561,7 +569,10 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		);
 	};
 
-	if (!googleData && !openLibraryData) {
+	const hasGoogleTab = googleData || googleError;
+	const hasOpenLibraryTab = openLibraryData || openLibraryError;
+
+	if (!hasGoogleTab && !hasOpenLibraryTab) {
 		return (
 			<View style={styles.container}>
 				<Text style={styles.sectionTitle}>Données externes</Text>
@@ -574,13 +585,24 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		);
 	}
 
+	const renderErrorBanner = (error: string) => (
+		<View style={styles.errorBanner}>
+			<MaterialIcons name="warning" size={20} color="#856404" />
+			<Text style={styles.errorBannerText}>{error}</Text>
+		</View>
+	);
+
 	return (
 		<View style={styles.container}>
 			<Text style={styles.sectionTitle}>Données externes</Text>
-			
+
+			{/* Bandeaux d'erreur en haut, toujours visibles */}
+			{googleError && renderErrorBanner(googleError)}
+			{openLibraryError && renderErrorBanner(openLibraryError)}
+
 			{/* Tabs */}
 			<View style={styles.tabContainer}>
-				{googleData && (
+				{hasGoogleTab && (
 					<TouchableOpacity
 						style={[styles.tab, activeTab === 'google' && styles.activeTab]}
 						onPress={() => setActiveTab('google')}
@@ -590,8 +612,8 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 						</Text>
 					</TouchableOpacity>
 				)}
-				
-				{openLibraryData && (
+
+				{hasOpenLibraryTab && (
 					<TouchableOpacity
 						style={[styles.tab, activeTab === 'openLibrary' && styles.activeTab]}
 						onPress={() => setActiveTab('openLibrary')}
@@ -602,7 +624,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 					</TouchableOpacity>
 				)}
 			</View>
-			
+
 			{/* Content */}
 			<View style={styles.contentContainer}>
 				{activeTab === 'google' && renderBookInfo(googleData, 'google')}
@@ -655,6 +677,23 @@ const styles = StyleSheet.create({
 	},
 	contentContainer: {
 		minHeight: 300,
+	},
+	errorBanner: {
+		backgroundColor: '#fff3cd',
+		borderColor: '#ffc107',
+		borderWidth: 1,
+		borderRadius: 8,
+		padding: 12,
+		marginBottom: 12,
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	errorBannerText: {
+		color: '#856404',
+		fontSize: 14,
+		fontWeight: '500',
+		marginLeft: 8,
+		flex: 1,
 	},
 	noDataContainer: {
 		padding: 20,

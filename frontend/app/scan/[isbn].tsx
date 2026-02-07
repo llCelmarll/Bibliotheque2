@@ -333,6 +333,8 @@ export default function ScanResultPage() {
 						<ExternalDataSection
 							googleData={data.google_book}
 							openLibraryData={data.openlibrary}
+							googleError={data.google_book_error}
+							openLibraryError={data.openlibrary_error}
 							onImportData={handleImportData}
 						/>
 					</View>
