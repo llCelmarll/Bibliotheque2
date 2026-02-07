@@ -3,6 +3,8 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: bibliotheque_postgres
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: bibliotheque
       POSTGRES_USER: ${POSTGRES_USER:-bibliotheque}
@@ -20,7 +22,8 @@ services:
 
   # Backend API Python FastAPI
   backend:
-    build: 
+    profiles: ["full"]
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: bibliotheque_backend
@@ -51,6 +54,7 @@ services:
 
   # Frontend React Native/Expo Web
   frontend:
+    profiles: ["full"]
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
