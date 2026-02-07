@@ -154,7 +154,7 @@ export function BaseInfoTab() {
 
         <InfoRow
           label="Date de publication"
-          value={formatDate(book.base.published_date)}
+          value={book.base.published_date || "Non renseigné"}
         />
 
         <View style={styles.infoRow}>
