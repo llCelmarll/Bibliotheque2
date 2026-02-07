@@ -120,9 +120,9 @@ Write-Host ""
 Write-Host "Note : La runtimeVersion est fixée à '1.0.0' dans app.json. Les mises à jour OTA JS ne nécessitent plus d'incrémenter la version ou le versionCode." -ForegroundColor Cyan
 Write-Host "Si tu rebuilds l'app native avec une nouvelle runtimeVersion, incrémente-la aussi dans app.json." -ForegroundColor Cyan
 
-# Backup de la base de donnees si elle existe
-Write-Host "Backup de la base de donnees..." -ForegroundColor Yellow
-ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" 'if [ -f ${SYNOLOGY_PATH}/data/bibliotheque.db ] && [ -s ${SYNOLOGY_PATH}/data/bibliotheque.db ]; then cp ${SYNOLOGY_PATH}/data/bibliotheque.db ${SYNOLOGY_PATH}/backups/bibliotheque_$(date +%Y-%m-%d_%H-%M-%S).db; echo "Backup cree"; else echo "Pas de backup (DB vide ou inexistante)"; fi'
+# Backup PostgreSQL avant deploiement
+Write-Host "Backup de la base de donnees PostgreSQL..." -ForegroundColor Yellow
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/backups && if sudo /usr/local/bin/docker ps --filter name=mabibliotheque-postgres --format '{{.Names}}' | grep -q mabibliotheque-postgres; then sudo /usr/local/bin/docker exec mabibliotheque-postgres pg_dump -U bibliotheque bibliotheque > ${SYNOLOGY_PATH}/backups/bibliotheque_`$(date +%Y-%m-%d_%H-%M-%S).sql && echo 'Backup PostgreSQL cree'; else echo 'Pas de conteneur PostgreSQL (premier deploiement?)'; fi"
 # 1. Build et push de l'image Docker backend
 if (-not $SkipBackend) {
     Write-Host "[1/4] Build et deploiement du backend..." -ForegroundColor Yellow

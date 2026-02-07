@@ -1,5 +1,6 @@
 # Script de redeploiement du backend uniquement
 # Redemarre le container backend sur le NAS Synology avec la derniere image
+# Note: Le conteneur PostgreSQL n'est PAS touche (il persiste)
 
 # Chargement des variables de deploiement
 $envFile = Join-Path $PSScriptRoot "..\..\.env.deploy"
@@ -29,9 +30,9 @@ Write-Host "Container: $CONTAINER_NAME" -ForegroundColor Gray
 Write-Host "Chemin NAS: $SYNOLOGY_PATH" -ForegroundColor Gray
 Write-Host ""
 
-# 0. Backup de la base de donnees AVANT tout
-Write-Host "[0/4] Backup de la base de donnees..." -ForegroundColor Yellow
-ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" 'mkdir -p /volume1/docker/mabibliotheque/backups && if [ -f /volume1/docker/mabibliotheque/data/bibliotheque.db ] && [ -s /volume1/docker/mabibliotheque/data/bibliotheque.db ]; then cp /volume1/docker/mabibliotheque/data/bibliotheque.db /volume1/docker/mabibliotheque/backups/bibliotheque_$(date +%Y%m%d_%H%M%S).db && echo "Backup cree" || echo "Erreur backup"; else echo "Pas de DB a sauvegarder"; fi'
+# 0. Backup PostgreSQL AVANT tout
+Write-Host "[0/4] Backup de la base de donnees PostgreSQL..." -ForegroundColor Yellow
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/backups && sudo /usr/local/bin/docker exec mabibliotheque-postgres pg_dump -U bibliotheque bibliotheque > ${SYNOLOGY_PATH}/backups/bibliotheque_`$(date +%Y%m%d_%H%M%S).sql && echo 'Backup PostgreSQL cree' || echo 'Erreur backup'"
 
 Write-Host ""
 
@@ -51,17 +52,24 @@ if ($LASTEXITCODE -ne 0) {
 # 3. Verification des variables d'environnement critiques
 Write-Host ""
 Write-Host "[3/4] Verification de la configuration..." -ForegroundColor Yellow
-$envCheck = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "grep -E '(DATABASE_URL|SECRET_KEY)' ${SYNOLOGY_PATH}/.env 2>/dev/null | wc -l"
-if ([int]$envCheck -lt 2) {
-    Write-Host "ATTENTION: Fichier .env manquant ou incomplet sur le NAS !" -ForegroundColor Red
+$envCheck = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "grep -c 'DATABASE_URL=postgresql' ${SYNOLOGY_PATH}/.env 2>/dev/null"
+if ([int]$envCheck -lt 1) {
+    Write-Host "ATTENTION: DATABASE_URL PostgreSQL manquant dans .env sur le NAS !" -ForegroundColor Red
     Write-Host "   Verifiez que ${SYNOLOGY_PATH}/.env contient:" -ForegroundColor Yellow
-    Write-Host "   - DATABASE_URL=sqlite:///./data/bibliotheque.db" -ForegroundColor Gray
-    Write-Host "   - SECRET_KEY=..." -ForegroundColor Gray
+    Write-Host "   - DATABASE_URL=postgresql://..." -ForegroundColor Gray
     Write-Host ""
     $response = Read-Host "Continuer quand meme ? (y/N)"
     if ($response -ne 'y') {
         exit 1
     }
+}
+
+# Verifier que PostgreSQL tourne
+$pgRunning = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker ps --filter name=mabibliotheque-postgres --format '{{.Names}}' 2>/dev/null"
+if (-not $pgRunning) {
+    Write-Host "ATTENTION: Le conteneur PostgreSQL n'est pas en cours d'execution !" -ForegroundColor Red
+    Write-Host "Lancez d'abord: .\deploy-synology.ps1" -ForegroundColor Yellow
+    exit 1
 }
 
 # 4. Redemarrage du container
@@ -84,7 +92,13 @@ Write-Host ""
 
 # Verification de la sante du container
 Write-Host "Verification de la sante du container..." -ForegroundColor Yellow
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 10
+
+# Verifier les logs pour les migrations
+$logs = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker logs $CONTAINER_NAME 2>&1 | tail -5"
+Write-Host $logs -ForegroundColor Gray
+
+Write-Host ""
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker ps --filter name=$CONTAINER_NAME --format 'Status: {{.Status}}'"
 
 Write-Host ""
