@@ -4,12 +4,13 @@ FROM python:3.11-slim
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Installer les dépendances système nécessaires pour SQLite et les libs crypto
+# Installer les dépendances système nécessaires pour PostgreSQL et les libs crypto
 RUN apt-get update && apt-get install -y \
     gcc \
     libssl-dev \
     libffi-dev \
-    sqlite3 \
+    libpq-dev \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Copier et installer les dépendances Python (production uniquement)
@@ -20,7 +21,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copier le code source
 COPY . .
 
-# Créer le répertoire pour la base de données si nécessaire
+# Créer le répertoire pour les données si nécessaire
 RUN mkdir -p /app/data
 
 # Rendre le script de démarrage exécutable
@@ -31,8 +32,8 @@ EXPOSE 8000
 
 # Variables d'environnement
 ENV PYTHONPATH=/app
-ENV DATABASE_URL=sqlite:///./data/bibliotheque.db
 ENV PYTHONUNBUFFERED=1
+# DATABASE_URL sera fourni par docker-compose
 
 # Commande de démarrage avec migrations automatiques
 CMD ["/app/start.sh"]

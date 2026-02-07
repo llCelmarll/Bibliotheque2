@@ -3,33 +3,37 @@ from app.models.Author import Author
 from app.models.Book import Book
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
+from app.models.Series import Series
+from app.models.Contact import Contact
+from app.models.Loan import Loan
+from app.models.BorrowedBook import BorrowedBook
 from app.models.BookAuthorLink import BookAuthorLink
 from app.models.BookGenreLink import BookGenreLink
+from app.models.BookSeriesLink import BookSeriesLink
 from sqlmodel import create_engine, Session
 import os
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger("db_init")
 
-# Utiliser le dossier /app/data pour la persistance via volume Docker
-# En local, utilise le dossier backend/
-
-# Utilisation de DATABASE_URL si défini
+# Configuration de la base de données PostgreSQL
 DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    logger.info(f"[DB INIT] Utilisation de DATABASE_URL: {DATABASE_URL}")
-    engine = create_engine(DATABASE_URL, echo=False)
-else:
-    # Fallback legacy : DATA_DIR ou backend
-    if os.getenv("DATA_DIR"):
-        DATA_DIR = os.getenv("DATA_DIR")
-    else:
-        BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        DATA_DIR = BACKEND_DIR
-    DB_PATH = os.path.join(DATA_DIR, "bibliotheque.db")
-    logger.info(f"[DB INIT] Utilisation du chemin local: {DB_PATH}")
-    os.makedirs(DATA_DIR, exist_ok=True)
-    engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is required")
+
+logger.info(f"[DB INIT] Connexion à la base de données...")
+
+# Configuration du pool de connexions pour PostgreSQL
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800
+)
 
 
 # Create the database and tables

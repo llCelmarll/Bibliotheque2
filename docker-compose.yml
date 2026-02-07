@@ -1,4 +1,23 @@
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: bibliotheque_postgres
+    environment:
+      POSTGRES_DB: bibliotheque
+      POSTGRES_USER: ${POSTGRES_USER:-bibliotheque}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bibliotheque_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bibliotheque} -d bibliotheque"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Backend API Python FastAPI
   backend:
     build: 
@@ -13,7 +32,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/bibliotheque.db}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-bibliotheque}:${POSTGRES_PASSWORD}@postgres:5432/bibliotheque
       - SECRET_KEY=${SECRET_KEY}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       - PYTHONPATH=/app
@@ -21,6 +40,9 @@ services:
     networks:
       - bibliotheque_network
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
       interval: 30s
@@ -31,7 +53,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: bibliotheque_frontend
     ports:
       - "8081:8081"
@@ -67,6 +89,8 @@ services:
 
 # Volumes persistants
 volumes:
+  postgres_data:
+    driver: local
   bibliotheque_data:
     driver: local
 

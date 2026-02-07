@@ -107,10 +107,10 @@ class BookRepository:
 		if params.filters:
 			stmt = self._apply_filters(stmt, params.filters)
 
-		stmt = self._apply_sorting(stmt, params.sort_by, params.sort_order)
+		stmt = self._deduplicate_and_sort(stmt, params.sort_by, params.sort_order)
 		stmt = self._apply_pagination(stmt, params.skip, params.limit)
 
-		return list(self.session.exec(stmt.distinct()).all())
+		return list(self.session.exec(stmt).all())
 
 	def advanced_search_books(self, params: BookAdvancedSearchParams, user_id: Optional[int] = None) -> List[Book]:
 		"""Recherche avancée avec filtres spécifiques pour un utilisateur"""
@@ -148,10 +148,10 @@ class BookRepository:
 		if conditions:
 			stmt = stmt.where(and_(*conditions))
 
-		stmt = self._apply_sorting(stmt, params.sort_by, params.sort_order)
+		stmt = self._deduplicate_and_sort(stmt, params.sort_by, params.sort_order)
 		stmt = self._apply_pagination(stmt, params.skip, params.limit)
 
-		return list(self.session.exec(stmt.distinct()).all())
+		return list(self.session.exec(stmt).all())
 
 	def get_statistics(self, user_id: Optional[int] = None) -> dict:
 		"""Récupère les statistiques des livres pour un utilisateur"""
@@ -376,8 +376,34 @@ class BookRepository:
 
 		return conditions
 
+	def _deduplicate_and_sort(self, stmt, sort_by: SortBy, sort_order: SortOrder):
+		"""Applique GROUP BY pour dédupliquer et tri compatible PostgreSQL"""
+		order_field = self._get_order_field(sort_by)
+
+		# GROUP BY toutes les colonnes de Book pour dédupliquer
+		stmt = stmt.group_by(
+			Book.id, Book.title, Book.isbn, Book.published_date,
+			Book.page_count, Book.barcode, Book.publisher_id, Book.genre_id,
+			Book.owner_id, Book.cover_url, Book.is_read, Book.read_date,
+			Book.created_at, Book.updated_at
+		)
+
+		# Si le tri porte sur une colonne jointe, utiliser MIN/MAX comme agrégat
+		if sort_by in (SortBy.author, SortBy.publisher, SortBy.genre):
+			if sort_order == SortOrder.desc:
+				order_clause = desc(func.min(order_field))
+			else:
+				order_clause = asc(func.min(order_field))
+		else:
+			if sort_order == SortOrder.desc:
+				order_clause = desc(order_field)
+			else:
+				order_clause = asc(order_field)
+
+		return stmt.order_by(order_clause)
+
 	def _apply_sorting(self, stmt, sort_by: SortBy, sort_order: SortOrder):
-		"""Applique le tri"""
+		"""Applique le tri (sans déduplication)"""
 		order_field = self._get_order_field(sort_by)
 
 		if sort_order == SortOrder.desc:

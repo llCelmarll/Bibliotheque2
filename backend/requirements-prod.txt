@@ -11,6 +11,8 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
 email-validator==2.1.1
+# PostgreSQL driver
+psycopg2-binary==2.9.9
 
 # Test and dev tools
 pytest==8.4.2
