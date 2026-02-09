@@ -104,29 +104,43 @@ export default function ScanResultPage() {
 		});
 	};
 
-	const handleFormSubmit = async (values: any) => {
+	const handleFormSubmit = async (values: any, localImageUri?: string | null) => {
 		try {
-			console.log('🚀 Début soumission du formulaire:', values);
-			
+			console.log('Debut soumission du formulaire:', values);
+
 			// Validation côté client
 			const validation = bookService.validateBookData(values);
 			if (!validation.isValid) {
-				console.error('❌ Validation échouée:', validation.errors);
-				// TODO: Afficher les erreurs à l'utilisateur
+				console.error('Validation echouee:', validation.errors);
 				return;
 			}
 
 			// Appel API pour créer le livre
 			const createdBook = await bookService.createBook(values);
-			
-			console.log('✅ Livre créé avec succès! ID:', createdBook.id);
-			
+
+			console.log('Livre cree avec succes! ID:', createdBook.id);
+
+			// Upload de la couverture si une image locale a ete selectionnee
+			if (localImageUri && createdBook.id) {
+				try {
+					await bookService.uploadCover(String(createdBook.id), localImageUri);
+				} catch (uploadErr: any) {
+					console.warn('Upload couverture echoue, livre cree sans couverture:', uploadErr);
+					const msg = uploadErr?.response?.data?.detail
+						|| uploadErr?.message
+						|| 'Erreur inconnue';
+					Alert.alert(
+						'Couverture non uploadée',
+						`Le livre a été créé mais la couverture n'a pas pu être enregistrée : ${msg}`
+					);
+				}
+			}
+
 			// Navigation vers la fiche du livre créé
 			router.push(`/(tabs)/books/${createdBook.id}`);
-			
+
 		} catch (error) {
-			console.error('❌ Erreur lors de la soumission:', error);
-			// TODO: Afficher un message d'erreur à l'utilisateur
+			console.error('Erreur lors de la soumission:', error);
 		}
 	};
 

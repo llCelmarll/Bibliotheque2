@@ -6,7 +6,9 @@ param(
     [switch]$SkipWeb,
     [switch]$SkipMobile,
     [switch]$SkipApk,
-    [string]$UpdateMessage
+    [string]$UpdateMessage,
+    [ValidateSet("patch", "minor", "major")]
+    [string]$BumpType = "patch"
 )
 
 # Fonction pour vérifier et lancer Docker Desktop si nécessaire
@@ -117,8 +119,19 @@ if ($SkipMobile) { Write-Host "  - App Mobile: SAUTE" -ForegroundColor Yellow } 
 if ($SkipApk) { Write-Host "  - APK Android: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - APK Android: OK" -ForegroundColor Green }
 Write-Host ""
 
-Write-Host "Note : La runtimeVersion est fixée à '1.0.0' dans app.json. Les mises à jour OTA JS ne nécessitent plus d'incrémenter la version ou le versionCode." -ForegroundColor Cyan
-Write-Host "Si tu rebuilds l'app native avec une nouvelle runtimeVersion, incrémente-la aussi dans app.json." -ForegroundColor Cyan
+Write-Host "Note : La runtimeVersion est fixee a '1.0.0' dans app.json. Les mises a jour OTA JS ne necessitent plus d'incrementer la version ou le versionCode." -ForegroundColor Cyan
+Write-Host "Si tu rebuilds l'app native avec une nouvelle runtimeVersion, incremente-la aussi dans app.json." -ForegroundColor Cyan
+
+# Incrementation automatique de version si on rebuild l'APK
+if (-not $SkipApk) {
+    Write-Host ""
+    Write-Host "[Version] Incrementation automatique de la version ($BumpType)..." -ForegroundColor Yellow
+    & "$PSScriptRoot\bump-version.ps1" -Part $BumpType
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Erreur lors de l'incrementation de version" -ForegroundColor Red
+        exit 1
+    }
+}
 
 # Backup PostgreSQL avant deploiement
 Write-Host "Backup de la base de donnees PostgreSQL..." -ForegroundColor Yellow

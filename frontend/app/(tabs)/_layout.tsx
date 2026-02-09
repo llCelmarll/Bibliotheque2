@@ -1,7 +1,13 @@
+import { useEffect } from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { checkForUpdate } from "@/utils/versionCheck";
 
 export default function TabLayout() {
+  useEffect(() => {
+    checkForUpdate();
+  }, []);
+
   return (
     <Tabs screenOptions={{
       headerShown: false // Cache le header par défaut pour tous les onglets

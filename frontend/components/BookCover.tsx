@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Image, ActivityIndicator, StyleSheet, StyleProp, ViewStyle, ImageStyle, ImageResizeMode } from "react-native";
+import { resolveCoverUrl } from '@/utils/coverUrl';
 
 interface BookCoverProps {
     url?: string;
@@ -17,7 +18,7 @@ const BookCover = ({ url, style, containerStyle, resizeMode }: BookCoverProps) =
             <Image
                 testID="book-cover-image"
                 source={
-                    url ? {uri: url} : require('../assets/images/default-book-cover.jpg')
+                    url ? {uri: resolveCoverUrl(url)} : require('../assets/images/default-book-cover.jpg')
                 }
                 style={[styles.coverImage, style]}
                 resizeMode={resizeMode || 'cover'}

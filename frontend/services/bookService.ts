@@ -1,5 +1,6 @@
 // services/bookService.ts
 import axios from 'axios';
+import { Platform } from 'react-native';
 import API_CONFIG from '@/config/api';
 import { BookCreate, BookRead } from '@/types/scanTypes';
 import { BookUpdate } from '@/types/book';
@@ -167,6 +168,39 @@ class BookService {
   }
 
   /**
+   * Upload une image de couverture pour un livre
+   */
+  async uploadCover(bookId: string, imageUri: string): Promise<{ cover_url: string }> {
+    console.log('Upload couverture pour livre:', bookId);
+
+    const formData = new FormData();
+
+    if (Platform.OS === 'web') {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      formData.append('file', blob, `cover_${bookId}.jpg`);
+    } else {
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: `cover_${bookId}.jpg`,
+      } as any);
+    }
+
+    const result = await apiClient.post(
+      `${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}/cover`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      }
+    );
+
+    console.log('Couverture uploadee:', result.data);
+    return result.data;
+  }
+
+  /**
    * Met à jour le statut de lecture d'un livre
    */
   async toggleReadStatus(bookId: string, isRead: boolean | null, readDate?: string | null): Promise<BookRead> {
@@ -203,8 +237,8 @@ class BookService {
       errors.push('Le nombre de pages doit être positif');
     }
 
-    // URL de couverture valide si fournie  
-    if (bookData.cover_url && !bookData.cover_url.match(/^https?:\/\/.+/)) {
+    // URL de couverture valide si fournie (accepter aussi les chemins locaux /covers/...)
+    if (bookData.cover_url && !bookData.cover_url.match(/^https?:\/\/.+/) && !bookData.cover_url.startsWith('/covers/')) {
       errors.push('L\'URL de couverture doit être valide');
     }
 

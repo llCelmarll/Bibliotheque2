@@ -3,6 +3,9 @@
 
 echo "🚀 Démarrage du backend MaBibliotheque..."
 
+# Créer le répertoire de couvertures si nécessaire
+mkdir -p /app/data/covers
+
 # Attendre que PostgreSQL soit prêt
 echo "⏳ Attente de PostgreSQL..."
 

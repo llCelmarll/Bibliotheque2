@@ -257,13 +257,43 @@ class BookService:
         
         return book
 
-    def delete_book(self, book_id: int) -> None:
-        """Supprime un livre (seulement si l'utilisateur en est propriétaire)"""
-        # Utiliser le repository pour obtenir l'objet Book directement avec vérification de propriété
+    async def upload_cover(self, book_id: int, file) -> str:
+        """Upload ou remplace la couverture d'un livre"""
         book = self.book_repository.get_by_id(book_id, self.user_id)
         if not book:
             raise HTTPException(status_code=404, detail="Livre introuvable")
-        
+
+        from app.services.cover_service import CoverService
+        cover_url = await CoverService.process_and_save(book_id, file)
+
+        book.cover_url = cover_url
+        self.session.commit()
+        self.session.refresh(book)
+        return cover_url
+
+    def delete_cover(self, book_id: int) -> None:
+        """Supprime la couverture d'un livre"""
+        book = self.book_repository.get_by_id(book_id, self.user_id)
+        if not book:
+            raise HTTPException(status_code=404, detail="Livre introuvable")
+
+        from app.services.cover_service import CoverService
+        CoverService.delete_file(book_id)
+
+        if book.cover_url and book.cover_url.startswith("/covers/"):
+            book.cover_url = None
+            self.session.commit()
+
+    def delete_book(self, book_id: int) -> None:
+        """Supprime un livre (seulement si l'utilisateur en est propriétaire)"""
+        book = self.book_repository.get_by_id(book_id, self.user_id)
+        if not book:
+            raise HTTPException(status_code=404, detail="Livre introuvable")
+
+        # Supprimer le fichier de couverture si existant
+        from app.services.cover_service import CoverService
+        CoverService.delete_file(book_id)
+
         # Les relations many-to-many seront supprimées automatiquement
         # grâce aux contraintes de la base de données
         self.session.delete(book)

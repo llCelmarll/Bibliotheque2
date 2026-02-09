@@ -44,3 +44,4 @@ backups/
 tmpclaude-*/
 **/tmpclaude-*
 CLAUDE.md
+backend/.env.example

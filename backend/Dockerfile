@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libpq-dev \
     postgresql-client \
+    libjpeg-dev \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copier et installer les dépendances Python (production uniquement)
@@ -22,7 +24,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # Créer le répertoire pour les données si nécessaire
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data/covers
 
 # Rendre le script de démarrage exécutable
 RUN chmod +x /app/start.sh

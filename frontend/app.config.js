@@ -55,7 +55,13 @@ module.exports = {
         "expo-camera",
         {
           "cameraPermissions": "Autorisez l'accès à la caméra pour scanner les livres",
-
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autorisez l'accès à vos photos pour choisir une couverture de livre",
+          "cameraPermission": "Autorisez l'accès à la caméra pour prendre une photo de couverture"
         }
       ],
       "expo-secure-store"
