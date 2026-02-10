@@ -33,6 +33,9 @@ Thumbs.db
 secrets/
 config/secrets/
 
+# Couvertures uploadées (dev local)
+backend/data/covers/
+
 # Données de test et migration
 testLivrotheque2.csv
 deploy/testers-ips.txt
@@ -44,4 +47,3 @@ backups/
 tmpclaude-*/
 **/tmpclaude-*
 CLAUDE.md
-backend/.env.example

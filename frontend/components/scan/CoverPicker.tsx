@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Platform, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePreview } from './ImagePreview';
@@ -22,8 +22,28 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
     error,
 }) => {
     const [showUrlInput, setShowUrlInput] = useState(false);
+    const [imageLoadError, setImageLoadError] = useState(false);
+    const webFileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const pickFromGallery = async () => {
+    // Sur web, utiliser un input HTML natif avec accept="image/*"
+    // pour eviter le crash d'expo-image-picker sur les fichiers non-image
+    const pickFromGalleryWeb = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = () => {
+            const file = input.files?.[0];
+            if (file) {
+                const uri = URL.createObjectURL(file);
+                setImageLoadError(false);
+                onLocalImagePicked(uri);
+                setShowUrlInput(false);
+            }
+        };
+        input.click();
+    };
+
+    const pickFromGalleryNative = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
             Alert.alert('Permission requise', "Autorisez l'acces a la galerie pour choisir une image.");
@@ -36,10 +56,13 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             quality: 0.8,
         });
         if (!result.canceled && result.assets[0]) {
+            setImageLoadError(false);
             onLocalImagePicked(result.assets[0].uri);
             setShowUrlInput(false);
         }
     };
+
+    const pickFromGallery = Platform.OS === 'web' ? pickFromGalleryWeb : pickFromGalleryNative;
 
     const takePhoto = async () => {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -58,16 +81,9 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
         }
     };
 
-    const hasImage = localImageUri || (coverUrl && coverUrl.length > 0);
+    const hasImage = localImageUri || (coverUrl && coverUrl.length > 0 && !imageLoadError);
 
-    // Determiner l'URL a afficher pour les couvertures existantes (locales ou externes)
     const resolvedCoverUrl = coverUrl ? resolveCoverUrl(coverUrl) : undefined;
-    
-    // Debug: afficher les URLs pour diagnostiquer
-    if (coverUrl && !localImageUri) {
-        console.log('📸 CoverPicker - coverUrl:', coverUrl);
-        console.log('📸 CoverPicker - resolvedCoverUrl:', resolvedCoverUrl);
-    }
 
     return (
         <View style={styles.container}>
@@ -85,19 +101,14 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
                         <Text style={styles.removeBtnText}>Supprimer</Text>
                     </TouchableOpacity>
                 </View>
-            ) : coverUrl ? (
+            ) : coverUrl && !imageLoadError ? (
                 <View style={styles.previewContainer}>
                     {coverUrl.startsWith('http') || coverUrl.startsWith('/covers/') ? (
                         <Image
                             source={{ uri: resolvedCoverUrl }}
                             style={styles.preview}
                             resizeMode="contain"
-                            onError={(e) => {
-                                console.error('❌ Erreur chargement couverture:', resolvedCoverUrl, e.nativeEvent.error);
-                            }}
-                            onLoad={() => {
-                                console.log('✅ Couverture chargée:', resolvedCoverUrl);
-                            }}
+                            onError={() => setImageLoadError(true)}
                         />
                     ) : (
                         <ImagePreview url={coverUrl} debounceMs={1500} />
@@ -137,6 +148,7 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
                     value={coverUrl}
                     onChangeText={onCoverUrlChange}
                     placeholder="https://example.com/couverture.jpg"
+                    placeholderTextColor="#aaa"
                     keyboardType="url"
                     autoCapitalize="none"
                     autoCorrect={false}

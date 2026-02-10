@@ -13,7 +13,7 @@ export function resolveCoverUrl(url?: string): string | undefined {
     }
 
     if (url.startsWith('/covers/')) {
-        return `${API_CONFIG.BASE_URL}${url}`;
+        return `${API_CONFIG.BASE_URL}${url}?t=${Date.now()}`;
     }
 
     return url;

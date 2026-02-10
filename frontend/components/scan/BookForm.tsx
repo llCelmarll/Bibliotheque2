@@ -65,9 +65,7 @@ interface BookFormProps {
 }
 
 // Fonction pour convertir SuggestedBook vers BookFormData (maintenant synchrone car enrichie par le backend)
-const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => {
-	console.log('📚 BookForm - suggested.cover_url:', suggested.cover_url);
-	return {
+const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	title: suggested.title || '',
 	isbn: suggested.isbn || '',
 	published_date: suggested.published_date || '',
@@ -111,8 +109,7 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => {
 	expected_return_date: '',
 	borrow_notes: '',
 	contact: undefined,
-	};
-};
+});
 
 // Fonction pour convertir BookFormData vers BookCreate
 const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = false): BookCreate => {
