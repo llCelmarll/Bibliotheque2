@@ -3,6 +3,7 @@ Tests d'intégration pour les endpoints de gestion des livres.
 Focus sur l'isolation des données par utilisateur.
 """
 import pytest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -333,8 +334,9 @@ class TestBookSearch:
 class TestScanBookSimilarDetection:
     """Tests d'intégration pour la détection de livres similaires lors du scan."""
 
-    @pytest.mark.asyncio
-    async def test_scan_with_similar_book_found(self, authenticated_client: TestClient, session: Session, test_user):
+    @patch('app.services.book_service.fetch_openlibrary')
+    @patch('app.services.book_service.fetch_google_books')
+    def test_scan_with_similar_book_found(self, mock_google, mock_ol, authenticated_client: TestClient, session: Session, test_user):
         """Test de scan avec un livre similaire dans la bibliothèque."""
         # Créer un livre existant avec un ISBN différent
         existing_book = create_test_book(
@@ -347,8 +349,10 @@ class TestScanBookSimilarDetection:
         # Scanner un ISBN différent mais même titre
         scanned_isbn = "9782226257017"
 
-        # Note: Ce test nécessite que les APIs externes soient mockées
-        # ou qu'elles retournent des données pour cet ISBN
+        # Mock des APIs pour retourner un titre similaire
+        mock_google.return_value = ({"title": "Sapiens", "authors": ["Yuval Noah Harari"]}, None)
+        mock_ol.return_value = (None, None)
+
         response = authenticated_client.get(f"/books/scan/{scanned_isbn}")
 
         assert response.status_code == 200
@@ -365,9 +369,12 @@ class TestScanBookSimilarDetection:
             similar_isbns = [book['isbn'] for book in data['title_match']]
             assert existing_book.isbn in similar_isbns
 
-    @pytest.mark.asyncio
-    async def test_scan_existing_book_no_similar_search(self, authenticated_client: TestClient, session: Session, test_user):
+    @patch('app.services.book_service.fetch_openlibrary')
+    @patch('app.services.book_service.fetch_google_books')
+    def test_scan_existing_book_no_similar_search(self, mock_google, mock_ol, authenticated_client: TestClient, session: Session, test_user):
         """Test de scan d'un livre existant (pas de recherche de similaires)."""
+        mock_google.return_value = (None, None)
+        mock_ol.return_value = (None, None)
         # Créer un livre
         existing_book = create_test_book(
             session,
@@ -389,8 +396,9 @@ class TestScanBookSimilarDetection:
         # title_match ne doit pas être utilisé (ou vide) car le livre existe déjà
         # La logique frontend n'affiche pas les similaires si le livre existe
 
-    @pytest.mark.asyncio
-    async def test_scan_user_isolation_similar_books(self, authenticated_client: TestClient, session: Session, test_user):
+    @patch('app.services.book_service.fetch_openlibrary')
+    @patch('app.services.book_service.fetch_google_books')
+    def test_scan_user_isolation_similar_books(self, mock_google, mock_ol, authenticated_client: TestClient, session: Session, test_user):
         """Test que la recherche de livres similaires respecte l'isolation utilisateur."""
         # Créer un autre utilisateur avec un livre
         other_user = create_test_user(session, email="other@example.com", username="otheruser")
@@ -403,6 +411,10 @@ class TestScanBookSimilarDetection:
 
         # Scanner un ISBN différent avec un titre similaire
         scanned_isbn = "2222222222222"
+
+        # Mock des APIs pour retourner un titre similaire à celui de l'autre user
+        mock_google.return_value = ({"title": "Shared Title Book"}, None)
+        mock_ol.return_value = (None, None)
 
         response = authenticated_client.get(f"/books/scan/{scanned_isbn}")
 

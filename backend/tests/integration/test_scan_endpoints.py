@@ -34,16 +34,16 @@ class TestScanEndpoint:
             isbn="9781234567890"
         )
         
-        # Mock des APIs externes
-        mock_google_books.return_value = {
+        # Mock des APIs externes (retournent des tuples (data, error))
+        mock_google_books.return_value = ({
             "title": "Google Title",
             "authors": ["Google Author"],
             "description": "Google description"
-        }
-        mock_openlibrary.return_value = {
+        }, None)
+        mock_openlibrary.return_value = ({
             "title": "OpenLibrary Title",
             "authors": [{"name": "OL Author"}]
-        }
+        }, None)
         
         response = authenticated_client.get("/books/scan/9781234567890")
         
@@ -72,20 +72,20 @@ class TestScanEndpoint:
         authenticated_client: TestClient
     ):
         """Test scan d'un livre qui n'existe pas dans la base."""
-        # Mock des APIs externes
-        mock_google_books.return_value = {
+        # Mock des APIs externes (retournent des tuples (data, error))
+        mock_google_books.return_value = ({
             "title": "New Book from Google",
             "authors": ["Google Author"],
             "publishedDate": "2023",
             "pageCount": 300,
             "description": "A great book",
             "imageLinks": {"thumbnail": "http://example.com/cover.jpg"}
-        }
-        mock_openlibrary.return_value = {
+        }, None)
+        mock_openlibrary.return_value = ({
             "title": "New Book from OpenLibrary",
             "authors": [{"name": "OL Author"}],
             "number_of_pages": 250
-        }
+        }, None)
         
         response = authenticated_client.get("/books/scan/9780987654321")
         
@@ -125,10 +125,10 @@ class TestScanEndpoint:
             isbn="9781111111111"
         )
         
-        # Mock des APIs externes
-        mock_google_books.return_value = {"title": "Google Result"}
-        mock_openlibrary.return_value = {"title": "OL Result"}
-        
+        # Mock des APIs externes (retournent des tuples (data, error))
+        mock_google_books.return_value = ({"title": "Google Result"}, None)
+        mock_openlibrary.return_value = ({"title": "OL Result"}, None)
+
         response = authenticated_client.get("/books/scan/9781111111111")
         
         assert response.status_code == 200
@@ -150,9 +150,9 @@ class TestScanEndpoint:
         authenticated_client: TestClient
     ):
         """Test scan quand les APIs externes échouent."""
-        # Simuler des échecs d'APIs
-        mock_google_books.return_value = None  # API échoue
-        mock_openlibrary.return_value = None   # API échoue
+        # Simuler des échecs d'APIs (retournent des tuples (None, error))
+        mock_google_books.return_value = (None, "Google Books indisponible")
+        mock_openlibrary.return_value = (None, "OpenLibrary indisponible")
         
         response = authenticated_client.get("/books/scan/9999999999999")
         
@@ -180,11 +180,11 @@ class TestScanEndpoint:
     ):
         """Test scan quand une seule API fonctionne."""
         # Google Books fonctionne, OpenLibrary échoue
-        mock_google_books.return_value = {
+        mock_google_books.return_value = ({
             "title": "Only Google Works",
             "authors": ["Google Author"]
-        }
-        mock_openlibrary.return_value = None
+        }, None)
+        mock_openlibrary.return_value = (None, "OpenLibrary indisponible")
         
         response = authenticated_client.get("/books/scan/9788888888888")
         
@@ -219,9 +219,9 @@ class TestScanEndpoint:
         authenticated_client: TestClient
     ):
         """Test scan avec ISBN contenant des espaces."""
-        mock_google_books.return_value = None
-        mock_openlibrary.return_value = None
-        
+        mock_google_books.return_value = (None, None)
+        mock_openlibrary.return_value = (None, None)
+
         # L'ISBN sera nettoyé par le service
         response = authenticated_client.get("/books/scan/  9781234567890  ")
         
@@ -258,9 +258,9 @@ class TestScanWithBarcode:
             barcode="1234567890123"
         )
         
-        mock_google_books.return_value = {"title": "Google Result"}
-        mock_openlibrary.return_value = {"title": "OL Result"}
-        
+        mock_google_books.return_value = ({"title": "Google Result"}, None)
+        mock_openlibrary.return_value = ({"title": "OL Result"}, None)
+
         # Scanner par code-barre
         response = authenticated_client.get("/books/scan/1234567890123")
         
@@ -291,9 +291,9 @@ class TestScanBorrowedBooks:
         authenticated_client: TestClient
     ):
         """Test: Scanner un livre qui a été emprunté puis retourné doit retourner previously_borrowed=True"""
-        # Mock des APIs externes
-        mock_google_books.return_value = {"title": "Google Result"}
-        mock_openlibrary.return_value = {"title": "OL Result"}
+        # Mock des APIs externes (retournent des tuples (data, error))
+        mock_google_books.return_value = ({"title": "Google Result"}, None)
+        mock_openlibrary.return_value = ({"title": "OL Result"}, None)
 
         # 1. Créer un livre emprunté
         book_data = {
@@ -342,9 +342,9 @@ class TestScanBorrowedBooks:
         authenticated_client: TestClient
     ):
         """Test: Scanner un livre qui est actuellement emprunté doit retourner currently_borrowed=True avec les détails"""
-        # Mock des APIs externes
-        mock_google_books.return_value = {"title": "Google Result"}
-        mock_openlibrary.return_value = {"title": "OL Result"}
+        # Mock des APIs externes (retournent des tuples (data, error))
+        mock_google_books.return_value = ({"title": "Google Result"}, None)
+        mock_openlibrary.return_value = ({"title": "OL Result"}, None)
 
         # 1. Créer un livre emprunté
         book_data = {

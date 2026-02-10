@@ -535,12 +535,16 @@ class BookService:
             book_data['base'] = None
         
         # Récupérer les données des APIs externes dans tous les cas
-        book_data['google_books'] = await fetch_google_books(isbn)
-        book_data['open_library'] = await fetch_openlibrary(isbn)
+        google_data, google_error = await fetch_google_books(isbn)
+        openlibrary_data, openlibrary_error = await fetch_openlibrary(isbn)
+        book_data['google_books'] = google_data
+        book_data['open_library'] = openlibrary_data
+        book_data['google_books_error'] = google_error
+        book_data['open_library_error'] = openlibrary_error
 
         # Extraire le titre pour la recherche de similarités (vérifier que les APIs ont retourné des données)
-        google_title = book_data['google_books'].get('title') if book_data['google_books'] else None
-        openlibrary_title = book_data['open_library'].get('title') if book_data['open_library'] else None
+        google_title = google_data.get('title') if google_data else None
+        openlibrary_title = openlibrary_data.get('title') if openlibrary_data else None
         title = google_title or openlibrary_title
 
         if title:

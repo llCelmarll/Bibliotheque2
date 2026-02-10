@@ -42,14 +42,15 @@ class TestGoogleBooksClient:
         }
         mock_get.return_value = mock_response
         
-        result = await fetch_google_books("9781234567890")
-        
-        assert result is not None
-        assert result["title"] == "Test Book"
-        assert result["authors"] == ["Test Author"]
-        assert result["publishedDate"] == "2023"
-        assert result["pageCount"] == 300
-        assert result["description"] == "A test book"
+        data, error = await fetch_google_books("9781234567890")
+
+        assert data is not None
+        assert error is None
+        assert data["title"] == "Test Book"
+        assert data["authors"] == ["Test Author"]
+        assert data["publishedDate"] == "2023"
+        assert data["pageCount"] == 300
+        assert data["description"] == "A test book"
         
         # Vérifier que l'URL est correcte
         mock_get.assert_called_once()
@@ -65,10 +66,11 @@ class TestGoogleBooksClient:
         mock_response.json.return_value = {"items": []}  # Pas de résultats
         mock_get.return_value = mock_response
         
-        result = await fetch_google_books("9999999999999")
-        
-        assert result is None
-    
+        data, error = await fetch_google_books("9999999999999")
+
+        assert data is None
+        assert error is None
+
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.get')
     async def test_fetch_google_books_no_items_key(self, mock_get: AsyncMock):
@@ -77,10 +79,11 @@ class TestGoogleBooksClient:
         mock_response.status_code = 200
         mock_response.json.return_value = {}  # Pas de clé 'items'
         mock_get.return_value = mock_response
-        
-        result = await fetch_google_books("9999999999999")
-        
-        assert result is None
+
+        data, error = await fetch_google_books("9999999999999")
+
+        assert data is None
+        assert error is None
     
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.get')
@@ -90,29 +93,35 @@ class TestGoogleBooksClient:
         mock_response.status_code = 404
         mock_get.return_value = mock_response
         
-        result = await fetch_google_books("9781234567890")
-        
-        assert result is None
-    
+        data, error = await fetch_google_books("9781234567890")
+
+        assert data is None
+        assert error is not None
+        assert "erreur 404" in error
+
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.get')
     async def test_fetch_google_books_timeout(self, mock_get: AsyncMock):
         """Test quand Google Books timeout."""
         mock_get.side_effect = httpx.ConnectTimeout("Connection timeout")
-        
-        result = await fetch_google_books("9781234567890")
-        
-        assert result is None
-    
+
+        data, error = await fetch_google_books("9781234567890")
+
+        assert data is None
+        assert error is not None
+        assert "indisponible" in error
+
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.get')
     async def test_fetch_google_books_request_error(self, mock_get: AsyncMock):
         """Test quand il y a une erreur de requête."""
         mock_get.side_effect = httpx.RequestError("Network error")
-        
-        result = await fetch_google_books("9781234567890")
-        
-        assert result is None
+
+        data, error = await fetch_google_books("9781234567890")
+
+        assert data is None
+        assert error is not None
+        assert "indisponible" in error
 
 
 @pytest.mark.unit
@@ -140,14 +149,15 @@ class TestOpenLibraryClient:
         }
         mock_get.return_value = mock_response
         
-        result = await fetch_openlibrary("9781234567890")
-        
-        assert result is not None
-        assert result["title"] == "Test Book from OL"
-        assert len(result["authors"]) == 2
-        assert result["authors"][0]["name"] == "Test Author 1"
-        assert result["publishers"] == ["Test Publisher"]
-        assert result["number_of_pages"] == 250
+        data, error = await fetch_openlibrary("9781234567890")
+
+        assert data is not None
+        assert error is None
+        assert data["title"] == "Test Book from OL"
+        assert len(data["authors"]) == 2
+        assert data["authors"][0]["name"] == "Test Author 1"
+        assert data["publishers"] == ["Test Publisher"]
+        assert data["number_of_pages"] == 250
         
         # Vérifier l'URL appelée
         mock_get.assert_called_once()
@@ -162,10 +172,11 @@ class TestOpenLibraryClient:
         mock_response.status_code = 404
         mock_get.return_value = mock_response
         
-        result = await fetch_openlibrary("9999999999999")
-        
-        assert result is None
-    
+        data, error = await fetch_openlibrary("9999999999999")
+
+        assert data is None
+        assert error is None
+
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.get')
     async def test_fetch_openlibrary_server_error(self, mock_get: AsyncMock):
@@ -173,31 +184,37 @@ class TestOpenLibraryClient:
         mock_response = AsyncMock()
         mock_response.status_code = 500
         mock_get.return_value = mock_response
-        
-        result = await fetch_openlibrary("9781234567890")
-        
-        assert result is None
-    
+
+        data, error = await fetch_openlibrary("9781234567890")
+
+        assert data is None
+        assert error is not None
+        assert "erreur 500" in error
+
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.get')
     async def test_fetch_openlibrary_timeout(self, mock_get: AsyncMock):
         """Test quand OpenLibrary timeout."""
         mock_get.side_effect = httpx.ReadTimeout("Read timeout")
-        
-        result = await fetch_openlibrary("9781234567890")
-        
-        assert result is None
-    
+
+        data, error = await fetch_openlibrary("9781234567890")
+
+        assert data is None
+        assert error is not None
+        assert "indisponible" in error
+
     @pytest.mark.asyncio
-    @patch('httpx.AsyncClient.get')  
+    @patch('httpx.AsyncClient.get')
     async def test_fetch_openlibrary_connection_error(self, mock_get: AsyncMock):
         """Test quand il y a une erreur de connexion."""
         mock_get.side_effect = httpx.ConnectTimeout("Connection failed")
-        
-        result = await fetch_openlibrary("9781234567890")
-        
-        assert result is None
-    
+
+        data, error = await fetch_openlibrary("9781234567890")
+
+        assert data is None
+        assert error is not None
+        assert "indisponible" in error
+
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.get')
     async def test_fetch_openlibrary_minimal_data(self, mock_get: AsyncMock):
@@ -209,9 +226,10 @@ class TestOpenLibraryClient:
             # Pas d'autres champs
         }
         mock_get.return_value = mock_response
-        
-        result = await fetch_openlibrary("9781234567890")
-        
-        assert result is not None
-        assert result["title"] == "Minimal Book"
+
+        data, error = await fetch_openlibrary("9781234567890")
+
+        assert data is not None
+        assert error is None
+        assert data["title"] == "Minimal Book"
         # Les autres champs peuvent être absents, c'est OK

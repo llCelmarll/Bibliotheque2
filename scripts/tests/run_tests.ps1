@@ -86,6 +86,10 @@ if ($Backend -or $All) {
         Write-Info "Lancement des tests backend..."
         Write-Host ""
 
+        # DATABASE_URL est requis par db.py a l'import, mais les tests
+        # utilisent SQLite in-memory via conftest.py (override de get_session)
+        $env:DATABASE_URL = "sqlite:///test.db"
+
         # Options pytest
         $pytestArgs = @("tests/", "--ignore=tests/performance/", "-v")
 
