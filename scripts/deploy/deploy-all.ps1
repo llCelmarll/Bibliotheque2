@@ -6,7 +6,10 @@ param(
     [switch]$SkipWeb,
     [switch]$SkipMobile,
     [switch]$SkipApk,
-    [string]$UpdateMessage
+    [switch]$SkipBuild,
+    [string]$UpdateMessage,
+    [ValidateSet("patch", "minor", "major")]
+    [string]$BumpType = "patch"
 )
 
 # Fonction pour vérifier et lancer Docker Desktop si nécessaire
@@ -115,10 +118,22 @@ if ($SkipBackend) { Write-Host "  - Backend: SAUTE" -ForegroundColor Yellow } el
 if ($SkipWeb) { Write-Host "  - Frontend Web: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - Frontend Web: OK" -ForegroundColor Green }
 if ($SkipMobile) { Write-Host "  - App Mobile: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - App Mobile: OK" -ForegroundColor Green }
 if ($SkipApk) { Write-Host "  - APK Android: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - APK Android: OK" -ForegroundColor Green }
+if ($SkipBuild) { Write-Host "  - Build EAS: SAUTE (download APK existant)" -ForegroundColor Yellow }
 Write-Host ""
 
-Write-Host "Note : La runtimeVersion est fixée à '1.0.0' dans app.json. Les mises à jour OTA JS ne nécessitent plus d'incrémenter la version ou le versionCode." -ForegroundColor Cyan
-Write-Host "Si tu rebuilds l'app native avec une nouvelle runtimeVersion, incrémente-la aussi dans app.json." -ForegroundColor Cyan
+Write-Host "Note : La runtimeVersion est fixee a '1.0.0' dans app.json. Les mises a jour OTA JS ne necessitent plus d'incrementer la version ou le versionCode." -ForegroundColor Cyan
+Write-Host "Si tu rebuilds l'app native avec une nouvelle runtimeVersion, incremente-la aussi dans app.json." -ForegroundColor Cyan
+
+# Incrementation automatique de version si on rebuild l'APK
+if (-not $SkipApk -and -not $SkipBuild) {
+    Write-Host ""
+    Write-Host "[Version] Incrementation automatique de la version ($BumpType)..." -ForegroundColor Yellow
+    & "$PSScriptRoot\bump-version.ps1" -Part $BumpType
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Erreur lors de l'incrementation de version" -ForegroundColor Red
+        exit 1
+    }
+}
 
 # Backup PostgreSQL avant deploiement
 Write-Host "Backup de la base de donnees PostgreSQL..." -ForegroundColor Yellow
@@ -199,14 +214,46 @@ if (-not $SkipMobile) {
 }
 
 if (-not $SkipApk) {
-    Write-Host "[APK] Téléchargement et hébergement de l'APK Android..." -ForegroundColor Yellow
+    if (-not $SkipBuild) {
+        # Build de l'APK via EAS (cloud)
+        Write-Host "[APK 1/2] Build de l'APK Android via EAS..." -ForegroundColor Yellow
+        Write-Host ""
+
+        Set-Location frontend
+
+        Write-Host "  Lancement du build EAS (preview profile)..." -ForegroundColor Gray
+        Write-Host "  Cela peut prendre 5 a 20 minutes..." -ForegroundColor Gray
+        Write-Host ""
+
+        $buildStartTime = Get-Date
+
+        eas build --platform android --profile preview --non-interactive --wait
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  Erreur lors du build EAS de l'APK" -ForegroundColor Red
+            Write-Host "  Consultez https://expo.dev pour les logs du build" -ForegroundColor Yellow
+            Set-Location ..
+            exit 1
+        }
+
+        $buildDuration = (Get-Date) - $buildStartTime
+        Write-Host ""
+        Write-Host "  Build EAS termine en $([math]::Round($buildDuration.TotalMinutes, 1)) minutes" -ForegroundColor Green
+
+        Set-Location ..
+    } else {
+        Write-Host "[APK 1/2] Build EAS: SAUTE (build deja en cours ou termine)" -ForegroundColor Yellow
+    }
+
+    # Téléchargement et hébergement de l'APK
+    Write-Host ""
+    Write-Host "[APK 2/2] Telechargement et hebergement de l'APK Android..." -ForegroundColor Yellow
     Write-Host ""
 
-    # Appeler le script update-apk.ps1 pour télécharger et héberger l'APK
     & "$PSScriptRoot\update-apk.ps1"
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "  Erreur lors de la mise à jour de l'APK" -ForegroundColor Red
+        Write-Host "  Erreur lors de la mise a jour de l'APK" -ForegroundColor Red
         exit 1
     }
 

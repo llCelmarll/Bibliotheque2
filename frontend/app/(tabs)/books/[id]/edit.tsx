@@ -63,29 +63,28 @@ export default function EditBookScreen() {
     return converted;
   };
 
-  const handleFormSubmit = async (values: BookCreate) => {
+  const handleFormSubmit = async (values: BookCreate, localImageUri?: string | null) => {
     try {
       setSubmitError(null);
-      console.log('📝 Modification livre - données reçues:', values);
+      console.log('Modification livre - donnees recues:', values);
 
       // Validation côté client
       const validation = bookService.validateBookData(values);
       if (!validation.isValid) {
-        console.error('❌ Validation échouée:', validation.errors);
+        console.error('Validation echouee:', validation.errors);
         const errorMessage = validation.errors.join('\n');
         setSubmitError(errorMessage);
         Alert.alert('Erreur de validation', errorMessage);
         return;
       }
 
-      // Maintenant le backend supporte les objets d'entités comme pour la création
       const updateData: BookUpdate = {
         title: values.title,
         isbn: values.isbn,
         published_date: values.published_date,
         page_count: values.page_count,
         barcode: values.barcode,
-        cover_url: values.cover_url,
+        cover_url: localImageUri ? undefined : (values.cover_url || null),
         authors: values.authors,
         publisher: values.publisher,
         genres: values.genres,
@@ -94,12 +93,35 @@ export default function EditBookScreen() {
         read_date: values.read_date || null,
       };
 
-      console.log('📝 Données envoyées à l\'API:', updateData);
+      console.log('Donnees envoyees a l\'API:', updateData);
 
       // Appel API pour modifier le livre
       const updatedBook = await bookService.updateBook(id as string, updateData);
 
-      console.log('✅ Livre modifié avec succès!', updatedBook);
+      // Upload de la couverture si une image locale a ete selectionnee
+      if (localImageUri) {
+        try {
+          await bookService.uploadCover(id as string, localImageUri);
+        } catch (uploadErr: any) {
+          console.warn('Upload couverture echoue:', uploadErr);
+          const msg = uploadErr?.response?.data?.detail
+            || uploadErr?.message
+            || 'Erreur inconnue';
+          Alert.alert(
+            'Couverture non uploadée',
+            `Le livre a été modifié mais la couverture n'a pas pu être enregistrée : ${msg}`
+          );
+        }
+      } else if (!values.cover_url && book?.base?.cover_url?.startsWith('/covers/')) {
+        // L'utilisateur a supprime la couverture locale
+        try {
+          await bookService.deleteCover(id as string);
+        } catch (deleteErr) {
+          console.warn('Suppression couverture echouee:', deleteErr);
+        }
+      }
+
+      console.log('Livre modifie avec succes!', updatedBook);
 
       // Retour à la page de détail du livre avec rafraîchissement
       router.replace(`/books/${id}?refresh=${Date.now()}`);

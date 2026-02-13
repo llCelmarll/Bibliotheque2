@@ -30,6 +30,15 @@ Write-Host "Container: $CONTAINER_NAME" -ForegroundColor Gray
 Write-Host "Chemin NAS: $SYNOLOGY_PATH" -ForegroundColor Gray
 Write-Host ""
 
+# Upload du .env.synology vers le NAS
+$envSynologyPath = Join-Path $PSScriptRoot "..\..\.env.synology"
+if (Test-Path $envSynologyPath) {
+    Write-Host "Mise a jour du .env sur le NAS..." -ForegroundColor Yellow
+    Get-Content $envSynologyPath -Raw | ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "cat > ${SYNOLOGY_PATH}/.env"
+    Write-Host "  .env mis a jour sur le NAS" -ForegroundColor Green
+    Write-Host ""
+}
+
 # 0. Backup PostgreSQL AVANT tout
 Write-Host "[0/4] Backup de la base de donnees PostgreSQL..." -ForegroundColor Yellow
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/backups && sudo /usr/local/bin/docker exec mabibliotheque-postgres pg_dump -U bibliotheque bibliotheque > ${SYNOLOGY_PATH}/backups/bibliotheque_`$(date +%Y%m%d_%H%M%S).sql && echo 'Backup PostgreSQL cree' || echo 'Erreur backup'"

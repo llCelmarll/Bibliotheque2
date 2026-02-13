@@ -52,9 +52,9 @@ class TestBookServiceScan:
         book_service.book_repository = Mock()
         book_service.book_repository.get_by_isbn_or_barcode.return_value = existing_book
         
-        # Mock des APIs externes
-        mock_google_books.return_value = {"title": "Google Title"}
-        mock_openlibrary.return_value = {"title": "OL Title"}
+        # Mock des APIs externes (retournent des tuples (data, error))
+        mock_google_books.return_value = ({"title": "Google Title"}, None)
+        mock_openlibrary.return_value = ({"title": "OL Title"}, None)
         
         result = await book_service.scan_book("9781234567890")
 
@@ -87,16 +87,16 @@ class TestBookServiceScan:
         book_service.book_repository.get_by_isbn_or_barcode.return_value = None
         book_service.book_repository.search_title_match.return_value = []  # Pas de livres similaires
 
-        # Mock des APIs externes
-        mock_google_books.return_value = {
+        # Mock des APIs externes (retournent des tuples (data, error))
+        mock_google_books.return_value = ({
             "title": "New Book",
             "authors": ["New Author"],
             "pageCount": 300
-        }
-        mock_openlibrary.return_value = {
+        }, None)
+        mock_openlibrary.return_value = ({
             "title": "New Book OL",
             "number_of_pages": 250
-        }
+        }, None)
         
         result = await book_service.scan_book("9780987654321")
         
@@ -160,9 +160,9 @@ class TestBookServiceScan:
         book_service.book_repository.get_by_isbn_or_barcode.return_value = None
         book_service.book_repository.search_title_match.return_value = []
 
-        # Simuler l'échec des APIs
-        mock_google_books.return_value = None
-        mock_openlibrary.return_value = None
+        # Simuler l'échec des APIs (retournent des tuples (None, error))
+        mock_google_books.return_value = (None, "Google Books indisponible")
+        mock_openlibrary.return_value = (None, "OpenLibrary indisponible")
 
         result = await book_service.scan_book("9999999999999")
 
@@ -191,11 +191,11 @@ class TestBookServiceScan:
         book_service.book_repository.search_title_match.return_value = []
 
         # Google fonctionne, OpenLibrary échoue
-        mock_google_books.return_value = {
+        mock_google_books.return_value = ({
             "title": "Only Google Works",
             "authors": ["Google Author"]
-        }
-        mock_openlibrary.return_value = None
+        }, None)
+        mock_openlibrary.return_value = (None, "OpenLibrary indisponible")
 
         result = await book_service.scan_book("9788888888888")
 
@@ -229,8 +229,8 @@ class TestBookServiceScan:
         book_service.book_repository = Mock()
         book_service.book_repository.get_by_isbn_or_barcode.return_value = existing_book
         
-        mock_google_books.return_value = {"title": "Google"}
-        mock_openlibrary.return_value = {"title": "OL"}
+        mock_google_books.return_value = ({"title": "Google"}, None)
+        mock_openlibrary.return_value = ({"title": "OL"}, None)
         
         result = await book_service.scan_book("1234567890123")
         

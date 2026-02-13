@@ -36,7 +36,6 @@ config/secrets/
 # Couvertures uploadées (dev local)
 backend/data/covers/
 
-
 # Données de test et migration
 testLivrotheque2.csv
 deploy/testers-ips.txt

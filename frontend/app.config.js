@@ -4,7 +4,7 @@ module.exports = {
   expo: {
     name: "Bibliothèque", // Nom de l'application
     slug: "bibliotheque", // Identifiant unique pour Expo
-    version: "1.0.0", // Version de l'application
+    version: "1.0.3", // Version de l'application
     orientation: "portrait", // Orientation par défaut
     icon: "./assets/icon.png", // Icône de l'application (à ajouter)
     splash: {
@@ -55,7 +55,13 @@ module.exports = {
         "expo-camera",
         {
           "cameraPermissions": "Autorisez l'accès à la caméra pour scanner les livres",
-
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autorisez l'accès à vos photos pour choisir une couverture de livre",
+          "cameraPermission": "Autorisez l'accès à la caméra pour prendre une photo de couverture"
         }
       ],
       "expo-secure-store"

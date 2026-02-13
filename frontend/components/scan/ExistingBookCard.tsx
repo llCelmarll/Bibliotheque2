@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { BookRead } from "@/types/scanTypes";
+import { resolveCoverUrl } from '@/utils/coverUrl';
 
 interface ExistingBookCardProps {
 	book: BookRead;
@@ -24,7 +25,7 @@ export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPres
 			<View style={styles.coverContainer}>
 				{book.cover_url ? (
 					<Image
-						source={{ uri: book.cover_url }}
+						source={{ uri: resolveCoverUrl(book.cover_url) }}
 						style={styles.cover}
 						resizeMode="cover"
 					/>

@@ -47,14 +47,14 @@ export default function ManualBookAddPage() {
     genres: [], // Array vide pour les genres
   };
 
-  const handleSubmit = async (values: BookCreate) => {
+  const handleSubmit = async (values: BookCreate, localImageUri?: string | null) => {
     setIsSubmitting(true);
     try {
-      console.log('📝 Ajout manuel - données:', values);
+      console.log('Ajout manuel - donnees:', values);
       // Validation côté client
       const validation = bookService.validateBookData(values);
       if (!validation.isValid) {
-        console.error('❌ Validation échouée:', validation.errors);
+        console.error('Validation echouee:', validation.errors);
         Alert.alert(
           'Erreur de validation',
           validation.errors.join('\n'),
@@ -65,7 +65,24 @@ export default function ManualBookAddPage() {
 
       // Créer le livre via l'API
       const createdBook = await bookService.createBook(values);
-      console.log('✅ Livre créé manuellement:', createdBook);
+
+      // Upload de la couverture si une image locale a ete selectionnee
+      if (localImageUri && createdBook.id) {
+        try {
+          await bookService.uploadCover(String(createdBook.id), localImageUri);
+        } catch (uploadErr: any) {
+          console.warn('Upload couverture echoue:', uploadErr);
+          const msg = uploadErr?.response?.data?.detail
+            || uploadErr?.message
+            || 'Erreur inconnue';
+          Alert.alert(
+            'Couverture non uploadée',
+            `Le livre a été créé mais la couverture n'a pas pu être enregistrée : ${msg}`
+          );
+        }
+      }
+
+      console.log('Livre cree manuellement:', createdBook);
       // Message de succès avec navigation intelligente
       if (Platform.OS === 'web') {
         const goToBooks = confirm('✅ Livre ajouté avec succès !\n\nAller à la liste des livres ?');

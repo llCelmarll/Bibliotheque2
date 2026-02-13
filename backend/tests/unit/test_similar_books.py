@@ -53,12 +53,12 @@ class TestSimilarBooksDetection:
         # Mock des APIs externes
         with patch('app.services.book_service.fetch_google_books', new_callable=AsyncMock) as mock_google:
             with patch('app.services.book_service.fetch_openlibrary', new_callable=AsyncMock) as mock_openlibrary:
-                mock_google.return_value = {
+                mock_google.return_value = ({
                     'title': 'Sapiens : une brève histoire de l\'humanité',
                     'authors': ['Yuval Noah Harari'],
                     'publisher': 'Albin Michel'
-                }
-                mock_openlibrary.return_value = {}
+                }, None)
+                mock_openlibrary.return_value = ({}, None)
 
                 result = await book_service.scan_book(scanned_isbn)
 
@@ -89,11 +89,11 @@ class TestSimilarBooksDetection:
         # Mock des APIs externes
         with patch('app.services.book_service.fetch_google_books', new_callable=AsyncMock) as mock_google:
             with patch('app.services.book_service.fetch_openlibrary', new_callable=AsyncMock) as mock_openlibrary:
-                mock_google.return_value = {
+                mock_google.return_value = ({
                     'title': 'Unique Book Title',
                     'authors': ['Unknown Author']
-                }
-                mock_openlibrary.return_value = {}
+                }, None)
+                mock_openlibrary.return_value = ({}, None)
 
                 result = await book_service.scan_book(scanned_isbn)
 
@@ -125,8 +125,8 @@ class TestSimilarBooksDetection:
         # Mock des APIs externes
         with patch('app.services.book_service.fetch_google_books', new_callable=AsyncMock) as mock_google:
             with patch('app.services.book_service.fetch_openlibrary', new_callable=AsyncMock) as mock_openlibrary:
-                mock_google.return_value = {'title': 'Sapiens'}
-                mock_openlibrary.return_value = {}
+                mock_google.return_value = ({'title': 'Sapiens'}, None)
+                mock_openlibrary.return_value = ({}, None)
 
                 result = await book_service.scan_book(existing_isbn)
 
@@ -163,8 +163,8 @@ class TestSimilarBooksDetection:
         # Mock des APIs externes
         with patch('app.services.book_service.fetch_google_books', new_callable=AsyncMock) as mock_google:
             with patch('app.services.book_service.fetch_openlibrary', new_callable=AsyncMock) as mock_openlibrary:
-                mock_google.return_value = {'title': 'Sapiens', 'authors': ['Yuval Noah Harari']}
-                mock_openlibrary.return_value = {}
+                mock_google.return_value = ({'title': 'Sapiens', 'authors': ['Yuval Noah Harari']}, None)
+                mock_openlibrary.return_value = ({}, None)
 
                 result = await book_service.scan_book(scanned_isbn)
 
@@ -191,8 +191,8 @@ class TestSimilarBooksDetection:
         # Mock des APIs externes qui ne retournent pas de titre
         with patch('app.services.book_service.fetch_google_books', new_callable=AsyncMock) as mock_google:
             with patch('app.services.book_service.fetch_openlibrary', new_callable=AsyncMock) as mock_openlibrary:
-                mock_google.return_value = {}  # Pas de données
-                mock_openlibrary.return_value = {}  # Pas de données
+                mock_google.return_value = ({}, None)  # Pas de données
+                mock_openlibrary.return_value = ({}, None)  # Pas de données
 
                 result = await book_service.scan_book(scanned_isbn)
 
@@ -225,11 +225,11 @@ class TestSimilarBooksDetection:
         # Mock des APIs : Google Books vide, OpenLibrary avec données
         with patch('app.services.book_service.fetch_google_books', new_callable=AsyncMock) as mock_google:
             with patch('app.services.book_service.fetch_openlibrary', new_callable=AsyncMock) as mock_openlibrary:
-                mock_google.return_value = {}  # Pas de données Google
-                mock_openlibrary.return_value = {
+                mock_google.return_value = ({}, None)  # Pas de données Google
+                mock_openlibrary.return_value = ({
                     'title': 'Test Book',  # Titre depuis OpenLibrary
                     'authors': ['Test Author']
-                }
+                }, None)
 
                 result = await book_service.scan_book(scanned_isbn)
 

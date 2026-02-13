@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
+import os
+
 from fastapi import FastAPI
-from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books
+from fastapi.staticfiles import StaticFiles
+from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers
 from app.db import init_db
+from app.config import COVERS_DIR
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from time import perf_counter
-
-
 
 # Initialiser la base de données
 @asynccontextmanager
@@ -53,6 +55,10 @@ app.include_router(auth.router)
 app.include_router(contacts.router)
 app.include_router(loans.router)
 app.include_router(borrowed_books.router)
+app.include_router(covers.router)
+
+# Servir les images de couverture
+app.mount("/covers", StaticFiles(directory=str(COVERS_DIR)), name="covers")
 
 # Route de test
 @app.get("/")
@@ -62,7 +68,8 @@ async def read_root():
 # Route de santé
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    min_app_version = os.environ.get("MIN_APP_VERSION", "1.0.0")
+    return {"status": "ok", "min_app_version": min_app_version}
 
 if __name__ == "__main__":
     import uvicorn

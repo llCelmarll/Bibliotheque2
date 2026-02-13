@@ -1,12 +1,12 @@
 // components/scan/BookForm.tsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Formik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { SuggestedBook, BookCreate } from "@/types/scanTypes";
 import { AuthorSelector, PublisherSelector, GenreSelector, SeriesSelector } from '@/components/forms';
 import { Author, Publisher, Genre, Series, Entity, PublisherMetadata, GenreMetadata, SeriesMetadata } from '@/types/entityTypes';
-import { ImagePreview } from './ImagePreview';
+import { CoverPicker } from './CoverPicker';
 import { Contact } from '@/types/contact';
 import { ContactSelector } from '@/components/forms/ContactSelector';
 
@@ -42,7 +42,11 @@ const validationSchema = Yup.object().shape({
 	pageCount: Yup.number()
 		.positive('Le nombre de pages doit être positif')
 		.integer('Le nombre de pages doit être un entier'),
-	coverUrl: Yup.string().url('URL invalide'),
+	coverUrl: Yup.string().test('is-url-or-local', 'URL invalide', (value) => {
+		if (!value) return true;
+		if (value.startsWith('/covers/')) return true;
+		try { new URL(value); return true; } catch { return false; }
+	}),
 	// Validation emprunt - le contact est géré par ContactSelector
 	borrowed_date: Yup.string()
 		.matches(/^\d{2}\/\d{2}\/\d{4}$/, 'Format: JJ/MM/AAAA'),
@@ -52,7 +56,7 @@ const validationSchema = Yup.object().shape({
 
 interface BookFormProps {
 	initialData: SuggestedBook;
-	onSubmit: (values: BookCreate) => Promise<void>;
+	onSubmit: (values: BookCreate, localImageUri?: string | null) => Promise<void>;
 	submitButtonText?: string;
 	submitButtonLoadingText?: string;
 	disableInternalScroll?: boolean;
@@ -186,9 +190,16 @@ export const BookForm: React.FC<BookFormProps> = ({
 		}
 	}, [initialData]);
 
+	const [localImageUri, setLocalImageUri] = useState<string | null>(null);
+
 	const handleSubmit = async (values: BookFormData) => {
 		const bookCreate = formDataToBookCreate(values, forceOwnership);
-		await onSubmit(bookCreate);
+		// Si une image locale est selectionnee, on ne passe pas cover_url
+		// (elle sera mise a jour par l'upload cote API)
+		if (localImageUri) {
+			bookCreate.cover_url = undefined;
+		}
+		await onSubmit(bookCreate, localImageUri);
 	};
 
 	const renderFormField = (
@@ -222,34 +233,26 @@ export const BookForm: React.FC<BookFormProps> = ({
 		);
 	};
 
-	const renderCoverUrlField = (formik: FormikProps<BookFormData>) => {
-		const hasError = formik.touched.cover_url && formik.errors.cover_url;
-		const coverUrl = formik.values.cover_url || '';
-
+	const renderCoverPickerField = (formik: FormikProps<BookFormData>) => {
 		return (
 			<View style={styles.fieldContainer}>
-				<Text style={styles.label}>📖 URL de couverture</Text>
-				<TextInput
-					style={[styles.input, hasError ? styles.inputError : null]}
-					value={coverUrl}
-					onChangeText={formik.handleChange('cover_url')}
-					onBlur={formik.handleBlur('cover_url')}
-					placeholder="https://example.com/couverture.jpg"
-					keyboardType="url"
-					autoCapitalize="none"
-					autoCorrect={false}
+				<CoverPicker
+					coverUrl={formik.values.cover_url || ''}
+					localImageUri={localImageUri}
+					onCoverUrlChange={(url) => {
+						formik.setFieldValue('cover_url', url);
+						setLocalImageUri(null);
+					}}
+					onLocalImagePicked={(uri) => {
+						setLocalImageUri(uri);
+						formik.setFieldValue('cover_url', '');
+					}}
+					onClearCover={() => {
+						setLocalImageUri(null);
+						formik.setFieldValue('cover_url', '');
+					}}
+					error={formik.touched.cover_url ? formik.errors.cover_url as string : undefined}
 				/>
-				
-				{/* Aperçu de l'image avec composant séparé */}
-				{coverUrl ? (
-					<ImagePreview url={coverUrl} debounceMs={1500} />
-				) : null}
-				
-				{hasError ? (
-					<Text style={styles.errorText}>
-						{formik.errors.cover_url as string}
-					</Text>
-				) : null}
 			</View>
 		);
 	};
@@ -280,7 +283,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 						{renderFormField('Code-barres', 'barcode', formik, 'Code-barres')}
 						
 						{/* Champ URL de couverture avec aperçu */}
-						{renderCoverUrlField(formik)}
+						{renderCoverPickerField(formik)}
 
 						{/* Champ Auteurs - Nouveau sélecteur ou champ texte selon le flag */}
 						{USE_ENTITY_SELECTORS ? (

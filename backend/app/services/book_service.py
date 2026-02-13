@@ -257,13 +257,43 @@ class BookService:
         
         return book
 
-    def delete_book(self, book_id: int) -> None:
-        """Supprime un livre (seulement si l'utilisateur en est propriétaire)"""
-        # Utiliser le repository pour obtenir l'objet Book directement avec vérification de propriété
+    async def upload_cover(self, book_id: int, file) -> str:
+        """Upload ou remplace la couverture d'un livre"""
         book = self.book_repository.get_by_id(book_id, self.user_id)
         if not book:
             raise HTTPException(status_code=404, detail="Livre introuvable")
-        
+
+        from app.services.cover_service import CoverService
+        cover_url = await CoverService.process_and_save(book_id, file)
+
+        book.cover_url = cover_url
+        self.session.commit()
+        self.session.refresh(book)
+        return cover_url
+
+    def delete_cover(self, book_id: int) -> None:
+        """Supprime la couverture d'un livre"""
+        book = self.book_repository.get_by_id(book_id, self.user_id)
+        if not book:
+            raise HTTPException(status_code=404, detail="Livre introuvable")
+
+        from app.services.cover_service import CoverService
+        CoverService.delete_file(book_id)
+
+        if book.cover_url and book.cover_url.startswith("/covers/"):
+            book.cover_url = None
+            self.session.commit()
+
+    def delete_book(self, book_id: int) -> None:
+        """Supprime un livre (seulement si l'utilisateur en est propriétaire)"""
+        book = self.book_repository.get_by_id(book_id, self.user_id)
+        if not book:
+            raise HTTPException(status_code=404, detail="Livre introuvable")
+
+        # Supprimer le fichier de couverture si existant
+        from app.services.cover_service import CoverService
+        CoverService.delete_file(book_id)
+
         # Les relations many-to-many seront supprimées automatiquement
         # grâce aux contraintes de la base de données
         self.session.delete(book)
@@ -505,12 +535,16 @@ class BookService:
             book_data['base'] = None
         
         # Récupérer les données des APIs externes dans tous les cas
-        book_data['google_books'] = await fetch_google_books(isbn)
-        book_data['open_library'] = await fetch_openlibrary(isbn)
+        google_data, google_error = await fetch_google_books(isbn)
+        openlibrary_data, openlibrary_error = await fetch_openlibrary(isbn)
+        book_data['google_books'] = google_data
+        book_data['open_library'] = openlibrary_data
+        book_data['google_books_error'] = google_error
+        book_data['open_library_error'] = openlibrary_error
 
         # Extraire le titre pour la recherche de similarités (vérifier que les APIs ont retourné des données)
-        google_title = book_data['google_books'].get('title') if book_data['google_books'] else None
-        openlibrary_title = book_data['open_library'].get('title') if book_data['open_library'] else None
+        google_title = google_data.get('title') if google_data else None
+        openlibrary_title = openlibrary_data.get('title') if openlibrary_data else None
         title = google_title or openlibrary_title
 
         if title:
