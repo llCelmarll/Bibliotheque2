@@ -200,6 +200,10 @@ class BookService {
     return result.data;
   }
 
+  async deleteCover(bookId: string): Promise<void> {
+    await apiClient.delete(`${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}/cover`);
+  }
+
   /**
    * Met à jour le statut de lecture d'un livre
    */

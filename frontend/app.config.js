@@ -4,7 +4,7 @@ module.exports = {
   expo: {
     name: "Bibliothèque", // Nom de l'application
     slug: "bibliotheque", // Identifiant unique pour Expo
-    version: "1.0.0", // Version de l'application
+    version: "1.0.3", // Version de l'application
     orientation: "portrait", // Orientation par défaut
     icon: "./assets/icon.png", // Icône de l'application (à ajouter)
     splash: {

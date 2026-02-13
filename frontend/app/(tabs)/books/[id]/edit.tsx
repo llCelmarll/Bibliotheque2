@@ -84,7 +84,7 @@ export default function EditBookScreen() {
         published_date: values.published_date,
         page_count: values.page_count,
         barcode: values.barcode,
-        cover_url: localImageUri ? undefined : values.cover_url,
+        cover_url: localImageUri ? undefined : (values.cover_url || null),
         authors: values.authors,
         publisher: values.publisher,
         genres: values.genres,
@@ -111,6 +111,13 @@ export default function EditBookScreen() {
             'Couverture non uploadée',
             `Le livre a été modifié mais la couverture n'a pas pu être enregistrée : ${msg}`
           );
+        }
+      } else if (!values.cover_url && book?.base?.cover_url?.startsWith('/covers/')) {
+        // L'utilisateur a supprime la couverture locale
+        try {
+          await bookService.deleteCover(id as string);
+        } catch (deleteErr) {
+          console.warn('Suppression couverture echouee:', deleteErr);
         }
       }
 

@@ -1,5 +1,4 @@
 import { Platform, Alert, Linking } from 'react-native';
-import Constants from 'expo-constants';
 import API_CONFIG from '@/config/api';
 
 const DOWNLOAD_URL = 'https://mabibliotheque.ovh/bibliotheque.apk';
@@ -17,6 +16,17 @@ function isVersionOlder(current: string, required: string): boolean {
     return cPatch < rPatch;
 }
 
+function getCurrentVersion(): string {
+    try {
+        const Application = require('expo-application');
+        return Application.nativeApplicationVersion || '0.0.0';
+    } catch {
+        // Fallback si expo-application n'est pas dans le build natif
+        const Constants = require('expo-constants').default;
+        return Constants.expoConfig?.version || '0.0.0';
+    }
+}
+
 /**
  * Verifie si une mise a jour de l'app est disponible.
  * Appelle /health pour comparer min_app_version avec la version installee.
@@ -27,7 +37,7 @@ export async function checkForUpdate(): Promise<void> {
     if (Platform.OS === 'web') return;
 
     try {
-        const currentVersion = Constants.expoConfig?.version || '0.0.0';
+        const currentVersion = getCurrentVersion();
         const response = await fetch(`${API_CONFIG.BASE_URL}/health`);
         const data = await response.json();
         const minVersion = data.min_app_version;

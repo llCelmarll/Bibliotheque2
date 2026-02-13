@@ -53,8 +53,8 @@ Write-Host "Upload de l'APK sur le serveur..." -ForegroundColor Yellow
 # Créer le répertoire s'il n'existe pas
 ssh "$env:SYNOLOGY_USER@$env:SYNOLOGY_IP" "mkdir -p $env:SYNOLOGY_PATH/apk"
 
-# Copier l'APK sur le serveur
-scp $tempApk "$env:SYNOLOGY_USER@$env:SYNOLOGY_IP`:$env:SYNOLOGY_PATH/apk/bibliotheque.apk"
+# Copier l'APK sur le serveur (scp ne fonctionne pas sur le NAS Synology)
+& cmd /c "ssh `"$env:SYNOLOGY_USER@$env:SYNOLOGY_IP`" `"cat > $env:SYNOLOGY_PATH/apk/bibliotheque.apk`" < `"$tempApk`""
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "  APK uploadé avec succès !" -ForegroundColor Green
