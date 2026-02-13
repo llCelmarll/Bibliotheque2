@@ -10,6 +10,46 @@ import { resolveCoverUrl } from '@/utils/coverUrl';
 const ASPECT_W = 2;
 const ASPECT_H = 3;
 
+/**
+ * Calcule la zone a cropper pour correspondre visuellement au cadre affiche (frame)
+ * au dessus de la camera (preview).
+ */
+function calculateCrop(
+    photoW: number,
+    photoH: number,
+    previewW: number,
+    previewH: number,
+    frameW: number,
+    frameH: number
+) {
+    // facteur d'echelle entre l'image capteur et la preview affichee (mode cover typically)
+    const scale = Math.max(previewW / photoW, previewH / photoH);
+
+    // Dimensions projetees de la photo sur l'ecran
+    const scaledPhotoW = photoW * scale;
+    const scaledPhotoH = photoH * scale;
+
+    // Le cadre (frame) est centre dans le container (preview)
+    const frameX = (previewW - frameW) / 2;
+    const frameY = (previewH - frameH) / 2;
+
+    // L'image (photo) est centree dans le container (preview) par "cover"
+    const imageX = (previewW - scaledPhotoW) / 2;
+    const imageY = (previewH - scaledPhotoH) / 2;
+
+    // Delta entre le coin du cadre et le coin de l'image
+    const cropX_scaled = frameX - imageX;
+    const cropY_scaled = frameY - imageY;
+
+    // Conversion reverse vers les coordonnees photo originales
+    const originX = Math.max(0, Math.round(cropX_scaled / scale));
+    const originY = Math.max(0, Math.round(cropY_scaled / scale));
+    const width = Math.min(photoW - originX, Math.round(frameW / scale));
+    const height = Math.min(photoH - originY, Math.round(frameH / scale));
+
+    return { originX, originY, width, height };
+}
+
 interface CoverPickerProps {
     coverUrl: string;
     localImageUri: string | null;
@@ -30,6 +70,7 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
     const [showUrlInput, setShowUrlInput] = useState(false);
     const [imageLoadError, setImageLoadError] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
+    const [cameraLayout, setCameraLayout] = useState<{ width: number; height: number } | null>(null);
     const cameraRef = useRef<CameraView>(null);
     const [, requestPermission] = useCameraPermissions();
 
@@ -91,38 +132,29 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
             if (!photo?.uri) return;
 
-            // DEBUG temporaire
-            Alert.alert('DEBUG photo', `uri=${photo.uri.substring(0, 50)}... w=${photo.width} h=${photo.height}`);
-
             const pw = photo.width;
             const ph = photo.height;
 
             // Si dimensions disponibles, crop 2:3 centre
-            if (pw && ph) {
-                const targetRatio = ASPECT_W / ASPECT_H;
-                const photoRatio = pw / ph;
-
-                let cropW: number, cropH: number;
-                if (photoRatio > targetRatio) {
-                    cropH = ph;
-                    cropW = Math.round(ph * targetRatio);
-                } else {
-                    cropW = pw;
-                    cropH = Math.round(pw / targetRatio);
-                }
-                const originX = Math.round((pw - cropW) / 2);
-                const originY = Math.round((ph - cropH) / 2);
+            if (pw && ph && cameraLayout) {
+                const { originX, originY, width, height } = calculateCrop(
+                    pw, ph,
+                    cameraLayout.width,
+                    cameraLayout.height,
+                    frameW,
+                    frameH
+                );
 
                 const imageRef = await ImageManipulator
                     .manipulate(photo.uri)
-                    .crop({ originX, originY, width: cropW, height: cropH })
+                    .crop({ originX, originY, width, height })
                     .renderAsync();
                 const cropped = await imageRef.saveAsync({ compress: 0.8, format: SaveFormat.JPEG });
 
                 setImageLoadError(false);
                 onLocalImagePicked(cropped.uri);
             } else {
-                // Pas de dimensions → utiliser la photo brute
+                // Pas de dimensions ou layout manquant → utiliser la photo brute
                 setImageLoadError(false);
                 onLocalImagePicked(photo.uri);
             }
@@ -131,7 +163,7 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             setShowCamera(false);
         } catch (err: any) {
             console.warn('Erreur capture photo:', err);
-            Alert.alert('DEBUG ERROR crop', `${err?.name}: ${err?.message}`);
+            Alert.alert('Erreur', "Impossible de prendre la photo.");
         }
     };
 
@@ -220,7 +252,7 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             {Platform.OS !== 'web' && (
                 <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
                     <SafeAreaView style={styles.cameraModal}>
-                        <View style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }} onLayout={(e) => setCameraLayout(e.nativeEvent.layout)}>
                             <CameraView
                                 ref={cameraRef}
                                 style={StyleSheet.absoluteFill}
