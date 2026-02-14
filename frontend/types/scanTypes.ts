@@ -36,6 +36,8 @@ export interface BookRead {
 	series?: { id: number; name: string; volume_number?: number }[];
 	is_read?: boolean | null;     // Statut de lecture (null = non renseigné)
 	read_date?: string;           // Date de lecture
+	rating?: number | null;       // Notation 0-5
+	notes?: string | null;        // Notes personnelles
 	current_loan?: LoanRead;  // Prêt actif (TO other) - livre prêté à quelqu'un
 	borrowed_book?: BorrowedBook;  // Emprunt actif (FROM other) - livre emprunté de quelqu'un
 }
@@ -55,6 +57,10 @@ export interface BookCreate {
 	// Statut de lecture
 	is_read?: boolean | null;
 	read_date?: string;
+
+	// Notation et notes
+	rating?: number | null;
+	notes?: string | null;
 
 	// Champs d'emprunt
 	is_borrowed?: boolean;
@@ -105,6 +111,8 @@ export interface SuggestedBook {
 	series?: SuggestedSeries[];
 	is_read?: boolean | null;
 	read_date?: string;
+	rating?: number | null;
+	notes?: string | null;
 }
 
 export interface ScanResult {
