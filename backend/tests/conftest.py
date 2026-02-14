@@ -198,7 +198,7 @@ def create_test_user(session: Session, **kwargs) -> User:
     return user
 
 
-def create_test_book(session: Session, owner_id: int, title: str = "Test Book", isbn: str = None, barcode: str = None) -> Book:
+def create_test_book(session: Session, owner_id: int, title: str = "Test Book", isbn: str = None, barcode: str = None, rating: int = None, notes: str = None) -> Book:
     """Helper pour créer un livre de test avec des paramètres personnalisés."""
     book_data = {
         "title": title,
@@ -208,6 +208,10 @@ def create_test_book(session: Session, owner_id: int, title: str = "Test Book", 
 
     if barcode:
         book_data["barcode"] = barcode
+    if rating is not None:
+        book_data["rating"] = rating
+    if notes is not None:
+        book_data["notes"] = notes
 
     book = Book(**book_data)
     session.add(book)

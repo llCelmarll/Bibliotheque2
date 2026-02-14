@@ -346,3 +346,66 @@ class TestBookBulkImport:
         assert result["success"] == 2
         assert result["failed"] == 0
         assert book_service.create_book.call_count == 2
+
+
+@pytest.mark.unit
+@pytest.mark.books
+class TestBookServiceRatingAndNotes:
+    """Tests unitaires pour la validation et la mise à jour de rating et notes."""
+
+    @pytest.fixture
+    def mock_session(self):
+        """Mock de la session de base de données."""
+        session = Mock(spec=Session)
+        session.commit = Mock()
+        session.add = Mock()
+        session.flush = Mock()
+        session.refresh = Mock()
+        return session
+
+    @pytest.fixture
+    def book_service(self, mock_session, test_user):
+        """Instance de BookService avec session mockée."""
+        return BookService(mock_session, user_id=test_user.id)
+
+    def test_validate_rating_valid_values(self, book_service: BookService):
+        """Test que _validate_rating accepte les valeurs 0 à 5."""
+        for value in [0, 1, 2, 3, 4, 5, None]:
+            try:
+                book_service._validate_rating(value)
+            except Exception:
+                pytest.fail(f"_validate_rating devrait accepter {value}")
+
+    def test_validate_rating_invalid_too_high(self, book_service: BookService):
+        """Test que _validate_rating rejette rating > 5."""
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc_info:
+            book_service._validate_rating(6)
+        assert exc_info.value.status_code == 400
+        assert "0 et 5" in exc_info.value.detail
+
+    def test_validate_rating_invalid_negative(self, book_service: BookService):
+        """Test que _validate_rating rejette rating < 0."""
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc_info:
+            book_service._validate_rating(-1)
+        assert exc_info.value.status_code == 400
+        assert "0 et 5" in exc_info.value.detail
+
+    def test_update_book_with_rating_and_notes(self, book_service: BookService, mock_session, test_user):
+        """Test de mise à jour partielle avec rating et notes."""
+        from app.schemas.Book import BookUpdate
+
+        existing_book = Book(
+            id=1, title="Existing Book", isbn="9781234567890",
+            owner_id=test_user.id, rating=None, notes=None
+        )
+        book_service.book_repository = Mock()
+        book_service.book_repository.get_by_id.return_value = existing_book
+
+        update_data = BookUpdate(rating=4, notes="Super livre!")
+        result = book_service.update_book(1, update_data)
+
+        assert existing_book.rating == 4
+        assert existing_book.notes == "Super livre!"
+        mock_session.commit.assert_called()

@@ -510,3 +510,59 @@ class TestScanBookSimilarDetection:
         # Le livre possédé ne doit pas avoir d'emprunt
         assert "borrowed_book" in owned_book_result
         assert owned_book_result["borrowed_book"] is None
+
+
+@pytest.mark.integration
+@pytest.mark.books
+class TestBookRatingAndNotes:
+    """Tests d'intégration pour rating et notes personnelles."""
+
+    def test_create_book_with_rating_and_notes(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de création de livre avec notation et notes."""
+        book_data = {
+            "title": "Book With Rating",
+            "isbn": "9781111222333",
+            "rating": 4,
+            "notes": "Très bon livre, à relire."
+        }
+        response = authenticated_client.post("/books", json=book_data)
+        assert response.status_code == 201
+        data = response.json()
+        assert data["rating"] == 4
+        assert data["notes"] == "Très bon livre, à relire."
+
+    def test_update_book_rating(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de mise à jour de la notation."""
+        book = create_test_book(session, test_user.id, title="Book To Rate", isbn="9784444555666")
+        response = authenticated_client.put(f"/books/{book.id}", json={"rating": 5})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["rating"] == 5
+
+    def test_update_book_notes(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test de mise à jour des notes personnelles."""
+        book = create_test_book(session, test_user.id, title="Book With Notes", isbn="9787777888999")
+        response = authenticated_client.put(f"/books/{book.id}", json={"notes": "Mes réflexions personnelles."})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["notes"] == "Mes réflexions personnelles."
+
+    def test_get_book_returns_rating_and_notes(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test que GET retourne rating et notes."""
+        book = create_test_book(
+            session, test_user.id, title="Rated Book", isbn="9789999000111",
+            rating=3, notes="Livre correct."
+        )
+        response = authenticated_client.get(f"/books/{book.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert "base" in data
+        assert data["base"]["rating"] == 3
+        assert data["base"]["notes"] == "Livre correct."
+
+    def test_update_book_invalid_rating(self, authenticated_client: TestClient, session: Session, test_user):
+        """Test que rating hors 0-5 renvoie 400."""
+        book = create_test_book(session, test_user.id, title="Book", isbn="9783333444555")
+        response = authenticated_client.put(f"/books/{book.id}", json={"rating": 6})
+        assert response.status_code == 400
+        assert "notation" in response.json()["detail"].lower() or "0" in response.json()["detail"]
