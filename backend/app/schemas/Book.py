@@ -50,6 +50,8 @@ class BookRead(SQLModel):
     cover_url: Optional[str] = None
     is_read: Optional[bool] = None
     read_date: Optional[datetime] = None
+    rating: Optional[int] = None  # 0-5, 0 = non renseigné
+    notes: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     authors: List[AuthorRead] = []
@@ -86,6 +88,8 @@ class BookRead(SQLModel):
             "cover_url": book.cover_url,
             "is_read": book.is_read,
             "read_date": book.read_date,
+            "rating": getattr(book, "rating", None),
+            "notes": getattr(book, "notes", None),
             "created_at": book.created_at,
             "updated_at": book.updated_at,
             "authors": [AuthorRead.model_validate(a) for a in getattr(book, 'authors', [])],
@@ -180,6 +184,10 @@ class BookCreate(SQLModel):
     expected_return_date: Optional[datetime] = None
     borrow_notes: Optional[str] = None
 
+    # Notation et notes personnelles
+    rating: Optional[int] = None  # 0-5
+    notes: Optional[str] = None
+
 # Schema de mise à jour
 class BookUpdate(SQLModel):
     """
@@ -208,6 +216,8 @@ class BookUpdate(SQLModel):
     cover_url: Optional[str] = None
     is_read: Optional[bool] = None
     read_date: Optional[datetime] = None
+    rating: Optional[int] = None  # 0-5
+    notes: Optional[str] = None
     authors: Optional[List[Union[int, Dict[str, Any]]]] = None
     publisher: Optional[Union[int, Dict[str, Any]]] = None
     genres: Optional[List[Union[int, Dict[str, Any]]]] = None

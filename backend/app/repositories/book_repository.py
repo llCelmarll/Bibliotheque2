@@ -62,6 +62,8 @@ class BookRepository:
 			cover_url=book_data.cover_url,
 			is_read=book_data.is_read,
 			read_date=book_data.read_date,
+			rating=book_data.rating,
+			notes=book_data.notes,
 			publisher_id=publisher_id,
 			owner_id=owner_id,
 			created_at=datetime.utcnow()

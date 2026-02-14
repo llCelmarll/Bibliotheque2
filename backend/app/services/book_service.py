@@ -194,6 +194,10 @@ class BookService:
         if not book:
             raise HTTPException(status_code=404, detail="Livre introuvable")
         
+        # Validation de la notation si fournie
+        if book_data.rating is not None:
+            self._validate_rating(book_data.rating)
+
         # Validation des nouvelles données
         if book_data.title or book_data.isbn:
             new_title = book_data.title or book.title
@@ -589,6 +593,20 @@ class BookService:
         
         if book_data.page_count and book_data.page_count <= 0:
             raise HTTPException(status_code=400, detail="Le nombre de pages doit être positif")
+
+        if book_data.rating is not None and (book_data.rating < 0 or book_data.rating > 5):
+            raise HTTPException(
+                status_code=400,
+                detail="La notation doit être entre 0 et 5"
+            )
+
+    def _validate_rating(self, rating: Optional[int]) -> None:
+        """Valide que la notation est entre 0 et 5."""
+        if rating is not None and (rating < 0 or rating > 5):
+            raise HTTPException(
+                status_code=400,
+                detail="La notation doit être entre 0 et 5"
+            )
 
     def _book_exists(self, title: str, isbn: Optional[str] = None, exclude_id: Optional[int] = None) -> bool:
         """Vérifie si un livre existe déjà avec le même titre et ISBN pour l'utilisateur actuel"""
