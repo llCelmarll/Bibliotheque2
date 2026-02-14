@@ -35,6 +35,7 @@ import { Platform } from 'react-native';
 const mockAxios = axios as jest.Mocked<typeof axios>;
 const mockAxiosInstance = mockAxios.create() as any;
 const mockPost = mockAxiosInstance.post as jest.Mock;
+const mockPut = mockAxiosInstance.put as jest.Mock;
 
 describe('bookService', () => {
   beforeEach(() => {
@@ -126,6 +127,68 @@ describe('bookService', () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain("L'URL de couverture doit être valide");
+    });
+
+    it('accepts rating and notes in valid book data', () => {
+      const result = bookService.validateBookData({
+        title: 'Test Book',
+        rating: 4,
+        notes: 'Great read',
+      } as any);
+
+      expect(result.isValid).toBe(true);
+    });
+  });
+
+  describe('updateBook', () => {
+    it('sends rating and notes in the payload', async () => {
+      mockPut.mockResolvedValue({
+        data: {
+          id: '42',
+          title: 'Test Book',
+          rating: 4,
+          notes: 'My personal notes',
+        }
+      });
+
+      await bookService.updateBook('42', {
+        rating: 4,
+        notes: 'My personal notes',
+      });
+
+      expect(mockPut).toHaveBeenCalledWith(
+        '/books/42',
+        expect.objectContaining({
+          rating: 4,
+          notes: 'My personal notes',
+        })
+      );
+    });
+
+    it('passes through all BookUpdate fields including rating and notes', async () => {
+      mockPut.mockResolvedValue({
+        data: {
+          id: '1',
+          title: 'Updated Title',
+          rating: 5,
+          notes: 'Excellent!',
+        }
+      });
+
+      await bookService.updateBook('1', {
+        title: 'Updated Title',
+        rating: 5,
+        notes: 'Excellent!',
+      });
+
+      expect(mockPut).toHaveBeenCalledWith(
+        '/books/1',
+        expect.objectContaining({
+          title: 'Updated Title',
+          rating: 5,
+          notes: 'Excellent!',
+        })
+      );
     });
   });
 });
