@@ -64,7 +64,7 @@ export  default function BookDetailScreen() {
 								refetch();
 							}}
 						/>
-						<BookDetailTabs book={book}/>
+						<BookDetailTabs book={book} onBookUpdated={refetch}/>
 					</View>
 				) : null}
 			</View>

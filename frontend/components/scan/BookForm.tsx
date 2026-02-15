@@ -9,6 +9,7 @@ import { Author, Publisher, Genre, Series, Entity, PublisherMetadata, GenreMetad
 import { CoverPicker } from './CoverPicker';
 import { Contact } from '@/types/contact';
 import { ContactSelector } from '@/components/forms/ContactSelector';
+import { StarRating } from '@/components/StarRating';
 
 // Feature flag pour activer les nouveaux sélecteurs d'entités
 const USE_ENTITY_SELECTORS = true;
@@ -102,6 +103,8 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	// Initialiser champs de lecture (défaut: Non lu pour les nouveaux livres)
 	is_read: suggested.is_read ?? false,
 	read_date: suggested.read_date || '',
+	rating: suggested.rating ?? null,
+	notes: suggested.notes ?? '',
 	// Initialiser champs d'emprunt vides
 	is_borrowed: false,
 	borrowed_from: '',
@@ -156,6 +159,8 @@ const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = 
 	// Inclure champs de lecture
 	is_read: formData.is_read ?? undefined,
 	read_date: formData.read_date || undefined,
+	rating: formData.rating ?? undefined,
+	notes: formData.notes || undefined,
 	// Inclure champs d'emprunt (convertir dates DD/MM/YYYY -> YYYY-MM-DD pour le backend)
 	// Forcer is_borrowed=false si forceOwnership=true
 	is_borrowed: forceOwnership ? false : formData.is_borrowed,
@@ -376,6 +381,32 @@ export const BookForm: React.FC<BookFormProps> = ({
 							)}
 						</View>
 
+						{/* Section Notation et notes */}
+						<View style={styles.sectionContainer}>
+							<Text style={styles.sectionSubtitle}>Notation et notes</Text>
+							<View style={styles.fieldContainer}>
+								<Text style={styles.label}>Note (0-5)</Text>
+								<StarRating
+									value={formik.values.rating ?? null}
+									editable={true}
+									onChange={(value) => formik.setFieldValue('rating', value)}
+								/>
+							</View>
+							<View style={styles.fieldContainer}>
+								<Text style={styles.label}>Notes personnelles</Text>
+								<TextInput
+									style={[styles.input, styles.notesInput]}
+									placeholder="Vos notes sur ce livre..."
+									placeholderTextColor="#999"
+									multiline
+									numberOfLines={4}
+									value={formik.values.notes || ''}
+									onChangeText={(text) => formik.setFieldValue('notes', text)}
+									onBlur={formik.handleBlur('notes')}
+								/>
+							</View>
+						</View>
+
 						{/* Section Emprunt - cachée si forceOwnership ou en mode modification */}
 						{!forceOwnership && !isEditMode && (
 							<View style={styles.sectionContainer}>
@@ -553,5 +584,9 @@ const styles = StyleSheet.create({
 	readStatusButtonTextActive: {
 		color: '#333',
 		fontWeight: '600',
+	},
+	notesInput: {
+		minHeight: 80,
+		textAlignVertical: 'top',
 	},
 });

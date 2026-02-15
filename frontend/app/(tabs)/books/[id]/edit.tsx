@@ -57,6 +57,8 @@ export default function EditBookScreen() {
       })) || [],
       is_read: book.base.is_read ?? undefined,
       read_date: book.base.read_date || undefined,
+      rating: book.base.rating ?? undefined,
+      notes: book.base.notes ?? undefined,
     };
     
     console.log('✅ Données converties:', converted);
@@ -91,6 +93,8 @@ export default function EditBookScreen() {
         series: values.series,
         is_read: values.is_read ?? null,
         read_date: values.read_date || null,
+        rating: values.rating ?? null,
+        notes: values.notes || null,
       };
 
       console.log('Donnees envoyees a l\'API:', updateData);

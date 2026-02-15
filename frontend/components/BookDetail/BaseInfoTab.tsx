@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useCallback } from 'react';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert, TextInput } from "react-native";
 import { BookDetail } from "@/types/book";
 import { InfoRow } from "@/components/BookDetail/InfoRow";
 import { useRoute } from "@react-navigation/native";
 import { formatDate, formatDateOnly } from "@/utils/dateFormatter";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { ClickableTag } from "@/components/ClickableTag";
+import { StarRating } from "@/components/StarRating";
 import { createFilter } from "@/services/filtersService";
 import { BookFilter } from "@/types/filter";
 import { bookService } from "@/services/bookService";
@@ -27,10 +28,13 @@ function readStatusToIsRead(status: ReadStatus): boolean | null {
 // Dans BaseInfoTab.tsx
 export function BaseInfoTab() {
   const route = useRoute();
-  const { book } = route.params as { book: BookDetail };
+  const { book, onBookUpdated } = route.params as { book: BookDetail; onBookUpdated?: () => void };
 
   const [readStatus, setReadStatus] = useState<ReadStatus>(getReadStatus(book.base.is_read));
   const [readDate, setReadDate] = useState<string | null>(book.base.read_date || null);
+  const [rating, setRating] = useState<number | null>(book.base.rating ?? null);
+  const [notes, setNotes] = useState<string>(book.base.notes ?? '');
+  const [notesSaving, setNotesSaving] = useState(false);
 
   const handleFilterSelect = (filter: BookFilter) => {
     console.log('Filter selected:', filter);
@@ -56,6 +60,35 @@ export function BaseInfoTab() {
       Alert.alert('Erreur', 'Impossible de mettre à jour le statut de lecture.');
     }
   };
+
+  const handleRatingChange = async (newRating: number) => {
+    const previousRating = rating;
+    setRating(newRating);
+    try {
+      await bookService.updateBook(book.base.id.toString(), { rating: newRating });
+      onBookUpdated?.();
+    } catch {
+      setRating(previousRating);
+      Alert.alert('Erreur', 'Impossible de mettre à jour la notation.');
+    }
+  };
+
+  const handleNotesBlur = useCallback(async () => {
+    const currentNotes = notes.trim();
+    const savedNotes = (book.base.notes ?? '').trim();
+    if (currentNotes === savedNotes || notesSaving) return;
+
+    setNotesSaving(true);
+    try {
+      await bookService.updateBook(book.base.id.toString(), { notes: currentNotes || null });
+      onBookUpdated?.();
+    } catch {
+      setNotes(book.base.notes ?? '');
+      Alert.alert('Erreur', 'Impossible de sauvegarder les notes.');
+    } finally {
+      setNotesSaving(false);
+    }
+  }, [notes, book.base.notes, book.base.id, onBookUpdated, notesSaving]);
 
   const getAuthorLabel = (count: number | undefined) => {
     if (count === undefined) return "Auteur";
@@ -226,6 +259,37 @@ export function BaseInfoTab() {
         )}
       </CollapsibleSection>
 
+      <CollapsibleSection title="Notation">
+        <View style={styles.infoRow}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.label}>Note</Text>
+          </View>
+          <View style={styles.valueContainer}>
+            <StarRating
+              value={rating}
+              editable={true}
+              onChange={handleRatingChange}
+            />
+          </View>
+        </View>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Notes personnelles">
+        <View style={styles.notesRow}>
+          <TextInput
+            style={styles.notesInput}
+            placeholder="Ajoutez vos notes personnelles..."
+            placeholderTextColor="#999"
+            multiline
+            numberOfLines={4}
+            value={notes}
+            onChangeText={setNotes}
+            onBlur={handleNotesBlur}
+            editable={!notesSaving}
+          />
+        </View>
+      </CollapsibleSection>
+
       <CollapsibleSection title="Métadonnées" defaultExpanded={false}>
         <InfoRow
           label="Créé le"
@@ -304,5 +368,21 @@ const styles = StyleSheet.create({
   segmentedButtonTextActive: {
     color: '#333',
     fontWeight: '600',
+  },
+  notesRow: {
+    paddingVertical: 8,
+    width: '100%',
+  },
+  notesInput: {
+    fontSize: 14,
+    color: '#000',
+    minHeight: 80,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    textAlignVertical: 'top',
+    width: '100%',
+    alignSelf: 'stretch',
   },
 });

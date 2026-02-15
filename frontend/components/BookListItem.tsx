@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, Image, TouchableOpacity} from "react-native";
 import {Author, Book, Genre, BookSeries} from "@/types/book";
 import BookCover from "@/components/BookCover";
 import {ClickableTag} from "@/components/ClickableTag";
+import {StarRating} from "@/components/StarRating";
 import {BookFilter, FilterType} from "@/types/filter";
 import {createFilter} from "@/services/filtersService";
 import { useRouter} from "expo-router";
@@ -58,6 +59,9 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 						<View style={styles.unreadBadge}>
 							<Text style={styles.unreadBadgeText}>Non lu</Text>
 						</View>
+					)}
+					{book.rating != null && book.rating > 0 && (
+						<StarRating value={book.rating} editable={false} size={16} />
 					)}
 				</View>
 

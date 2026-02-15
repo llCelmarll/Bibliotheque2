@@ -2,6 +2,7 @@ import { View, Image, StyleSheet, Text } from "react-native";
 import { BookDetail } from '@/types/book';
 import BookCover from '@/components/BookCover';
 import { BookActions } from './BookActions';
+import { StarRating } from '@/components/StarRating';
 
 interface BookHeaderProps {
   book: BookDetail;
@@ -113,6 +114,13 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
           {book.base?.is_read === false && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadBadgeText}>Non lu</Text>
+            </View>
+          )}
+
+          {/* Notation (étoiles) */}
+          {book.base?.rating != null && book.base.rating > 0 && (
+            <View style={styles.ratingContainer}>
+              <StarRating value={book.base.rating} editable={false} size={20} />
             </View>
           )}
 
@@ -246,5 +254,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#495057',
+  },
+  ratingContainer: {
+    marginTop: 8,
+    marginBottom: 4,
   },
 });
