@@ -109,6 +109,11 @@ class BookRepository:
 		if params.filters:
 			stmt = self._apply_filters(stmt, params.filters)
 
+		if params.is_read is not None:
+			stmt = stmt.where(Book.is_read == params.is_read)
+		if params.rating_min is not None:
+			stmt = stmt.where(Book.rating >= params.rating_min)
+
 		stmt = self._deduplicate_and_sort(stmt, params.sort_by, params.sort_order)
 		stmt = self._apply_pagination(stmt, params.skip, params.limit)
 
@@ -297,11 +302,8 @@ class BookRepository:
 	def _apply_global_search(self, stmt, search_term: str) -> select:
 		"""
 		Applique la recherche globale sur les champs:
-		- titre
-		- ISBN
-		- nom de l'auteur
-		- nom de l'éditeur
-		- nom du genre
+		- titre, ISBN, notes
+		- nom de l'auteur, nom de l'éditeur, nom du genre, nom de la série
 		"""
 		search_pattern = f"%{search_term.lower()}%"
 		return stmt.where(
@@ -311,7 +313,8 @@ class BookRepository:
 				func.lower(Author.name).like(search_pattern),
 				func.lower(Publisher.name).like(search_pattern),
 				func.lower(Genre.name).like(search_pattern),
-			func.lower(Series.name).like(search_pattern),
+				func.lower(Series.name).like(search_pattern),
+				func.lower(Book.notes).like(search_pattern),
 			)
 		)
 
@@ -375,6 +378,13 @@ class BookRepository:
 
 		if params.page_max:
 			conditions.append(Book.page_count <= params.page_max)
+
+		if params.is_read is not None:
+			conditions.append(Book.is_read == params.is_read)
+		if params.rating_min is not None:
+			conditions.append(Book.rating >= params.rating_min)
+		if params.notes:
+			conditions.append(func.lower(Book.notes).like(f"%{params.notes.lower()}%"))
 
 		return conditions
 

@@ -12,18 +12,22 @@ interface SearchBarProps {
 	sortBy: string;
 	order: 'asc' | 'desc';
 	onSortChange: (sortBy: string, order: 'asc' | 'desc') => void;
+	onAdvancedPress?: () => void;
+	isAdvancedMode?: boolean;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
-														searchQuery,
-														setSearchQuery,
-														handleSearch,
-														isGridView,
-														toggleView,
-														sortBy,
-														order,
-														onSortChange
-													}) => {
+	searchQuery,
+	setSearchQuery,
+	handleSearch,
+	isGridView,
+	toggleView,
+	sortBy,
+	order,
+	onSortChange,
+	onAdvancedPress,
+	isAdvancedMode,
+}) => {
 	return (
 		<View style={styles.container}>
 			<View style={styles.searchContainer}>
@@ -31,10 +35,22 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 					style={styles.input}
 					value={searchQuery}
 					onChangeText={setSearchQuery}
-					placeholder="Rechercher..."
+					placeholder="Rechercher (titre, auteur, notes…)"
 					onSubmitEditing={handleSearch}
 					returnKeyType="search"
 				/>
+				{onAdvancedPress && (
+					<Pressable
+						style={[styles.searchButton, isAdvancedMode && styles.advancedActive]}
+						onPress={onAdvancedPress}
+					>
+						<MaterialIcons
+							name="tune"
+							size={24}
+							color={isAdvancedMode ? "#fff" : "#333"}
+						/>
+					</Pressable>
+				)}
 				<Pressable style={styles.searchButton} onPress={handleSearch}>
 					<MaterialIcons name="search" size={24} color="#333" />
 				</Pressable>
@@ -44,9 +60,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 				<SortMenu
 					currentSort={sortBy}
 					currentOrder={order}
-					onSortChange={onSortChange} // Fonction à appeler lors du changement de tri
+					onSortChange={onSortChange}
 				/>
-
 				<Pressable style={styles.viewButton} onPress={toggleView}>
 					<MaterialIcons
 						name={isGridView ? "view-list" : "grid-view"}
@@ -56,7 +71,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 				</Pressable>
 			</View>
 		</View>
-
 	);
 };
 
@@ -99,5 +113,8 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 		alignItems: 'center',
 		borderRadius: 8,
+	},
+	advancedActive: {
+		backgroundColor: '#3498db',
 	},
 });

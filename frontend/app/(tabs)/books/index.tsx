@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
 	Text,
-	Button,
 	View,
 	StyleSheet,
 	FlatList,
 	ActivityIndicator,
 	useWindowDimensions,
-    TouchableOpacity,
+	TouchableOpacity,
 	Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -16,15 +15,16 @@ import { Book } from "@/types/book";
 import { BookListItem } from "@/components/BookListItem";
 import { BookCardItem } from "@/components/BookCardItem";
 import { SearchBar } from "@/components/SearchBar";
-import { BookFilters} from "@/components/BookFilters";
+import { BookFilters } from "@/components/BookFilters";
+import { SimpleSearchFilters } from "@/components/SimpleSearchFilters";
+import { AdvancedSearchModal } from "@/components/AdvancedSearchModal";
 import { useBooks } from "@/hooks/useBooks";
-import { useAuth } from "@/contexts/AuthContext";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 
 export default function Index() {
 	const { width: screenWidth } = useWindowDimensions();
 	const [isGridView, setIsGridView] = useState(false);
+	const [advancedModalVisible, setAdvancedModalVisible] = useState(false);
 	const router = useRouter();
 	const {
 		books,
@@ -36,6 +36,13 @@ export default function Index() {
 		setSearchQuery,
 		sortBy,
 		order,
+		isRead,
+		setIsRead,
+		ratingMin,
+		setRatingMin,
+		isAdvancedMode,
+		runAdvancedSearch,
+		clearAdvancedSearch,
 		handleFilterSelect,
 		handleFilterRemove,
 		handleLoadMore,
@@ -118,9 +125,18 @@ export default function Index() {
 		return null;
 	};
 
-		useEffect(() => {
-			loadBooks(1);
-		}, [activeFilters]);
+	useEffect(() => {
+		if (!isAdvancedMode) {
+			loadBooks(1, false, {
+				currentSortBy: sortBy,
+				currentOrder: order,
+				currentSearchQuery: searchQuery,
+				currentFilters: activeFilters,
+				currentIsRead: isRead,
+				currentRatingMin: ratingMin,
+			});
+		}
+	}, [activeFilters, isRead, ratingMin, isAdvancedMode]);
 
 	return (
 		<View style={styles.container}>
@@ -133,7 +149,25 @@ export default function Index() {
 				sortBy={sortBy}
 				order={order}
 				onSortChange={handleSortChange}
+				onAdvancedPress={() => setAdvancedModalVisible(true)}
+				isAdvancedMode={isAdvancedMode}
 			/>
+
+			{isAdvancedMode ? (
+				<View style={styles.advancedBanner}>
+					<Text style={styles.advancedBannerText}>Recherche avancée active</Text>
+					<TouchableOpacity onPress={clearAdvancedSearch}>
+						<Text style={styles.advancedBannerLink}>Réinitialiser</Text>
+					</TouchableOpacity>
+				</View>
+			) : (
+				<SimpleSearchFilters
+					isRead={isRead}
+					setIsRead={setIsRead}
+					ratingMin={ratingMin}
+					setRatingMin={setRatingMin}
+				/>
+			)}
 
 			<BookFilters activeFilters={activeFilters} onFilterRemove={handleFilterRemove} onClearFilters={clearFilters}/>
 
@@ -154,6 +188,17 @@ export default function Index() {
 				/>
 			)}
 			
+			<AdvancedSearchModal
+				visible={advancedModalVisible}
+				onClose={() => setAdvancedModalVisible(false)}
+				onSearch={(params) => {
+					runAdvancedSearch(params);
+					setAdvancedModalVisible(false);
+				}}
+				sortBy={sortBy}
+				order={order}
+			/>
+
 			{/* Bouton d'ajout manuel flottant */}
 			<TouchableOpacity 
 				style={styles.addButton}
@@ -224,6 +269,25 @@ const styles = StyleSheet.create({
 	footerInfoText: {
 		color: '#666',
 		fontSize: 14,
+	},
+	advancedBanner: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		backgroundColor: "#e8f4fc",
+		borderBottomWidth: 1,
+		borderBottomColor: "#b8daff",
+	},
+	advancedBannerText: {
+		fontSize: 14,
+		color: "#004085",
+	},
+	advancedBannerLink: {
+		fontSize: 14,
+		color: "#007bff",
+		fontWeight: "600",
 	},
 	addButton: {
 		position: 'absolute',

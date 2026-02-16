@@ -48,10 +48,12 @@ describe('SearchBar', () => {
     onSortChange: mockOnSortChange
   };
 
+  const searchPlaceholder = 'Rechercher (titre, auteur, notes…)';
+
   it('should render with placeholder text', () => {
     const { getByPlaceholderText } = render(<SearchBar {...defaultProps} />);
     
-    expect(getByPlaceholderText('Rechercher...')).toBeTruthy();
+    expect(getByPlaceholderText(searchPlaceholder)).toBeTruthy();
   });
 
   it('should display search query value', () => {
@@ -64,17 +66,17 @@ describe('SearchBar', () => {
   it('should call setSearchQuery when text changes', () => {
     const { getByPlaceholderText } = render(<SearchBar {...defaultProps} />);
     
-    const input = getByPlaceholderText('Rechercher...');
+    const input = getByPlaceholderText(searchPlaceholder);
     fireEvent.changeText(input, 'nouveau texte');
     
     expect(mockSetSearchQuery).toHaveBeenCalledWith('nouveau texte');
   });
 
   it('should call handleSearch when search button is pressed', () => {
-    const { getByTestId } = render(<SearchBar {...defaultProps} />);
+    const { getAllByTestId } = render(<SearchBar {...defaultProps} />);
     
-    // Le bouton de recherche devrait avoir l'icône MaterialIcons
-    const searchButton = getByTestId('icon-search');
+    // Plusieurs icônes (tune, search, sort, grid-view) : le bouton search est celui avec icon-search
+    const searchButton = getAllByTestId('icon-search')[0];
     fireEvent.press(searchButton);
     
     expect(mockHandleSearch).toHaveBeenCalled();
@@ -83,7 +85,7 @@ describe('SearchBar', () => {
   it('should call handleSearch when submit editing', () => {
     const { getByPlaceholderText } = render(<SearchBar {...defaultProps} />);
     
-    const input = getByPlaceholderText('Rechercher...');
+    const input = getByPlaceholderText(searchPlaceholder);
     fireEvent(input, 'submitEditing');
     
     expect(mockHandleSearch).toHaveBeenCalled();
@@ -92,16 +94,15 @@ describe('SearchBar', () => {
   it('should call toggleView when view button is pressed', () => {
     const { getAllByTestId } = render(<SearchBar {...defaultProps} />);
     
-    // Le bouton de vue devrait être présent
+    // Bouton de vue : grid-view (liste) ou view-list (grille)
     const viewButtons = getAllByTestId(/icon-/);
     const viewButton = viewButtons.find(button => 
-      button.props.testID === 'icon-view-list' || button.props.testID === 'icon-view-module'
+      button.props.testID === 'icon-view-list' || button.props.testID === 'icon-grid-view'
     );
     
-    if (viewButton) {
-      fireEvent.press(viewButton);
-      expect(mockToggleView).toHaveBeenCalled();
-    }
+    expect(viewButton).toBeTruthy();
+    fireEvent.press(viewButton!);
+    expect(mockToggleView).toHaveBeenCalled();
   });
 
   it('should display grid view icon when in list view', () => {

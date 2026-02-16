@@ -40,6 +40,8 @@ def search_books(
     limit: int = Query(100, ge=1, le=1000, description="Nombre max d'éléments à retourner"),
     sort_by: SortBy = Query(SortBy.title, description="Champ de tri"),
     sort_order: SortOrder = Query(SortOrder.asc, description="Ordre de tri"),
+    is_read: Optional[bool] = Query(None, description="Filtrer par statut de lecture (true=lu, false=non lu)"),
+    rating_min: Optional[int] = Query(None, ge=0, le=5, description="Notation minimale (0-5 étoiles)"),
     filters: Optional[List[Filter]] = Body(default=None, description="Filtres de recherche"),
     service: BookService = Depends(get_book_service)
 ):
@@ -79,6 +81,8 @@ Notes :
         limit=limit,
         sort_by=sort_by,
         sort_order=sort_order,
+        is_read=is_read,
+        rating_min=rating_min,
         filters=filters
     )
     print("Requete reçue : " + str(params))
@@ -96,6 +100,9 @@ def advanced_search_books(
     year_max: int = Query(None, ge=0, description="Année de publication maximale"),
     page_min: int = Query(None, ge=1, description="Nombre de pages minimal"),
     page_max: int = Query(None, ge=1, description="Nombre de pages maximal"),
+    is_read: Optional[bool] = Query(None, description="Filtrer par statut de lecture (true=lu, false=non lu)"),
+    rating_min: Optional[int] = Query(None, ge=0, le=5, description="Notation minimale (0-5 étoiles)"),
+    notes: Optional[str] = Query(None, description="Recherche dans les notes personnelles"),
     skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
     limit: int = Query(100, ge=1, le=1000, description="Nombre max d'éléments à retourner"),
     sort_by: SortBy = Query(SortBy.title, description="Champ de tri"),
@@ -118,6 +125,9 @@ def advanced_search_books(
         year_max=year_max,
         page_min=page_min,
         page_max=page_max,
+        is_read=is_read,
+        rating_min=rating_min,
+        notes=notes,
         skip=skip,
         limit=limit,
         sort_by=sort_by,

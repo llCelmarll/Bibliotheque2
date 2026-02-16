@@ -230,6 +230,8 @@ class BookSearchParams(BaseModel):
     sort_by: SortBy = SortBy.title
     sort_order: SortOrder = SortOrder.asc
     filters: Optional[List[Filter]] = None
+    is_read: Optional[bool] = None  # True=lu, False=non lu, None=tous
+    rating_min: Optional[int] = None  # 0-5, notation minimale
     skip: int = 0
     limit: int = 100
 
@@ -243,6 +245,9 @@ class BookAdvancedSearchParams(BaseModel):
     year_max: Optional[int] = None
     page_min: Optional[int] = None
     page_max: Optional[int] = None
+    is_read: Optional[bool] = None  # True=lu, False=non lu, None=tous
+    rating_min: Optional[int] = None  # 0-5, notation minimale
+    notes: Optional[str] = None  # Recherche plein texte dans les notes personnelles
     sort_by: SortBy = SortBy.title
     sort_order: SortOrder = SortOrder.asc
     skip: int = 0
