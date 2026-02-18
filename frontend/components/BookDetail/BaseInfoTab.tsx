@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert, TextInput } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert, TextInput, Switch } from "react-native";
 import { BookDetail } from "@/types/book";
 import { InfoRow } from "@/components/BookDetail/InfoRow";
 import { useRoute } from "@react-navigation/native";
@@ -35,6 +35,7 @@ export function BaseInfoTab() {
   const [rating, setRating] = useState<number | null>(book.base.rating ?? null);
   const [notes, setNotes] = useState<string>(book.base.notes ?? '');
   const [notesSaving, setNotesSaving] = useState(false);
+  const [isLendable, setIsLendable] = useState<boolean>(book.base.is_lendable !== false);
 
   const handleFilterSelect = (filter: BookFilter) => {
     console.log('Filter selected:', filter);
@@ -70,6 +71,18 @@ export function BaseInfoTab() {
     } catch {
       setRating(previousRating);
       Alert.alert('Erreur', 'Impossible de mettre à jour la notation.');
+    }
+  };
+
+  const handleIsLendableChange = async (value: boolean) => {
+    const previous = isLendable;
+    setIsLendable(value);
+    try {
+      await bookService.updateBook(book.base.id.toString(), { is_lendable: value });
+      onBookUpdated?.();
+    } catch {
+      setIsLendable(previous);
+      Alert.alert('Erreur', 'Impossible de mettre à jour le statut de prêt.');
     }
   };
 
@@ -269,6 +282,22 @@ export function BaseInfoTab() {
               value={rating}
               editable={true}
               onChange={handleRatingChange}
+            />
+          </View>
+        </View>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Prêt">
+        <View style={styles.infoRow}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.label}>Visible dans{'\n'}la bibliothèque partagée</Text>
+          </View>
+          <View style={[styles.valueContainer, { alignItems: 'center' }]}>
+            <Switch
+              value={isLendable}
+              onValueChange={handleIsLendableChange}
+              trackColor={{ false: '#E0E0E0', true: '#90CAF9' }}
+              thumbColor={isLendable ? '#2196F3' : '#9E9E9E'}
             />
           </View>
         </View>

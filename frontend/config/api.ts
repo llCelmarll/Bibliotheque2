@@ -27,6 +27,10 @@ const API_CONFIG = {
     SERIES: '/series',
     LOANS: '/loans',
     CONTACTS: '/contacts',
+    USER_LOANS: '/user-loans',
+    CONTACT_INVITATIONS: '/contact-invitations',
+    USERS_SEARCH: '/users/search',
+    USER_LIBRARY: (userId: number) => `/users/${userId}/library`,
   }
 };
 

@@ -14,6 +14,9 @@ export interface Contact {
     created_at: string;
     active_loans_count?: number;
     active_borrows_count?: number;
+    linked_user_id?: number;
+    linked_user_username?: string;
+    library_shared: boolean;
 }
 
 /**
@@ -35,4 +38,6 @@ export interface ContactUpdate {
     email?: string;
     phone?: string;
     notes?: string;
+    linked_user_id?: number | null;
+    library_shared?: boolean;
 }

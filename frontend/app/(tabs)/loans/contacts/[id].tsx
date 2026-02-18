@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
   TextInput,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -131,6 +132,26 @@ function ContactDetailScreen() {
       pathname: '/(tabs)/loans/create',
       params: { contactId: contactId.toString() }
     });
+  };
+
+  const handleToggleLibraryShared = async (value: boolean) => {
+    if (!contact?.linked_user_id) return;
+    setActionLoading(true);
+    try {
+      const updated = await contactService.updateContact(contactId, { library_shared: value });
+      setContact(updated);
+    } catch (error: any) {
+      Alert.alert('Erreur', error.response?.data?.detail || 'Impossible de modifier le partage');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleViewLibrary = () => {
+    if (contact?.linked_user_id) {
+      const username = encodeURIComponent(contact.linked_user_username || '');
+      router.push(`/(tabs)/loans/library/${contact.linked_user_id}?username=${username}` as any);
+    }
   };
 
   const handleLoanPress = (loan: Loan) => {
@@ -373,6 +394,34 @@ function ContactDetailScreen() {
             )}
           </View>
         )}
+
+        {/* Section Utilisateur lié */}
+        {contact.linked_user_id ? (
+          <View style={styles.linkedUserCard}>
+            <View style={styles.linkedUserHeader}>
+              <MaterialIcons name="account-circle" size={20} color="#7C3AED" />
+              <Text style={styles.linkedUserTitle}>Utilisateur lié</Text>
+            </View>
+            <Text style={styles.linkedUserName}>{contact.linked_user_username}</Text>
+            <View style={styles.librarySharedRow}>
+              <View style={styles.librarySharedLabel}>
+                <MaterialIcons name="menu-book" size={16} color="#757575" />
+                <Text style={styles.librarySharedText}>Partager ma bibliothèque</Text>
+              </View>
+              <Switch
+                value={contact.library_shared}
+                onValueChange={handleToggleLibraryShared}
+                disabled={actionLoading}
+                trackColor={{ false: '#E0E0E0', true: '#C4B5FD' }}
+                thumbColor={contact.library_shared ? '#7C3AED' : '#9E9E9E'}
+              />
+            </View>
+            <TouchableOpacity style={styles.viewLibraryButton} onPress={handleViewLibrary}>
+              <MaterialIcons name="library-books" size={16} color="#7C3AED" />
+              <Text style={styles.viewLibraryButtonText}>Voir sa bibliothèque</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {/* Statistiques Prêts */}
         <View style={styles.statsCard}>
@@ -851,5 +900,62 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  linkedUserCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#7C3AED',
+  },
+  linkedUserHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  linkedUserTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#7C3AED',
+  },
+  linkedUserName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#212121',
+    marginBottom: 12,
+  },
+  librarySharedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  librarySharedLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  librarySharedText: {
+    fontSize: 14,
+    color: '#424242',
+  },
+  viewLibraryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F3F0FF',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  viewLibraryButtonText: {
+    fontSize: 14,
+    color: '#7C3AED',
+    fontWeight: '600',
   },
 });

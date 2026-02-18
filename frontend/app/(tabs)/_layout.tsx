@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { checkForUpdate } from "@/utils/versionCheck";
 
 export default function TabLayout() {
+  const router = useRouter();
+
   useEffect(() => {
     checkForUpdate();
   }, []);
@@ -20,6 +22,11 @@ export default function TabLayout() {
             <Ionicons name="book-outline" size={size} color={color} />
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            router.replace('/(tabs)/books');
+          },
+        }}
       />
       <Tabs.Screen
         name="loans"
@@ -28,6 +35,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size}) => (
             <Ionicons name="swap-horizontal-outline" size={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => {
+            router.replace('/(tabs)/loans/(subtabs)/loans-list');
+          },
         }}
       />
       <Tabs.Screen
@@ -44,6 +56,11 @@ export default function TabLayout() {
             <Ionicons name="camera-outline" size={size} color={color} />
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            router.replace('/(tabs)/scanner');
+          },
+        }}
       />
       <Tabs.Screen
         name="settings"
@@ -52,6 +69,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => {
+            router.replace('/(tabs)/settings');
+          },
         }}
       />
       <Tabs.Screen

@@ -98,6 +98,7 @@ export interface Book {
 	created_at?: string;
 	updated_at?: string;
 	current_loan?: CurrentLoan;
+	is_lendable?: boolean;
 }
 
 export interface BookBase {
@@ -123,6 +124,7 @@ export interface BookBase {
     current_loan?: CurrentLoan;
     borrowed_book?: BorrowedBook;
     has_borrow_history?: boolean;
+    is_lendable?: boolean;
 }
 
 export interface GoogleBooksData {
@@ -187,6 +189,7 @@ export interface BookUpdate {
     read_date?: string | null;
     rating?: number | null;
     notes?: string | null;
+    is_lendable?: boolean;
     authors?: (AuthorCreate | AuthorRead)[];
     publisher?: PublisherCreate | PublisherRead;
     genres?: (GenreCreate | GenreRead)[];

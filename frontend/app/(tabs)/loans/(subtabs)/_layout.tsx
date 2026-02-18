@@ -1,8 +1,14 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Platform, View, Text, StyleSheet } from 'react-native';
+import { useContactInvitations } from '@/hooks/useContactInvitations';
+import { useUserLoanRequests } from '@/hooks/useUserLoanRequests';
 
 export default function SubTabsLayout() {
+  const { pendingCount: invitationCount } = useContactInvitations();
+  const { pendingCount: loanRequestCount } = useUserLoanRequests();
+  const totalNotifications = invitationCount + loanRequestCount;
+
   return (
     <Tabs
       screenOptions={{
@@ -52,6 +58,45 @@ export default function SubTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="invitations"
+        options={{
+          title: 'Invitations',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <View>
+              <MaterialIcons name="person-add" size={size} color={color} />
+              {totalNotifications > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {totalNotifications > 9 ? '9+' : totalNotifications}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ),
+        }}
+      />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    backgroundColor: '#F44336',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+});

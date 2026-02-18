@@ -30,12 +30,19 @@ export const ContactListItem: React.FC<ContactListItemProps> = ({
       disabled={!onPress}
       testID={`contact-item-${contact.id}`}
     >
-      <View style={styles.iconContainer}>
-        <MaterialIcons name="person" size={32} color="#2196F3" />
+      <View style={[styles.iconContainer, contact.linked_user_id ? styles.iconContainerMember : null]}>
+        <MaterialIcons name="person" size={32} color={contact.linked_user_id ? '#7C3AED' : '#2196F3'} />
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.name}>{contact.name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{contact.name}</Text>
+          {contact.linked_user_id && (
+            <View style={styles.memberBadge}>
+              <Text style={styles.memberBadgeText}>Membre</Text>
+            </View>
+          )}
+        </View>
 
         {showStats ? (
           <View style={styles.statsRow}>
@@ -114,14 +121,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  iconContainerMember: {
+    backgroundColor: '#F3F0FF',
+  },
   infoContainer: {
     flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
   },
   name: {
     fontSize: 16,
     fontWeight: '600',
     color: '#212121',
-    marginBottom: 4,
+  },
+  memberBadge: {
+    backgroundColor: '#7C3AED',
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  memberBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   contactRow: {
     flexDirection: 'row',

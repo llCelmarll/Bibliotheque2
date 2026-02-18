@@ -15,6 +15,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LoanStatus, Loan } from '@/types/loan';
 import { useLoans } from '@/hooks/useLoans';
 import { LoanListItem } from '@/components/loans/LoanListItem';
+import { UserLoanRequestListItem } from '@/components/loans/UserLoanRequestListItem';
+import { useUserLoanRequests } from '@/hooks/useUserLoanRequests';
+import { UserLoanRequest, UserLoanRequestStatus } from '@/types/userLoanRequest';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 type SortOption = 'date' | 'contact' | 'book' | 'dueDate';
@@ -23,13 +26,20 @@ function LoansScreen() {
   const router = useRouter();
   const [filterStatus, setFilterStatus] = useState<LoanStatus | 'all'>('all');
   const { loans, loading, refresh } = useLoans({ filterStatus });
+  const { incoming: incomingRequests, loading: requestsLoading, refresh: refreshRequests } = useUserLoanRequests();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
 
+  // Demandes de prêt inter-membres ACCEPTED reçues (je suis le prêteur)
+  const acceptedIncoming = useMemo(() =>
+    incomingRequests.filter(r => r.status === UserLoanRequestStatus.ACCEPTED),
+    [incomingRequests]
+  );
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refresh();
+    await Promise.all([refresh(), refreshRequests()]);
     setRefreshing(false);
   };
 
@@ -207,21 +217,28 @@ function LoansScreen() {
       </View>
 
       {/* Liste des prêts */}
-      {loading ? (
+      {loading || requestsLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
         </View>
       ) : (
         <FlatList
-          data={filteredAndSortedLoans}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <LoanListItem loan={item} onReturn={refresh} />}
+          data={[
+            ...acceptedIncoming.map(r => ({ type: 'ulr' as const, data: r })),
+            ...filteredAndSortedLoans.map(l => ({ type: 'loan' as const, data: l })),
+          ]}
+          keyExtractor={(item) => `${item.type}-${item.data.id}`}
+          renderItem={({ item }) =>
+            item.type === 'ulr'
+              ? <UserLoanRequestListItem request={item.data as UserLoanRequest} onAction={refreshRequests} />
+              : <LoanListItem loan={item.data as Loan} onReturn={refresh} />
+          }
           ListEmptyComponent={renderEmptyState}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           contentContainerStyle={
-            filteredAndSortedLoans.length === 0 ? styles.emptyListContainer : undefined
+            filteredAndSortedLoans.length === 0 && acceptedIncoming.length === 0 ? styles.emptyListContainer : undefined
           }
         />
       )}

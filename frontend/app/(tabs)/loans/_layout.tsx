@@ -37,6 +37,27 @@ export default function LoansLayout() {
           headerShown: false
         }}
       />
+      <Stack.Screen
+        name="user-loan-request"
+        options={{
+          headerShown: false,
+          presentation: 'card'
+        }}
+      />
+      <Stack.Screen
+        name="library/[userId]/index"
+        options={{
+          headerShown: false,
+          presentation: 'card'
+        }}
+      />
+      <Stack.Screen
+        name="library/[userId]/book/[bookId]"
+        options={{
+          headerShown: false,
+          presentation: 'card'
+        }}
+      />
     </Stack>
   );
 }
