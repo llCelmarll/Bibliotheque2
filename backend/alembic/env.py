@@ -15,6 +15,10 @@ from app.models.Borrower import Borrower
 from app.models.Loan import Loan
 from app.models.Series import Series
 from app.models.BookSeriesLink import BookSeriesLink
+from app.models.Contact import Contact
+from app.models.BorrowedBook import BorrowedBook
+from app.models.UserLoanRequest import UserLoanRequest
+from app.models.ContactInvitation import ContactInvitation
 from sqlmodel import SQLModel
 
 # this is the Alembic Config object, which provides

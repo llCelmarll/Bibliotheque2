@@ -51,6 +51,16 @@ class LoanService:
                 detail="Livre introuvable"
             )
 
+        # Vérifier qu'il n'y a pas de prêt inter-membres actif (ACCEPTED) pour ce livre
+        from app.repositories.user_loan_request_repository import UserLoanRequestRepository
+        user_loan_req_repo = UserLoanRequestRepository(self.session)
+        active_user_loan = user_loan_req_repo.get_active_request_for_book(loan_data.book_id)
+        if active_user_loan:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ce livre est déjà prêté à un autre membre via une demande inter-membres"
+            )
+
         # Vérifier que le livre n'est pas déjà prêté
         active_loan = self.loan_repository.get_active_loan_for_book(loan_data.book_id, self.user_id)
         if active_loan:

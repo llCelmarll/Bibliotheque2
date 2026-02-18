@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from app.models.Series import Series
     from app.models.Loan import Loan
     from app.models.BorrowedBook import BorrowedBook
+    from app.models.UserLoanRequest import UserLoanRequest
 
 class Book(SQLModel, table=True):
     __tablename__ = "books"
@@ -54,6 +55,12 @@ class Book(SQLModel, table=True):
         back_populates="book",
         cascade_delete=True
     )
+
+    # Disponibilité au prêt inter-membres
+    is_lendable: bool = Field(default=True, sa_column=Column(Boolean, nullable=False, server_default="true"))
+
+    # Demandes de prêt inter-membres
+    user_loan_requests: List["UserLoanRequest"] = Relationship(back_populates="book")
 
     # Couverture du livre
     cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))

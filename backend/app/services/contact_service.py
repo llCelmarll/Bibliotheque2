@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status
-from sqlmodel import Session
+from sqlmodel import Session, select
 from typing import List, Optional
 
 from app.models.Contact import Contact
+from app.models.User import User
 from app.repositories.contact_repository import ContactRepository
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
@@ -106,6 +107,25 @@ class ContactService:
             contact.phone = contact_data.phone
         if contact_data.notes is not None:
             contact.notes = contact_data.notes
+        if contact_data.linked_user_id is not None:
+            # Vérifier que l'utilisateur lié existe et est actif
+            linked_user = self.session.exec(
+                select(User).where(User.id == contact_data.linked_user_id, User.is_active == True)
+            ).first()
+            if not linked_user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Utilisateur lié introuvable"
+                )
+            contact.linked_user_id = contact_data.linked_user_id
+        if contact_data.library_shared is not None:
+            # Ne peut partager que si un utilisateur est lié
+            if contact_data.library_shared and not contact.linked_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Impossible de partager la bibliothèque sans lier un utilisateur"
+                )
+            contact.library_shared = contact_data.library_shared
 
         contact = self.contact_repository.update(contact)
 
@@ -166,9 +186,19 @@ class ContactService:
             1 for b in contact_borrows if b.status in ['active', 'overdue']
         )
 
+        # Résoudre le username de l'utilisateur lié
+        linked_user_username = None
+        if contact.linked_user_id:
+            linked_user = self.session.exec(
+                select(User).where(User.id == contact.linked_user_id)
+            ).first()
+            if linked_user:
+                linked_user_username = linked_user.username
+
         contact_dict = contact.model_dump()
         contact_dict['active_loans_count'] = active_loans_count
         contact_dict['active_borrows_count'] = active_borrows_count
+        contact_dict['linked_user_username'] = linked_user_username
         return ContactRead(**contact_dict)
 
     def _validate_contact_create(self, contact_data: ContactCreate) -> None:

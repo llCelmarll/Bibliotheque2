@@ -13,6 +13,9 @@ class ContactRead(SQLModel):
     created_at: datetime
     active_loans_count: int = 0
     active_borrows_count: int = 0
+    linked_user_id: Optional[int] = None
+    linked_user_username: Optional[str] = None
+    library_shared: bool = False
 
 
 class ContactCreate(SQLModel):
@@ -29,3 +32,5 @@ class ContactUpdate(SQLModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     notes: Optional[str] = None
+    linked_user_id: Optional[int] = None
+    library_shared: Optional[bool] = None

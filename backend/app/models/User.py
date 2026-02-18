@@ -7,6 +7,8 @@ if TYPE_CHECKING:
     from app.models.Loan import Loan
     from app.models.Contact import Contact
     from app.models.BorrowedBook import BorrowedBook
+    from app.models.UserLoanRequest import UserLoanRequest
+    from app.models.ContactInvitation import ContactInvitation
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -33,8 +35,27 @@ class User(SQLModel, table=True):
         back_populates="owner",
         sa_relationship_kwargs={"foreign_keys": "Loan.owner_id"}
     )
-    contacts: List["Contact"] = Relationship(back_populates="owner")
+    contacts: List["Contact"] = Relationship(
+        back_populates="owner",
+        sa_relationship_kwargs={"foreign_keys": "Contact.owner_id"}
+    )
     borrowed_books: List["BorrowedBook"] = Relationship(back_populates="user")
+    loan_requests_as_requester: List["UserLoanRequest"] = Relationship(
+        back_populates="requester",
+        sa_relationship_kwargs={"foreign_keys": "UserLoanRequest.requester_id"}
+    )
+    loan_requests_as_lender: List["UserLoanRequest"] = Relationship(
+        back_populates="lender",
+        sa_relationship_kwargs={"foreign_keys": "UserLoanRequest.lender_id"}
+    )
+    invitations_sent: List["ContactInvitation"] = Relationship(
+        back_populates="sender",
+        sa_relationship_kwargs={"foreign_keys": "ContactInvitation.sender_id"}
+    )
+    invitations_received: List["ContactInvitation"] = Relationship(
+        back_populates="recipient",
+        sa_relationship_kwargs={"foreign_keys": "ContactInvitation.recipient_id"}
+    )
 
     # Contraintes
     __table_args__ = (

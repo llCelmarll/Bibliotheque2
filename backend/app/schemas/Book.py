@@ -58,6 +58,7 @@ class BookRead(SQLModel):
     publisher: Optional[PublisherRead] = None
     genres: List[GenreRead] = []
     series: List[BookSeriesRead] = []
+    is_lendable: bool = True
     current_loan: Optional[CurrentLoanRead] = None  # Prêt actif si le livre est prêté
     borrowed_book: Optional[CurrentBorrowRead] = None  # Emprunt actif si le livre est emprunté
     has_borrow_history: bool = False  # True si le livre a un historique d'emprunts (même retournés)
@@ -90,6 +91,7 @@ class BookRead(SQLModel):
             "read_date": book.read_date,
             "rating": getattr(book, "rating", None),
             "notes": getattr(book, "notes", None),
+            "is_lendable": getattr(book, "is_lendable", True),
             "created_at": book.created_at,
             "updated_at": book.updated_at,
             "authors": [AuthorRead.model_validate(a) for a in getattr(book, 'authors', [])],
@@ -218,6 +220,7 @@ class BookUpdate(SQLModel):
     read_date: Optional[datetime] = None
     rating: Optional[int] = None  # 0-5
     notes: Optional[str] = None
+    is_lendable: Optional[bool] = None
     authors: Optional[List[Union[int, Dict[str, Any]]]] = None
     publisher: Optional[Union[int, Dict[str, Any]]] = None
     genres: Optional[List[Union[int, Dict[str, Any]]]] = None
