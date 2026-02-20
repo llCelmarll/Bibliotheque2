@@ -12,7 +12,8 @@ from app.models.Book import Book
 from app.models.Author import Author
 from app.models.Publisher import Publisher
 from app.models.Genre import Genre
-from app.schemas.Book import BookRead, AuthorRead, PublisherRead, GenreRead
+from app.models.Loan import Loan, LoanStatus
+from app.schemas.Book import BookRead, AuthorRead, PublisherRead, GenreRead, CurrentLoanRead
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -240,6 +241,7 @@ async def get_shared_book(
             selectinload(Book.authors),
             selectinload(Book.publisher),
             selectinload(Book.genres),
+            selectinload(Book.loans).selectinload(Loan.contact),
         )
     ).first()
 
@@ -247,6 +249,13 @@ async def get_shared_book(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Livre introuvable"
+        )
+
+    active_loan = None
+    if book.loans:
+        active_loan = next(
+            (l for l in book.loans if l.status in [LoanStatus.ACTIVE, LoanStatus.OVERDUE]),
+            None
         )
 
     return BookRead(
@@ -268,4 +277,5 @@ async def get_shared_book(
         publisher=PublisherRead.model_validate(book.publisher) if book.publisher else None,
         genres=[GenreRead.model_validate(g) for g in getattr(book, 'genres', [])],
         series=[],
+        current_loan=CurrentLoanRead.model_validate(active_loan) if active_loan else None,
     )
