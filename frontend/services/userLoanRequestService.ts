@@ -7,6 +7,7 @@ import {
     UserLoanRequestDecline,
     LibraryPage,
 } from '@/types/userLoanRequest';
+import { Book } from '@/types/book';
 import { setupAuthInterceptor } from '@/services/api/authInterceptor';
 
 const apiClient = axios.create({
@@ -111,13 +112,38 @@ class UserLoanRequestService {
 
     async getUserLibrary(
         userId: number,
-        params?: { search?: string; skip?: number; limit?: number }
+        params?: {
+            search?: string;
+            skip?: number;
+            limit?: number;
+            sort_by?: string;
+            sort_order?: string;
+            title?: string;
+            author?: string;
+            publisher?: string;
+            genre?: string;
+            isbn?: string;
+            year_min?: number;
+            year_max?: number;
+            page_min?: number;
+            page_max?: number;
+        }
     ): Promise<LibraryPage> {
         try {
             const response = await apiClient.get(API_CONFIG.ENDPOINTS.USER_LIBRARY(userId), { params });
             return response.data;
         } catch (error) {
             console.error('❌ Erreur getUserLibrary:', error);
+            throw error;
+        }
+    }
+
+    async getSharedBook(userId: number, bookId: number): Promise<Book> {
+        try {
+            const response = await apiClient.get(API_CONFIG.ENDPOINTS.USER_LIBRARY_BOOK(userId, bookId));
+            return response.data;
+        } catch (error) {
+            console.error('❌ Erreur getSharedBook:', error);
             throw error;
         }
     }

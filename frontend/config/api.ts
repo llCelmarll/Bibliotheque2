@@ -31,6 +31,7 @@ const API_CONFIG = {
     CONTACT_INVITATIONS: '/contact-invitations',
     USERS_SEARCH: '/users/search',
     USER_LIBRARY: (userId: number) => `/users/${userId}/library`,
+    USER_LIBRARY_BOOK: (userId: number, bookId: number) => `/users/${userId}/library/${bookId}`,
   }
 };
 

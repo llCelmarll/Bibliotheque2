@@ -16,7 +16,7 @@ import { BorrowStatus, BorrowedBook } from '@/types/borrowedBook';
 import { useBorrows } from '@/hooks/useBorrows';
 import { BorrowListItem } from '@/components/borrows/BorrowListItem';
 import { UserLoanRequestListItem } from '@/components/loans/UserLoanRequestListItem';
-import { useUserLoanRequests } from '@/hooks/useUserLoanRequests';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import { UserLoanRequest, UserLoanRequestStatus } from '@/types/userLoanRequest';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -26,7 +26,7 @@ function BorrowedBooksScreen() {
   const router = useRouter();
   const [filterStatus, setFilterStatus] = useState<BorrowStatus | 'all'>('all');
   const { borrows, loading, refresh } = useBorrows({ filterStatus });
-  const { outgoing: outgoingRequests, loading: requestsLoading, refresh: refreshRequests } = useUserLoanRequests();
+  const { outgoingLoanRequests: outgoingRequests, loading: requestsLoading, refresh: refreshRequests } = useNotifications();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');

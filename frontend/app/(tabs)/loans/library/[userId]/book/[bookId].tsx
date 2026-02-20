@@ -40,15 +40,14 @@ function SharedBookDetailScreen() {
         setLoading(true);
         setError(null);
         try {
-            const data = await userLoanRequestService.getUserLibrary(lenderId, { limit: 200 });
-            const found = data.items.find(b => b.id === bookIdNum);
-            if (found) {
-                setBook(found);
-            } else {
+            const found = await userLoanRequestService.getSharedBook(lenderId, bookIdNum);
+            setBook(found);
+        } catch (err: any) {
+            if (err.response?.status === 404) {
                 setError('Livre introuvable');
+            } else {
+                setError('Impossible de charger le livre');
             }
-        } catch {
-            setError('Impossible de charger le livre');
         } finally {
             setLoading(false);
         }

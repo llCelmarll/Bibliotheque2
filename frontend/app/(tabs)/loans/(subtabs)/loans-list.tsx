@@ -16,7 +16,7 @@ import { LoanStatus, Loan } from '@/types/loan';
 import { useLoans } from '@/hooks/useLoans';
 import { LoanListItem } from '@/components/loans/LoanListItem';
 import { UserLoanRequestListItem } from '@/components/loans/UserLoanRequestListItem';
-import { useUserLoanRequests } from '@/hooks/useUserLoanRequests';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import { UserLoanRequest, UserLoanRequestStatus } from '@/types/userLoanRequest';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -26,10 +26,16 @@ function LoansScreen() {
   const router = useRouter();
   const [filterStatus, setFilterStatus] = useState<LoanStatus | 'all'>('all');
   const { loans, loading, refresh } = useLoans({ filterStatus });
-  const { incoming: incomingRequests, loading: requestsLoading, refresh: refreshRequests } = useUserLoanRequests();
+  const { incomingLoanRequests: incomingRequests, loading: requestsLoading, refresh: refreshRequests } = useNotifications();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
+
+  // Demandes de prêt inter-membres PENDING reçues (je suis le prêteur, en attente de ma décision)
+  const pendingIncoming = useMemo(() =>
+    incomingRequests.filter(r => r.status === UserLoanRequestStatus.PENDING),
+    [incomingRequests]
+  );
 
   // Demandes de prêt inter-membres ACCEPTED reçues (je suis le prêteur)
   const acceptedIncoming = useMemo(() =>
@@ -224,6 +230,7 @@ function LoansScreen() {
       ) : (
         <FlatList
           data={[
+            ...pendingIncoming.map(r => ({ type: 'ulr' as const, data: r })),
             ...acceptedIncoming.map(r => ({ type: 'ulr' as const, data: r })),
             ...filteredAndSortedLoans.map(l => ({ type: 'loan' as const, data: l })),
           ]}
@@ -238,7 +245,7 @@ function LoansScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           contentContainerStyle={
-            filteredAndSortedLoans.length === 0 && acceptedIncoming.length === 0 ? styles.emptyListContainer : undefined
+            filteredAndSortedLoans.length === 0 && acceptedIncoming.length === 0 && pendingIncoming.length === 0 ? styles.emptyListContainer : undefined
           }
         />
       )}

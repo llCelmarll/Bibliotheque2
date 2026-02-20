@@ -38,7 +38,7 @@ export default function LoansLayout() {
         }}
       />
       <Stack.Screen
-        name="user-loan-request"
+        name="user-loan-request/[id]"
         options={{
           headerShown: false,
           presentation: 'card'

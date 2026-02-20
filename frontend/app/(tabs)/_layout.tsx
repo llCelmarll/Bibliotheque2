@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { View, Text, StyleSheet } from "react-native";
 import { checkForUpdate } from "@/utils/versionCheck";
+import { NotificationsProvider, useNotifications } from "@/contexts/NotificationsContext";
 
-export default function TabLayout() {
+function TabLayoutInner() {
   const router = useRouter();
+  const { totalPendingCount: totalNotifications } = useNotifications();
 
   useEffect(() => {
     checkForUpdate();
@@ -12,7 +15,7 @@ export default function TabLayout() {
 
   return (
     <Tabs screenOptions={{
-      headerShown: false // Cache le header par défaut pour tous les onglets
+      headerShown: false, // Cache le header par défaut pour tous les onglets
     }}>
       <Tabs.Screen
         name="books"
@@ -33,7 +36,16 @@ export default function TabLayout() {
         options={{
           title: "Prêts & Emprunts",
           tabBarIcon: ({ color, size}) => (
-            <Ionicons name="swap-horizontal-outline" size={size} color={color} />
+            <View>
+              <Ionicons name="swap-horizontal-outline" size={size} color={color} />
+              {totalNotifications > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {totalNotifications > 9 ? '9+' : totalNotifications}
+                  </Text>
+                </View>
+              )}
+            </View>
           ),
         }}
         listeners={{
@@ -85,3 +97,31 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+export default function TabLayout() {
+  return (
+    <NotificationsProvider>
+      <TabLayoutInner />
+    </NotificationsProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    backgroundColor: '#F44336',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+});

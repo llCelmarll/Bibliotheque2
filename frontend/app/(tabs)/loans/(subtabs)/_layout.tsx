@@ -1,13 +1,10 @@
 import { Tabs } from 'expo-router';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Platform, View, Text, StyleSheet } from 'react-native';
-import { useContactInvitations } from '@/hooks/useContactInvitations';
-import { useUserLoanRequests } from '@/hooks/useUserLoanRequests';
+import { useNotifications } from '@/contexts/NotificationsContext';
 
 export default function SubTabsLayout() {
-  const { pendingCount: invitationCount } = useContactInvitations();
-  const { pendingCount: loanRequestCount } = useUserLoanRequests();
-  const totalNotifications = invitationCount + loanRequestCount;
+  const { totalPendingCount: totalNotifications } = useNotifications();
 
   return (
     <Tabs
@@ -59,13 +56,13 @@ export default function SubTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="invitations"
+        name="notifications"
         options={{
-          title: 'Invitations',
+          title: 'Notifications',
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <View>
-              <MaterialIcons name="person-add" size={size} color={color} />
+              <Ionicons name="notifications-outline" size={size} color={color} />
               {totalNotifications > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>
