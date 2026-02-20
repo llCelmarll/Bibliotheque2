@@ -19,6 +19,9 @@ import { BookFilters } from "@/components/BookFilters";
 import { SimpleSearchFilters } from "@/components/SimpleSearchFilters";
 import { AdvancedSearchModal } from "@/components/AdvancedSearchModal";
 import { useBooks } from "@/hooks/useBooks";
+import { useNotifications } from "@/contexts/NotificationsContext";
+import { UserLoanRequestStatus } from "@/types/userLoanRequest";
+import BookCover from "@/components/BookCover";
 
 
 export default function Index() {
@@ -26,6 +29,8 @@ export default function Index() {
 	const [isGridView, setIsGridView] = useState(false);
 	const [advancedModalVisible, setAdvancedModalVisible] = useState(false);
 	const router = useRouter();
+	const { outgoingLoanRequests } = useNotifications();
+	const acceptedOutgoing = outgoingLoanRequests.filter(r => r.status === UserLoanRequestStatus.ACCEPTED);
 	const {
 		books,
 		loading,
@@ -185,6 +190,43 @@ export default function Index() {
 					onEndReached={handleLoadMore}
 					onEndReachedThreshold={0.5}
 					ListFooterComponent={renderFooter}
+					ListHeaderComponent={acceptedOutgoing.length > 0 ? (
+						<View style={styles.borrowedSection}>
+							<Text style={styles.borrowedSectionTitle}>
+								📚 Emprunts en cours ({acceptedOutgoing.length})
+							</Text>
+							{acceptedOutgoing.map(r => {
+								const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null;
+								const dueDate = r.due_date ? formatDate(r.due_date) : null;
+								const isOverdue = r.due_date ? new Date(r.due_date) < new Date() : false;
+								return (
+									<TouchableOpacity
+										key={r.id}
+										style={styles.borrowedItem}
+										onPress={() => router.push(`/(tabs)/loans/library/${r.lender_id}/book/${r.book.id}`)}
+										activeOpacity={0.7}
+									>
+										<BookCover
+											url={r.book.cover_url}
+											style={styles.borrowedCover}
+											containerStyle={styles.borrowedCoverContainer}
+											resizeMode="cover"
+										/>
+										<View style={styles.borrowedInfo}>
+											<Text style={styles.borrowedTitle} numberOfLines={2}>{r.book.title}</Text>
+											<Text style={styles.borrowedFrom}>Emprunté à {r.lender_username}</Text>
+											{dueDate && (
+												<Text style={[styles.borrowedDue, isOverdue && styles.borrowedOverdue]}>
+													{isOverdue ? '⚠️ ' : ''}Retour : {dueDate}
+												</Text>
+											)}
+										</View>
+										<MaterialIcons name="chevron-right" size={20} color="#9E9E9E" />
+									</TouchableOpacity>
+								);
+							})}
+						</View>
+					) : null}
 				/>
 			)}
 			
@@ -325,6 +367,64 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: '#666',
 		textAlign: 'center',
+	},
+	borrowedSection: {
+		marginBottom: 8,
+		backgroundColor: '#EDE9FE',
+		borderRadius: 10,
+		overflow: 'hidden',
+		borderWidth: 1,
+		borderColor: '#C4B5FD',
+	},
+	borrowedSectionTitle: {
+		fontSize: 13,
+		fontWeight: '700',
+		color: '#5B21B6',
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		backgroundColor: '#DDD6FE',
+	},
+	borrowedItem: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		padding: 10,
+		borderTopWidth: 1,
+		borderTopColor: '#C4B5FD',
+		gap: 10,
+	},
+	borrowedCoverContainer: {
+		width: 44,
+		height: 64,
+		borderRadius: 4,
+		backgroundColor: '#F0F0F0',
+		flexShrink: 0,
+	},
+	borrowedCover: {
+		width: 44,
+		height: 64,
+		borderRadius: 4,
+	},
+	borrowedInfo: {
+		flex: 1,
+	},
+	borrowedTitle: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#1F2937',
+		marginBottom: 2,
+	},
+	borrowedFrom: {
+		fontSize: 12,
+		color: '#6D28D9',
+		marginBottom: 2,
+	},
+	borrowedDue: {
+		fontSize: 11,
+		color: '#6B7280',
+	},
+	borrowedOverdue: {
+		color: '#DC2626',
+		fontWeight: '600',
 	},
 });
 

@@ -28,6 +28,9 @@ export  default function BookDetailScreen() {
 		return null;
 	}
 
+	const isReadOnly = !!book?.base?.borrowed_book &&
+		['active', 'overdue'].includes(book.base.borrowed_book.status as string);
+
 	return (
 		<>
 			<Stack.Screen
@@ -57,14 +60,14 @@ export  default function BookDetailScreen() {
 					<ErrorMessage message={error} onRetry={refetch}/>
 				) : book ? (
 					<View style={styles.content}>
-						<BookHeader 
-							book={book} 
+						<BookHeader
+							book={book}
+							readOnly={isReadOnly}
 							onBookDeleted={() => {
-								// Optionnel: rafraîchir les données ou naviguer
 								refetch();
 							}}
 						/>
-						<BookDetailTabs book={book} onBookUpdated={refetch}/>
+						<BookDetailTabs book={book} onBookUpdated={refetch} readOnly={isReadOnly}/>
 					</View>
 				) : null}
 			</View>

@@ -7,9 +7,10 @@ import { StarRating } from '@/components/StarRating';
 interface BookHeaderProps {
   book: BookDetail;
   onBookDeleted?: () => void;
+  readOnly?: boolean;
 }
 
-export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
+export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
   const coverUrl = book.base?.cover_url ||
     book.google_books?.imageLinks?.thumbnail ||
     undefined;
@@ -124,8 +125,8 @@ export function BookHeader({book, onBookDeleted}: BookHeaderProps) {
             </View>
           )}
 
-          {/* Actions seulement si le livre existe dans la base */}
-          {book.base?.id && (
+          {/* Actions seulement si le livre existe dans la base et n'est pas en lecture seule */}
+          {book.base?.id && !readOnly && (
             <BookActions
               bookId={book.base.id.toString()}
               bookTitle={book.base.title || "Titre inconnu"}

@@ -12,9 +12,10 @@ interface SharedBookViewProps {
     book: Book;
     onRequestPress: () => void;
     isUnavailable: boolean;
+    isAlreadyBorrowed?: boolean;
 }
 
-export function SharedBookView({ book, onRequestPress, isUnavailable }: SharedBookViewProps) {
+export function SharedBookView({ book, onRequestPress, isUnavailable, isAlreadyBorrowed }: SharedBookViewProps) {
     return (
         <View style={styles.container}>
             {/* Header : couverture + infos (même layout que BookHeader) */}
@@ -81,7 +82,14 @@ export function SharedBookView({ book, onRequestPress, isUnavailable }: SharedBo
             </View>
 
             {/* Action */}
-            {isUnavailable ? (
+            {isAlreadyBorrowed ? (
+                <View style={styles.alreadyBorrowedContainer}>
+                    <MaterialIcons name="check-circle" size={20} color="#7C3AED" />
+                    <Text style={styles.alreadyBorrowedText}>
+                        Vous empruntez actuellement ce livre
+                    </Text>
+                </View>
+            ) : isUnavailable ? (
                 <View style={styles.unavailableContainer}>
                     <MaterialIcons name="info-outline" size={20} color="#FF9800" />
                     <Text style={styles.unavailableText}>
@@ -224,6 +232,22 @@ const styles = StyleSheet.create({
     unavailableText: {
         fontSize: 14,
         color: '#FF9800',
+        fontWeight: '500',
+        flex: 1,
+    },
+    alreadyBorrowedContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: '#EDE9FE',
+        borderRadius: 8,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#C4B5FD',
+    },
+    alreadyBorrowedText: {
+        fontSize: 14,
+        color: '#7C3AED',
         fontWeight: '500',
         flex: 1,
     },

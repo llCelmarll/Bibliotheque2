@@ -28,7 +28,7 @@ function readStatusToIsRead(status: ReadStatus): boolean | null {
 // Dans BaseInfoTab.tsx
 export function BaseInfoTab() {
   const route = useRoute();
-  const { book, onBookUpdated } = route.params as { book: BookDetail; onBookUpdated?: () => void };
+  const { book, onBookUpdated, readOnly } = route.params as { book: BookDetail; onBookUpdated?: () => void; readOnly?: boolean };
 
   const [readStatus, setReadStatus] = useState<ReadStatus>(getReadStatus(book.base.is_read));
   const [readDate, setReadDate] = useState<string | null>(book.base.read_date || null);
@@ -233,91 +233,99 @@ export function BaseInfoTab() {
         />
       </CollapsibleSection>
 
-      <CollapsibleSection title="Lecture">
-        <View style={styles.infoRow}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.label}>Statut</Text>
+      {!readOnly && (
+        <CollapsibleSection title="Lecture">
+          <View style={styles.infoRow}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Statut</Text>
+            </View>
+            <View style={styles.segmentedContainer}>
+              {readStatus === 'unset' && (
+                <View style={[styles.segmentedButton, styles.segmentedButtonActive]}>
+                  <Text style={[styles.segmentedButtonText, styles.segmentedButtonTextActive]}>
+                    Non renseigné
+                  </Text>
+                </View>
+              )}
+              {clickableStatusOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[
+                    styles.segmentedButton,
+                    readStatus === option.key && styles.segmentedButtonActive,
+                    readStatus === option.key && option.key === 'read' && styles.segmentedButtonRead,
+                    readStatus === option.key && option.key === 'unread' && styles.segmentedButtonUnread,
+                  ]}
+                  onPress={() => handleReadStatusChange(option.key)}
+                >
+                  <Text style={[
+                    styles.segmentedButtonText,
+                    readStatus === option.key && styles.segmentedButtonTextActive,
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-          <View style={styles.segmentedContainer}>
-            {readStatus === 'unset' && (
-              <View style={[styles.segmentedButton, styles.segmentedButtonActive]}>
-                <Text style={[styles.segmentedButtonText, styles.segmentedButtonTextActive]}>
-                  Non renseigné
-                </Text>
-              </View>
-            )}
-            {clickableStatusOptions.map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.segmentedButton,
-                  readStatus === option.key && styles.segmentedButtonActive,
-                  readStatus === option.key && option.key === 'read' && styles.segmentedButtonRead,
-                  readStatus === option.key && option.key === 'unread' && styles.segmentedButtonUnread,
-                ]}
-                onPress={() => handleReadStatusChange(option.key)}
-              >
-                <Text style={[
-                  styles.segmentedButtonText,
-                  readStatus === option.key && styles.segmentedButtonTextActive,
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        {readStatus === 'read' && readDate && (
-          <InfoRow label="Date de lecture" value={formatDateOnly(readDate)} />
-        )}
-      </CollapsibleSection>
+          {readStatus === 'read' && readDate && (
+            <InfoRow label="Date de lecture" value={formatDateOnly(readDate)} />
+          )}
+        </CollapsibleSection>
+      )}
 
-      <CollapsibleSection title="Notation">
-        <View style={styles.infoRow}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.label}>Note</Text>
+      {!readOnly && (
+        <CollapsibleSection title="Notation">
+          <View style={styles.infoRow}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Note</Text>
+            </View>
+            <View style={styles.valueContainer}>
+              <StarRating
+                value={rating}
+                editable={true}
+                onChange={handleRatingChange}
+              />
+            </View>
           </View>
-          <View style={styles.valueContainer}>
-            <StarRating
-              value={rating}
-              editable={true}
-              onChange={handleRatingChange}
+        </CollapsibleSection>
+      )}
+
+      {!readOnly && (
+        <CollapsibleSection title="Prêt">
+          <View style={styles.infoRow}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Visible dans{'\n'}la bibliothèque partagée</Text>
+            </View>
+            <View style={[styles.valueContainer, { alignItems: 'center' }]}>
+              <Switch
+                value={isLendable}
+                onValueChange={handleIsLendableChange}
+                trackColor={{ false: '#E0E0E0', true: '#90CAF9' }}
+                thumbColor={isLendable ? '#2196F3' : '#9E9E9E'}
+              />
+            </View>
+          </View>
+        </CollapsibleSection>
+      )}
+
+      {!readOnly && (
+        <CollapsibleSection title="Notes personnelles">
+          <View style={styles.notesRow}>
+            <TextInput
+              style={styles.notesInput}
+              placeholder="Ajoutez vos notes personnelles..."
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+              value={notes}
+              onChangeText={setNotes}
+              onBlur={handleNotesBlur}
+              editable={!notesSaving}
             />
           </View>
-        </View>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Prêt">
-        <View style={styles.infoRow}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.label}>Visible dans{'\n'}la bibliothèque partagée</Text>
-          </View>
-          <View style={[styles.valueContainer, { alignItems: 'center' }]}>
-            <Switch
-              value={isLendable}
-              onValueChange={handleIsLendableChange}
-              trackColor={{ false: '#E0E0E0', true: '#90CAF9' }}
-              thumbColor={isLendable ? '#2196F3' : '#9E9E9E'}
-            />
-          </View>
-        </View>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Notes personnelles">
-        <View style={styles.notesRow}>
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Ajoutez vos notes personnelles..."
-            placeholderTextColor="#999"
-            multiline
-            numberOfLines={4}
-            value={notes}
-            onChangeText={setNotes}
-            onBlur={handleNotesBlur}
-            editable={!notesSaving}
-          />
-        </View>
-      </CollapsibleSection>
+        </CollapsibleSection>
+      )}
 
       <CollapsibleSection title="Métadonnées" defaultExpanded={false}>
         <InfoRow

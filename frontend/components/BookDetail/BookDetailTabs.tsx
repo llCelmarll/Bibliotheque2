@@ -9,11 +9,12 @@ import {OpenLibraryTab} from "@/components/BookDetail/OpenLibraryTab";
 interface BookDetailTabsProps {
 	book: BookDetail;
 	onBookUpdated?: () => void;
+	readOnly?: boolean;
 }
 
 const Tab = createMaterialTopTabNavigator();
 
-export function BookDetailTabs({book, onBookUpdated}: BookDetailTabsProps) {
+export function BookDetailTabs({book, onBookUpdated, readOnly}: BookDetailTabsProps) {
 	return (
 		<Tab.Navigator
 		screenOptions={{
@@ -26,7 +27,7 @@ export function BookDetailTabs({book, onBookUpdated}: BookDetailTabsProps) {
 				<Tab.Screen
 					name="Base"
 					component={BaseInfoTab}
-					initialParams={{book, onBookUpdated}}
+					initialParams={{book, onBookUpdated, readOnly}}
 					key={`base-${book.base.id}-${book.base.updated_at ?? ''}`}
 				/>
 			)}

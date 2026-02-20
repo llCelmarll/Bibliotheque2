@@ -18,12 +18,18 @@ import { userLoanRequestService } from '@/services/userLoanRequestService';
 import { Book } from '@/types/book';
 import { SharedBookView } from '@/components/BookDetail/SharedBookView';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { UserLoanRequestStatus } from '@/types/userLoanRequest';
 
 function SharedBookDetailScreen() {
     const router = useRouter();
     const { userId, bookId } = useLocalSearchParams();
     const lenderId = parseInt(userId as string);
     const bookIdNum = parseInt(bookId as string);
+    const { outgoingLoanRequests } = useNotifications();
+    const isAlreadyBorrowed = outgoingLoanRequests.some(
+        r => r.book.id === bookIdNum && r.status === UserLoanRequestStatus.ACCEPTED
+    );
 
     const [book, setBook] = useState<Book | null>(null);
     const [loading, setLoading] = useState(true);
@@ -127,6 +133,7 @@ function SharedBookDetailScreen() {
                 <SharedBookView
                     book={book}
                     isUnavailable={!!book.current_loan}
+                    isAlreadyBorrowed={isAlreadyBorrowed}
                     onRequestPress={() => setShowRequestModal(true)}
                 />
             </ScrollView>
