@@ -3,7 +3,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations
+from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account
 from app.db import init_db
 from app.config import COVERS_DIR
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +32,7 @@ tags_metadata = [
     {"name": "contacts", "description": "Contacts"},
     {"name": "contact-invitations", "description": "Invitations de contact"},
     {"name": "borrowers", "description": "Emprunteurs"},
+    {"name": "account", "description": "Gestion du compte (mot de passe, profil, suppression)"},
 ]
 
 app = FastAPI(
@@ -85,6 +86,7 @@ app.include_router(covers.router)
 app.include_router(user_loan_requests.router)
 app.include_router(users.router)
 app.include_router(contact_invitations.router)
+app.include_router(account.router)
 
 # Servir les images de couverture
 app.mount("/covers", StaticFiles(directory=str(COVERS_DIR)), name="covers")

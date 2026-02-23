@@ -117,6 +117,85 @@ Système de notification Ma Bibliothèque
         except Exception as e:
             print(f"❌ Erreur envoi notification email : {e}")
     
+    async def send_password_reset_email(self, email: str, reset_token: str):
+        """Envoie un email de réinitialisation de mot de passe à l'utilisateur"""
+
+        if not self.enabled:
+            print("📧 Notifications email désactivées")
+            return
+
+        if not self.email_user or not self.email_password:
+            print("⚠️ Configuration email manquante - email reset non envoyé")
+            return
+
+        try:
+            reset_url = f"https://mabibliotheque.ovh/auth/reset-password?token={reset_token}"
+            timestamp = datetime.now().strftime("%d/%m/%Y à %H:%M:%S")
+
+            msg = MIMEMultipart('alternative')
+            msg['From'] = f"Ma Bibliothèque <{self.email_from}>"
+            msg['To'] = email
+            msg['Subject'] = "🔑 Réinitialisation de votre mot de passe - Ma Bibliothèque"
+
+            text_body = f"""
+Bonjour,
+
+Vous avez demandé la réinitialisation de votre mot de passe sur Ma Bibliothèque.
+
+Cliquez sur le lien suivant pour choisir un nouveau mot de passe :
+{reset_url}
+
+Ce lien est valable 15 minutes (demande effectuée le {timestamp}).
+
+Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+Votre mot de passe actuel reste inchangé.
+
+Cordialement,
+Ma Bibliothèque
+            """
+
+            html_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #2196F3;">Réinitialisation de mot de passe</h2>
+  <p>Bonjour,</p>
+  <p>Vous avez demandé la réinitialisation de votre mot de passe sur <strong>Ma Bibliothèque</strong>.</p>
+  <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{reset_url}"
+       style="background-color: #2196F3; color: white; padding: 14px 28px;
+              text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold;">
+      Réinitialiser mon mot de passe
+    </a>
+  </p>
+  <p style="color: #888; font-size: 13px;">
+    Ce lien est valable <strong>15 minutes</strong> (demande effectuée le {timestamp}).<br>
+    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+    <a href="{reset_url}" style="color: #2196F3; word-break: break-all;">{reset_url}</a>
+  </p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #aaa; font-size: 12px;">
+    Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+    Votre mot de passe actuel reste inchangé.
+  </p>
+</body>
+</html>
+            """
+
+            msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
+            msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.email_user, self.email_password)
+                server.send_message(msg)
+
+            print(f"✅ Email reset envoyé à {email}")
+
+        except Exception as e:
+            print(f"❌ Erreur envoi email reset : {e}")
+
     def _format_additional_info(self, info: dict) -> str:
         """Formate les informations supplémentaires"""
         if not info:
