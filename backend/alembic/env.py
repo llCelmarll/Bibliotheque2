@@ -19,6 +19,7 @@ from app.models.Contact import Contact
 from app.models.BorrowedBook import BorrowedBook
 from app.models.UserLoanRequest import UserLoanRequest
 from app.models.ContactInvitation import ContactInvitation
+from app.models.PasswordResetToken import PasswordResetToken
 from sqlmodel import SQLModel
 
 # this is the Alembic Config object, which provides
