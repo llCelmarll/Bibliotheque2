@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import hashlib
 import re
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -13,29 +13,32 @@ from app.config.whitelist import is_email_allowed
 
 # Configuration de sécurité
 import os
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-not-for-production")  # Depuis variables d'environnement
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # Configuration du bearer token
 security = HTTPBearer()
 
-# Contexte bcrypt pour le hachage des mots de passe
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def _is_legacy_sha256(hashed_password: str) -> bool:
     """Détecte si le hash est un ancien SHA-256 hexadécimal (64 chars hex)."""
     return len(hashed_password) == 64 and all(c in "0123456789abcdef" for c in hashed_password)
 
+def _prepare_for_bcrypt(password: str) -> bytes:
+    """Pré-hache le mot de passe en SHA-256 pour contourner la limite 72 bytes de bcrypt."""
+    return hashlib.sha256(password.encode()).hexdigest().encode("utf-8")
+
 def hash_password(password: str) -> str:
-    """Hacher un mot de passe avec bcrypt."""
-    return pwd_context.hash(password)
+    """Hacher un mot de passe avec bcrypt (via pré-hash SHA-256)."""
+    return bcrypt.hashpw(_prepare_for_bcrypt(password), bcrypt.gensalt()).decode("utf-8")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Vérifier un mot de passe contre son hash (bcrypt ou SHA-256 legacy)."""
     if _is_legacy_sha256(hashed_password):
         return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(_prepare_for_bcrypt(plain_password), hashed_password.encode("utf-8"))
 
 class AuthService:
     def generate_tokens(self, user_id: str, remember_me: bool = False):
@@ -126,8 +129,8 @@ class AuthService:
             self.session.add(user)
             self.session.commit()
         else:
-            # Hash bcrypt : vérification normale
-            if not pwd_context.verify(password, user.hashed_password):
+            # Hash bcrypt : vérification normale (via pré-hash SHA-256)
+            if not bcrypt.checkpw(_prepare_for_bcrypt(password), user.hashed_password.encode("utf-8")):
                 return None
 
         return user
@@ -144,9 +147,11 @@ class AuthService:
         return encoded_jwt
 
     def verify_token(self, token: str) -> Optional[dict]:
-        """Vérifier et décoder un token JWT"""
+        """Vérifier et décoder un access token JWT (refuse les refresh tokens)."""
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            if payload.get("type") == "refresh":
+                return None
             return payload
         except JWTError:
             return None

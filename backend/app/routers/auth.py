@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
@@ -6,6 +7,8 @@ from app.schemas.auth import UserCreate, UserResponse
 from app.services.auth_service import AuthService, get_auth_service, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.User import User
 from app.utils.rate_limiter import rate_limiter
+
+logger = logging.getLogger("app")
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -56,10 +59,17 @@ async def login_for_access_token(
     tokens = auth_service.generate_tokens(user_id=str(user.id), remember_me=remember_me)
     return tokens
 @router.post("/refresh", response_model=Token)
-async def refresh_access_token(refresh_token: str, auth_service: AuthService = Depends(get_auth_service)):
+async def refresh_access_token(
+    request: Request,
+    refresh_token: str,
+    auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Renouvelle le token d'accès à partir du refresh token.
+    Protection rate limiting: 10 tentatives max par 15 minutes.
     """
+    client_ip = get_client_ip(request)
+    rate_limiter.check_and_record(client_ip, "refresh", max_attempts=10, window_minutes=15)
     return auth_service.renew_access_token(refresh_token)
 
 @router.post("/login-json", response_model=Token)
@@ -142,9 +152,10 @@ async def register_user(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error("Erreur création compte pour %s: %s", user_data.email, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la création du compte: {str(e)}"
+            detail="Une erreur interne est survenue. Veuillez réessayer."
         )
 
 @router.get("/me", response_model=UserRead)

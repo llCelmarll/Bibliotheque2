@@ -16,11 +16,30 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
+tags_metadata = [
+    {"name": "authentication", "description": "Inscription, connexion, tokens"},
+    {"name": "users", "description": "Profils utilisateurs"},
+    {"name": "books", "description": "Gestion des livres"},
+    {"name": "covers", "description": "Couvertures des livres"},
+    {"name": "scan", "description": "Scan ISBN"},
+    {"name": "authors", "description": "Auteurs"},
+    {"name": "publishers", "description": "Éditeurs"},
+    {"name": "genres", "description": "Genres"},
+    {"name": "series", "description": "Séries"},
+    {"name": "loans", "description": "Prêts entre utilisateurs"},
+    {"name": "user-loans", "description": "Demandes de prêt"},
+    {"name": "borrowed-books", "description": "Livres empruntés"},
+    {"name": "contacts", "description": "Contacts"},
+    {"name": "contact-invitations", "description": "Invitations de contact"},
+    {"name": "borrowers", "description": "Emprunteurs"},
+]
+
 app = FastAPI(
-    title="Bibliothèque API", 
-    version="0.1.0", 
+    title="Bibliothèque API",
+    version="0.1.0",
     lifespan=lifespan,
-    openapi_version="3.1.0"
+    openapi_version="3.1.0",
+    openapi_tags=tags_metadata,
 )
 
 # Logging de base (provisoire)
@@ -37,9 +56,16 @@ async def log_requests(request, call_next):
 	logger.info("HTTP %s %s -> %d (%d ms)", request.method, request.url.path, response.status_code, duration_ms)
 	return response
 
+env = os.getenv("ENV", os.getenv("ENVIRONMENT", "development"))
+if env == "development":
+    allowed_origins = ["*"]
+else:
+    origins_str = os.getenv("ALLOWED_ORIGINS", "https://mabibliotheque.ovh")
+    allowed_origins = [o.strip() for o in origins_str.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # en dev seulement
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]

@@ -11,6 +11,9 @@ from httpx import AsyncClient
 import tempfile
 import os
 
+# Doit être défini AVANT l'import de app.main (auth_service le lit au niveau module)
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
+
 from app.main import app as main_app
 from app.db import get_session
 from app.services.auth_service import get_current_user
