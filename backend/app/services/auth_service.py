@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import hashlib
 import re
+from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -19,13 +20,22 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 # Configuration du bearer token
 security = HTTPBearer()
 
+# Contexte bcrypt pour le hachage des mots de passe
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _is_legacy_sha256(hashed_password: str) -> bool:
+    """Détecte si le hash est un ancien SHA-256 hexadécimal (64 chars hex)."""
+    return len(hashed_password) == 64 and all(c in "0123456789abcdef" for c in hashed_password)
+
 def hash_password(password: str) -> str:
-    """Hash simple pour le développement (à remplacer par bcrypt en production)"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hacher un mot de passe avec bcrypt."""
+    return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Vérifier un mot de passe contre son hash"""
-    return hash_password(plain_password) == hashed_password
+    """Vérifier un mot de passe contre son hash (bcrypt ou SHA-256 legacy)."""
+    if _is_legacy_sha256(hashed_password):
+        return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+    return pwd_context.verify(plain_password, hashed_password)
 
 class AuthService:
     def generate_tokens(self, user_id: str, remember_me: bool = False):
@@ -102,14 +112,24 @@ class AuthService:
         return result.first()
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        """Authentifier un utilisateur"""
+        """Authentifier un utilisateur, avec upgrade transparent SHA-256 → bcrypt."""
         user = self.get_user_by_email(email)
-        if not user:
+        if not user or not user.is_active:
             return None
-        if not self.verify_password(password, user.hashed_password):
-            return None
-        if not user.is_active:
-            return None
+
+        if _is_legacy_sha256(user.hashed_password):
+            # Hash legacy SHA-256 : vérification puis upgrade vers bcrypt
+            sha256_hash = hashlib.sha256(password.encode()).hexdigest()
+            if sha256_hash != user.hashed_password:
+                return None
+            user.hashed_password = hash_password(password)
+            self.session.add(user)
+            self.session.commit()
+        else:
+            # Hash bcrypt : vérification normale
+            if not pwd_context.verify(password, user.hashed_password):
+                return None
+
         return user
 
     def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None):

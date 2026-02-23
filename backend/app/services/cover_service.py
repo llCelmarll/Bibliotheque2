@@ -44,8 +44,12 @@ class CoverService:
             img.thumbnail(MAX_SIZE, Image.Resampling.LANCZOS)
 
             CoverService._ensure_covers_dir()
-            output_path = COVERS_DIR / f"{book_id}.jpg"
+            output_path = (COVERS_DIR / f"{book_id}.jpg").resolve()
+            if not str(output_path).startswith(str(COVERS_DIR.resolve())):
+                raise HTTPException(status_code=400, detail="Chemin de fichier invalide")
             img.save(output_path, "JPEG", quality=JPEG_QUALITY, optimize=True)
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=400,
@@ -57,7 +61,9 @@ class CoverService:
     @staticmethod
     def delete_file(book_id: int) -> bool:
         """Supprime le fichier de couverture. Retourne True si supprimé."""
-        cover_path = COVERS_DIR / f"{book_id}.jpg"
+        cover_path = (COVERS_DIR / f"{book_id}.jpg").resolve()
+        if not str(cover_path).startswith(str(COVERS_DIR.resolve())):
+            return False
         if cover_path.exists():
             cover_path.unlink()
             return True
