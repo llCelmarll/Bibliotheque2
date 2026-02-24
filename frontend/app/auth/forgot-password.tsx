@@ -65,10 +65,18 @@ export default function ForgotPasswordScreen() {
           ) : null}
 
           {successMessage ? (
-            <View style={styles.successContainer}>
-              <MaterialIcons name="check-circle-outline" size={20} color="#4CAF50" />
-              <Text style={styles.successText}>{successMessage}</Text>
-            </View>
+            <>
+              <View style={styles.successContainer}>
+                <MaterialIcons name="check-circle-outline" size={20} color="#4CAF50" />
+                <Text style={styles.successText}>{successMessage}</Text>
+              </View>
+              <View style={styles.spamWarning}>
+                <MaterialIcons name="info-outline" size={16} color="#F57C00" />
+                <Text style={styles.spamWarningText}>
+                  Si vous ne voyez pas l'email dans votre boîte de réception, vérifiez votre dossier spam ou courrier indésirable.
+                </Text>
+              </View>
+            </>
           ) : null}
 
           {!successMessage ? (
@@ -232,5 +240,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#2196F3',
     fontWeight: '500',
+  },
+  spamWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF8E1',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F57C00',
+    gap: 8,
+  },
+  spamWarningText: {
+    color: '#E65100',
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
   },
 });
