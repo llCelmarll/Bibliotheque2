@@ -127,6 +127,38 @@ export default function SettingsScreen() {
         {/* Section Rappels calendrier */}
         <CalendarPreferencesSection />
 
+        {/* Section Gestion du compte */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Gestion du compte</Text>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { marginBottom: 12 }]}
+            onPress={() => router.push('/account/edit-profile')}
+          >
+            <MaterialIcons name="edit" size={24} color="#2196F3" />
+            <Text style={styles.updateButtonText}>Modifier le profil</Text>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { marginBottom: 12 }]}
+            onPress={() => router.push('/account/change-password')}
+          >
+            <MaterialIcons name="lock" size={24} color="#2196F3" />
+            <Text style={styles.updateButtonText}>Changer le mot de passe</Text>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push('/account/delete-account')}
+          >
+            <MaterialIcons name="delete-forever" size={24} color="#f44336" />
+            <Text style={styles.logoutButtonText}>Supprimer le compte</Text>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+        </View>
+
         {/* Section Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>

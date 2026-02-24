@@ -22,8 +22,8 @@ from app.schemas.auth import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     UpdateProfileRequest,
-    UserRead,
 )
+
 from app.services.auth_service import (
     get_auth_service,
     get_current_active_user,
@@ -194,7 +194,7 @@ async def change_password(
 # PATCH /account/profile
 # ---------------------------------------------------------------------------
 
-@router.patch("/profile", response_model=UserRead, status_code=200)
+@router.patch("/profile", status_code=200)
 async def update_profile(
     data: UpdateProfileRequest,
     current_user: User = Depends(get_current_active_user),
@@ -237,7 +237,13 @@ async def update_profile(
     session.commit()
     session.refresh(current_user)
 
-    return current_user
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at,
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -9,15 +9,19 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - Ajout de notes personnelles (texte libre) sur une fiche livre.
 - [x] **Recherche avancée**
     - Recherche multicritère (titre, auteur, catégorie, etc.).
-- [~] **Prêt / Emprunt entre utilisateurs** *(en cours)*
+- [x] **Prêt / Emprunt entre utilisateurs** *(en cours)*
     - [x] Modèle `UserLoanRequest` (demande de prêt inter-membres)
     - [x] Invitations bidirectionnelles entre utilisateurs (`ContactInvitation`)
     - [x] Partage de bibliothèque en lecture seule (`library_shared` sur Contact)
     - [x] Bibliothèque partagée paginée avec recherche (`GET /users/{id}/library`)
-    - [ ] Interface frontend (bibliothèque partagée, demandes, invitations)
+    - [x] Interface frontend (bibliothèque partagée, demandes, invitations)
 - [ ] **Découverte sociale avancée**
     - [ ] Profil public opt-in (visible sans invitation)
     - [ ] Recherche géographique de livres autour de soi
+- [ ] **Système de Recommandations**
+    - Suggérer éditeurs, genres et auteurs basés sur les autres utilisateurs.
+- [ ] **Communication / UX**
+    - Trouver un moyen d'informer les utilisateurs des fonctionnalités apportées par les mises à jour.
 
 ## Plateformes
 

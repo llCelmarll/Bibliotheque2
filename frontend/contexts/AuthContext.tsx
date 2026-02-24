@@ -34,6 +34,7 @@ interface AuthContextType {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateUser: (updatedUser: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -190,6 +191,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const updateUser = async (updatedUser: User) => {
+    setUser(updatedUser);
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+  };
+
   const logout = async () => {
   try {
       setIsLoading(true);
@@ -224,6 +230,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     register,
     logout,
     checkAuth,
+    updateUser,
   };
 
   return (
