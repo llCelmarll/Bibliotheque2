@@ -167,8 +167,9 @@ export default function ScanResultPage() {
 				page_count: importedData.pageCount || currentData?.page_count || 0,
 				isbn: importedData.isbn || currentData?.isbn || '',
 				genres: importedData.genres || currentData?.genres || [], // Fixed: use 'genres' not 'categories'
-				cover_url: importedData.thumbnail || currentData?.cover_url || '',
+				cover_url: currentData?.cover_url || importedData.thumbnail || '',
 				barcode: currentData?.barcode || '',
+				series: currentData?.series || [],
 			};
 
 			setFormData(updatedFormData);
@@ -336,7 +337,6 @@ export default function ScanResultPage() {
 						<BookForm
 							initialData={formData || data.suggested}
 							onSubmit={handleFormSubmit}
-							key={formData ? 'updated' : 'initial'} // Force re-render quand formData change
 						/>
 					</View>
 				)}

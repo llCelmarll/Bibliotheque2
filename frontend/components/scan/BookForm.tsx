@@ -186,16 +186,19 @@ export const BookForm: React.FC<BookFormProps> = ({
 																	}) => {
 	const formInitialValues = suggestedBookToFormData(initialData);
 	const formikRef = useRef<FormikProps<BookFormData> | null>(null);
+	const [localImageUri, setLocalImageUri] = useState<string | null>(null);
 
 	// Met à jour le formulaire quand les données initiales changent
 	useEffect(() => {
 		if (formikRef.current) {
 			const newValues = suggestedBookToFormData(initialData);
+			// Si une image locale est déjà sélectionnée, ne pas écraser cover_url avec une URL externe
+			if (localImageUri) {
+				newValues.cover_url = formikRef.current.values.cover_url;
+			}
 			formikRef.current.setValues(newValues);
 		}
 	}, [initialData]);
-
-	const [localImageUri, setLocalImageUri] = useState<string | null>(null);
 
 	const handleSubmit = async (values: BookFormData) => {
 		const bookCreate = formDataToBookCreate(values, forceOwnership);
