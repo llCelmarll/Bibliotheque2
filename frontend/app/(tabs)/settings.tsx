@@ -209,6 +209,16 @@ export default function SettingsScreen() {
         {/* Section Informations */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Application</Text>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { marginBottom: 12 }]}
+            onPress={() => router.push('/account/changelog')}
+          >
+            <MaterialIcons name="new-releases" size={24} color="#2196F3" />
+            <Text style={styles.updateButtonText}>Historique des versions</Text>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+
           <View style={styles.infoCard}>
             <Text style={styles.infoText}>Version de développement</Text>
             <Text style={styles.infoText}>Authentification activée</Text>

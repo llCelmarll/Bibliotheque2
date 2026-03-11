@@ -23,6 +23,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copier le code source
 COPY . .
 
+# Copier le changelog (copié depuis la racine du repo par le script de déploiement)
+COPY docs/CHANGELOG.json /app/docs/CHANGELOG.json
+
 # Créer le répertoire pour les données si nécessaire
 RUN mkdir -p /app/data/covers
 

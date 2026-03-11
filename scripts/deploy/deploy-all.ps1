@@ -110,6 +110,39 @@ if (-not $UpdateMessage) {
     }
 }
 
+# Optionnel : ajouter une entrée au changelog
+Write-Host ""
+$addChangelog = Read-Host "Ajouter une entree au changelog ? (O/N)"
+if ($addChangelog -eq "O" -or $addChangelog -eq "o") {
+    $changelogTitle = Read-Host "Titre de la mise a jour"
+    $changelogDesc = Read-Host "Description (fonctionnalites/corrections)"
+    $changelogType = Read-Host "Type (feature/fix/improvement) [feature par defaut]"
+    if (-not $changelogType -or $changelogType.Trim() -eq "") { $changelogType = "feature" }
+
+    # Lire la version actuelle depuis app.config.js
+    $repoRoot = Join-Path $PSScriptRoot "..\.."
+    $appConfigPath = Join-Path $repoRoot "frontend\app.config.js"
+    $appConfigContent = Get-Content $appConfigPath -Raw
+    $versionMatch = [regex]::Match($appConfigContent, '"version":\s*"([^"]+)"')
+    $currentVersion = if ($versionMatch.Success) { $versionMatch.Groups[1].Value } else { "0.0.0" }
+
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $newEntry = [ordered]@{
+        version     = $currentVersion
+        date        = $today
+        title       = $changelogTitle
+        description = $changelogDesc
+        type        = $changelogType
+    }
+
+    $changelogPath = Join-Path $repoRoot "docs\CHANGELOG.json"
+    $changelog = Get-Content $changelogPath -Raw | ConvertFrom-Json
+    if ($changelog -isnot [System.Array]) { $changelog = @($changelog) }
+    $updated = @($newEntry) + $changelog
+    $updated | ConvertTo-Json -Depth 5 | Set-Content $changelogPath -Encoding UTF8
+    Write-Host "Entree ajoutee au changelog (v$currentVersion - $changelogTitle)" -ForegroundColor Green
+}
+
 
 Write-Host "Parametres de deploiement :" -ForegroundColor Cyan
 Write-Host "Update Message pour l'app mobile OTA: $UpdateMessage" -ForegroundColor Cyan
@@ -150,6 +183,10 @@ if (-not $SkipBackend) {
     }
 
     Set-Location backend
+
+    # Copier le changelog dans le contexte de build
+    if (-not (Test-Path "docs")) { New-Item -ItemType Directory -Path "docs" | Out-Null }
+    Copy-Item -Path "..\docs\CHANGELOG.json" -Destination "docs\CHANGELOG.json" -Force
 
     # Build multi-architecture
     Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray

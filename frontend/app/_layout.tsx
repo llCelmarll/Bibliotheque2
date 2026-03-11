@@ -9,6 +9,8 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { UpdateChecker } from '@/components/UpdateChecker';
+import { WhatsNewModal } from '@/components/WhatsNewModal';
+import { useChangelog } from '@/utils/useChangelog';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -57,13 +59,15 @@ export default function RootLayout() {
 
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect as useReactEffect, useRef } from 'react';
+import { useEffect as useReactEffect, useRef, useState } from 'react';
 
 function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuth();
   const initialCheckDone = useRef(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const { hasNew, latestEntry, markAsSeen, loading: changelogLoading } = useChangelog();
 
   // Redirection uniquement au démarrage de l'app (une seule fois quand isLoading passe à false)
   useReactEffect(() => {
@@ -85,6 +89,18 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAuthenticated, segments, router]);
 
+  // Afficher le popup nouveautés une fois authentifié et changelog chargé
+  useReactEffect(() => {
+    if (isAuthenticated && !changelogLoading && hasNew && latestEntry) {
+      setShowWhatsNew(true);
+    }
+  }, [isAuthenticated, changelogLoading, hasNew, latestEntry]);
+
+  const handleCloseWhatsNew = () => {
+    setShowWhatsNew(false);
+    markAsSeen();
+  };
+
   // Afficher un loader UNIQUEMENT pendant le check initial d'authentification
   // Pas pendant les opérations login/register
   if (isLoading && !initialCheckDone.current) {
@@ -94,7 +110,18 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
       </View>
     );
   }
-  return children;
+  return (
+    <>
+      {children}
+      {showWhatsNew && latestEntry && (
+        <WhatsNewModal
+          visible={showWhatsNew}
+          entry={latestEntry}
+          onClose={handleCloseWhatsNew}
+        />
+      )}
+    </>
+  );
 }
 
 function RootLayoutNav() {
@@ -110,6 +137,7 @@ function RootLayoutNav() {
         <Stack.Screen name="account/change-password" options={{ headerShown: true, title: 'Changer le mot de passe' }} />
         <Stack.Screen name="account/edit-profile" options={{ headerShown: true, title: 'Modifier le profil' }} />
         <Stack.Screen name="account/delete-account" options={{ headerShown: true, title: 'Supprimer le compte' }} />
+        <Stack.Screen name="account/changelog" options={{ headerShown: true, title: 'Historique des versions' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         <Stack.Screen 

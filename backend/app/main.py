@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
 import os
+import json
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -101,6 +103,19 @@ async def read_root():
 async def health_check():
     min_app_version = os.environ.get("MIN_APP_VERSION", "1.0.0")
     return {"status": "ok", "min_app_version": min_app_version}
+
+# Route changelog
+@app.get("/changelog")
+async def get_changelog():
+    candidates = [
+        Path(__file__).parent.parent.parent / "docs" / "CHANGELOG.json",
+        Path("/app/docs/CHANGELOG.json"),
+    ]
+    for path in candidates:
+        if path.exists():
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    return []
 
 if __name__ == "__main__":
     import uvicorn
