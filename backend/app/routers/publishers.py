@@ -1,13 +1,12 @@
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from sqlmodel import Session, select
-from typing import List
-from app.models.Publisher import Publisher
+from sqlmodel import Session
 from app.models.User import User
 from app.schemas.Publisher import PublisherRead, PublisherCreate, PublisherUpdate
 from app.schemas.Search import PublisherSearchResult
 from app.db import get_session
 from app.services.publisher_service import PublisherService
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user, get_current_moderator_user
 
 router = APIRouter(
 	prefix="/publishers",
@@ -22,7 +21,7 @@ async def get_publishers(
 		current_user: User = Depends(get_current_user),
 		publisher_service: PublisherService = Depends(get_publisher_service)
 ):
-	return publisher_service.get_all(current_user.id)
+	return publisher_service.get_all()
 
 @router.get("/search", response_model=PublisherSearchResult)
 async def search_publishers(
@@ -32,7 +31,7 @@ async def search_publishers(
 		publisher_service: PublisherService = Depends(get_publisher_service)
 ):
 	"""Recherche fuzzy d'éditeurs"""
-	results = publisher_service.search_fuzzy(query, current_user.id, limit)
+	results = publisher_service.search_fuzzy(query, limit)
 	return PublisherSearchResult(
 		results=results,
 		total=len(results),
@@ -46,7 +45,7 @@ async def get_publisher_by_id(
 		current_user: User = Depends(get_current_user),
 		publisher_service: PublisherService = Depends(get_publisher_service)
 ):
-	return publisher_service.get_by_id(publisher_id, current_user.id)
+	return publisher_service.get_by_id(publisher_id)
 
 @router.post("", response_model=PublisherRead)
 async def create_publisher(
@@ -54,20 +53,21 @@ async def create_publisher(
 		current_user: User = Depends(get_current_user),
 		publisher_service: PublisherService = Depends(get_publisher_service)
 ):
-	return publisher_service.create(publisher, current_user.id)
+	return publisher_service.create(publisher)
 
 @router.put("", response_model=PublisherRead)
 async def update_publisher(
 		publisher: PublisherUpdate,
-		current_user: User = Depends(get_current_user),
+		current_user: User = Depends(get_current_moderator_user),
 		publisher_service: PublisherService = Depends(get_publisher_service)
 ):
-	return publisher_service.update(publisher, current_user.id)
+	return publisher_service.update(publisher)
 
 @router.delete("/{publisher_id}")
 async def delete_publisher(
 		publisher_id: int,
-		current_user: User = Depends(get_current_user),
+		replacement_id: Optional[int] = Query(None, description="ID de l'éditeur de remplacement si utilisé par des livres"),
+		current_user: User = Depends(get_current_moderator_user),
 		publisher_service: PublisherService = Depends(get_publisher_service)
 ):
-	return publisher_service.delete(publisher_id, current_user.id)
+	return publisher_service.delete(publisher_id, replacement_id)

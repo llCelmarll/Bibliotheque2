@@ -18,18 +18,17 @@ class SeriesRepository:
 		"""Retourne une série en fonction de son ID"""
 		return self.session.get(Series, series_id)
 
-	def get_by_name(self, name: str, owner_id: int) -> Optional[Series]:
-		"""Retourne une série en fonction de son nom et owner_id"""
+	def get_by_name(self, name: str) -> Optional[Series]:
+		"""Retourne une série en fonction de son nom"""
 		statement = select(Series).where(
-			func.lower(Series.name) == name.lower(),
-			Series.owner_id == owner_id
+			func.lower(Series.name) == name.lower()
 		)
 		result = self.session.exec(statement).first()
 		return result
 
-	def get_all(self, owner_id: int) -> List[Series]:
-		"""Retourne toutes les séries d'un utilisateur"""
-		statement = select(Series).where(Series.owner_id == owner_id).order_by(Series.name)
+	def get_all(self) -> List[Series]:
+		"""Retourne toutes les séries"""
+		statement = select(Series).order_by(Series.name)
 		results = self.session.exec(statement)
 		return list(results)
 
@@ -49,29 +48,26 @@ class SeriesRepository:
 		self.session.delete(series)
 		self.session.commit()
 
-	def search_fuzzy(self, query: str, owner_id: int, limit: int = 10) -> List[Series]:
-		"""Recherche fuzzy de séries par nom pour un utilisateur"""
+	def search_fuzzy(self, query: str, limit: int = 10) -> List[Series]:
+		"""Recherche fuzzy de séries par nom"""
 		if not query or len(query.strip()) < 2:
-			statement = select(Series).where(Series.owner_id == owner_id).limit(limit)
+			statement = select(Series).limit(limit)
 			results = self.session.exec(statement)
 			return list(results)
 
 		search_pattern = f"%{query.strip()}%"
 		statement = (
 			select(Series)
-			.where(
-				func.lower(Series.name).like(search_pattern.lower()),
-				Series.owner_id == owner_id
-			)
+			.where(func.lower(Series.name).like(search_pattern.lower()))
 			.limit(limit)
 		)
 		results = self.session.exec(statement)
 		return list(results)
 
-	def get_or_create(self, name: str, owner_id: int) -> Series:
+	def get_or_create(self, name: str) -> Series:
 		"""Retourne une série existante ou en crée une nouvelle"""
-		existing = self.get_by_name(name, owner_id)
+		existing = self.get_by_name(name)
 		if existing:
 			return existing
-		series = Series(name=name, owner_id=owner_id)
+		series = Series(name=name)
 		return self.create(series)

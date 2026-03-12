@@ -1,12 +1,12 @@
-from sqlmodel import Session, select
+from typing import List, Optional
+from sqlmodel import Session
 from fastapi import APIRouter, Depends, Query
 from app.schemas.Author import AuthorRead, AuthorUpdate, AuthorCreate
 from app.schemas.Search import AuthorSearchResult
 from app.services.author_service import AuthorService
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user, get_current_moderator_user
 from app.models.User import User
 from app.db import get_session
-from typing import List
 
 router = APIRouter(
 	prefix="/authors",
@@ -21,7 +21,7 @@ async def get_authors(
 		current_user: User = Depends(get_current_user),
 		author_service: AuthorService = Depends(get_author_service)
 ):
-	return author_service.get_all(current_user.id)
+	return author_service.get_all()
 
 @router.get("/search", response_model=AuthorSearchResult)
 async def search_authors(
@@ -31,7 +31,7 @@ async def search_authors(
 		author_service: AuthorService = Depends(get_author_service)
 ):
 	"""Recherche fuzzy d'auteurs"""
-	results = author_service.search_fuzzy(query, current_user.id, limit)
+	results = author_service.search_fuzzy(query, limit)
 	return AuthorSearchResult(
 		results=results,
 		total=len(results),
@@ -45,7 +45,7 @@ async def get_author_by_id(
 		current_user: User = Depends(get_current_user),
 		author_service: AuthorService = Depends(get_author_service)
 ):
-	return author_service.get_by_id(author_id, current_user.id)
+	return author_service.get_by_id(author_id)
 
 @router.post("", response_model=AuthorRead)
 async def create_author(
@@ -53,20 +53,21 @@ async def create_author(
 		current_user: User = Depends(get_current_user),
 		author_service: AuthorService = Depends(get_author_service)
 ):
-	return author_service.create(author, current_user.id)
+	return author_service.create(author)
 
 @router.put("", response_model=AuthorRead)
 async def update_author(
 		author: AuthorUpdate,
-		current_user: User = Depends(get_current_user),
+		current_user: User = Depends(get_current_moderator_user),
 		author_service: AuthorService = Depends(get_author_service)
 ):
-	return author_service.update(author, current_user.id)
+	return author_service.update(author)
 
 @router.delete("/{author_id}")
 async def delete_author(
 		author_id: int,
-		current_user: User = Depends(get_current_user),
+		replacement_id: Optional[int] = Query(None, description="ID de l'auteur de remplacement si utilisé par des livres"),
+		current_user: User = Depends(get_current_moderator_user),
 		author_service: AuthorService = Depends(get_author_service)
 ):
-	return author_service.delete(author_id, current_user.id)
+	return author_service.delete(author_id, replacement_id)

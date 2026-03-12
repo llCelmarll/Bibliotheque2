@@ -20,12 +20,10 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - [ ] Recherche géographique de livres autour de soi
 - [ ] **Système de Recommandations**
     - Suggérer éditeurs, genres et auteurs basés sur les autres utilisateurs.
-- [ ] **Communication / UX**
+- [x] **Communication / UX**
     - Trouver un moyen d'informer les utilisateurs des fonctionnalités apportées par les mises à jour.
 - [ ] **Mode Sombre**
     - Support du thème sombre pour l'application mobile.
-- [ ] **Référentiels Partagés**
-    - Gestion partagée des Auteurs, Genres, Éditeurs et Séries.
 
 ## Plateformes
 

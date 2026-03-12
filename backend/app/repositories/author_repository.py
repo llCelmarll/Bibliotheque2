@@ -19,20 +19,19 @@ class AuthorRepository:
 		"""Retourne un auteur en fonction de son ID."""
 		return self.session.get(Author, author_id)
 
-	def get_by_name(self, name: str, owner_id: int) -> Optional[Author]:
-		"""Retourne un auteur en fonction de son nom et owner_id."""
+	def get_by_name(self, name: str) -> Optional[Author]:
+		"""Retourne un auteur en fonction de son nom."""
 		if not name:
 			return None
 		statement = select(Author).where(
-			func.lower(Author.name) == name.lower(),
-			Author.owner_id == owner_id
+			func.lower(Author.name) == name.lower()
 		)
 		result =  self.session.exec(statement).first()
 		return result
 
-	def get_all(self, owner_id: int) -> List[Author]:
-		"""Retourne tous les auteurs d'un utilisateur."""
-		statement = select(Author).where(Author.owner_id == owner_id)
+	def get_all(self) -> List[Author]:
+		"""Retourne tous les auteurs."""
+		statement = select(Author)
 		results = self.session.exec(statement)
 		return list(results)
 
@@ -50,22 +49,17 @@ class AuthorRepository:
 		self.session.delete(author)
 		self.session.commit()
 
-	def search_fuzzy(self, query: str, owner_id: int, limit: int = 10) -> List[Author]:
-		"""Recherche fuzzy d'auteurs par nom pour un utilisateur"""
+	def search_fuzzy(self, query: str, limit: int = 10) -> List[Author]:
+		"""Recherche fuzzy d'auteurs par nom"""
 		if not query or len(query.strip()) < 2:
-			# Si requête trop courte, retourner les premiers résultats de l'utilisateur
-			statement = select(Author).where(Author.owner_id == owner_id).limit(limit)
+			statement = select(Author).limit(limit)
 			results = self.session.exec(statement)
 			return list(results)
 
-		# Recherche avec LIKE (insensible à la casse) pour cet utilisateur
 		search_pattern = f"%{query.strip()}%"
 		statement = (
 			select(Author)
-			.where(
-				func.lower(Author.name).like(search_pattern.lower()),
-				Author.owner_id == owner_id
-			)
+			.where(func.lower(Author.name).like(search_pattern.lower()))
 			.limit(limit)
 		)
 		results = self.session.exec(statement)

@@ -660,11 +660,15 @@ class BookService:
                     )
                 logger.info("✅ Auteur existant utilisé (ID): id=%s name='%s'", author.id, author.name)
 
-            # Si c'est une chaîne (nom), créer directement
+            # Si c'est une chaîne (nom), récupérer ou créer
             elif isinstance(author_item, str):
-                logger.info("🆕 Création nouvel auteur (str): name='%s'", author_item)
-                author = Author(name=author_item, owner_id=self.user_id)
-                author_repo.create(author)
+                author = author_repo.get_by_name(author_item)
+                if not author:
+                    logger.info("🆕 Création nouvel auteur (str): name='%s'", author_item)
+                    author = Author(name=author_item)
+                    author_repo.create(author)
+                else:
+                    logger.info("✅ Auteur existant réutilisé (str): id=%s name='%s'", author.id, author.name)
 
             # Si c'est un objet (dict)
             elif isinstance(author_item, dict):
@@ -687,9 +691,13 @@ class BookService:
                 # Sinon, créer directement avec le nom fourni (pas de recherche pour éviter les associations incorrectes)
                 elif 'name' in author_item:
                     author_name = author_item['name']
-                    logger.info("🆕 Création nouvel auteur (dict.name): name='%s'", author_name)
-                    author = Author(name=author_name, owner_id=self.user_id)
-                    author_repo.create(author)
+                    author = author_repo.get_by_name(author_name)
+                    if not author:
+                        logger.info("🆕 Création nouvel auteur (dict.name): name='%s'", author_name)
+                        author = Author(name=author_name)
+                        author_repo.create(author)
+                    else:
+                        logger.info("✅ Auteur existant réutilisé (dict.name): id=%s name='%s'", author.id, author.name)
                 else:
                     raise HTTPException(
                         status_code=400,
@@ -732,11 +740,15 @@ class BookService:
                     )
                 logger.info("✅ Genre existant utilisé (ID): id=%s name='%s'", genre.id, genre.name)
 
-            # Si c'est une chaîne (nom), créer directement
+            # Si c'est une chaîne (nom), récupérer ou créer
             elif isinstance(genre_item, str):
-                logger.info("🆕 Création nouveau genre (str): name='%s'", genre_item)
-                genre = Genre(name=genre_item, owner_id=self.user_id)
-                genre_repo.create(genre)
+                genre = genre_repo.get_by_name(genre_item)
+                if not genre:
+                    logger.info("🆕 Création nouveau genre (str): name='%s'", genre_item)
+                    genre = Genre(name=genre_item)
+                    genre_repo.create(genre)
+                else:
+                    logger.info("✅ Genre existant réutilisé (str): id=%s name='%s'", genre.id, genre.name)
 
             # Si c'est un objet (dict)
             elif isinstance(genre_item, dict):
@@ -759,9 +771,13 @@ class BookService:
                 # Sinon, créer directement avec le nom fourni (pas de recherche pour éviter les associations incorrectes)
                 elif 'name' in genre_item:
                     genre_name = genre_item['name']
-                    logger.info("🆕 Création nouveau genre (dict.name): name='%s'", genre_name)
-                    genre = Genre(name=genre_name, owner_id=self.user_id)
-                    genre_repo.create(genre)
+                    genre = genre_repo.get_by_name(genre_name)
+                    if not genre:
+                        logger.info("🆕 Création nouveau genre (dict.name): name='%s'", genre_name)
+                        genre = Genre(name=genre_name)
+                        genre_repo.create(genre)
+                    else:
+                        logger.info("✅ Genre existant réutilisé (dict.name): id=%s name='%s'", genre.id, genre.name)
                 else:
                     raise HTTPException(
                         status_code=400,
@@ -799,7 +815,7 @@ class BookService:
 
             elif isinstance(series_item, str):
                 logger.info("🆕 Création/récupération série (str): name='%s'", series_item)
-                series = series_repo.get_or_create(series_item, self.user_id)
+                series = series_repo.get_or_create(series_item)
 
             elif isinstance(series_item, dict):
                 volume_number = series_item.get('volume_number')
@@ -821,7 +837,7 @@ class BookService:
                 elif 'name' in series_item:
                     series_name = series_item['name']
                     logger.info("🆕 Création/récupération série (dict.name): name='%s'", series_name)
-                    series = series_repo.get_or_create(series_name, self.user_id)
+                    series = series_repo.get_or_create(series_name)
                 else:
                     raise HTTPException(
                         status_code=400,
@@ -873,11 +889,15 @@ class BookService:
             logger.info("✅ Éditeur existant utilisé (ID): id=%s name='%s'", publisher.id, publisher.name)
             return publisher.id
 
-        # Si c'est une chaîne (nom), créer directement
+        # Si c'est une chaîne (nom), récupérer ou créer
         elif isinstance(publisher_data, str):
-            logger.info("🆕 Création nouvel éditeur (str): name='%s'", publisher_data)
-            publisher = Publisher(name=publisher_data, owner_id=self.user_id)
-            publisher_repo.create(publisher)
+            publisher = publisher_repo.get_by_name(publisher_data)
+            if not publisher:
+                logger.info("🆕 Création nouvel éditeur (str): name='%s'", publisher_data)
+                publisher = Publisher(name=publisher_data)
+                publisher_repo.create(publisher)
+            else:
+                logger.info("✅ Éditeur existant réutilisé (str): id=%s name='%s'", publisher.id, publisher.name)
             return publisher.id
 
         # Si c'est un objet (dict)
@@ -902,9 +922,13 @@ class BookService:
             # Sinon, créer directement avec le nom fourni (pas de recherche pour éviter les associations incorrectes)
             elif 'name' in publisher_data:
                 publisher_name = publisher_data['name']
-                logger.info("🆕 Création nouvel éditeur (dict.name): name='%s'", publisher_name)
-                publisher = Publisher(name=publisher_name, owner_id=self.user_id)
-                publisher_repo.create(publisher)
+                publisher = publisher_repo.get_by_name(publisher_name)
+                if not publisher:
+                    logger.info("🆕 Création nouvel éditeur (dict.name): name='%s'", publisher_name)
+                    publisher = Publisher(name=publisher_name)
+                    publisher_repo.create(publisher)
+                else:
+                    logger.info("✅ Éditeur existant réutilisé (dict.name): id=%s name='%s'", publisher.id, publisher.name)
                 return publisher.id
             else:
                 raise HTTPException(

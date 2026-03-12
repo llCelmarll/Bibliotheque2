@@ -18,20 +18,19 @@ class PublisherRepository:
 		"""Retourne un éditeur en fonction de son ID"""
 		return self.session.get(Publisher, publisher_id)
 
-	def get_by_name(self, name: str, owner_id: int) -> Optional[Publisher]:
-		"""Retourne un éditeur en fonction de son nom et owner_id"""
+	def get_by_name(self, name: str) -> Optional[Publisher]:
+		"""Retourne un éditeur en fonction de son nom"""
 		if not name:
 			return None
 		statement = select(Publisher).where(
-			func.lower(Publisher.name) == name.lower(),
-			Publisher.owner_id == owner_id
+			func.lower(Publisher.name) == name.lower()
 		)
 		result =  self.session.exec(statement).first()
 		return result
 
-	def get_all(self, owner_id: int) -> List[Publisher]:
-		"""Retourne tous les éditeurs d'un utilisateur"""
-		statement = select(Publisher).where(Publisher.owner_id == owner_id)
+	def get_all(self) -> List[Publisher]:
+		"""Retourne tous les éditeurs"""
+		statement = select(Publisher)
 		results = self.session.exec(statement)
 		return list(results)
 
@@ -49,22 +48,17 @@ class PublisherRepository:
 		self.session.delete(publisher)
 		self.session.commit()
 
-	def search_fuzzy(self, query: str, owner_id: int, limit: int = 10) -> List[Publisher]:
-		"""Recherche fuzzy d'éditeurs par nom pour un utilisateur"""
+	def search_fuzzy(self, query: str, limit: int = 10) -> List[Publisher]:
+		"""Recherche fuzzy d'éditeurs par nom"""
 		if not query or len(query.strip()) < 2:
-			# Si requête trop courte, retourner les premiers résultats de l'utilisateur
-			statement = select(Publisher).where(Publisher.owner_id == owner_id).limit(limit)
+			statement = select(Publisher).limit(limit)
 			results = self.session.exec(statement)
 			return list(results)
 
-		# Recherche avec LIKE (insensible à la casse) pour cet utilisateur
 		search_pattern = f"%{query.strip()}%"
 		statement = (
 			select(Publisher)
-			.where(
-				func.lower(Publisher.name).like(search_pattern.lower()),
-				Publisher.owner_id == owner_id
-			)
+			.where(func.lower(Publisher.name).like(search_pattern.lower()))
 			.limit(limit)
 		)
 		results = self.session.exec(statement)

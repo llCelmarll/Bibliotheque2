@@ -17,7 +17,6 @@ class AuthorFactory(factory.Factory):
         model = Author
 
     name = Faker('name')
-    owner_id = factory.Sequence(lambda n: n + 1)
 
 
 class PublisherFactory(factory.Factory):
@@ -27,7 +26,6 @@ class PublisherFactory(factory.Factory):
         model = Publisher
 
     name = Faker('company')
-    owner_id = factory.Sequence(lambda n: n + 1)
 
 
 class GenreFactory(factory.Factory):
@@ -37,7 +35,6 @@ class GenreFactory(factory.Factory):
         model = Genre
 
     name = Faker('word')
-    owner_id = factory.Sequence(lambda n: n + 1)
 
 
 class BookFactory(factory.Factory):

@@ -1,6 +1,13 @@
 from typing import Optional, List, TYPE_CHECKING
+from enum import Enum
 from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship, DateTime
 from datetime import datetime
+
+
+class UserRole(str, Enum):
+    user = "user"
+    moderator = "moderator"
+    admin = "admin"
 
 if TYPE_CHECKING:
     from app.models.Book import Book
@@ -19,6 +26,9 @@ class User(SQLModel, table=True):
     email: str = Field(sa_column=Column(String, nullable=False, unique=True, index=True))
     username: str = Field(sa_column=Column(String, nullable=False))
     hashed_password: str = Field(sa_column=Column(String, nullable=False))
+
+    # Rôle
+    role: str = Field(default=UserRole.user, sa_column=Column(String, nullable=False, server_default="user"))
 
     # État du compte
     is_active: bool = Field(default=True)
