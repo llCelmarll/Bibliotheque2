@@ -10,11 +10,13 @@ Rend les entités Authors, Genres, Publishers et Series partagées entre tous le
 - Ajoute une contrainte UNIQUE(name) sur chaque table
 - Ajoute la colonne 'role' à la table users (valeurs: user, moderator, admin)
 """
+import logging
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 
+log = logging.getLogger("alembic.runtime.migration")
 
 revision: str = 'c4d5e6f7a8b9'
 down_revision: Union[str, None] = 'a8f3c2b1d9e4'
@@ -22,12 +24,24 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _count(bind, query: str) -> int:
+    return bind.execute(sa.text(query)).scalar()
+
+
 def upgrade() -> None:
+    bind = op.get_bind()
+
     # === AJOUT DU RÔLE UTILISATEUR ===
+    log.info("[migration] Ajout de la colonne 'role' sur la table users")
     op.add_column('users', sa.Column('role', sa.String(), nullable=False, server_default='user'))
+    nb_users = _count(bind, "SELECT COUNT(*) FROM users")
+    log.info("[migration] %d utilisateur(s) — tous auront le rôle 'user' par défaut", nb_users)
 
     # === AUTHORS ===
-    # Réassigner les liens book_author_link vers l'id canonique (MIN(id) par nom)
+    nb_authors_before = _count(bind, "SELECT COUNT(*) FROM authors")
+    nb_duplicates = _count(bind, "SELECT COUNT(*) FROM authors WHERE id NOT IN (SELECT MIN(id) FROM authors GROUP BY LOWER(name))")
+    log.info("[migration] AUTHORS : %d entrée(s) dont %d doublon(s) à supprimer", nb_authors_before, nb_duplicates)
+
     op.execute("""
         UPDATE book_author_link
         SET author_id = (
@@ -37,16 +51,17 @@ def upgrade() -> None:
         )
         WHERE author_id IS NOT NULL
     """)
+    log.info("[migration] AUTHORS : liens book_author_link réassignés vers l'id canonique")
 
-    # Supprimer les auteurs en double (garder MIN(id) par nom)
     op.execute("""
         DELETE FROM authors
         WHERE id NOT IN (
             SELECT MIN(id) FROM authors GROUP BY LOWER(name)
         )
     """)
+    nb_authors_after = _count(bind, "SELECT COUNT(*) FROM authors")
+    log.info("[migration] AUTHORS : %d supprimé(s), %d restant(s)", nb_duplicates, nb_authors_after)
 
-    # Supprimer la contrainte unique (name, owner_id)
     with op.batch_alter_table('authors', schema=None) as batch_op:
         batch_op.drop_constraint('uq_author_name_owner', type_='unique')
         batch_op.drop_constraint('authors_owner_id_fkey', type_='foreignkey')
@@ -57,8 +72,13 @@ def upgrade() -> None:
     with op.batch_alter_table('authors', schema=None) as batch_op:
         batch_op.create_index('ix_authors_name', ['name'])
         batch_op.create_unique_constraint('uq_author_name', ['name'])
+    log.info("[migration] AUTHORS : contrainte UNIQUE(name) créée")
 
     # === GENRES ===
+    nb_genres_before = _count(bind, "SELECT COUNT(*) FROM genres")
+    nb_duplicates = _count(bind, "SELECT COUNT(*) FROM genres WHERE id NOT IN (SELECT MIN(id) FROM genres GROUP BY LOWER(name))")
+    log.info("[migration] GENRES : %d entrée(s) dont %d doublon(s) à supprimer", nb_genres_before, nb_duplicates)
+
     op.execute("""
         UPDATE book_genre_link
         SET genre_id = (
@@ -68,6 +88,7 @@ def upgrade() -> None:
         )
         WHERE genre_id IS NOT NULL
     """)
+    log.info("[migration] GENRES : liens book_genre_link réassignés vers l'id canonique")
 
     op.execute("""
         DELETE FROM genres
@@ -75,6 +96,8 @@ def upgrade() -> None:
             SELECT MIN(id) FROM genres GROUP BY LOWER(name)
         )
     """)
+    nb_genres_after = _count(bind, "SELECT COUNT(*) FROM genres")
+    log.info("[migration] GENRES : %d supprimé(s), %d restant(s)", nb_duplicates, nb_genres_after)
 
     with op.batch_alter_table('genres', schema=None) as batch_op:
         batch_op.drop_constraint('uq_genre_name_owner', type_='unique')
@@ -86,9 +109,13 @@ def upgrade() -> None:
     with op.batch_alter_table('genres', schema=None) as batch_op:
         batch_op.create_index('ix_genres_name', ['name'])
         batch_op.create_unique_constraint('uq_genre_name', ['name'])
+    log.info("[migration] GENRES : contrainte UNIQUE(name) créée")
 
     # === PUBLISHERS ===
-    # Pour les éditeurs, la FK est sur books.publisher_id
+    nb_publishers_before = _count(bind, "SELECT COUNT(*) FROM publishers")
+    nb_duplicates = _count(bind, "SELECT COUNT(*) FROM publishers WHERE id NOT IN (SELECT MIN(id) FROM publishers GROUP BY LOWER(name))")
+    log.info("[migration] PUBLISHERS : %d entrée(s) dont %d doublon(s) à supprimer", nb_publishers_before, nb_duplicates)
+
     op.execute("""
         UPDATE books
         SET publisher_id = (
@@ -98,6 +125,7 @@ def upgrade() -> None:
         )
         WHERE publisher_id IS NOT NULL
     """)
+    log.info("[migration] PUBLISHERS : FK books.publisher_id réassignées vers l'id canonique")
 
     op.execute("""
         DELETE FROM publishers
@@ -105,6 +133,8 @@ def upgrade() -> None:
             SELECT MIN(id) FROM publishers GROUP BY LOWER(name)
         )
     """)
+    nb_publishers_after = _count(bind, "SELECT COUNT(*) FROM publishers")
+    log.info("[migration] PUBLISHERS : %d supprimé(s), %d restant(s)", nb_duplicates, nb_publishers_after)
 
     with op.batch_alter_table('publishers', schema=None) as batch_op:
         batch_op.drop_constraint('uq_publisher_name_owner', type_='unique')
@@ -116,8 +146,13 @@ def upgrade() -> None:
     with op.batch_alter_table('publishers', schema=None) as batch_op:
         batch_op.create_index('ix_publishers_name', ['name'])
         batch_op.create_unique_constraint('uq_publisher_name', ['name'])
+    log.info("[migration] PUBLISHERS : contrainte UNIQUE(name) créée")
 
     # === SERIES ===
+    nb_series_before = _count(bind, "SELECT COUNT(*) FROM series")
+    nb_duplicates = _count(bind, "SELECT COUNT(*) FROM series WHERE id NOT IN (SELECT MIN(id) FROM series GROUP BY LOWER(name))")
+    log.info("[migration] SERIES : %d entrée(s) dont %d doublon(s) à supprimer", nb_series_before, nb_duplicates)
+
     op.execute("""
         UPDATE book_series_link
         SET series_id = (
@@ -127,6 +162,7 @@ def upgrade() -> None:
         )
         WHERE series_id IS NOT NULL
     """)
+    log.info("[migration] SERIES : liens book_series_link réassignés vers l'id canonique")
 
     op.execute("""
         DELETE FROM series
@@ -134,6 +170,8 @@ def upgrade() -> None:
             SELECT MIN(id) FROM series GROUP BY LOWER(name)
         )
     """)
+    nb_series_after = _count(bind, "SELECT COUNT(*) FROM series")
+    log.info("[migration] SERIES : %d supprimé(s), %d restant(s)", nb_duplicates, nb_series_after)
 
     with op.batch_alter_table('series', schema=None) as batch_op:
         batch_op.drop_constraint('uq_series_name_owner', type_='unique')
@@ -143,6 +181,9 @@ def upgrade() -> None:
 
     with op.batch_alter_table('series', schema=None) as batch_op:
         batch_op.create_unique_constraint('uq_series_name', ['name'])
+    log.info("[migration] SERIES : contrainte UNIQUE(name) créée")
+
+    log.info("[migration] Migration c4d5e6f7a8b9 terminée avec succès")
 
 
 def downgrade() -> None:
