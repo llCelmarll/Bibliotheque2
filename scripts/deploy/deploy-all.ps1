@@ -110,37 +110,17 @@ if (-not $UpdateMessage) {
     }
 }
 
-# Optionnel : ajouter une entrée au changelog
+# Collecter les infos du changelog maintenant (avant le bump), mais écrire après
 Write-Host ""
 $addChangelog = Read-Host "Ajouter une entree au changelog ? (O/N)"
+$changelogTitle = $null
+$changelogDesc = $null
+$changelogType = $null
 if ($addChangelog -eq "O" -or $addChangelog -eq "o") {
     $changelogTitle = Read-Host "Titre de la mise a jour"
     $changelogDesc = Read-Host "Description (fonctionnalites/corrections)"
     $changelogType = Read-Host "Type (feature/fix/improvement) [feature par defaut]"
     if (-not $changelogType -or $changelogType.Trim() -eq "") { $changelogType = "feature" }
-
-    # Lire la version actuelle depuis app.config.js
-    $repoRoot = Join-Path $PSScriptRoot "..\.."
-    $appConfigPath = Join-Path $repoRoot "frontend\app.config.js"
-    $appConfigContent = Get-Content $appConfigPath -Raw
-    $versionMatch = [regex]::Match($appConfigContent, '"version":\s*"([^"]+)"')
-    $currentVersion = if ($versionMatch.Success) { $versionMatch.Groups[1].Value } else { "0.0.0" }
-
-    $today = Get-Date -Format "yyyy-MM-dd"
-    $newEntry = [ordered]@{
-        version     = $currentVersion
-        date        = $today
-        title       = $changelogTitle
-        description = $changelogDesc
-        type        = $changelogType
-    }
-
-    $changelogPath = Join-Path $repoRoot "docs\CHANGELOG.json"
-    $changelog = Get-Content $changelogPath -Raw | ConvertFrom-Json
-    if ($changelog -isnot [System.Array]) { $changelog = @($changelog) }
-    $updated = @($newEntry) + $changelog
-    $updated | ConvertTo-Json -Depth 5 | Set-Content $changelogPath -Encoding UTF8
-    Write-Host "Entree ajoutee au changelog (v$currentVersion - $changelogTitle)" -ForegroundColor Green
 }
 
 
@@ -166,6 +146,31 @@ if (-not $SkipApk -and -not $SkipBuild) {
         Write-Host "Erreur lors de l'incrementation de version" -ForegroundColor Red
         exit 1
     }
+}
+
+# Ecriture du changelog APRES le bump (pour avoir la bonne version)
+if ($changelogTitle) {
+    $repoRoot = Join-Path $PSScriptRoot "..\.."
+    $appConfigPath = Join-Path $repoRoot "frontend\app.config.js"
+    $appConfigContent = Get-Content $appConfigPath -Raw
+    $versionMatch = [regex]::Match($appConfigContent, 'version:\s*"([^"]+)"')
+    $currentVersion = if ($versionMatch.Success) { $versionMatch.Groups[1].Value } else { "0.0.0" }
+
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $newEntry = [ordered]@{
+        version     = $currentVersion
+        date        = $today
+        title       = $changelogTitle
+        description = $changelogDesc
+        type        = $changelogType
+    }
+
+    $changelogPath = Join-Path $repoRoot "docs\CHANGELOG.json"
+    $changelog = Get-Content $changelogPath -Raw | ConvertFrom-Json
+    if ($changelog -isnot [System.Array]) { $changelog = @($changelog) }
+    $updated = @($newEntry) + $changelog
+    $updated | ConvertTo-Json -Depth 5 | Set-Content $changelogPath -Encoding UTF8
+    Write-Host "Entree ajoutee au changelog (v$currentVersion - $changelogTitle)" -ForegroundColor Green
 }
 
 # Backup PostgreSQL avant deploiement

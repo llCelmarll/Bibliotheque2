@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.2.1",
+    "date": "2026-03-13",
+    "title": "Bibliothèque partagée et historique des versions",
+    "description": "Auteurs, genres, éditeurs et séries sont désormais partagés entre tous les utilisateurs. Les données dupliquées sont automatiquement fusionnées. Ajout d'un historique des mises à jour dans l'application.",
+    "type": "feature"
+  },
+  {
     "version": "1.2.0",
     "date": "2026-03-02",
     "title": "Gestion des comptes",

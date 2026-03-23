@@ -101,10 +101,10 @@ Write-Host ""
 
 # Verification de la sante du container
 Write-Host "Verification de la sante du container..." -ForegroundColor Yellow
-Start-Sleep -Seconds 10
+Start-Sleep -Seconds 15
 
 # Verifier les logs pour les migrations
-$logs = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker logs $CONTAINER_NAME 2>&1 | tail -5"
+$logs = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker logs $CONTAINER_NAME 2>&1 | tail -50"
 Write-Host $logs -ForegroundColor Gray
 
 Write-Host ""
