@@ -183,8 +183,10 @@ class BookService:
         book_read.has_borrow_history = len(all_borrows) > 0
 
         book_data['base'] = book_read.model_dump()
-        book_data['google_books'] = await fetch_google_books(base_book.isbn)
-        book_data['open_library'] = await fetch_openlibrary(base_book.isbn)
+        google_data, _ = await fetch_google_books(base_book.isbn)
+        book_data['google_books'] = google_data
+        openlibrary_data, _ = await fetch_openlibrary(base_book.isbn)
+        book_data['open_library'] = openlibrary_data
         return book_data
 
     def update_book(self, book_id: int, book_data: BookUpdate) -> Book:

@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
   Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -104,13 +103,10 @@ export default function LoginScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.header}>
-            {Platform.OS === 'web' && (
-              <Image
-                source={require('@/assets/icon.png')}
-                style={styles.logo}
-              />
-            )}
-            <Text style={[styles.title, { color: theme.textPrimary }]}>Bibliothèque</Text>
+            <View style={[styles.logoContainer, { backgroundColor: theme.accent }]}>
+              <MaterialIcons name="menu-book" size={44} color={theme.textInverse} />
+            </View>
+            <Text style={[styles.title, { color: theme.textPrimary }]}>Ma Bibliothèque</Text>
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Connectez-vous à votre compte</Text>
           </View>
 
@@ -240,10 +236,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 20,
+  logoContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   downloadButton: {
     paddingVertical: 12,
