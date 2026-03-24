@@ -6,12 +6,14 @@ import { useEffect, useState } from "react";
 import * as Updates from 'expo-updates';
 import ImportCSV from "@/components/ImportCSV";
 import { CalendarPreferencesSection } from "@/components/settings/CalendarPreferencesSection";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, useThemeControls } from "@/contexts/ThemeContext";
+import { themes, ThemeName, AppTheme } from '@/constants/Theme';
 
 export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const theme = useTheme();
+  const { themeName, setTheme } = useThemeControls();
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{
     updateId?: string;
@@ -107,7 +109,10 @@ export default function SettingsScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.bgPrimary }]}>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>⚙️ Paramètres</Text>
+        <View style={styles.titleRow}>
+          <MaterialIcons name="settings" size={28} color={theme.accent} />
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Paramètres</Text>
+        </View>
 
         {/* Section Utilisateur */}
         <View style={styles.section}>
@@ -221,8 +226,53 @@ export default function SettingsScreen() {
             <MaterialIcons name="chevron-right" size={24} color={theme.borderMedium} />
           </TouchableOpacity>
 
-          {/* TODO: Sélecteur de thème */}
-          {/* <ThemeSelector /> */}
+          {/* Sélecteur de thème */}
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary, marginTop: 16, marginBottom: 10 }]}>Apparence</Text>
+          <View style={styles.themesGrid}>
+            {(Object.entries(themes) as [ThemeName, AppTheme][]).map(([name, t]) => (
+              <TouchableOpacity
+                key={name}
+                onPress={() => setTheme(name)}
+                style={[
+                  styles.themeCard,
+                  {
+                    backgroundColor: t.bgPrimary,
+                    borderColor: themeName === name ? t.accent : t.borderLight,
+                    borderWidth: themeName === name ? 2 : 1,
+                  },
+                ]}
+              >
+                {/* Mini UI preview */}
+                <View style={[styles.themePreviewContainer, { backgroundColor: t.bgSecondary }]}>
+                  {/* Header bar */}
+                  <View style={[styles.themePreviewHeader, { backgroundColor: t.bgCard, borderBottomColor: t.borderLight }]}>
+                    <View style={[styles.themePreviewDot, { backgroundColor: t.accent }]} />
+                    <View style={[styles.themePreviewLine, { backgroundColor: t.borderLight, width: '50%' }]} />
+                  </View>
+                  {/* Book card */}
+                  <View style={[styles.themePreviewBookCard, { backgroundColor: t.bgCard, borderColor: t.borderLight }]}>
+                    <View style={[styles.themePreviewCover, { backgroundColor: t.accentLight }]}>
+                      <View style={[styles.themePreviewCoverAccent, { backgroundColor: t.accent }]} />
+                    </View>
+                    <View style={styles.themePreviewBookInfo}>
+                      <View style={[styles.themePreviewLine, { backgroundColor: t.textPrimary, width: '80%', marginBottom: 3 }]} />
+                      <View style={[styles.themePreviewLine, { backgroundColor: t.textMuted, width: '55%', marginBottom: 6 }]} />
+                      <View style={[styles.themePreviewBadge, { backgroundColor: t.accentLight }]}>
+                        <View style={[{ width: 16, height: 3, borderRadius: 2, backgroundColor: t.accent }]} />
+                      </View>
+                    </View>
+                  </View>
+                </View>
+                {/* Label + check */}
+                <View style={styles.themeCardFooter}>
+                  <Text style={[styles.themeCardLabel, { color: t.textPrimary }]}>{t.label}</Text>
+                  {themeName === name && (
+                    <MaterialIcons name="check-circle" size={14} color={t.accent} />
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <View style={[styles.infoCard, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
             <Text style={[styles.infoText, { color: theme.textMuted }]}>Version de développement</Text>
@@ -277,11 +327,15 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 30,
+  },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 30,
   },
   section: {
     marginBottom: 30,
@@ -361,5 +415,80 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     marginBottom: 8,
+  },
+  themesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  themeCard: {
+    width: '47%',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  themePreviewContainer: {
+    padding: 8,
+    gap: 6,
+  },
+  themePreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    padding: 5,
+    borderRadius: 6,
+    borderBottomWidth: 1,
+  },
+  themePreviewDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  themePreviewLine: {
+    height: 4,
+    borderRadius: 2,
+  },
+  themePreviewBookCard: {
+    flexDirection: 'row',
+    gap: 7,
+    padding: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  themePreviewCover: {
+    width: 24,
+    height: 34,
+    borderRadius: 3,
+    justifyContent: 'flex-end',
+    padding: 3,
+  },
+  themePreviewCoverAccent: {
+    height: 4,
+    borderRadius: 2,
+  },
+  themePreviewBookInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  themePreviewBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  themeCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  themeCardLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  themeCheckIcon: {
+    marginTop: 0,
   },
 });

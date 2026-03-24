@@ -131,6 +131,13 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const theme = useTheme();
+
+  const themedHeader = {
+    headerStyle: { backgroundColor: theme.bgCard },
+    headerTitleStyle: { color: theme.textPrimary },
+    headerTintColor: theme.textPrimary,
+  };
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -139,10 +146,10 @@ function RootLayoutNav() {
         <Stack.Screen name="auth/register" options={{ headerShown: false }} />
         <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
         <Stack.Screen name="auth/reset-password" options={{ headerShown: false }} />
-        <Stack.Screen name="account/change-password" options={{ headerShown: true, title: 'Changer le mot de passe' }} />
-        <Stack.Screen name="account/edit-profile" options={{ headerShown: true, title: 'Modifier le profil' }} />
-        <Stack.Screen name="account/delete-account" options={{ headerShown: true, title: 'Supprimer le compte' }} />
-        <Stack.Screen name="account/changelog" options={{ headerShown: true, title: 'Historique des versions' }} />
+        <Stack.Screen name="account/change-password" options={{ headerShown: true, title: 'Changer le mot de passe', ...themedHeader }} />
+        <Stack.Screen name="account/edit-profile" options={{ headerShown: true, title: 'Modifier le profil', ...themedHeader }} />
+        <Stack.Screen name="account/delete-account" options={{ headerShown: true, title: 'Supprimer le compte', ...themedHeader }} />
+        <Stack.Screen name="account/changelog" options={{ headerShown: true, title: 'Historique des versions', ...themedHeader }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         <Stack.Screen 

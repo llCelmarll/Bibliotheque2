@@ -9,9 +9,9 @@ import {
   ActivityIndicator,
   Platform,
   TextInput,
-  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedSwitch } from '@/components/ThemedSwitch';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { contactService } from '@/services/contactService';
@@ -410,12 +410,10 @@ function ContactDetailScreen() {
                 <MaterialIcons name="menu-book" size={16} color={theme.textSecondary} />
                 <Text style={[styles.librarySharedText, { color: theme.textPrimary }]}>Partager ma bibliothèque</Text>
               </View>
-              <Switch
+              <ThemedSwitch
                 value={contact.library_shared}
                 onValueChange={handleToggleLibraryShared}
                 disabled={actionLoading}
-                trackColor={{ false: theme.borderLight, true: theme.accentLight }}
-                thumbColor={contact.library_shared ? theme.accentMedium : theme.textMuted}
               />
             </View>
             <TouchableOpacity style={[styles.viewLibraryButton, { backgroundColor: theme.bgMuted }]} onPress={handleViewLibrary}>

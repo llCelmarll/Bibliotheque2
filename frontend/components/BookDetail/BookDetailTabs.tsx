@@ -22,7 +22,10 @@ export function BookDetailTabs({book, onBookUpdated, readOnly}: BookDetailTabsPr
 		screenOptions={{
 			tabBarLabelStyle: { fontSize: 12 },
 			tabBarStyle: { backgroundColor: theme.bgCard },
-			tabBarIndicatorStyle: { backgroundColor: theme.textPrimary },
+			tabBarIndicatorStyle: { backgroundColor: theme.accent },
+			tabBarActiveTintColor: theme.textPrimary,
+			tabBarInactiveTintColor: theme.textMuted,
+			sceneStyle: { backgroundColor: theme.bgPrimary },
 		}}
 		>
 			{book.base && (

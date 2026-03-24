@@ -249,6 +249,7 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange, onManualAdd }: S
 	const [scanned, setScanned] = useState(false);
 	const [showManualInput, setShowManualInput] = useState(false);
 	const [torch, setTorch] = useState(false);
+	const theme = useTheme();
 
 	// Réinitialiser l'état du scanner quand on revient sur l'écran
 	useFocusEffect(
@@ -260,8 +261,6 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange, onManualAdd }: S
 	if (!permission) {
 		return <View />;
 	}
-
-	const theme = useTheme();
 
 	if (!permission.granted) {
 		return (

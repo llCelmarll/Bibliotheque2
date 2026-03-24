@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Switch, Animated, Platform, Share } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Animated, Platform, Share } from 'react-native';
+import { ThemedSwitch } from '@/components/ThemedSwitch';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import Papa from 'papaparse';
@@ -450,7 +451,7 @@ export default function ImportCSV() {
       </View>
 
       <View style={[styles.instructions, { backgroundColor: theme.bgMuted }]}>
-        <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>📋 Format du fichier CSV</Text>
+        <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>Format du fichier CSV</Text>
         <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
           Le fichier doit contenir des colonnes avec ces noms (pas d'ordre spécifique) :
         </Text>
@@ -504,12 +505,10 @@ export default function ImportCSV() {
 
         <View style={[styles.switchRow, { backgroundColor: theme.bgMuted }]}>
           <Text style={[styles.switchLabel, { color: theme.textSecondary }]}>Peupler les couvertures (Google/OpenLibrary)</Text>
-          <Switch
+          <ThemedSwitch
             value={populateCovers}
             onValueChange={setPopulateCovers}
             disabled={isProcessing}
-            thumbColor={populateCovers ? theme.accent : theme.bgCard}
-            trackColor={{ false: theme.borderMedium, true: theme.accentLight }}
           />
         </View>
 

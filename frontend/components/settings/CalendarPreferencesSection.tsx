@@ -170,7 +170,7 @@ export const CalendarPreferencesSection: React.FC = () => {
             <Text style={[styles.preferenceLabel, { color: theme.textPrimary }]}>Calendrier par défaut</Text>
           </View>
           {calendars.length > 0 ? (
-            <View style={[styles.pickerContainer, { borderColor: theme.borderLight }]}>
+            <View style={[styles.pickerContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
               <Picker
                 selectedValue={preferences.defaultCalendarId}
                 onValueChange={(value) => {
@@ -178,19 +178,23 @@ export const CalendarPreferencesSection: React.FC = () => {
                     updatePreference({ defaultCalendarId: value });
                   }
                 }}
-                style={styles.picker}
+                style={[styles.picker, { color: theme.textPrimary, backgroundColor: theme.bgInput }]}
+                dropdownIconColor={theme.textSecondary}
               >
                 <Picker.Item
                   label="Sélectionner un calendrier..."
                   value=""
                   enabled={false}
                   color={theme.textMuted}
+                  style={{ backgroundColor: theme.bgCard }}
                 />
                 {calendars.map((cal) => (
                   <Picker.Item
                     key={cal.id}
                     label={`${cal.title} (${cal.source.name})`}
                     value={cal.id}
+                    color={theme.textPrimary}
+                    style={{ backgroundColor: theme.bgCard }}
                   />
                 ))}
               </Picker>
@@ -208,14 +212,15 @@ export const CalendarPreferencesSection: React.FC = () => {
             <MaterialIcons name="schedule" size={20} color={theme.accent} />
             <Text style={[styles.preferenceLabel, { color: theme.textPrimary }]}>Délai de rappel par défaut</Text>
           </View>
-          <View style={[styles.pickerContainer, { borderColor: theme.borderLight }]}>
+          <View style={[styles.pickerContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
             <Picker
               selectedValue={preferences.defaultReminderOffsetDays}
               onValueChange={(value) => updatePreference({ defaultReminderOffsetDays: value })}
-              style={styles.picker}
+              style={[styles.picker, { color: theme.textPrimary, backgroundColor: theme.bgInput }]}
+              dropdownIconColor={theme.textSecondary}
             >
               {offsetOptions.map((option) => (
-                <Picker.Item key={option.value} label={option.label} value={option.value} />
+                <Picker.Item key={option.value} label={option.label} value={option.value} color={theme.textPrimary} style={{ backgroundColor: theme.bgCard }} />
               ))}
             </Picker>
           </View>
@@ -227,14 +232,15 @@ export const CalendarPreferencesSection: React.FC = () => {
             <MaterialIcons name="access-time" size={20} color={theme.accent} />
             <Text style={[styles.preferenceLabel, { color: theme.textPrimary }]}>Heure du rappel</Text>
           </View>
-          <View style={[styles.pickerContainer, { borderColor: theme.borderLight }]}>
+          <View style={[styles.pickerContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
             <Picker
               selectedValue={preferences.defaultReminderHour}
               onValueChange={(value) => updatePreference({ defaultReminderHour: value })}
-              style={styles.picker}
+              style={[styles.picker, { color: theme.textPrimary, backgroundColor: theme.bgInput }]}
+              dropdownIconColor={theme.textSecondary}
             >
               {hourOptions.map((option) => (
-                <Picker.Item key={option.value} label={option.label} value={option.value} />
+                <Picker.Item key={option.value} label={option.label} value={option.value} color={theme.textPrimary} style={{ backgroundColor: theme.bgCard }} />
               ))}
             </Picker>
           </View>

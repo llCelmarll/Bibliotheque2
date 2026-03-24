@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert, TextInput, Switch } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert, TextInput } from "react-native";
+import { ThemedSwitch } from '@/components/ThemedSwitch';
 import { BookDetail } from "@/types/book";
 import { InfoRow } from "@/components/BookDetail/InfoRow";
 import { useRoute } from "@react-navigation/native";
@@ -303,11 +304,9 @@ export function BaseInfoTab() {
               <Text style={[styles.label, { color: theme.textSecondary }]}>Visible dans{'\n'}la bibliothèque partagée</Text>
             </View>
             <View style={[styles.valueContainer, { alignItems: 'center' }]}>
-              <Switch
+              <ThemedSwitch
                 value={isLendable}
                 onValueChange={handleIsLendableChange}
-                trackColor={{ false: theme.borderLight, true: theme.accentLight }}
-                thumbColor={isLendable ? theme.accent : theme.textMuted}
               />
             </View>
           </View>

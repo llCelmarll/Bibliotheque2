@@ -48,6 +48,9 @@ export  default function BookDetailScreen() {
 				options={{
 					title: "Details du livre",
 					headerShown: true,
+					headerStyle: { backgroundColor: theme.bgCard },
+					headerTitleStyle: { color: theme.textPrimary },
+					headerTintColor: theme.textPrimary,
 					headerLeft: () => {
 						const router = useRouter();
 						const MaterialIcons = require('@expo/vector-icons').MaterialIcons;

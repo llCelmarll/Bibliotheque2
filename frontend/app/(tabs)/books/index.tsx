@@ -193,10 +193,11 @@ export default function Index() {
 					onEndReachedThreshold={0.5}
 					ListFooterComponent={renderFooter}
 					ListHeaderComponent={acceptedOutgoing.length > 0 ? (
-						<View style={[styles.borrowedSection, { backgroundColor: theme.warningBg, borderColor: theme.borderMedium }]}>
-							<Text style={[styles.borrowedSectionTitle, { color: theme.warning, backgroundColor: theme.accentLight }]}>
-								📚 Emprunts en cours ({acceptedOutgoing.length})
-							</Text>
+						<View style={[styles.borrowedSection, { backgroundColor: theme.bgCard, borderColor: theme.warning }]}>
+							<View style={[styles.borrowedSectionHeader, { backgroundColor: theme.warningBg, borderBottomColor: theme.borderLight }]}>
+								<MaterialIcons name="swap-horiz" size={16} color={theme.warning} />
+								<Text style={[styles.borrowedSectionTitle, { color: theme.warning }]}>Emprunts en cours ({acceptedOutgoing.length})</Text>
+							</View>
 							{acceptedOutgoing.map(r => {
 								const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null;
 								const dueDate = r.due_date ? formatDate(r.due_date) : null;
@@ -204,7 +205,7 @@ export default function Index() {
 								return (
 									<TouchableOpacity
 										key={r.id}
-										style={[styles.borrowedItem, { borderTopColor: theme.borderLight }]}
+										style={[styles.borrowedItem, { borderTopColor: theme.borderLight, backgroundColor: theme.bgCard }]}
 										onPress={() => router.push(`/(tabs)/loans/library/${r.lender_id}/book/${r.book.id}`)}
 										activeOpacity={0.7}
 									>
@@ -216,9 +217,9 @@ export default function Index() {
 										/>
 										<View style={styles.borrowedInfo}>
 											<Text style={[styles.borrowedTitle, { color: theme.textPrimary }]} numberOfLines={2}>{r.book.title}</Text>
-											<Text style={[styles.borrowedFrom, { color: theme.warning }]}>Emprunté à {r.lender_username}</Text>
+											<Text style={[styles.borrowedFrom, { color: theme.textSecondary }]}>Emprunté à {r.lender_username}</Text>
 											{dueDate && (
-												<Text style={[styles.borrowedDue, { color: theme.textMuted }, isOverdue && { color: theme.danger, fontWeight: '600' }]}>
+												<Text style={[styles.borrowedDue, { color: isOverdue ? theme.danger : theme.textMuted }, isOverdue && { fontWeight: '600' }]}>
 													{isOverdue ? '⚠️ ' : ''}Retour : {dueDate}
 												</Text>
 											)}
@@ -364,11 +365,17 @@ const styles = StyleSheet.create({
 		overflow: 'hidden',
 		borderWidth: 1,
 	},
+	borrowedSectionHeader: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderBottomWidth: 1,
+	},
 	borrowedSectionTitle: {
 		fontSize: 13,
 		fontWeight: '700',
-		paddingHorizontal: 12,
-		paddingVertical: 10,
 	},
 	borrowedItem: {
 		flexDirection: 'row',
