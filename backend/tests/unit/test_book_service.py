@@ -409,3 +409,75 @@ class TestBookServiceRatingAndNotes:
         assert existing_book.rating == 4
         assert existing_book.notes == "Super livre!"
         mock_session.commit.assert_called()
+
+
+@pytest.mark.unit
+@pytest.mark.books
+class TestBookServiceExternalData:
+    """Tests pour la récupération des données externes (Google Books, Open Library)."""
+
+    import asyncio as _asyncio
+
+    @pytest.fixture
+    def mock_session(self):
+        return Mock(spec=Session)
+
+    @pytest.fixture
+    def book_service(self, mock_session, test_user):
+        return BookService(mock_session, user_id=test_user.id)
+
+    def _make_book_service_with_mocks(self, book_service, test_user):
+        """Configure les mocks communs sur book_service."""
+        fake_book = Book(id=1, title="Test Book", isbn="9781234567890", owner_id=test_user.id)
+        book_service.book_repository = Mock()
+        book_service.book_repository.get_by_id.return_value = fake_book
+        book_service.loan_repository = Mock()
+        book_service.loan_repository.get_active_loan_for_book.return_value = None
+        book_service.borrowed_book_repository = Mock()
+        book_service.borrowed_book_repository.get_active_borrow_for_book.return_value = None
+        book_service.borrowed_book_repository.get_by_book.return_value = []
+        return book_service
+
+    def test_get_book_by_id_google_books_is_dict_not_tuple(self, book_service, test_user):
+        """Vérifie que google_books est le dict, pas le tuple (data, error)."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        google_data = {"title": "Test Book", "authors": ["Author"]}
+        self._make_book_service_with_mocks(book_service, test_user)
+
+        with patch("app.services.book_service.fetch_google_books", new=AsyncMock(return_value=(google_data, None))), \
+             patch("app.services.book_service.fetch_openlibrary", new=AsyncMock(return_value=(None, None))):
+            result = asyncio.run(book_service.get_book_by_id(1))
+
+        assert result["google_books"] == google_data
+        assert isinstance(result["google_books"], dict), "google_books doit être un dict, pas un tuple"
+
+    def test_get_book_by_id_open_library_is_dict_not_tuple(self, book_service, test_user):
+        """Vérifie que open_library est le dict, pas le tuple (data, error)."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        openlibrary_data = {"title": "Test Book", "publishers": ["Publisher"]}
+        self._make_book_service_with_mocks(book_service, test_user)
+
+        with patch("app.services.book_service.fetch_google_books", new=AsyncMock(return_value=(None, None))), \
+             patch("app.services.book_service.fetch_openlibrary", new=AsyncMock(return_value=(openlibrary_data, None))):
+            result = asyncio.run(book_service.get_book_by_id(1))
+
+        assert result["open_library"] == openlibrary_data
+        assert isinstance(result["open_library"], dict), "open_library doit être un dict, pas un tuple"
+
+    def test_get_book_by_id_external_api_error_returns_none(self, book_service, test_user):
+        """Vérifie que si l'API externe échoue, la valeur est None (pas une erreur)."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        self._make_book_service_with_mocks(book_service, test_user)
+
+        with patch("app.services.book_service.fetch_google_books", new=AsyncMock(return_value=(None, "API error"))), \
+             patch("app.services.book_service.fetch_openlibrary", new=AsyncMock(return_value=(None, "Timeout"))):
+            result = asyncio.run(book_service.get_book_by_id(1))
+
+        assert result["google_books"] is None
+        assert result["open_library"] is None
