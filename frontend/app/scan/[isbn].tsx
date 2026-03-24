@@ -14,31 +14,16 @@ import { CurrentlyBorrowedCard } from "@/components/scan/CurrentlyBorrowedCard";
 import { SuggestedBook } from "@/types/scanTypes";
 import { bookService } from "@/services/bookService";
 import { useAuth } from "@/contexts/AuthContext";
-
-// Composants utilitaires simples
-const LoadingIndicator: React.FC = () => (
-	<View style={styles.centerContainer}>
-		<ActivityIndicator size="large" color="#3498db" />
-		<Text style={styles.loadingText}>Analyse de l'ISBN en cours...</Text>
-		<Text style={styles.loadingSubtext}>
-			Recherche dans votre bibliothèque et sur les services externes
-		</Text>
-	</View>
-);
-
-const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
-	<View style={styles.centerContainer}>
-		<Text style={styles.errorText}>{message}</Text>
-	</View>
-);
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ScanResultPage() {
 	const { isbn } = useLocalSearchParams<{ isbn: string }>();
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
+	const theme = useTheme();
 	const { isLoading, error, data } = useScanResult(isbn || '');
 	const { isAuthenticated, isLoading: authLoading } = useAuth();
-	
+
 	// État pour gérer les données du formulaire et le feedback
 	const [formData, setFormData] = useState<SuggestedBook | null>(null);
 	const [importFeedback, setImportFeedback] = useState<{
@@ -61,9 +46,9 @@ export default function ScanResultPage() {
 	// Afficher un loader pendant la vérification d'authentification
 	if (authLoading || !isAuthenticated) {
 		return (
-			<View style={styles.authContainer}>
-				<ActivityIndicator size="large" color="#2196F3" />
-				<Text style={styles.authText}>
+			<View style={[styles.authContainer, { backgroundColor: theme.bgSecondary }]}>
+				<ActivityIndicator size="large" color={theme.accent} />
+				<Text style={[styles.authText, { color: theme.textSecondary }]}>
 					{authLoading ? "Vérification de l'authentification..." : "Redirection..."}
 				</Text>
 			</View>
@@ -71,12 +56,40 @@ export default function ScanResultPage() {
 	}
 
 	if (!isbn) {
-		return <ErrorMessage message="Aucun ISBN fourni" />;
+		return (
+			<View style={styles.centerContainer}>
+				<Text style={[styles.errorText, { color: theme.danger }]}>Aucun ISBN fourni</Text>
+			</View>
+		);
 	}
 
-	if (isLoading) return <LoadingIndicator />;
-	if (error) return <ErrorMessage message={error} />;
-	if (!data) return <ErrorMessage message="Aucune donnée trouvée pour cet ISBN" />;
+	if (isLoading) {
+		return (
+			<View style={styles.centerContainer}>
+				<ActivityIndicator size="large" color={theme.accent} />
+				<Text style={[styles.loadingText, { color: theme.accent }]}>Analyse de l'ISBN en cours...</Text>
+				<Text style={[styles.loadingSubtext, { color: theme.textSecondary }]}>
+					Recherche dans votre bibliothèque et sur les services externes
+				</Text>
+			</View>
+		);
+	}
+
+	if (error) {
+		return (
+			<View style={styles.centerContainer}>
+				<Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>
+			</View>
+		);
+	}
+
+	if (!data) {
+		return (
+			<View style={styles.centerContainer}>
+				<Text style={[styles.errorText, { color: theme.danger }]}>Aucune donnée trouvée pour cet ISBN</Text>
+			</View>
+		);
+	}
 
 	const showImportFeedback = (source: string, count: number) => {
 		const sourceName = source === 'google' ? 'Google Books' : 'OpenLibrary';
@@ -256,31 +269,39 @@ export default function ScanResultPage() {
 	};
 
 	return (
-		<View style={styles.container}>
+		<View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
 			{/* Header avec bouton retour et ISBN */}
-			<View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-				<TouchableOpacity 
-					style={styles.backButton}
+			<View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: theme.accent }]}>
+				<TouchableOpacity
+					style={[styles.backButton, { backgroundColor: `${theme.textInverse}33` }]}
 					onPress={() => router.push('/(tabs)/scanner')}
 				>
-					<MaterialIcons name="arrow-back" size={24} color="#ffffff" />
+					<MaterialIcons name="arrow-back" size={24} color={theme.textInverse} />
 				</TouchableOpacity>
-				<Text style={styles.isbnTitle}>ISBN: {isbn}</Text>
-				<TouchableOpacity 
-					style={styles.scanButton}
+				<Text style={[styles.isbnTitle, { color: theme.textInverse }]}>ISBN: {isbn}</Text>
+				<TouchableOpacity
+					style={[styles.scanButton, { backgroundColor: `${theme.textInverse}33` }]}
 					onPress={() => router.push('/(tabs)/scanner')}
 				>
-					<MaterialIcons name="qr-code-scanner" size={24} color="#ffffff" />
+					<MaterialIcons name="qr-code-scanner" size={24} color={theme.textInverse} />
 				</TouchableOpacity>
 			</View>
 
 			{/* Feedback d'import */}
 			{importFeedback.visible && (
-				<Animated.View 
-					style={[styles.importFeedback, { opacity: fadeAnim }]}
+				<Animated.View
+					style={[
+						styles.importFeedback,
+						{
+							opacity: fadeAnim,
+							backgroundColor: theme.successBg,
+							borderColor: theme.success,
+							shadowColor: theme.textPrimary,
+						},
+					]}
 				>
-					<MaterialIcons name="check-circle" size={20} color="#27ae60" />
-					<Text style={styles.importFeedbackText}>
+					<MaterialIcons name="check-circle" size={20} color={theme.success} />
+					<Text style={[styles.importFeedbackText, { color: theme.textPrimary }]}>
 						{importFeedback.message}
 					</Text>
 				</Animated.View>
@@ -308,7 +329,7 @@ export default function ScanResultPage() {
 				{/* Livre existant trouvé (possédé) */}
 				{data.base && (
 					<View style={styles.section}>
-						<Text style={styles.sectionTitle}>Livre trouvé dans votre bibliothèque</Text>
+						<Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Livre trouvé dans votre bibliothèque</Text>
 						<ExistingBookCard
 							book={data.base}
 							onPress={() => {
@@ -361,7 +382,6 @@ export default function ScanResultPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#f8f9fa',
 	},
 	contentContainer: {
 		padding: 16,
@@ -375,24 +395,20 @@ const styles = StyleSheet.create({
 	loadingText: {
 		marginTop: 12,
 		fontSize: 16,
-		color: '#3498db',
 		fontWeight: '500',
 	},
 	loadingSubtext: {
 		marginTop: 8,
 		fontSize: 14,
-		color: '#7f8c8d',
 		textAlign: 'center',
 		paddingHorizontal: 20,
 	},
 	errorText: {
 		fontSize: 16,
-		color: '#e74c3c',
 		textAlign: 'center',
 		fontWeight: '500',
 	},
 	header: {
-		backgroundColor: '#3498db',
 		padding: 16,
 		flexDirection: 'row',
 		alignItems: 'center',
@@ -401,17 +417,14 @@ const styles = StyleSheet.create({
 	backButton: {
 		padding: 8,
 		borderRadius: 20,
-		backgroundColor: 'rgba(255, 255, 255, 0.2)',
 	},
 	scanButton: {
 		padding: 8,
 		borderRadius: 20,
-		backgroundColor: 'rgba(255, 255, 255, 0.2)',
 	},
 	isbnTitle: {
 		fontSize: 18,
 		fontWeight: '600',
-		color: '#ffffff',
 		flex: 1,
 		textAlign: 'center',
 	},
@@ -421,13 +434,10 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		fontSize: 18,
 		fontWeight: '600',
-		color: '#2c3e50',
 		marginBottom: 12,
 		textAlign: 'center',
 	},
 	importFeedback: {
-		backgroundColor: '#d4edda',
-		borderColor: '#27ae60',
 		borderWidth: 1,
 		borderRadius: 8,
 		padding: 12,
@@ -435,7 +445,6 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		shadowColor: '#000',
 		shadowOffset: {
 			width: 0,
 			height: 2,
@@ -445,7 +454,6 @@ const styles = StyleSheet.create({
 		elevation: 3,
 	},
 	importFeedbackText: {
-		color: '#155724',
 		fontSize: 14,
 		fontWeight: '500',
 		marginLeft: 8,
@@ -456,13 +464,11 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-		backgroundColor: '#f5f5f5',
 		padding: 20,
 	},
 	authText: {
 		marginTop: 16,
 		fontSize: 16,
-		color: '#666',
 		textAlign: 'center',
 	},
 });

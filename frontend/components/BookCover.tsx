@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Image, ActivityIndicator, StyleSheet, StyleProp, ViewStyle, ImageStyle, ImageResizeMode } from "react-native";
 import { resolveCoverUrl } from '@/utils/coverUrl';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BookCoverProps {
     url?: string;
@@ -11,9 +12,10 @@ interface BookCoverProps {
 
 const BookCover = ({ url, style, containerStyle, resizeMode }: BookCoverProps) => {
     const [loading, setLoading] = useState(true);
+    const theme = useTheme();
 
     return (
-        <View style={[styles.coverContainer, containerStyle]} testID="book-cover-container">
+        <View style={[styles.coverContainer, { backgroundColor: theme.bgMuted }, containerStyle]} testID="book-cover-container">
             {loading && <ActivityIndicator style={styles.imageLoader} testID="book-cover-loading" />}
             <Image
                 testID="book-cover-image"
@@ -41,7 +43,6 @@ const styles = StyleSheet.create({
         width: 80,
         aspectRatio: 2/3,
         position: "relative",
-        backgroundColor: '#f3f4f6',
         overflow: "hidden",
     },
     coverImage: {

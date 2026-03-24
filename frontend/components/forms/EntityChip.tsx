@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Entity, EntityType } from '@/types/entityTypes';
 import { FEATURE_FLAGS } from '@/utils/featureFlags';
 import { entityService } from '@/services/entityService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface EntityChipProps<T = {}> {
 	entity: Entity<T>;
@@ -13,32 +14,34 @@ interface EntityChipProps<T = {}> {
 	showMetadata?: boolean; // À réactiver plus tard
 }
 
-export const EntityChip = <T,>({ 
-	entity, 
-	onRemove, 
+export const EntityChip = <T,>({
+	entity,
+	onRemove,
 	disabled = false,
-	showMetadata = false 
+	showMetadata = false
 }: EntityChipProps<T>) => {
+	const theme = useTheme();
+
 	const getChipStyle = () => {
-		if (disabled) return [styles.chip, styles.chipDisabled];
-		
+		if (disabled) return [styles.chip, styles.chipDisabled, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }];
+
 		// Style selon l'état d'existence
 		if (entity.exists) {
-			return [styles.chip, styles.chipExisting];
+			return [styles.chip, { backgroundColor: theme.successBg, borderColor: theme.success }];
 		} else {
-			return [styles.chip, styles.chipNew];
+			return [styles.chip, { backgroundColor: theme.warningBg, borderColor: theme.warning }];
 		}
 	};
 
 	const getTextStyle = () => {
 		const baseStyle = styles.chipText;
-		
+
 		if (disabled) {
-			return [baseStyle, styles.chipTextDisabled];
+			return [baseStyle, { color: theme.textSecondary }];
 		} else if (entity.exists) {
-			return [baseStyle, styles.chipTextExisting];
+			return [baseStyle, { color: theme.success }];
 		} else {
-			return [baseStyle, styles.chipTextNew];
+			return [baseStyle, { color: theme.warning }];
 		}
 	};
 
@@ -53,13 +56,13 @@ export const EntityChip = <T,>({
 			<MaterialIcons
 				name={entity.exists ? 'check-circle' : 'add-circle'}
 				size={14}
-				color={entity.exists ? '#27ae60' : '#f39c12'}
+				color={entity.exists ? theme.success : theme.warning}
 				style={styles.statusIcon}
 			/>
-			
+
 			{/* Nom de l'entité */}
-			<Text 
-				style={getTextStyle()} 
+			<Text
+				style={getTextStyle()}
 				numberOfLines={2} // Permet 2 lignes au lieu d'1
 				ellipsizeMode="tail"
 				testID="entity-chip-name"
@@ -67,10 +70,10 @@ export const EntityChip = <T,>({
 			>
 				{entity?.name || 'Nom manquant'}
 			</Text>
-			
+
 			{/* Métadonnées optionnelles */}
 			{renderMetadata()}
-			
+
 			{/* Bouton de suppression */}
 			{onRemove && !disabled && (
 				<TouchableOpacity
@@ -81,7 +84,7 @@ export const EntityChip = <T,>({
 					<MaterialIcons
 						name="close"
 						size={16}
-						color="#7f8c8d"
+						color={theme.textMuted}
 					/>
 				</TouchableOpacity>
 			)}
@@ -103,45 +106,20 @@ const styles = StyleSheet.create({
 		minWidth: 120, // Plus large pour accommoder les noms longs
 		alignSelf: 'flex-start', // Empêche l'étirement sur toute la largeur
 	},
-	chipExisting: {
-		backgroundColor: '#e8f5e8',
-		borderColor: '#27ae60',
-	},
-	chipNew: {
-		backgroundColor: '#fff3cd',
-		borderColor: '#f39c12',
-	},
-	chipDisabled: {
-		backgroundColor: '#f8f9fa',
-		borderColor: '#dee2e6',
-		opacity: 0.6,
-	},
+	chipDisabled: {},
 	chipText: {
 		fontSize: 14,
-		fontWeight: '500',
+		fontWeight: '600',
 		marginLeft: 6,
 		textAlign: 'left',
-		includeFontPadding: false, // Android: évite les problèmes de padding de police
-		color: '#2c3e50', // Couleur par défaut
-		flexShrink: 1, // Permet la réduction si vraiment nécessaire
-	},
-	chipTextExisting: {
-		color: '#0d4820', // Vert plus foncé pour meilleur contraste
-		fontWeight: '600', // Plus gras pour mobile
-	},
-	chipTextNew: {
-		color: '#6c4f00', // Orange plus foncé pour meilleur contraste
-		fontWeight: '600', // Plus gras pour mobile
-	},
-	chipTextDisabled: {
-		color: '#6c757d',
+		includeFontPadding: false,
+		flexShrink: 1,
 	},
 	statusIcon: {
 		marginRight: 2,
 	},
 	metadataText: {
 		fontSize: 12,
-		color: '#6c757d',
 		fontStyle: 'italic',
 		marginLeft: 4,
 	},

@@ -6,13 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface RegisterForm {
   email: string;
@@ -36,6 +35,7 @@ export default function RegisterScreen() {
 
   const router = useRouter();
   const { register: registerUser } = useAuth();
+  const theme = useTheme();
 
   const validateForm = (): boolean => {
     const newErrors: Partial<RegisterForm> = {};
@@ -78,9 +78,8 @@ export default function RegisterScreen() {
     }
 
     setLoading(true);
-    setServerError(''); // Réinitialiser l'erreur serveur
+    setServerError('');
     try {
-      // Inscription avec connexion automatique
       await registerUser({
         email: form.email,
         username: form.username,
@@ -88,13 +87,10 @@ export default function RegisterScreen() {
         confirm_password: form.confirmPassword,
       });
 
-      // En cas de SUCCÈS : rediriger vers books
       router.replace('/(tabs)/books');
 
     } catch (error: any) {
       const errorMessage = error.message || 'Une erreur est survenue lors de l\'inscription';
-
-      // Afficher l'erreur sur l'écran d'inscription
       setServerError(errorMessage);
     } finally {
       setLoading(false);
@@ -103,41 +99,40 @@ export default function RegisterScreen() {
 
   const updateForm = (field: keyof RegisterForm, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
-    // Clear server error when user starts typing
     if (serverError) {
       setServerError('');
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bgPrimary }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <MaterialIcons name="library-books" size={60} color="#2196F3" />
-        <Text style={styles.title}>Créer un compte</Text>
-        <Text style={styles.subtitle}>Rejoignez votre bibliothèque personnelle</Text>
+        <MaterialIcons name="library-books" size={60} color={theme.accent} />
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Créer un compte</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Rejoignez votre bibliothèque personnelle</Text>
       </View>
 
       <View style={styles.form}>
         {/* Server Error Message */}
         {serverError ? (
-          <View style={styles.serverErrorContainer}>
-            <MaterialIcons name="error-outline" size={20} color="#e74c3c" />
-            <Text style={styles.serverErrorText}>{serverError}</Text>
+          <View style={[styles.serverErrorContainer, { backgroundColor: theme.dangerBg, borderColor: theme.danger }]}>
+            <MaterialIcons name="error-outline" size={20} color={theme.danger} />
+            <Text style={[styles.serverErrorText, { color: theme.danger }]}>{serverError}</Text>
           </View>
         ) : null}
 
         {/* Email */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <View style={[styles.inputWrapper, errors.email && styles.inputError]}>
-            <MaterialIcons name="email" size={20} color="#666" style={styles.inputIcon} />
+          <Text style={[styles.label, { color: theme.textPrimary }]}>Email</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.bgCard, borderColor: errors.email ? theme.danger : theme.borderLight }]}>
+            <MaterialIcons name="email" size={20} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.textPrimary }]}
               placeholder="votre@email.com"
+              placeholderTextColor={theme.textMuted}
               value={form.email}
               onChangeText={(value) => updateForm('email', value)}
               keyboardType="email-address"
@@ -145,101 +140,90 @@ export default function RegisterScreen() {
               autoComplete="email"
             />
           </View>
-          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+          {errors.email && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.email}</Text>}
         </View>
 
         {/* Username */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Nom d'utilisateur</Text>
-          <View style={[styles.inputWrapper, errors.username && styles.inputError]}>
-            <MaterialIcons name="person" size={20} color="#666" style={styles.inputIcon} />
+          <Text style={[styles.label, { color: theme.textPrimary }]}>Nom d'utilisateur</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.bgCard, borderColor: errors.username ? theme.danger : theme.borderLight }]}>
+            <MaterialIcons name="person" size={20} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.textPrimary }]}
               placeholder="Votre nom d'utilisateur"
+              placeholderTextColor={theme.textMuted}
               value={form.username}
               onChangeText={(value) => updateForm('username', value)}
               autoCapitalize="none"
               autoComplete="username"
             />
           </View>
-          {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+          {errors.username && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.username}</Text>}
         </View>
 
         {/* Password */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Mot de passe</Text>
-          <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
-            <MaterialIcons name="lock" size={20} color="#666" style={styles.inputIcon} />
+          <Text style={[styles.label, { color: theme.textPrimary }]}>Mot de passe</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.bgCard, borderColor: errors.password ? theme.danger : theme.borderLight }]}>
+            <MaterialIcons name="lock" size={20} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.textPrimary }]}
               placeholder="Votre mot de passe"
+              placeholderTextColor={theme.textMuted}
               value={form.password}
               onChangeText={(value) => updateForm('password', value)}
               secureTextEntry={!showPassword}
               autoComplete="new-password"
             />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-            >
-              <MaterialIcons
-                name={showPassword ? 'visibility' : 'visibility-off'}
-                size={20}
-                color="#666"
-              />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={20} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
-          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+          {errors.password && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.password}</Text>}
         </View>
 
         {/* Confirm Password */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Confirmer le mot de passe</Text>
-          <View style={[styles.inputWrapper, errors.confirmPassword && styles.inputError]}>
-            <MaterialIcons name="lock" size={20} color="#666" style={styles.inputIcon} />
+          <Text style={[styles.label, { color: theme.textPrimary }]}>Confirmer le mot de passe</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.bgCard, borderColor: errors.confirmPassword ? theme.danger : theme.borderLight }]}>
+            <MaterialIcons name="lock" size={20} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.textPrimary }]}
               placeholder="Confirmez votre mot de passe"
+              placeholderTextColor={theme.textMuted}
               value={form.confirmPassword}
               onChangeText={(value) => updateForm('confirmPassword', value)}
               secureTextEntry={!showConfirmPassword}
               autoComplete="new-password"
             />
-            <TouchableOpacity
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              style={styles.eyeIcon}
-            >
-              <MaterialIcons
-                name={showConfirmPassword ? 'visibility' : 'visibility-off'}
-                size={20}
-                color="#666"
-              />
+            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+              <MaterialIcons name={showConfirmPassword ? 'visibility' : 'visibility-off'} size={20} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
-          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+          {errors.confirmPassword && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.confirmPassword}</Text>}
         </View>
 
         {/* Register Button */}
         <TouchableOpacity
-          style={[styles.registerButton, loading && styles.buttonDisabled]}
+          style={[styles.registerButton, { backgroundColor: theme.accent }, loading && { backgroundColor: theme.borderMedium }]}
           onPress={handleRegister}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={theme.textInverse} />
           ) : (
             <>
-              <MaterialIcons name="person-add" size={20} color="#ffffff" />
-              <Text style={styles.registerButtonText}>Créer mon compte</Text>
+              <MaterialIcons name="person-add" size={20} color={theme.textInverse} />
+              <Text style={[styles.registerButtonText, { color: theme.textInverse }]}>Créer mon compte</Text>
             </>
           )}
         </TouchableOpacity>
 
         {/* Login Link */}
         <View style={styles.loginLink}>
-          <Text style={styles.loginText}>Vous avez déjà un compte ? </Text>
+          <Text style={[styles.loginText, { color: theme.textSecondary }]}>Vous avez déjà un compte ? </Text>
           <TouchableOpacity onPress={() => router.replace('/auth/login')}>
-            <Text style={styles.loginLinkText}>Se connecter</Text>
+            <Text style={[styles.loginLinkText, { color: theme.accent }]}>Se connecter</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -250,7 +234,6 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   contentContainer: {
     flexGrow: 1,
@@ -264,13 +247,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2c3e50',
     marginTop: 16,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#7f8c8d',
     textAlign: 'center',
   },
   form: {
@@ -279,17 +260,14 @@ const styles = StyleSheet.create({
   serverErrorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fee',
     borderRadius: 8,
     padding: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#e74c3c',
   },
   serverErrorText: {
     flex: 1,
     fontSize: 14,
-    color: '#c0392b',
     fontWeight: '500',
   },
   inputContainer: {
@@ -298,21 +276,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
     marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e1e8ed',
     paddingHorizontal: 16,
     height: 56,
-  },
-  inputError: {
-    borderColor: '#e74c3c',
   },
   inputIcon: {
     marginRight: 12,
@@ -320,18 +292,15 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#2c3e50',
   },
   eyeIcon: {
     padding: 4,
   },
   errorText: {
     fontSize: 14,
-    color: '#e74c3c',
     marginLeft: 4,
   },
   registerButton: {
-    backgroundColor: '#2196F3',
     borderRadius: 12,
     height: 56,
     flexDirection: 'row',
@@ -340,11 +309,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 20,
   },
-  buttonDisabled: {
-    backgroundColor: '#bdc3c7',
-  },
   registerButtonText: {
-    color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -356,11 +321,9 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 16,
-    color: '#7f8c8d',
   },
   loginLinkText: {
     fontSize: 16,
-    color: '#2196F3',
     fontWeight: '600',
   },
 });

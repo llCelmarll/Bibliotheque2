@@ -6,6 +6,7 @@ import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import Scanner from "@/components/Scanner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ScannerScreen() {
   const [torch, setTorch] = useState(false);
@@ -13,6 +14,7 @@ export default function ScannerScreen() {
   const [isManualInput, setIsManualInput] = useState(Platform.OS === 'web');
   const [permission, requestPermission] = useCameraPermissions();
   const router = useRouter();
+  const theme = useTheme();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Redirection si non authentifié
@@ -33,9 +35,9 @@ export default function ScannerScreen() {
   // Afficher un loader pendant la vérification d'authentification
   if (authLoading || !isAuthenticated) {
     return (
-      <View style={styles.authContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.authText}>
+      <View style={[styles.authContainer, { backgroundColor: theme.bgPrimary }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
+        <Text style={[styles.authText, { color: theme.textSecondary }]}>
           {authLoading ? "Vérification de l'authentification..." : "Redirection..."}
         </Text>
       </View>
@@ -69,16 +71,16 @@ export default function ScannerScreen() {
   if (!permission) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0000ff"/>
+        <ActivityIndicator size="large" color={theme.accent}/>
         <Text style={styles.text}>Demande d'accès à la caméra...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: Platform.OS === 'web' ? theme.bgPrimary : 'black' }]}>
       <StatusBar style="light" />
-      <Scanner 
+      <Scanner
         onScanned={handleBarCodeScanned}
         torchEnabled={torch}
         onModeChange={handleModeChange}
@@ -92,7 +94,6 @@ export default function ScannerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#fff' : 'black',
     paddingTop: Platform.OS === 'android' ? 40 : Platform.OS === 'ios' ? 44 : 0,
   },
   centered: {
@@ -105,19 +106,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 10,
     textAlign: 'center',
-    color: Platform.OS === 'web' ? '#333' : '#fff',
   },
   authContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     padding: 20,
   },
   authText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
   },
 });

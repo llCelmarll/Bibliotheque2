@@ -6,6 +6,7 @@ import BookCover from '@/components/BookCover';
 import { useRouter } from 'expo-router';
 import { userLoanRequestService } from '@/services/userLoanRequestService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface UserLoanRequestListItemProps {
     request: UserLoanRequest;
@@ -14,11 +15,11 @@ interface UserLoanRequestListItemProps {
 
 export const UserLoanRequestListItem: React.FC<UserLoanRequestListItemProps> = ({ request, onAction }) => {
     const router = useRouter();
+    const theme = useTheme();
     const { user } = useAuth();
     const [actioning, setActioning] = useState(false);
 
     const isLender = user?.id === request.lender_id;
-    const isRequester = user?.id === request.requester_id;
 
     const handlePress = () => {
         router.push(`/(tabs)/loans/user-loan-request/${request.id}`);
@@ -64,24 +65,24 @@ export const UserLoanRequestListItem: React.FC<UserLoanRequestListItemProps> = (
     };
 
     const statusColor: Record<UserLoanRequestStatus, string> = {
-        [UserLoanRequestStatus.PENDING]: '#FF9800',
-        [UserLoanRequestStatus.ACCEPTED]: '#4CAF50',
-        [UserLoanRequestStatus.DECLINED]: '#F44336',
-        [UserLoanRequestStatus.CANCELLED]: '#9E9E9E',
-        [UserLoanRequestStatus.RETURNED]: '#9E9E9E',
+        [UserLoanRequestStatus.PENDING]: theme.warning,
+        [UserLoanRequestStatus.ACCEPTED]: theme.success,
+        [UserLoanRequestStatus.DECLINED]: theme.danger,
+        [UserLoanRequestStatus.CANCELLED]: theme.textMuted,
+        [UserLoanRequestStatus.RETURNED]: theme.textMuted,
     };
 
     const statusBgColor: Record<UserLoanRequestStatus, string> = {
-        [UserLoanRequestStatus.PENDING]: '#FFF3E0',
-        [UserLoanRequestStatus.ACCEPTED]: '#E8F5E9',
-        [UserLoanRequestStatus.DECLINED]: '#FFEBEE',
-        [UserLoanRequestStatus.CANCELLED]: '#F5F5F5',
-        [UserLoanRequestStatus.RETURNED]: '#F5F5F5',
+        [UserLoanRequestStatus.PENDING]: theme.warningBg,
+        [UserLoanRequestStatus.ACCEPTED]: theme.successBg,
+        [UserLoanRequestStatus.DECLINED]: theme.dangerBg,
+        [UserLoanRequestStatus.CANCELLED]: theme.bgMuted,
+        [UserLoanRequestStatus.RETURNED]: theme.bgMuted,
     };
 
     return (
         <TouchableOpacity
-            style={styles.container}
+            style={[styles.container, { borderBottomColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}
             onPress={handlePress}
         >
             <BookCover
@@ -93,27 +94,27 @@ export const UserLoanRequestListItem: React.FC<UserLoanRequestListItemProps> = (
 
             <View style={styles.infoContainer}>
                 <View style={styles.titleRow}>
-                    <Text style={styles.bookTitle} numberOfLines={2}>
+                    <Text style={[styles.bookTitle, { color: theme.textPrimary }]} numberOfLines={2}>
                         {request.book.title}
                     </Text>
-                    <View style={styles.memberBadge}>
-                        <MaterialIcons name="people" size={10} color="#7C3AED" />
-                        <Text style={styles.memberBadgeText}>Membre</Text>
+                    <View style={[styles.memberBadge, { backgroundColor: theme.accentLight }]}>
+                        <MaterialIcons name="people" size={10} color={theme.accentMedium} />
+                        <Text style={[styles.memberBadgeText, { color: theme.accentMedium }]}>Membre</Text>
                     </View>
                 </View>
 
-                <Text style={styles.userName}>
+                <Text style={[styles.userName, { color: theme.textSecondary }]}>
                     {isLender ? 'Demandé par : ' : 'Demandé à : '}
-                    <Text style={styles.userNameBold}>
+                    <Text style={[styles.userNameBold, { color: theme.textPrimary }]}>
                         {isLender ? request.requester_username : request.lender_username}
                     </Text>
                 </Text>
 
-                <Text style={styles.dateText}>
+                <Text style={[styles.dateText, { color: theme.textMuted }]}>
                     Le {formatDate(request.request_date)}
                 </Text>
                 {request.due_date && (
-                    <Text style={styles.dateText}>
+                    <Text style={[styles.dateText, { color: theme.textMuted }]}>
                         Retour prévu : {formatDate(request.due_date)}
                     </Text>
                 )}
@@ -135,9 +136,9 @@ export const UserLoanRequestListItem: React.FC<UserLoanRequestListItemProps> = (
                     <MaterialIcons
                         name="assignment-return"
                         size={20}
-                        color={actioning ? '#BDBDBD' : '#4CAF50'}
+                        color={actioning ? theme.textMuted : theme.success}
                     />
-                    <Text style={[styles.returnButtonText, actioning && styles.returnButtonTextDisabled]}>
+                    <Text style={[styles.returnButtonText, { color: actioning ? theme.textMuted : theme.success }]}>
                         Retourner
                     </Text>
                 </Pressable>
@@ -151,8 +152,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         padding: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-        backgroundColor: '#FAFAFA',
         alignItems: 'center',
     },
     cover: {
@@ -178,13 +177,11 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         fontWeight: '600',
-        color: '#212121',
     },
     memberBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        backgroundColor: '#F3F0FF',
         borderRadius: 8,
         paddingHorizontal: 6,
         paddingVertical: 2,
@@ -193,20 +190,16 @@ const styles = StyleSheet.create({
     memberBadgeText: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#7C3AED',
     },
     userName: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 4,
     },
     userNameBold: {
         fontWeight: '600',
-        color: '#424242',
     },
     dateText: {
         fontSize: 12,
-        color: '#757575',
         marginBottom: 2,
     },
     statusBadge: {
@@ -230,9 +223,5 @@ const styles = StyleSheet.create({
     returnButtonText: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#4CAF50',
-    },
-    returnButtonTextDisabled: {
-        color: '#BDBDBD',
     },
 });

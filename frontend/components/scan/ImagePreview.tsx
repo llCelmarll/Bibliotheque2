@@ -1,16 +1,18 @@
 // components/scan/ImagePreview.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Image, ActivityIndicator, StyleSheet } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ImagePreviewProps {
 	url: string;
 	debounceMs?: number;
 }
 
-export const ImagePreview: React.FC<ImagePreviewProps> = React.memo(({ 
-	url, 
-	debounceMs = 1500 
+export const ImagePreview: React.FC<ImagePreviewProps> = React.memo(({
+	url,
+	debounceMs = 1500
 }) => {
+	const theme = useTheme();
 	const [debouncedUrl, setDebouncedUrl] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(false);
@@ -94,13 +96,13 @@ export const ImagePreview: React.FC<ImagePreviewProps> = React.memo(({
 	}
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.label}>Aperçu :</Text>
+		<View style={[styles.container, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }]}>
+			<Text style={[styles.label, { color: theme.textSecondary }]}>Aperçu :</Text>
 			<View style={styles.imageWrapper}>
 				{loading ? (
-					<View style={styles.loadingContainer}>
-						<ActivityIndicator size="small" color="#3498db" />
-						<Text style={styles.loadingText}>Chargement...</Text>
+					<View style={[styles.loadingContainer, { backgroundColor: `${theme.bgSecondary}CC` }]}>
+						<ActivityIndicator size="small" color={theme.accent} />
+						<Text style={[styles.loadingText, { color: theme.textSecondary }]}>Chargement...</Text>
 					</View>
 				) : null}
 				
@@ -108,6 +110,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = React.memo(({
 					source={{ uri: debouncedUrl }}
 					style={[
 						styles.image,
+						{ borderColor: theme.borderLight, backgroundColor: theme.bgCard },
 						(loading || error) ? styles.imageHidden : null
 					]}
 					onLoadStart={handleLoadStart}
@@ -117,9 +120,9 @@ export const ImagePreview: React.FC<ImagePreviewProps> = React.memo(({
 				/>
 				
 				{error ? (
-					<View style={styles.errorContainer}>
-						<Text style={styles.errorText}>❌ Impossible de charger l'image</Text>
-						<Text style={styles.errorHint}>Vérifiez que l'URL est correcte</Text>
+					<View style={[styles.errorContainer, { backgroundColor: theme.dangerBg, borderColor: theme.danger }]}>
+						<Text style={[styles.errorText, { color: theme.danger }]}>❌ Impossible de charger l'image</Text>
+						<Text style={[styles.errorHint, { color: theme.danger }]}>Vérifiez que l'URL est correcte</Text>
 					</View>
 				) : null}
 			</View>
@@ -131,15 +134,12 @@ const styles = StyleSheet.create({
 	container: {
 		marginTop: 12,
 		padding: 12,
-		backgroundColor: '#f8f9fa',
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: '#e9ecef',
 	},
 	label: {
 		fontSize: 14,
 		fontWeight: '500',
-		color: '#495057',
 		marginBottom: 8,
 	},
 	imageWrapper: {
@@ -151,8 +151,6 @@ const styles = StyleSheet.create({
 		height: 160,
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: '#dee2e6',
-		backgroundColor: '#ffffff',
 	},
 	imageHidden: {
 		opacity: 0,
@@ -165,14 +163,12 @@ const styles = StyleSheet.create({
 		bottom: 0,
 		justifyContent: 'center',
 		alignItems: 'center',
-		backgroundColor: 'rgba(248, 249, 250, 0.8)',
 		borderRadius: 8,
 		zIndex: 1,
 	},
 	loadingText: {
 		marginTop: 8,
 		fontSize: 12,
-		color: '#6c757d',
 		textAlign: 'center',
 	},
 	errorContainer: {
@@ -180,21 +176,17 @@ const styles = StyleSheet.create({
 		height: 160,
 		justifyContent: 'center',
 		alignItems: 'center',
-		backgroundColor: '#f8d7da',
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: '#f5c6cb',
 		padding: 8,
 	},
 	errorText: {
 		fontSize: 12,
-		color: '#721c24',
 		textAlign: 'center',
 		fontWeight: '500',
 	},
 	errorHint: {
 		fontSize: 10,
-		color: '#721c24',
 		textAlign: 'center',
 		marginTop: 4,
 		fontStyle: 'italic',

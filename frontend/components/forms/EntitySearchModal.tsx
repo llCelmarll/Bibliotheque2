@@ -1,12 +1,12 @@
 // components/forms/EntitySearchModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-	View, 
-	Text, 
-	StyleSheet, 
-	TextInput, 
-	TouchableOpacity, 
-	Modal, 
+import {
+	View,
+	Text,
+	StyleSheet,
+	TextInput,
+	TouchableOpacity,
+	Modal,
 	ScrollView,
 	KeyboardAvoidingView,
 	Platform
@@ -14,6 +14,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { Entity, EntityType } from '@/types/entityTypes';
 import { entityService } from '@/services/entityService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface EntitySearchModalProps<T = {}> {
 	visible: boolean;
@@ -32,6 +33,7 @@ export const EntitySearchModal = <T,>({
 	title,
 	placeholder
 }: EntitySearchModalProps<T>) => {
+	const theme = useTheme();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [searchResults, setSearchResults] = useState<Entity<T>[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
@@ -41,10 +43,10 @@ export const EntitySearchModal = <T,>({
 	const performSearch = async (query: string) => {
 		setIsSearching(true);
 		console.log(`🔍 Recherche ${entityType}:`, query);
-		
+
 		try {
 			let results: any[] = [];
-			
+
 			switch (entityType) {
 				case 'author':
 					console.log('📡 Appel API auteurs...');
@@ -63,7 +65,7 @@ export const EntitySearchModal = <T,>({
 					results = await entityService.searchSeries(query, 10);
 					break;
 			}
-			
+
 			console.log(`✅ Résultats ${entityType}:`, results.length, 'trouvés');
 			setSearchResults(results as Entity<T>[]);
 		} catch (error) {
@@ -80,7 +82,7 @@ export const EntitySearchModal = <T,>({
 			const timeoutId = setTimeout(() => {
 				performSearch(searchQuery);
 			}, 300);
-			
+
 			return () => clearTimeout(timeoutId);
 		} else {
 			setSearchResults([]);
@@ -119,7 +121,7 @@ export const EntitySearchModal = <T,>({
 				name: searchQuery.trim(),
 				exists: false // Indique que c'est une nouvelle entité à créer
 			};
-			
+
 			console.log(`📝 Nouvelle entité préparée (${entityType}):`, newEntity.name);
 			handleSelectEntity(newEntity);
 		}
@@ -129,8 +131,8 @@ export const EntitySearchModal = <T,>({
 		if (isSearching) {
 			return (
 				<View style={styles.loadingContainer}>
-					<MaterialIcons name="hourglass-empty" size={24} color="#3498db" />
-					<Text style={styles.loadingText}>Recherche en cours...</Text>
+					<MaterialIcons name="hourglass-empty" size={24} color={theme.accent} />
+					<Text style={[styles.loadingText, { color: theme.textSecondary }]}>Recherche en cours...</Text>
 				</View>
 			);
 		}
@@ -138,8 +140,8 @@ export const EntitySearchModal = <T,>({
 		if (searchQuery.length < 2) {
 			return (
 				<View style={styles.hintContainer}>
-					<MaterialIcons name="search" size={32} color="#bdc3c7" />
-					<Text style={styles.hintText}>
+					<MaterialIcons name="search" size={32} color={theme.textMuted} />
+					<Text style={[styles.hintText, { color: theme.textMuted }]}>
 						Tapez au moins 2 caractères pour rechercher
 					</Text>
 				</View>
@@ -149,17 +151,17 @@ export const EntitySearchModal = <T,>({
 		if (searchResults.length === 0) {
 			return (
 				<View style={styles.noResultsContainer}>
-					<MaterialIcons name="search-off" size={32} color="#95a5a6" />
-					<Text style={styles.noResultsText}>
+					<MaterialIcons name="search-off" size={32} color={theme.textMuted} />
+					<Text style={[styles.noResultsText, { color: theme.textMuted }]}>
 						Aucun résultat trouvé
 					</Text>
 					{searchQuery.trim() && (
 						<TouchableOpacity
-							style={styles.createNewButton}
+							style={[styles.createNewButton, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}
 							onPress={handleCreateNew}
 						>
-							<MaterialIcons name="add-circle" size={20} color="#f39c12" />
-							<Text style={styles.createNewText}>
+							<MaterialIcons name="add-circle" size={20} color={theme.warning} />
+							<Text style={[styles.createNewText, { color: theme.warning }]}>
 								Créer "{searchQuery.trim()}"
 							</Text>
 						</TouchableOpacity>
@@ -173,53 +175,53 @@ export const EntitySearchModal = <T,>({
 				{searchResults.map((entity, index) => (
 					<TouchableOpacity
 						key={`${entity.id}-${index}`}
-						style={styles.resultItem}
+						style={[styles.resultItem, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}
 						onPress={() => handleSelectEntity(entity)}
 					>
 						<View style={styles.resultContent}>
 							<MaterialIcons
 								name={entity.exists ? 'check-circle' : 'add-circle'}
 								size={20}
-								color={entity.exists ? '#27ae60' : '#f39c12'}
+								color={entity.exists ? theme.success : theme.warning}
 								style={styles.resultIcon}
 							/>
-							
+
 							<View style={styles.resultInfo}>
-								<Text style={styles.resultName}>
+								<Text style={[styles.resultName, { color: theme.textPrimary }]}>
 									{entity.name}
 								</Text>
-								
+
 								{/* Métadonnées désactivées temporairement */}
 							</View>
 
 							<MaterialIcons
 								name="arrow-forward-ios"
 								size={16}
-								color="#bdc3c7"
+								color={theme.textMuted}
 							/>
 						</View>
 					</TouchableOpacity>
 				))}
-				
+
 				{/* Option pour créer nouveau même avec des résultats */}
 				{searchQuery.trim() && (
 					<TouchableOpacity
-						style={[styles.resultItem, styles.createNewItem]}
+						style={[styles.resultItem, styles.createNewItem, { backgroundColor: theme.bgCard, borderColor: theme.warning }]}
 						onPress={handleCreateNew}
 					>
 						<View style={styles.resultContent}>
 							<MaterialIcons
 								name="add-circle"
 								size={20}
-								color="#f39c12"
+								color={theme.warning}
 								style={styles.resultIcon}
 							/>
-							
+
 							<View style={styles.resultInfo}>
-								<Text style={styles.createNewText}>
+								<Text style={[styles.createNewText, { color: theme.warning }]}>
 									Créer "{searchQuery.trim()}"
 								</Text>
-								<Text style={styles.createNewSubtext}>
+								<Text style={[styles.createNewSubtext, { color: theme.warning }]}>
 									Nouvelle entrée
 								</Text>
 							</View>
@@ -227,7 +229,7 @@ export const EntitySearchModal = <T,>({
 							<MaterialIcons
 								name="arrow-forward-ios"
 								size={16}
-								color="#f39c12"
+								color={theme.warning}
 							/>
 						</View>
 					</TouchableOpacity>
@@ -243,31 +245,32 @@ export const EntitySearchModal = <T,>({
 			presentationStyle="pageSheet"
 			onRequestClose={onClose}
 		>
-			<KeyboardAvoidingView 
-				style={styles.modalContainer}
+			<KeyboardAvoidingView
+				style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}
 				behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			>
 				{/* Header */}
-				<View style={styles.header}>
+				<View style={[styles.header, { borderBottomColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}>
 					<TouchableOpacity
 						style={styles.closeButton}
 						onPress={onClose}
 					>
-						<MaterialIcons name="close" size={24} color="#2c3e50" />
+						<MaterialIcons name="close" size={24} color={theme.textPrimary} />
 					</TouchableOpacity>
-					
-					<Text style={styles.modalTitle}>{title}</Text>
-					
+
+					<Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{title}</Text>
+
 					<View style={styles.headerSpacer} />
 				</View>
 
 				{/* Search Input */}
-				<View style={styles.searchContainer}>
-					<MaterialIcons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
+				<View style={[styles.searchContainer, { backgroundColor: theme.bgInput, borderColor: theme.borderLight }]}>
+					<MaterialIcons name="search" size={20} color={theme.textSecondary} style={styles.searchIcon} />
 					<TextInput
 						ref={inputRef}
-						style={styles.searchInput}
+						style={[styles.searchInput, { color: theme.textPrimary }]}
 						placeholder={placeholder}
+						placeholderTextColor={theme.textMuted}
 						value={searchQuery}
 						onChangeText={setSearchQuery}
 						autoCapitalize="words"
@@ -279,7 +282,7 @@ export const EntitySearchModal = <T,>({
 							style={styles.clearButton}
 							onPress={() => setSearchQuery('')}
 						>
-							<MaterialIcons name="clear" size={20} color="#bdc3c7" />
+							<MaterialIcons name="clear" size={20} color={theme.textMuted} />
 						</TouchableOpacity>
 					)}
 				</View>
@@ -296,7 +299,6 @@ export const EntitySearchModal = <T,>({
 const styles = StyleSheet.create({
 	modalContainer: {
 		flex: 1,
-		backgroundColor: '#ffffff',
 	},
 	header: {
 		flexDirection: 'row',
@@ -305,8 +307,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: '#e1e8ed',
-		backgroundColor: '#f8f9fa',
 	},
 	closeButton: {
 		padding: 4,
@@ -314,7 +314,6 @@ const styles = StyleSheet.create({
 	modalTitle: {
 		fontSize: 18,
 		fontWeight: '600',
-		color: '#2c3e50',
 		textAlign: 'center',
 		flex: 1,
 	},
@@ -324,12 +323,10 @@ const styles = StyleSheet.create({
 	searchContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#f8f9fa',
 		borderRadius: 12,
 		margin: 16,
 		paddingHorizontal: 12,
 		borderWidth: 1,
-		borderColor: '#e1e8ed',
 	},
 	searchIcon: {
 		marginRight: 8,
@@ -338,7 +335,6 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingVertical: 12,
 		fontSize: 16,
-		color: '#2c3e50',
 	},
 	clearButton: {
 		padding: 4,
@@ -356,7 +352,6 @@ const styles = StyleSheet.create({
 	loadingText: {
 		marginTop: 12,
 		fontSize: 16,
-		color: '#7f8c8d',
 	},
 	hintContainer: {
 		alignItems: 'center',
@@ -366,7 +361,6 @@ const styles = StyleSheet.create({
 	hintText: {
 		marginTop: 16,
 		fontSize: 16,
-		color: '#95a5a6',
 		textAlign: 'center',
 		paddingHorizontal: 20,
 	},
@@ -378,21 +372,17 @@ const styles = StyleSheet.create({
 	noResultsText: {
 		marginTop: 16,
 		fontSize: 16,
-		color: '#95a5a6',
 		textAlign: 'center',
 	},
 	resultsContainer: {
 		flex: 1,
 	},
 	resultItem: {
-		backgroundColor: '#ffffff',
 		borderRadius: 12,
 		marginBottom: 8,
 		borderWidth: 1,
-		borderColor: '#e1e8ed',
 	},
 	createNewItem: {
-		borderColor: '#f39c12',
 		borderStyle: 'dashed',
 	},
 	resultContent: {
@@ -409,33 +399,27 @@ const styles = StyleSheet.create({
 	resultName: {
 		fontSize: 16,
 		fontWeight: '500',
-		color: '#2c3e50',
 	},
 	resultMeta: {
 		fontSize: 12,
-		color: '#7f8c8d',
 		marginTop: 2,
 	},
 	createNewButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#fff3cd',
 		borderRadius: 8,
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		marginTop: 16,
 		borderWidth: 1,
-		borderColor: '#f39c12',
 	},
 	createNewText: {
 		marginLeft: 8,
 		fontSize: 14,
 		fontWeight: '500',
-		color: '#856404',
 	},
 	createNewSubtext: {
 		fontSize: 12,
-		color: '#856404',
 		marginTop: 2,
 	},
 });

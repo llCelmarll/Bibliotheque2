@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LoanStatistics } from '@/types/loan';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface LoanStatsProps {
   statistics: LoanStatistics | null;
@@ -8,10 +9,12 @@ interface LoanStatsProps {
 }
 
 export const LoanStats: React.FC<LoanStatsProps> = ({ statistics, loading }) => {
+  const theme = useTheme();
+
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Chargement des statistiques...</Text>
+      <View style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
+        <Text style={[styles.loadingText, { color: theme.textMuted }]}>Chargement des statistiques...</Text>
       </View>
     );
   }
@@ -21,37 +24,37 @@ export const LoanStats: React.FC<LoanStatsProps> = ({ statistics, loading }) => 
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
       <View style={styles.statItem}>
-        <Text style={styles.statValue}>{statistics.total_loans}</Text>
-        <Text style={styles.statLabel}>Total</Text>
+        <Text style={[styles.statValue, { color: theme.textPrimary }]}>{statistics.total_loans}</Text>
+        <Text style={[styles.statLabel, { color: theme.textMuted }]}>Total</Text>
       </View>
 
-      <View style={styles.separator} />
+      <View style={[styles.separator, { backgroundColor: theme.borderLight }]} />
 
       <View style={styles.statItem}>
-        <Text style={[styles.statValue, { color: '#4CAF50' }]}>
+        <Text style={[styles.statValue, { color: theme.success }]}>
           {statistics.active_loans}
         </Text>
-        <Text style={styles.statLabel}>En cours</Text>
+        <Text style={[styles.statLabel, { color: theme.textMuted }]}>En cours</Text>
       </View>
 
-      <View style={styles.separator} />
+      <View style={[styles.separator, { backgroundColor: theme.borderLight }]} />
 
       <View style={styles.statItem}>
-        <Text style={[styles.statValue, { color: '#F44336' }]}>
+        <Text style={[styles.statValue, { color: theme.danger }]}>
           {statistics.overdue_loans}
         </Text>
-        <Text style={styles.statLabel}>En retard</Text>
+        <Text style={[styles.statLabel, { color: theme.textMuted }]}>En retard</Text>
       </View>
 
-      <View style={styles.separator} />
+      <View style={[styles.separator, { backgroundColor: theme.borderLight }]} />
 
       <View style={styles.statItem}>
-        <Text style={[styles.statValue, { color: '#757575' }]}>
+        <Text style={[styles.statValue, { color: theme.textMuted }]}>
           {statistics.returned_loans}
         </Text>
-        <Text style={styles.statLabel}>Retournés</Text>
+        <Text style={[styles.statLabel, { color: theme.textMuted }]}>Retournés</Text>
       </View>
     </View>
   );
@@ -62,11 +65,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     padding: 16,
     marginBottom: 8,
     borderRadius: 8,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -79,22 +80,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#212121',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#757575',
     textAlign: 'center',
   },
   separator: {
     width: 1,
     height: 40,
-    backgroundColor: '#E0E0E0',
   },
   loadingText: {
     fontSize: 14,
-    color: '#757575',
     textAlign: 'center',
   },
 });

@@ -16,12 +16,14 @@ import {
   calendarPreferencesService,
 } from '@/services/calendarPreferences';
 import { Picker } from '@react-native-picker/picker';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export const CalendarPreferencesSection: React.FC = () => {
   const [preferences, setPreferences] = useState<CalendarPreferences | null>(null);
   const [calendars, setCalendars] = useState<Calendar.Calendar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
+  const theme = useTheme();
 
   useEffect(() => {
     loadPreferencesAndCalendars();
@@ -30,18 +32,14 @@ export const CalendarPreferencesSection: React.FC = () => {
   const loadPreferencesAndCalendars = async () => {
     setIsLoading(true);
     try {
-      // Charger les préférences
       const prefs = await calendarPreferencesService.getPreferences();
       setPreferences(prefs);
 
-      // Vérifier les permissions
       const { status } = await Calendar.getCalendarPermissionsAsync();
       setHasPermission(status === 'granted');
 
       if (status === 'granted') {
-        // Charger les calendriers disponibles
         const cals = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-        // Filtrer pour ne garder que les calendriers accessibles en écriture
         const writableCalendars = cals.filter((cal) => cal.allowsModifications);
         setCalendars(writableCalendars);
       }
@@ -106,9 +104,9 @@ export const CalendarPreferencesSection: React.FC = () => {
   if (Platform.OS === 'web') {
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Rappels calendrier</Text>
-        <View style={styles.card}>
-          <Text style={styles.infoText}>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Rappels calendrier</Text>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
+          <Text style={[styles.infoText, { color: theme.textMuted }]}>
             Les rappels calendrier ne sont disponibles que sur mobile (Android).
           </Text>
         </View>
@@ -119,9 +117,9 @@ export const CalendarPreferencesSection: React.FC = () => {
   if (isLoading) {
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Rappels calendrier</Text>
-        <View style={styles.card}>
-          <ActivityIndicator size="small" color="#2196F3" />
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Rappels calendrier</Text>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
+          <ActivityIndicator size="small" color={theme.accent} />
         </View>
       </View>
     );
@@ -130,14 +128,14 @@ export const CalendarPreferencesSection: React.FC = () => {
   if (!hasPermission) {
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Rappels calendrier</Text>
-        <View style={styles.card}>
-          <Text style={styles.infoText}>
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Rappels calendrier</Text>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
+          <Text style={[styles.infoText, { color: theme.textMuted }]}>
             Pour configurer les rappels, vous devez autoriser l'accès au calendrier.
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <MaterialIcons name="event" size={20} color="#FFFFFF" />
-            <Text style={styles.permissionButtonText}>Autoriser l'accès</Text>
+          <TouchableOpacity style={[styles.permissionButton, { backgroundColor: theme.accent }]} onPress={requestPermission}>
+            <MaterialIcons name="event" size={20} color={theme.textInverse} />
+            <Text style={[styles.permissionButtonText, { color: theme.textInverse }]}>Autoriser l'accès</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -162,17 +160,17 @@ export const CalendarPreferencesSection: React.FC = () => {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Rappels calendrier</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Rappels calendrier</Text>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
         {/* Calendrier par défaut */}
         <View style={styles.preferenceItem}>
           <View style={styles.preferenceHeader}>
-            <MaterialIcons name="event" size={20} color="#2196F3" />
-            <Text style={styles.preferenceLabel}>Calendrier par défaut</Text>
+            <MaterialIcons name="event" size={20} color={theme.accent} />
+            <Text style={[styles.preferenceLabel, { color: theme.textPrimary }]}>Calendrier par défaut</Text>
           </View>
           {calendars.length > 0 ? (
-            <View style={styles.pickerContainer}>
+            <View style={[styles.pickerContainer, { borderColor: theme.borderLight }]}>
               <Picker
                 selectedValue={preferences.defaultCalendarId}
                 onValueChange={(value) => {
@@ -186,7 +184,7 @@ export const CalendarPreferencesSection: React.FC = () => {
                   label="Sélectionner un calendrier..."
                   value=""
                   enabled={false}
-                  color="#999"
+                  color={theme.textMuted}
                 />
                 {calendars.map((cal) => (
                   <Picker.Item
@@ -198,7 +196,7 @@ export const CalendarPreferencesSection: React.FC = () => {
               </Picker>
             </View>
           ) : (
-            <Text style={styles.noCalendarText}>
+            <Text style={[styles.noCalendarText, { color: theme.textMuted }]}>
               Aucun calendrier accessible en écriture trouvé
             </Text>
           )}
@@ -207,10 +205,10 @@ export const CalendarPreferencesSection: React.FC = () => {
         {/* Délai de rappel par défaut */}
         <View style={styles.preferenceItem}>
           <View style={styles.preferenceHeader}>
-            <MaterialIcons name="schedule" size={20} color="#2196F3" />
-            <Text style={styles.preferenceLabel}>Délai de rappel par défaut</Text>
+            <MaterialIcons name="schedule" size={20} color={theme.accent} />
+            <Text style={[styles.preferenceLabel, { color: theme.textPrimary }]}>Délai de rappel par défaut</Text>
           </View>
-          <View style={styles.pickerContainer}>
+          <View style={[styles.pickerContainer, { borderColor: theme.borderLight }]}>
             <Picker
               selectedValue={preferences.defaultReminderOffsetDays}
               onValueChange={(value) => updatePreference({ defaultReminderOffsetDays: value })}
@@ -226,10 +224,10 @@ export const CalendarPreferencesSection: React.FC = () => {
         {/* Heure du rappel */}
         <View style={styles.preferenceItem}>
           <View style={styles.preferenceHeader}>
-            <MaterialIcons name="access-time" size={20} color="#2196F3" />
-            <Text style={styles.preferenceLabel}>Heure du rappel</Text>
+            <MaterialIcons name="access-time" size={20} color={theme.accent} />
+            <Text style={[styles.preferenceLabel, { color: theme.textPrimary }]}>Heure du rappel</Text>
           </View>
-          <View style={styles.pickerContainer}>
+          <View style={[styles.pickerContainer, { borderColor: theme.borderLight }]}>
             <Picker
               selectedValue={preferences.defaultReminderHour}
               onValueChange={(value) => updatePreference({ defaultReminderHour: value })}
@@ -243,16 +241,16 @@ export const CalendarPreferencesSection: React.FC = () => {
         </View>
 
         {/* Bouton de réinitialisation */}
-        <TouchableOpacity style={styles.resetButton} onPress={resetPreferences}>
-          <MaterialIcons name="restore" size={20} color="#F44336" />
-          <Text style={styles.resetButtonText}>Réinitialiser aux valeurs par défaut</Text>
+        <TouchableOpacity style={[styles.resetButton, { borderTopColor: theme.borderLight }]} onPress={resetPreferences}>
+          <MaterialIcons name="restore" size={20} color={theme.danger} />
+          <Text style={[styles.resetButtonText, { color: theme.danger }]}>Réinitialiser aux valeurs par défaut</Text>
         </TouchableOpacity>
       </View>
 
       {/* Info */}
       <View style={styles.infoContainer}>
-        <MaterialIcons name="info-outline" size={16} color="#757575" />
-        <Text style={styles.infoText}>
+        <MaterialIcons name="info-outline" size={16} color={theme.textMuted} />
+        <Text style={[styles.infoText, { color: theme.textMuted }]}>
           Ces paramètres seront utilisés par défaut lors de la création de nouveaux rappels. Vous
           pourrez les modifier pour chaque rappel individuel.
         </Text>
@@ -268,14 +266,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 12,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -295,12 +290,10 @@ const styles = StyleSheet.create({
   preferenceLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
     marginLeft: 8,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     borderRadius: 8,
     overflow: 'hidden',
     marginTop: 8,
@@ -310,7 +303,6 @@ const styles = StyleSheet.create({
   },
   noCalendarText: {
     fontSize: 14,
-    color: '#999',
     fontStyle: 'italic',
     marginTop: 8,
   },
@@ -320,12 +312,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
     marginTop: 8,
   },
   resetButtonText: {
     fontSize: 14,
-    color: '#F44336',
     fontWeight: '500',
     marginLeft: 8,
   },
@@ -336,7 +326,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: '#757575',
     marginLeft: 8,
     flex: 1,
     lineHeight: 18,
@@ -345,7 +334,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2196F3',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -353,7 +341,6 @@ const styles = StyleSheet.create({
   },
   permissionButtonText: {
     fontSize: 14,
-    color: '#FFFFFF',
     fontWeight: '600',
     marginLeft: 8,
   },

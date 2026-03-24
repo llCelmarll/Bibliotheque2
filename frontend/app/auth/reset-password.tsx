@@ -13,10 +13,12 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { accountService } from '@/services/accountService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ResetPasswordScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const router = useRouter();
+  const theme = useTheme();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,14 +30,14 @@ export default function ResetPasswordScreen() {
 
   if (!token) {
     return (
-      <View style={styles.centeredContainer}>
-        <MaterialIcons name="error-outline" size={48} color="#f44336" />
-        <Text style={styles.invalidTitle}>Lien invalide</Text>
-        <Text style={styles.invalidSubtitle}>
+      <View style={[styles.centeredContainer, { backgroundColor: theme.bgPrimary }]}>
+        <MaterialIcons name="error-outline" size={48} color={theme.danger} />
+        <Text style={[styles.invalidTitle, { color: theme.textPrimary }]}>Lien invalide</Text>
+        <Text style={[styles.invalidSubtitle, { color: theme.textMuted }]}>
           Ce lien de réinitialisation est invalide ou incomplet.
         </Text>
-        <TouchableOpacity style={styles.submitButton} onPress={() => router.replace('/auth/forgot-password')}>
-          <Text style={styles.submitButtonText}>Faire une nouvelle demande</Text>
+        <TouchableOpacity style={[styles.submitButton, { backgroundColor: theme.accent }]} onPress={() => router.replace('/auth/forgot-password')}>
+          <Text style={[styles.submitButtonText, { color: theme.textInverse }]}>Faire une nouvelle demande</Text>
         </TouchableOpacity>
       </View>
     );
@@ -68,39 +70,40 @@ export default function ResetPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bgPrimary }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Nouveau mot de passe</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Nouveau mot de passe</Text>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>
             Choisissez un mot de passe sécurisé (8 caractères minimum, avec majuscule, minuscule et chiffre).
           </Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
           {errorMessage ? (
-            <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color="#f44336" />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+            <View style={[styles.errorContainer, { backgroundColor: theme.dangerBg, borderLeftColor: theme.danger }]}>
+              <MaterialIcons name="error-outline" size={20} color={theme.danger} />
+              <Text style={[styles.errorText, { color: theme.danger }]}>{errorMessage}</Text>
             </View>
           ) : null}
 
           {successMessage ? (
-            <View style={styles.successContainer}>
-              <MaterialIcons name="check-circle-outline" size={20} color="#4CAF50" />
-              <Text style={styles.successText}>{successMessage}</Text>
+            <View style={[styles.successContainer, { backgroundColor: theme.successBg, borderLeftColor: theme.success }]}>
+              <MaterialIcons name="check-circle-outline" size={20} color={theme.success} />
+              <Text style={[styles.successText, { color: theme.success }]}>{successMessage}</Text>
             </View>
           ) : null}
 
           {!successMessage ? (
             <>
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="lock" size={24} color="#666" style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
+                <MaterialIcons name="lock" size={24} color={theme.textMuted} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: theme.textPrimary }]}
                   placeholder="Nouveau mot de passe"
+                  placeholderTextColor={theme.textMuted}
                   value={newPassword}
                   onChangeText={(text) => {
                     setNewPassword(text);
@@ -110,15 +113,16 @@ export default function ResetPasswordScreen() {
                   editable={!isLoading}
                 />
                 <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeIcon}>
-                  <MaterialIcons name={showNewPassword ? 'visibility-off' : 'visibility'} size={24} color="#666" />
+                  <MaterialIcons name={showNewPassword ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="lock-outline" size={24} color="#666" style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
+                <MaterialIcons name="lock-outline" size={24} color={theme.textMuted} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: theme.textPrimary }]}
                   placeholder="Confirmer le mot de passe"
+                  placeholderTextColor={theme.textMuted}
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
@@ -128,19 +132,19 @@ export default function ResetPasswordScreen() {
                   editable={!isLoading}
                 />
                 <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                  <MaterialIcons name={showConfirmPassword ? 'visibility-off' : 'visibility'} size={24} color="#666" />
+                  <MaterialIcons name={showConfirmPassword ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity
-                style={[styles.submitButton, isLoading && styles.buttonDisabled]}
+                style={[styles.submitButton, { backgroundColor: theme.accent }, isLoading && { backgroundColor: theme.bgMuted }]}
                 onPress={handleSubmit}
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={theme.textInverse} size="small" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Réinitialiser le mot de passe</Text>
+                  <Text style={[styles.submitButtonText, { color: theme.textInverse }]}>Réinitialiser le mot de passe</Text>
                 )}
               </TouchableOpacity>
             </>
@@ -149,8 +153,8 @@ export default function ResetPasswordScreen() {
 
         {!successMessage ? (
           <TouchableOpacity style={styles.backLink} onPress={() => router.replace('/auth/login')}>
-            <MaterialIcons name="arrow-back" size={18} color="#2196F3" />
-            <Text style={styles.backLinkText}>Retour à la connexion</Text>
+            <MaterialIcons name="arrow-back" size={18} color={theme.accent} />
+            <Text style={[styles.backLinkText, { color: theme.accent }]}>Retour à la connexion</Text>
           </TouchableOpacity>
         ) : null}
       </ScrollView>
@@ -161,11 +165,9 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centeredContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -174,11 +176,9 @@ const styles = StyleSheet.create({
   invalidTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
   },
   invalidSubtitle: {
     fontSize: 15,
-    color: '#666',
     textAlign: 'center',
   },
   scrollContainer: {
@@ -193,20 +193,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 15,
-    color: '#666',
     textAlign: 'center',
     lineHeight: 22,
   },
   form: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -215,15 +211,12 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffebee',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
   },
   errorText: {
-    color: '#c62828',
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -231,15 +224,12 @@ const styles = StyleSheet.create({
   successContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
   },
   successText: {
-    color: '#2e7d32',
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -249,11 +239,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     marginBottom: 16,
     paddingHorizontal: 12,
-    backgroundColor: '#fafafa',
   },
   inputIcon: {
     marginRight: 12,
@@ -262,24 +250,18 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     fontSize: 16,
-    color: '#333',
   },
   eyeIcon: {
     padding: 4,
   },
   submitButton: {
-    backgroundColor: '#2196F3',
     borderRadius: 8,
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
   submitButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -292,7 +274,6 @@ const styles = StyleSheet.create({
   },
   backLinkText: {
     fontSize: 15,
-    color: '#2196F3',
     fontWeight: '500',
   },
 });

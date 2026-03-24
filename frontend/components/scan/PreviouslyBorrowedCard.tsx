@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SuggestedBook } from '@/types/scanTypes';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Props {
   suggestedBook: SuggestedBook;
@@ -16,63 +17,65 @@ export const PreviouslyBorrowedCard: React.FC<Props> = ({
   onAddToLibrary,
   isAddingToLibrary = false,
 }) => {
+  const theme = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
       {/* Header avec icône */}
       <View style={styles.header}>
-        <MaterialIcons name="history" size={32} color="#FF9800" />
-        <Text style={styles.title}>Livre déjà emprunté</Text>
+        <MaterialIcons name="history" size={32} color={theme.warning} />
+        <Text style={[styles.title, { color: theme.warning }]}>Livre déjà emprunté</Text>
       </View>
 
       {/* Message */}
-      <Text style={styles.message}>
+      <Text style={[styles.message, { color: theme.textPrimary }]}>
         Vous avez déjà emprunté "{suggestedBook.title}" mais il n'est plus dans votre bibliothèque.
       </Text>
 
       {/* Informations du livre */}
-      <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle}>{suggestedBook.title}</Text>
+      <View style={[styles.bookInfo, { backgroundColor: theme.bgCard }]}>
+        <Text style={[styles.bookTitle, { color: theme.textPrimary }]}>{suggestedBook.title}</Text>
         {suggestedBook.authors && suggestedBook.authors.length > 0 && (
-          <Text style={styles.bookAuthors}>
+          <Text style={[styles.bookAuthors, { color: theme.textSecondary }]}>
             {suggestedBook.authors.map(a => a.name).join(', ')}
           </Text>
         )}
         {suggestedBook.isbn && (
-          <Text style={styles.bookIsbn}>ISBN: {suggestedBook.isbn}</Text>
+          <Text style={[styles.bookIsbn, { color: theme.textMuted }]}>ISBN: {suggestedBook.isbn}</Text>
         )}
       </View>
 
       {/* Actions */}
-      <Text style={styles.actionsLabel}>Que souhaitez-vous faire ?</Text>
+      <Text style={[styles.actionsLabel, { color: theme.textPrimary }]}>Que souhaitez-vous faire ?</Text>
 
       <TouchableOpacity
-        style={[styles.borrowButton, isAddingToLibrary && styles.buttonDisabled]}
+        style={[styles.borrowButton, { backgroundColor: theme.accentMedium }, isAddingToLibrary && styles.buttonDisabled]}
         onPress={onAddAsBorrow}
         disabled={isAddingToLibrary}
       >
-        <MaterialIcons name="book" size={20} color="#FFFFFF" />
-        <Text style={styles.borrowButtonText}>Emprunter à nouveau</Text>
+        <MaterialIcons name="book" size={20} color={theme.textInverse} />
+        <Text style={[styles.borrowButtonText, { color: theme.textInverse }]}>Emprunter à nouveau</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.libraryButton, isAddingToLibrary && styles.buttonDisabled]}
+        style={[styles.libraryButton, { backgroundColor: theme.success }, isAddingToLibrary && styles.buttonDisabled]}
         onPress={onAddToLibrary}
         disabled={isAddingToLibrary}
       >
         {isAddingToLibrary ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
+          <ActivityIndicator color={theme.textInverse} size="small" />
         ) : (
-          <MaterialIcons name="add-circle" size={20} color="#FFFFFF" />
+          <MaterialIcons name="add-circle" size={20} color={theme.textInverse} />
         )}
-        <Text style={styles.libraryButtonText}>
+        <Text style={[styles.libraryButtonText, { color: theme.textInverse }]}>
           {isAddingToLibrary ? 'Ajout en cours...' : 'Ajouter à ma bibliothèque'}
         </Text>
       </TouchableOpacity>
 
       {/* Note explicative */}
       <View style={styles.note}>
-        <MaterialIcons name="info" size={16} color="#757575" />
-        <Text style={styles.noteText}>
+        <MaterialIcons name="info" size={16} color={theme.textSecondary} />
+        <Text style={[styles.noteText, { color: theme.textSecondary }]}>
           "Ajouter à ma bibliothèque" supprimera l'historique d'emprunts
         </Text>
       </View>
@@ -82,12 +85,10 @@ export const PreviouslyBorrowedCard: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFF3E0',
     borderRadius: 12,
     padding: 20,
     margin: 16,
     borderWidth: 2,
-    borderColor: '#FF9800',
   },
   header: {
     flexDirection: 'row',
@@ -97,17 +98,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#E65100',
     marginLeft: 12,
   },
   message: {
     fontSize: 15,
-    color: '#424242',
     marginBottom: 16,
     lineHeight: 22,
   },
   bookInfo: {
-    backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -115,36 +113,30 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 4,
   },
   bookAuthors: {
     fontSize: 14,
-    color: '#757575',
     marginBottom: 2,
   },
   bookIsbn: {
     fontSize: 12,
-    color: '#9E9E9E',
   },
   actionsLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#424242',
     marginBottom: 12,
   },
   borrowButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#9C27B0',
     paddingVertical: 14,
     borderRadius: 8,
     marginBottom: 10,
     gap: 8,
   },
   borrowButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -152,14 +144,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
     paddingVertical: 14,
     borderRadius: 8,
     marginBottom: 12,
     gap: 8,
   },
   libraryButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -171,7 +161,6 @@ const styles = StyleSheet.create({
   noteText: {
     flex: 1,
     fontSize: 12,
-    color: '#757575',
     fontStyle: 'italic',
   },
   buttonDisabled: {

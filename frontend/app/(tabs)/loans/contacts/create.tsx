@@ -15,10 +15,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { ContactCreate } from '@/types/contact';
 import { useContacts } from '@/hooks/useContacts';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function CreateContactScreen() {
   const router = useRouter();
   const { createContact } = useContacts({ autoLoad: false });
+  const theme = useTheme();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -83,24 +85,24 @@ function CreateContactScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#212121" />
+          <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nouveau contact</Text>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Nouveau contact</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: theme.bgCard }]}>
           {/* Nom */}
           <View style={styles.field}>
-            <Text style={styles.label}>
-              Nom <Text style={styles.required}>*</Text>
+            <Text style={[styles.label, { color: theme.textPrimary }]}>
+              Nom <Text style={[styles.required, { color: theme.danger }]}>*</Text>
             </Text>
             <TextInput
-              style={[styles.input, errors.name && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }, errors.name && { borderColor: theme.danger }]}
               placeholder="Nom complet"
               value={name}
               onChangeText={(text) => {
@@ -111,14 +113,14 @@ function CreateContactScreen() {
               }}
               autoCapitalize="words"
             />
-            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+            {errors.name && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.name}</Text>}
           </View>
 
           {/* Email */}
           <View style={styles.field}>
-            <Text style={styles.label}>Email (optionnel)</Text>
+            <Text style={[styles.label, { color: theme.textPrimary }]}>Email (optionnel)</Text>
             <TextInput
-              style={[styles.input, errors.email && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }, errors.email && { borderColor: theme.danger }]}
               placeholder="email@example.com"
               value={email}
               onChangeText={(text) => {
@@ -130,14 +132,14 @@ function CreateContactScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            {errors.email && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.email}</Text>}
           </View>
 
           {/* Téléphone */}
           <View style={styles.field}>
-            <Text style={styles.label}>Téléphone (optionnel)</Text>
+            <Text style={[styles.label, { color: theme.textPrimary }]}>Téléphone (optionnel)</Text>
             <TextInput
-              style={[styles.input, errors.phone && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }, errors.phone && { borderColor: theme.danger }]}
               placeholder="+33 6 12 34 56 78"
               value={phone}
               onChangeText={(text) => {
@@ -148,14 +150,14 @@ function CreateContactScreen() {
               }}
               keyboardType="phone-pad"
             />
-            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+            {errors.phone && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.phone}</Text>}
           </View>
 
           {/* Notes */}
           <View style={styles.field}>
-            <Text style={styles.label}>Notes (optionnel)</Text>
+            <Text style={[styles.label, { color: theme.textPrimary }]}>Notes (optionnel)</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }]}
               placeholder="Ajouter des notes..."
               value={notes}
               onChangeText={setNotes}
@@ -167,18 +169,18 @@ function CreateContactScreen() {
       </ScrollView>
 
       {/* Bouton de soumission */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.bgCard, borderTopColor: theme.borderLight }]}>
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          style={[styles.submitButton, { backgroundColor: theme.accent }, loading && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={theme.textInverse} />
           ) : (
             <>
-              <MaterialIcons name="check" size={20} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>Créer le contact</Text>
+              <MaterialIcons name="check" size={20} color={theme.textInverse} />
+              <Text style={[styles.submitButtonText, { color: theme.textInverse }]}>Créer le contact</Text>
             </>
           )}
         </TouchableOpacity>
@@ -198,16 +200,13 @@ export default function CreateContact() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   backButton: {
     padding: 4,
@@ -215,7 +214,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
   },
   content: {
     flex: 1,
@@ -224,7 +222,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   form: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
   },
@@ -234,23 +231,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#424242',
     marginBottom: 8,
   },
-  required: {
-    color: '#F44336',
-  },
+  required: {},
   input: {
     height: 44,
-    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  inputError: {
-    borderColor: '#F44336',
   },
   textArea: {
     height: 100,
@@ -259,20 +248,16 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
     marginTop: 4,
   },
   footer: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2196F3',
     paddingVertical: 14,
     borderRadius: 8,
   },
@@ -282,7 +267,6 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
     marginLeft: 8,
   },
 });

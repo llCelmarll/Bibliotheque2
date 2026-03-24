@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const STAR_SIZE = 24;
 const MAX_STARS = 5;
@@ -17,6 +18,7 @@ export interface StarRatingProps {
 }
 
 export function StarRating({ value, editable = false, onChange, size = STAR_SIZE }: StarRatingProps) {
+  const theme = useTheme();
   const rating = value != null ? Math.min(MAX_STARS, Math.max(0, Math.round(value))) : 0;
 
   const handlePress = (starIndex: number) => {
@@ -43,7 +45,7 @@ export function StarRating({ value, editable = false, onChange, size = STAR_SIZE
             <MaterialIcons
               name={isFilled ? 'star' : 'star-border'}
               size={size}
-              color={isFilled ? '#f1c40f' : '#bdc3c7'}
+              color={isFilled ? theme.warning : theme.borderMedium}
             />
           </TouchableOpacity>
         );

@@ -20,9 +20,11 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SortMenu } from '@/components/SortMenu';
 import { SharedLibraryAdvancedModal, SharedLibraryAdvancedParams } from '@/components/SharedLibraryAdvancedModal';
 import { useSharedLibrary } from '@/hooks/useSharedLibrary';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function SharedLibraryScreen() {
     const router = useRouter();
+    const theme = useTheme();
     const { userId, username } = useLocalSearchParams();
     const ownerId = parseInt(userId as string);
     const displayName = username ? decodeURIComponent(username as string) : 'Bibliothèque';
@@ -58,7 +60,7 @@ function SharedLibraryScreen() {
     };
 
     const renderBook = ({ item }: { item: Book }) => (
-        <TouchableOpacity style={styles.bookItem} onPress={() => handleBookPress(item)}>
+        <TouchableOpacity style={[styles.bookItem, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]} onPress={() => handleBookPress(item)}>
             <BookCover
                 url={item.cover_url}
                 style={styles.cover}
@@ -66,17 +68,17 @@ function SharedLibraryScreen() {
                 resizeMode="cover"
             />
             <View style={styles.bookInfo}>
-                <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
+                <Text style={[styles.bookTitle, { color: theme.textPrimary }]} numberOfLines={2}>{item.title}</Text>
                 {item.authors && item.authors.length > 0 && (
-                    <Text style={styles.bookAuthors} numberOfLines={1}>
+                    <Text style={[styles.bookAuthors, { color: theme.textSecondary }]} numberOfLines={1}>
                         {item.authors.map(a => a.name).join(', ')}
                     </Text>
                 )}
                 {item.publisher && (
-                    <Text style={styles.bookPublisher} numberOfLines={1}>{item.publisher.name}</Text>
+                    <Text style={[styles.bookPublisher, { color: theme.textMuted }]} numberOfLines={1}>{item.publisher.name}</Text>
                 )}
             </View>
-            <MaterialIcons name="chevron-right" size={24} color="#BDBDBD" />
+            <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
         </TouchableOpacity>
     );
 
@@ -84,54 +86,54 @@ function SharedLibraryScreen() {
         if (!loadingMore) return null;
         return (
             <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color="#2196F3" />
+                <ActivityIndicator size="small" color={theme.accent} />
             </View>
         );
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
             <Head><title>{`Bibliothèque de ${displayName}`}</title></Head>
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color="#212121" />
+                    <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
                 <View style={styles.headerTitles}>
-                    <Text style={styles.headerTitle}>Bibliothèque</Text>
-                    <Text style={styles.headerSubtitle}>{displayName}</Text>
+                    <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Bibliothèque</Text>
+                    <Text style={[styles.headerSubtitle, { color: theme.accentMedium }]}>{displayName}</Text>
                 </View>
-                <Text style={styles.totalCount}>{total} livre{total !== 1 ? 's' : ''}</Text>
+                <Text style={[styles.totalCount, { color: theme.textSecondary }]}>{total} livre{total !== 1 ? 's' : ''}</Text>
             </View>
 
             {/* Barre de recherche */}
-            <View style={styles.searchSection}>
+            <View style={[styles.searchSection, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
                 <View style={styles.searchRow}>
                     <TextInput
-                        style={styles.searchInput}
+                        style={[styles.searchInput, { borderColor: theme.borderLight, backgroundColor: theme.bgCard, color: theme.textPrimary }]}
                         placeholder="Rechercher (titre, auteur, isbn…)"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         onSubmitEditing={() => handleSearch(searchQuery)}
                         returnKeyType="search"
-                        placeholderTextColor="#9E9E9E"
+                        placeholderTextColor={theme.textMuted}
                     />
                     <Pressable
-                        style={[styles.iconButton, isAdvancedMode && styles.iconButtonActive]}
+                        style={[styles.iconButton, { backgroundColor: theme.bgSecondary }, isAdvancedMode && { backgroundColor: theme.accent }]}
                         onPress={() => setAdvancedModalVisible(true)}
                     >
                         <MaterialIcons
                             name="tune"
                             size={22}
-                            color={isAdvancedMode ? '#fff' : '#333'}
+                            color={isAdvancedMode ? theme.textInverse : theme.textPrimary}
                         />
                     </Pressable>
                     <Pressable
-                        style={styles.iconButton}
+                        style={[styles.iconButton, { backgroundColor: theme.bgSecondary }]}
                         onPress={() => handleSearch(searchQuery)}
                     >
-                        <MaterialIcons name="search" size={22} color="#333" />
+                        <MaterialIcons name="search" size={22} color={theme.textPrimary} />
                     </Pressable>
                 </View>
 
@@ -143,9 +145,9 @@ function SharedLibraryScreen() {
                     />
                     {isAdvancedMode && (
                         <View style={styles.advancedBadge}>
-                            <Text style={styles.advancedBadgeText}>Recherche avancée</Text>
+                            <Text style={[styles.advancedBadgeText, { color: theme.accent }]}>Recherche avancée</Text>
                             <Pressable onPress={clearAdvancedSearch}>
-                                <Text style={styles.advancedBadgeClear}>Réinitialiser</Text>
+                                <Text style={[styles.advancedBadgeClear, { color: theme.accent }]}>Réinitialiser</Text>
                             </Pressable>
                         </View>
                     )}
@@ -155,19 +157,19 @@ function SharedLibraryScreen() {
             {/* Contenu */}
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#2196F3" />
+                    <ActivityIndicator size="large" color={theme.accent} />
                 </View>
             ) : error ? (
                 <View style={styles.errorContainer}>
-                    <MaterialIcons name="lock-outline" size={64} color="#E0E0E0" />
-                    <Text style={styles.errorText}>{error}</Text>
+                    <MaterialIcons name="lock-outline" size={64} color={theme.borderLight} />
+                    <Text style={[styles.errorText, { color: theme.textMuted }]}>{error}</Text>
                     {error.includes('partagé') && (
-                        <Text style={styles.errorHint}>
+                        <Text style={[styles.errorHint, { color: theme.textMuted }]}>
                             Demandez-lui d'activer le partage de bibliothèque depuis votre fiche contact chez lui.
                         </Text>
                     )}
-                    <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                        <Text style={styles.backBtnText}>Retour</Text>
+                    <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.accent }]} onPress={() => router.back()}>
+                        <Text style={[styles.backBtnText, { color: theme.textInverse }]}>Retour</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -180,8 +182,8 @@ function SharedLibraryScreen() {
                     onEndReachedThreshold={0.3}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
-                            <MaterialIcons name="library-books" size={64} color="#E0E0E0" />
-                            <Text style={styles.emptyText}>Aucun livre disponible</Text>
+                            <MaterialIcons name="library-books" size={64} color={theme.borderLight} />
+                            <Text style={[styles.emptyText, { color: theme.textMuted }]}>Aucun livre disponible</Text>
                         </View>
                     }
                     refreshControl={
@@ -216,15 +218,12 @@ export default function SharedLibrary() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
     },
     backButton: {
         padding: 4,
@@ -236,25 +235,20 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#212121',
     },
     headerSubtitle: {
         fontSize: 13,
-        color: '#7C3AED',
         fontWeight: '500',
     },
     totalCount: {
         fontSize: 13,
-        color: '#757575',
     },
     searchSection: {
-        backgroundColor: '#FFFFFF',
         paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 8,
         gap: 8,
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
     },
     searchRow: {
         flexDirection: 'row',
@@ -264,23 +258,16 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 40,
         borderWidth: 1,
-        borderColor: '#ddd',
         borderRadius: 8,
         paddingHorizontal: 12,
-        backgroundColor: '#fff',
         fontSize: 14,
-        color: '#212121',
     },
     iconButton: {
         width: 40,
         height: 40,
-        backgroundColor: '#f0f0f0',
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 8,
-    },
-    iconButtonActive: {
-        backgroundColor: '#3498db',
     },
     sortRow: {
         flexDirection: 'row',
@@ -295,12 +282,10 @@ const styles = StyleSheet.create({
     },
     advancedBadgeText: {
         fontSize: 12,
-        color: '#3498db',
         fontWeight: '500',
     },
     advancedBadgeClear: {
         fontSize: 12,
-        color: '#3498db',
         textDecorationLine: 'underline',
     },
     loadingContainer: {
@@ -316,35 +301,29 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 16,
-        color: '#9E9E9E',
         marginTop: 16,
         marginBottom: 8,
         textAlign: 'center',
     },
     errorHint: {
         fontSize: 13,
-        color: '#BDBDBD',
         marginBottom: 24,
         textAlign: 'center',
         paddingHorizontal: 16,
     },
     backBtn: {
-        backgroundColor: '#2196F3',
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 8,
     },
     backBtnText: {
-        color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '600',
     },
     bookItem: {
         flexDirection: 'row',
         padding: 12,
-        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
         alignItems: 'center',
     },
     cover: {
@@ -362,17 +341,14 @@ const styles = StyleSheet.create({
     bookTitle: {
         fontSize: 15,
         fontWeight: '600',
-        color: '#212121',
         marginBottom: 4,
     },
     bookAuthors: {
         fontSize: 13,
-        color: '#757575',
         marginBottom: 2,
     },
     bookPublisher: {
         fontSize: 12,
-        color: '#9E9E9E',
     },
     footerLoader: {
         paddingVertical: 16,
@@ -389,7 +365,6 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 16,
-        color: '#9E9E9E',
         marginTop: 16,
     },
 });

@@ -10,11 +10,13 @@ import { BookCreate, SuggestedBook } from '@/types/scanTypes';
 import { BookUpdate } from '@/types/book';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import axios from 'axios';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function EditBookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const { book, loading, error, refetch } = useBookDetail(id as string);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -179,22 +181,22 @@ export default function EditBookScreen() {
         }}
       />
       
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
         {/* Header personnalisé avec bouton retour */}
-        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <TouchableOpacity 
-            style={styles.backButton}
+        <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: theme.accent }]}>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: `${theme.textInverse}33` }]}
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#ffffff" />
+            <MaterialIcons name="arrow-back" size={24} color={theme.textInverse} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Modifier le livre</Text>
+          <Text style={[styles.headerTitle, { color: theme.textInverse }]}>Modifier le livre</Text>
           <View style={styles.headerSpacer} />
         </View>
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#3498db" />
-            <Text style={styles.loadingText}>Chargement des données...</Text>
+            <ActivityIndicator size="large" color={theme.accent} />
+            <Text style={[styles.loadingText, { color: theme.accent }]}>Chargement des données...</Text>
           </View>
         ) : error ? (
           <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -210,12 +212,12 @@ export default function EditBookScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={true}
           >
-            <Text style={styles.sectionTitle}>Modifier les informations</Text>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Modifier les informations</Text>
 
             {submitError && (
-              <View style={styles.errorContainer}>
-                <MaterialIcons name="error-outline" size={24} color="#e74c3c" />
-                <Text style={styles.errorMessageText}>{submitError}</Text>
+              <View style={[styles.errorContainer, { backgroundColor: theme.dangerBg, borderLeftColor: theme.danger }]}>
+                <MaterialIcons name="error-outline" size={24} color={theme.danger} />
+                <Text style={[styles.errorMessageText, { color: theme.danger }]}>{submitError}</Text>
               </View>
             )}
 
@@ -237,10 +239,8 @@ export default function EditBookScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   header: {
-    backgroundColor: '#3498db',
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -249,12 +249,10 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
     flex: 1,
     textAlign: 'center',
   },
@@ -281,30 +279,25 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#3498db',
     fontWeight: '500',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2c3e50',
     marginBottom: 16,
     textAlign: 'center',
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fee',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#e74c3c',
   },
   errorMessageText: {
     flex: 1,
     marginLeft: 12,
-    color: '#c0392b',
     fontSize: 14,
     lineHeight: 20,
   },

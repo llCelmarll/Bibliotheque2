@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import Papa from 'papaparse';
 import { bookService } from '@/services/bookService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ParsedBook {
   title: string;
@@ -35,6 +36,7 @@ interface ImportProgress {
 }
 
 export default function ImportCSV() {
+  const theme = useTheme();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
@@ -441,58 +443,58 @@ export default function ImportCSV() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
       <View style={styles.header}>
-        <MaterialIcons name="upload-file" size={32} color="#2196F3" />
-        <Text style={styles.title}>Import CSV</Text>
+        <MaterialIcons name="upload-file" size={32} color={theme.accent} />
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Import CSV</Text>
       </View>
 
-      <View style={styles.instructions}>
-        <Text style={styles.instructionTitle}>📋 Format du fichier CSV</Text>
-        <Text style={styles.instructionText}>
+      <View style={[styles.instructions, { backgroundColor: theme.bgMuted }]}>
+        <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>📋 Format du fichier CSV</Text>
+        <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
           Le fichier doit contenir des colonnes avec ces noms (pas d'ordre spécifique) :
         </Text>
-        <Text style={styles.instructionItem}>• <Text style={styles.bold}>titre</Text> ou <Text style={styles.bold}>title</Text> (obligatoire)</Text>
-        <Text style={styles.instructionItem}>• <Text style={styles.bold}>isbn</Text> ou <Text style={styles.bold}>ISBN</Text></Text>
-        <Text style={styles.instructionItem}>• <Text style={styles.bold}>auteur(s)</Text> ou <Text style={styles.bold}>authors</Text> (séparés par virgules)</Text>
-        <Text style={styles.instructionItem}>• <Text style={styles.bold}>editeur</Text> ou <Text style={styles.bold}>publisher</Text></Text>
-        <Text style={styles.instructionItem}>• <Text style={styles.bold}>genre(s)</Text> (séparés par virgules)</Text>
-        <Text style={styles.instructionItem}>• <Text style={styles.bold}>date_publication</Text> ou <Text style={styles.bold}>année</Text></Text>
-        <Text style={styles.instructionItem}>• <Text style={styles.bold}>pages</Text> ou <Text style={styles.bold}>page_count</Text></Text>
+        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>titre</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>title</Text> (obligatoire)</Text>
+        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>isbn</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>ISBN</Text></Text>
+        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>auteur(s)</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>authors</Text> (séparés par virgules)</Text>
+        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>editeur</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>publisher</Text></Text>
+        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>genre(s)</Text> (séparés par virgules)</Text>
+        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>date_publication</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>année</Text></Text>
+        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>pages</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>page_count</Text></Text>
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity 
-          style={styles.button} 
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.accent }]}
           onPress={pickDocument}
           disabled={isProcessing}
         >
-          <MaterialIcons name="folder-open" size={20} color="#fff" />
-          <Text style={[styles.buttonText, styles.buttonTextWithIcon]}>Sélectionner un fichier</Text>
+          <MaterialIcons name="folder-open" size={20} color={theme.textInverse} />
+          <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textInverse }]}>Sélectionner un fichier</Text>
         </TouchableOpacity>
 
         {selectedFile && (
-          <View style={styles.fileInfo}>
-            <MaterialIcons name="description" size={20} color="#4CAF50" />
-            <Text style={styles.fileName}>{selectedFile}</Text>
+          <View style={[styles.fileInfo, { backgroundColor: theme.successBg }]}>
+            <MaterialIcons name="description" size={20} color={theme.success} />
+            <Text style={[styles.fileName, { color: theme.success }]}>{selectedFile}</Text>
           </View>
         )}
 
         {!!statusMessage && (
-          <Text style={styles.statusText}>{statusMessage}</Text>
+          <Text style={[styles.statusText, { color: theme.textSecondary }]}>{statusMessage}</Text>
         )}
 
         <View style={styles.encodingRow}>
-          <Text style={styles.switchLabel}>Encodage</Text>
+          <Text style={[styles.switchLabel, { color: theme.textSecondary }]}>Encodage</Text>
           <View style={styles.encodingButtons}>
             {(['auto','utf-8','windows-1252','iso-8859-1','utf-16le'] as const).map((enc) => (
               <TouchableOpacity
                 key={enc}
                 onPress={() => setEncoding(enc)}
                 disabled={isProcessing}
-                style={[styles.encButton, encoding === enc && styles.encButtonActive]}
+                style={[styles.encButton, { backgroundColor: encoding === enc ? theme.accent : theme.bgMuted }]}
               >
-                <Text style={[styles.encButtonText, encoding === enc && styles.encButtonTextActive]}>
+                <Text style={[styles.encButtonText, { color: encoding === enc ? theme.textInverse : theme.textSecondary }]}>
                   {enc}
                 </Text>
               </TouchableOpacity>
@@ -500,33 +502,35 @@ export default function ImportCSV() {
           </View>
         </View>
 
-        <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>Peupler les couvertures (Google/OpenLibrary)</Text>
+        <View style={[styles.switchRow, { backgroundColor: theme.bgMuted }]}>
+          <Text style={[styles.switchLabel, { color: theme.textSecondary }]}>Peupler les couvertures (Google/OpenLibrary)</Text>
           <Switch
             value={populateCovers}
             onValueChange={setPopulateCovers}
             disabled={isProcessing}
+            thumbColor={populateCovers ? theme.accent : theme.bgCard}
+            trackColor={{ false: theme.borderMedium, true: theme.accentLight }}
           />
         </View>
 
         {previewData.length > 0 && (
           <>
             <View style={styles.preview}>
-              <Text style={styles.previewTitle}>Aperçu (5 premières lignes)</Text>
+              <Text style={[styles.previewTitle, { color: theme.textPrimary }]}>Aperçu (5 premières lignes)</Text>
               <ScrollView horizontal style={styles.previewScroll}>
                 {previewData.map((book, idx) => (
-                  <View key={idx} style={styles.previewCard}>
-                    <Text style={styles.previewText} numberOfLines={1}>
-                      <Text style={styles.bold}>Titre:</Text> {book.title}
+                  <View key={idx} style={[styles.previewCard, { backgroundColor: theme.bgMuted }]}>
+                    <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                      <Text style={[styles.bold, { color: theme.textPrimary }]}>Titre:</Text> {book.title}
                     </Text>
                     {book.isbn && (
-                      <Text style={styles.previewText} numberOfLines={1}>
-                        <Text style={styles.bold}>ISBN:</Text> {book.isbn}
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>ISBN:</Text> {book.isbn}
                       </Text>
                     )}
                     {book.authors && (
-                      <Text style={styles.previewText} numberOfLines={1}>
-                        <Text style={styles.bold}>Auteur(s):</Text> {book.authors}
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Auteur(s):</Text> {book.authors}
                       </Text>
                     )}
                   </View>
@@ -534,31 +538,31 @@ export default function ImportCSV() {
               </ScrollView>
             </View>
 
-            <TouchableOpacity 
-              style={[styles.button, styles.importButton]} 
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.success }]}
               onPress={importBooks}
               disabled={isProcessing}
             >
               {isProcessing ? (
                 <>
-                  <ActivityIndicator size="small" color="#fff" />
-                  <Text style={[styles.buttonText, styles.buttonTextWithIcon]}>Import en cours...</Text>
+                  <ActivityIndicator size="small" color={theme.textInverse} />
+                  <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textInverse }]}>Import en cours...</Text>
                 </>
               ) : (
                 <>
-                  <MaterialIcons name="cloud-upload" size={20} color="#fff" />
-                  <Text style={[styles.buttonText, styles.buttonTextWithIcon]}>Lancer l'import</Text>
+                  <MaterialIcons name="cloud-upload" size={20} color={theme.textInverse} />
+                  <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textInverse }]}>Lancer l'import</Text>
                 </>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.button, styles.resetButton]} 
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.bgMuted }]}
               onPress={reset}
               disabled={isProcessing}
             >
-              <MaterialIcons name="refresh" size={20} color="#666" />
-              <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: '#666' }]}>Recommencer</Text>
+              <MaterialIcons name="refresh" size={20} color={theme.textSecondary} />
+              <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textSecondary }]}>Recommencer</Text>
             </TouchableOpacity>
           </>
         )}
@@ -566,16 +570,17 @@ export default function ImportCSV() {
 
       {/* Barre de progression */}
       {importProgress && (
-        <View style={styles.progressContainer}>
+        <View style={[styles.progressContainer, { backgroundColor: theme.bgMuted }]}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Import en cours...</Text>
-            <Text style={styles.progressPercentage}>{Math.round(importProgress.percentage)}%</Text>
+            <Text style={[styles.progressTitle, { color: theme.textPrimary }]}>Import en cours...</Text>
+            <Text style={[styles.progressPercentage, { color: theme.accent }]}>{Math.round(importProgress.percentage)}%</Text>
           </View>
-          
-          <View style={styles.progressBarBackground}>
-            <Animated.View 
+
+          <View style={[styles.progressBarBackground, { backgroundColor: theme.borderLight }]}>
+            <Animated.View
               style={[
                 styles.progressBarFill,
+                { backgroundColor: theme.success },
                 {
                   width: progressAnim.interpolate({
                     inputRange: [0, 100],
@@ -585,13 +590,13 @@ export default function ImportCSV() {
               ]}
             />
           </View>
-          
+
           <View style={styles.progressInfo}>
-            <Text style={styles.progressText}>
+            <Text style={[styles.progressText, { color: theme.textSecondary }]}>
               {importProgress.current} / {importProgress.total} livre(s)
             </Text>
             {importProgress.currentBook && (
-              <Text style={styles.progressCurrentBook} numberOfLines={1}>
+              <Text style={[styles.progressCurrentBook, { color: theme.accent }]} numberOfLines={1}>
                 📖 {importProgress.currentBook}
               </Text>
             )}
@@ -600,60 +605,52 @@ export default function ImportCSV() {
       )}
 
       {importResult && (
-        <View style={styles.result}>
-          <Text style={styles.resultTitle}>
+        <View style={[styles.result, { backgroundColor: theme.bgMuted }]}>
+          <Text style={[styles.resultTitle, { color: theme.textPrimary }]}>
             {importResult.failed === 0 ? '✅ Import réussi' : '⚠️ Import partiel'}
           </Text>
-          <Text style={styles.resultText}>
+          <Text style={[styles.resultText, { color: theme.success }]}>
             ✓ {importResult.success} livre(s) importé(s)
           </Text>
           {importResult.failed > 0 && (
             <>
-              <Text style={[styles.resultText, { color: '#f44336' }]}>
+              <Text style={[styles.resultText, { color: theme.danger }]}>
                 ✗ {importResult.failed} échec(s)
               </Text>
-              
-              {/* Aide pour comprendre les erreurs */}
-              <View style={styles.errorHelp}>
-                <Text style={styles.errorHelpTitle}>💡 Types d'erreurs fréquentes :</Text>
-                <Text style={styles.errorHelpText}>
-                  • <Text style={styles.bold}>Conflit de doublon</Text> : Un auteur/éditeur existe déjà mais avec une orthographe légèrement différente (majuscules, accents, espaces)
+
+              <View style={[styles.errorHelp, { backgroundColor: theme.accentLight, borderLeftColor: theme.accent }]}>
+                <Text style={[styles.errorHelpTitle, { color: theme.accent }]}>💡 Types d'erreurs fréquentes :</Text>
+                <Text style={[styles.errorHelpText, { color: theme.textSecondary }]}>
+                  • <Text style={[styles.bold, { color: theme.textPrimary }]}>Conflit de doublon</Text> : Un auteur/éditeur existe déjà mais avec une orthographe légèrement différente (majuscules, accents, espaces)
                 </Text>
-                <Text style={styles.errorHelpText}>
-                  • <Text style={styles.bold}>ISBN invalide</Text> : L'ISBN doit contenir exactement 10 ou 13 chiffres (sans tirets)
+                <Text style={[styles.errorHelpText, { color: theme.textSecondary }]}>
+                  • <Text style={[styles.bold, { color: theme.textPrimary }]}>ISBN invalide</Text> : L'ISBN doit contenir exactement 10 ou 13 chiffres (sans tirets)
                 </Text>
-                <Text style={styles.errorHelpText}>
-                  • <Text style={styles.bold}>Livre existant</Text> : Un livre avec le même titre et ISBN est déjà dans votre bibliothèque
+                <Text style={[styles.errorHelpText, { color: theme.textSecondary }]}>
+                  • <Text style={[styles.bold, { color: theme.textPrimary }]}>Livre existant</Text> : Un livre avec le même titre et ISBN est déjà dans votre bibliothèque
                 </Text>
               </View>
 
-              {/* Boutons d'export */}
               <View style={styles.exportButtons}>
-                <TouchableOpacity 
-                  style={styles.exportButton} 
-                  onPress={exportErrorsAsCSV}
-                >
-                  <MaterialIcons name="download" size={18} color="#fff" />
-                  <Text style={styles.exportButtonText}>Exporter en CSV</Text>
+                <TouchableOpacity style={[styles.exportButton, { backgroundColor: theme.success }]} onPress={exportErrorsAsCSV}>
+                  <MaterialIcons name="download" size={18} color={theme.textInverse} />
+                  <Text style={[styles.exportButtonText, { color: theme.textInverse }]}>Exporter en CSV</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[styles.exportButton, styles.exportButtonJSON]} 
-                  onPress={exportErrorsAsJSON}
-                >
-                  <MaterialIcons name="code" size={18} color="#fff" />
-                  <Text style={styles.exportButtonText}>Exporter en JSON</Text>
+
+                <TouchableOpacity style={[styles.exportButton, { backgroundColor: theme.accent }]} onPress={exportErrorsAsJSON}>
+                  <MaterialIcons name="code" size={18} color={theme.textInverse} />
+                  <Text style={[styles.exportButtonText, { color: theme.textInverse }]}>Exporter en JSON</Text>
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView style={styles.errorList}>
                 {importResult.errors.map((error, idx) => (
-                  <View key={idx} style={styles.errorItem}>
-                    <Text style={styles.errorLine}>Ligne {error.line}</Text>
-                    <Text style={styles.errorTitle} numberOfLines={1}>
+                  <View key={idx} style={[styles.errorItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.danger }]}>
+                    <Text style={[styles.errorLine, { color: theme.danger }]}>Ligne {error.line}</Text>
+                    <Text style={[styles.errorTitle, { color: theme.textPrimary }]} numberOfLines={1}>
                       {error.title} {error.isbn && `(${error.isbn})`}
                     </Text>
-                    <Text style={styles.errorMessage}>{error.error}</Text>
+                    <Text style={[styles.errorMessage, { color: theme.textMuted }]}>{error.error}</Text>
                   </View>
                 ))}
               </ScrollView>
@@ -667,10 +664,8 @@ export default function ImportCSV() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -684,11 +679,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
     marginLeft: 12,
   },
   instructions: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 16,
     marginBottom: 20,
@@ -696,28 +689,23 @@ const styles = StyleSheet.create({
   instructionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   instructionText: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 8,
   },
   instructionItem: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 4,
     marginLeft: 8,
   },
   bold: {
     fontWeight: '600',
-    color: '#333',
   },
   actions: {
   },
   button: {
-    backgroundColor: '#2196F3',
     borderRadius: 8,
     padding: 14,
     flexDirection: 'row',
@@ -725,26 +713,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   importButton: {
-    backgroundColor: '#4CAF50',
   },
   resetButton: {
-    backgroundColor: '#f5f5f5',
   },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
   },
   fileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
     borderRadius: 8,
     padding: 12,
   },
   fileName: {
     fontSize: 14,
-    color: '#4CAF50',
     fontWeight: '500',
     marginLeft: 8,
   },
@@ -754,14 +737,12 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   previewScroll: {
     maxHeight: 150,
   },
   previewCard: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
     marginRight: 12,
@@ -769,29 +750,24 @@ const styles = StyleSheet.create({
   },
   previewText: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 4,
   },
   result: {
     marginTop: 20,
     padding: 16,
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
   },
   resultTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 12,
   },
   resultText: {
     fontSize: 14,
-    color: '#4CAF50',
     marginBottom: 4,
   },
   statusText: {
     fontSize: 13,
-    color: '#333',
   },
   buttonTextWithIcon: {
     marginLeft: 8,
@@ -800,13 +776,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
   },
   switchLabel: {
     fontSize: 14,
-    color: '#333',
     fontWeight: '500',
     marginRight: 12,
     flex: 1,
@@ -824,29 +798,23 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 6,
-    backgroundColor: '#eee',
     marginRight: 6,
     marginTop: 6,
   },
   encButtonActive: {
-    backgroundColor: '#2196F3',
   },
   encButtonText: {
-    color: '#333',
     fontSize: 12,
     fontWeight: '600',
   },
   encButtonTextActive: {
-    color: '#fff',
   },
   errorList: {
     marginTop: 12,
     maxHeight: 200,
   },
   errorItem: {
-    backgroundColor: '#fff',
     borderLeftWidth: 3,
-    borderLeftColor: '#f44336',
     padding: 12,
     marginBottom: 8,
     borderRadius: 4,
@@ -854,22 +822,18 @@ const styles = StyleSheet.create({
   errorLine: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#f44336',
   },
   errorTitle: {
     fontSize: 13,
-    color: '#333',
     marginTop: 4,
   },
   errorMessage: {
     fontSize: 12,
-    color: '#666',
     marginTop: 4,
   },
   progressContainer: {
     marginTop: 20,
     padding: 16,
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
   },
   progressHeader: {
@@ -881,22 +845,18 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
   },
   progressPercentage: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2196F3',
   },
   progressBarBackground: {
     height: 8,
-    backgroundColor: '#e0e0e0',
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
   progressInfo: {
@@ -904,32 +864,26 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 4,
   },
   progressCurrentBook: {
     fontSize: 13,
-    color: '#2196F3',
     fontStyle: 'italic',
   },
   errorHelp: {
-    backgroundColor: '#e3f2fd',
     borderRadius: 8,
     padding: 12,
     marginTop: 12,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
   },
   errorHelpTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1976d2',
     marginBottom: 8,
   },
   errorHelpText: {
     fontSize: 12,
-    color: '#424242',
     marginBottom: 4,
     lineHeight: 18,
   },
@@ -941,7 +895,6 @@ const styles = StyleSheet.create({
   },
   exportButton: {
     flex: 1,
-    backgroundColor: '#4CAF50',
     borderRadius: 8,
     padding: 12,
     flexDirection: 'row',
@@ -950,10 +903,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   exportButtonJSON: {
-    backgroundColor: '#2196F3',
   },
   exportButtonText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },

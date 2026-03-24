@@ -23,10 +23,12 @@ import { BookSelector } from '@/components/forms/BookSelector';
 import BookCover from '@/components/BookCover';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function CreateLoanScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const theme = useTheme();
 
   // Si un bookId ou contactId est passé en paramètre
   const preselectedBookId = params.bookId ? parseInt(params.bookId as string) : null;
@@ -216,27 +218,27 @@ function CreateLoanScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
+      <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#212121" />
+          <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nouveau prêt</Text>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Nouveau prêt</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Sélection des livres */}
         {!preselectedBookId && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>
+          <View style={[styles.section, { backgroundColor: theme.bgCard }]}>
+            <Text style={[styles.sectionLabel, { color: theme.textPrimary }]}>
               Livres ({selectedBooks.length} sélectionné{selectedBooks.length > 1 ? 's' : ''})
             </Text>
 
             {selectedBooks.length > 0 && (
               <View style={styles.selectedBooksContainer}>
                 {selectedBooks.map((book) => (
-                  <View key={book.id} style={styles.selectedBookItem}>
+                  <View key={book.id} style={[styles.selectedBookItem, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }]}>
                     <BookCover
                       url={book.cover_url}
                       style={styles.miniCover}
@@ -244,17 +246,17 @@ function CreateLoanScreen() {
                       resizeMode="cover"
                     />
                     <View style={styles.bookItemInfo}>
-                      <Text style={styles.bookItemTitle} numberOfLines={1}>
+                      <Text style={[styles.bookItemTitle, { color: theme.textPrimary }]} numberOfLines={1}>
                         {book.title}
                       </Text>
                       {book.authors && book.authors.length > 0 && (
-                        <Text style={styles.bookItemAuthors} numberOfLines={1}>
+                        <Text style={[styles.bookItemAuthors, { color: theme.textSecondary }]} numberOfLines={1}>
                           {book.authors.map((a) => a.name).join(', ')}
                         </Text>
                       )}
                     </View>
                     <TouchableOpacity onPress={() => handleRemoveBook(book.id)}>
-                      <MaterialIcons name="close" size={20} color="#757575" />
+                      <MaterialIcons name="close" size={20} color={theme.textSecondary} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -270,7 +272,7 @@ function CreateLoanScreen() {
         )}
 
         {/* Sélection du contact */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: theme.bgCard }]}>
           <ContactSelector
             selectedContact={selectedContact}
             onContactChange={handleContactChange}
@@ -279,43 +281,43 @@ function CreateLoanScreen() {
         </View>
 
         {/* Date d'échéance */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Date de retour prévue (optionnel)</Text>
+        <View style={[styles.section, { backgroundColor: theme.bgCard }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textPrimary }]}>Date de retour prévue (optionnel)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }]}
             placeholder="AAAA-MM-JJ"
             value={dueDate}
             onChangeText={setDueDate}
           />
-          {errors.dueDate && <Text style={styles.errorText}>{errors.dueDate}</Text>}
+          {errors.dueDate && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.dueDate}</Text>}
 
           <View style={styles.quickDatesContainer}>
             <TouchableOpacity
-              style={styles.quickDateButton}
+              style={[styles.quickDateButton, { backgroundColor: theme.accentLight }]}
               onPress={() => setDueDate(calculateDefaultDueDate(7))}
             >
-              <Text style={styles.quickDateText}>+7 jours</Text>
+              <Text style={[styles.quickDateText, { color: theme.accent }]}>+7 jours</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.quickDateButton}
+              style={[styles.quickDateButton, { backgroundColor: theme.accentLight }]}
               onPress={() => setDueDate(calculateDefaultDueDate(14))}
             >
-              <Text style={styles.quickDateText}>+14 jours</Text>
+              <Text style={[styles.quickDateText, { color: theme.accent }]}>+14 jours</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.quickDateButton}
+              style={[styles.quickDateButton, { backgroundColor: theme.accentLight }]}
               onPress={() => setDueDate(calculateDefaultDueDate(30))}
             >
-              <Text style={styles.quickDateText}>+30 jours</Text>
+              <Text style={[styles.quickDateText, { color: theme.accent }]}>+30 jours</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Notes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Notes (optionnel)</Text>
+        <View style={[styles.section, { backgroundColor: theme.bgCard }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textPrimary }]}>Notes (optionnel)</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }]}
             placeholder="Ajouter des notes..."
             value={notes}
             onChangeText={setNotes}
@@ -326,18 +328,18 @@ function CreateLoanScreen() {
       </ScrollView>
 
       {/* Bouton de soumission */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.bgCard, borderTopColor: theme.borderLight }]}>
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          style={[styles.submitButton, { backgroundColor: theme.accent }, loading && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={theme.textInverse} />
           ) : (
             <>
-              <MaterialIcons name="check" size={20} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>Créer le prêt</Text>
+              <MaterialIcons name="check" size={20} color={theme.textInverse} />
+              <Text style={[styles.submitButtonText, { color: theme.textInverse }]}>Créer le prêt</Text>
             </>
           )}
         </TouchableOpacity>
@@ -357,16 +359,13 @@ export default function CreateLoan() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   backButton: {
     padding: 4,
@@ -374,20 +373,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
   },
   content: {
     flex: 1,
   },
   section: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
     marginBottom: 8,
   },
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#424242',
     marginBottom: 8,
   },
   selectedBooksContainer: {
@@ -397,10 +393,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     marginBottom: 8,
   },
   miniCover: {
@@ -418,21 +412,17 @@ const styles = StyleSheet.create({
   bookItemTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 2,
   },
   bookItemAuthors: {
     fontSize: 11,
-    color: '#757575',
   },
   input: {
     height: 44,
-    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   textArea: {
     height: 100,
@@ -441,7 +431,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
     marginTop: 4,
   },
   quickDatesContainer: {
@@ -452,25 +441,20 @@ const styles = StyleSheet.create({
   quickDateButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: '#E3F2FD',
     borderRadius: 16,
   },
   quickDateText: {
     fontSize: 12,
-    color: '#2196F3',
     fontWeight: '600',
   },
   footer: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2196F3',
     paddingVertical: 14,
     borderRadius: 8,
   },
@@ -480,7 +464,6 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
     marginLeft: 8,
   },
 });

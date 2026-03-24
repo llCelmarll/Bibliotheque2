@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { accountService } from '@/services/accountService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -21,6 +22,7 @@ export default function ForgotPasswordScreen() {
   const [successMessage, setSuccessMessage] = useState('');
 
   const router = useRouter();
+  const theme = useTheme();
 
   const handleSubmit = async () => {
     if (!email.trim()) {
@@ -45,34 +47,34 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bgPrimary }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Mot de passe oublié</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Mot de passe oublié</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
           </Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
           {errorMessage ? (
-            <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color="#f44336" />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+            <View style={[styles.errorContainer, { backgroundColor: theme.dangerBg, borderLeftColor: theme.danger }]}>
+              <MaterialIcons name="error-outline" size={20} color={theme.danger} />
+              <Text style={[styles.errorText, { color: theme.danger }]}>{errorMessage}</Text>
             </View>
           ) : null}
 
           {successMessage ? (
             <>
-              <View style={styles.successContainer}>
-                <MaterialIcons name="check-circle-outline" size={20} color="#4CAF50" />
-                <Text style={styles.successText}>{successMessage}</Text>
+              <View style={[styles.successContainer, { backgroundColor: theme.successBg, borderLeftColor: theme.success }]}>
+                <MaterialIcons name="check-circle-outline" size={20} color={theme.success} />
+                <Text style={[styles.successText, { color: theme.success }]}>{successMessage}</Text>
               </View>
-              <View style={styles.spamWarning}>
-                <MaterialIcons name="info-outline" size={16} color="#F57C00" />
-                <Text style={styles.spamWarningText}>
+              <View style={[styles.spamWarning, { backgroundColor: theme.warningBg, borderLeftColor: theme.warning }]}>
+                <MaterialIcons name="info-outline" size={16} color={theme.warning} />
+                <Text style={[styles.spamWarningText, { color: theme.warning }]}>
                   Si vous ne voyez pas l'email dans votre boîte de réception, vérifiez votre dossier spam ou courrier indésirable.
                 </Text>
               </View>
@@ -81,11 +83,12 @@ export default function ForgotPasswordScreen() {
 
           {!successMessage ? (
             <>
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="email" size={24} color="#666" style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
+                <MaterialIcons name="email" size={24} color={theme.textMuted} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: theme.textPrimary }]}
                   placeholder="Email"
+                  placeholderTextColor={theme.textMuted}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -99,26 +102,23 @@ export default function ForgotPasswordScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.submitButton, isLoading && styles.buttonDisabled]}
+                style={[styles.submitButton, { backgroundColor: theme.accent }, isLoading && { backgroundColor: theme.borderMedium }]}
                 onPress={handleSubmit}
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={theme.textInverse} size="small" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Envoyer le lien</Text>
+                  <Text style={[styles.submitButtonText, { color: theme.textInverse }]}>Envoyer le lien</Text>
                 )}
               </TouchableOpacity>
             </>
           ) : null}
         </View>
 
-        <TouchableOpacity
-          style={styles.backLink}
-          onPress={() => router.back()}
-        >
-          <MaterialIcons name="arrow-back" size={18} color="#2196F3" />
-          <Text style={styles.backLinkText}>Retour à la connexion</Text>
+        <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
+          <MaterialIcons name="arrow-back" size={18} color={theme.accent} />
+          <Text style={[styles.backLinkText, { color: theme.accent }]}>Retour à la connexion</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -128,7 +128,6 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -142,20 +141,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 15,
-    color: '#666',
     textAlign: 'center',
     lineHeight: 22,
   },
   form: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -164,15 +159,12 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffebee',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
   },
   errorText: {
-    color: '#c62828',
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -180,15 +172,12 @@ const styles = StyleSheet.create({
   successContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
   },
   successText: {
-    color: '#2e7d32',
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -198,11 +187,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     marginBottom: 16,
     paddingHorizontal: 12,
-    backgroundColor: '#fafafa',
   },
   inputIcon: {
     marginRight: 12,
@@ -211,21 +198,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     fontSize: 16,
-    color: '#333',
   },
   submitButton: {
-    backgroundColor: '#2196F3',
     borderRadius: 8,
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
   submitButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -238,22 +219,18 @@ const styles = StyleSheet.create({
   },
   backLinkText: {
     fontSize: 15,
-    color: '#2196F3',
     fontWeight: '500',
   },
   spamWarning: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFF8E1',
     padding: 12,
     borderRadius: 8,
     marginTop: 10,
     borderLeftWidth: 4,
-    borderLeftColor: '#F57C00',
     gap: 8,
   },
   spamWarningText: {
-    color: '#E65100',
     fontSize: 13,
     flex: 1,
     lineHeight: 18,

@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Entity, EntitySelectorConfig } from '@/types/entityTypes';
 import { EntityChip } from './EntityChip';
 import { EntitySearchModal } from './EntitySearchModal';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface EntitySelectorProps<T = {}> {
 	selectedEntities: Entity<T>[];
@@ -21,6 +22,7 @@ export const EntitySelector = <T,>({
 	disabled = false,
 	error
 }: EntitySelectorProps<T>) => {
+	const theme = useTheme();
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	// Gestion de l'ouverture de la modal de recherche
@@ -40,7 +42,7 @@ export const EntitySelector = <T,>({
 			const isAlreadySelected = selectedEntities.some(
 				existing => existing.name.toLowerCase() === entity.name.toLowerCase()
 			);
-			
+
 			if (!isAlreadySelected) {
 				onEntitiesChange([...selectedEntities, entity]);
 			}
@@ -53,7 +55,7 @@ export const EntitySelector = <T,>({
 	// Gestion de la suppression d'entité
 	const handleRemoveEntity = (indexToRemove: number) => {
 		if (disabled) return;
-		
+
 		const updatedEntities = selectedEntities.filter((_, index) => index !== indexToRemove);
 		onEntitiesChange(updatedEntities);
 	};
@@ -71,16 +73,16 @@ export const EntitySelector = <T,>({
 
 		return (
 			<TouchableOpacity
-				style={[styles.addButton, disabled && styles.addButtonDisabled]}
+				style={[styles.addButton, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }, disabled && styles.addButtonDisabled]}
 				onPress={handleAddEntity}
 				disabled={disabled}
 			>
 				<MaterialIcons
 					name="add"
 					size={16}
-					color={disabled ? '#bdc3c7' : '#3498db'}
+					color={disabled ? theme.textMuted : theme.accent}
 				/>
-				<Text style={[styles.addButtonText, disabled && styles.addButtonTextDisabled]}>
+				<Text style={[styles.addButtonText, { color: theme.accent }, disabled && { color: theme.textMuted }]}>
 					{config.placeholder}
 				</Text>
 			</TouchableOpacity>
@@ -108,7 +110,7 @@ export const EntitySelector = <T,>({
 		if (!config.multiple || !config.maxSelections) return null;
 
 		return (
-			<Text style={styles.limitText}>
+			<Text style={[styles.limitText, { color: theme.textMuted }]}>
 				{selectedEntities.length} / {config.maxSelections}
 			</Text>
 		);
@@ -122,11 +124,11 @@ export const EntitySelector = <T,>({
 					<MaterialIcons
 						name={config.icon as any}
 						size={18}
-						color="#2c3e50"
+						color={theme.textPrimary}
 						style={styles.labelIcon}
 					/>
 				) : null}
-				<Text style={styles.label}>{config.label}</Text>
+				<Text style={[styles.label, { color: theme.textSecondary }]}>{config.label}</Text>
 				{renderLimitIndicator()}
 			</View>
 			{/* Entités sélectionnées */}
@@ -137,12 +139,12 @@ export const EntitySelector = <T,>({
 
 			{/* Message d'erreur */}
 			{error ? (
-				<Text style={styles.errorText}>{error}</Text>
+				<Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>
 			) : null}
 
 			{/* Message d'aide */}
 			{selectedEntities.length === 0 && !error ? (
-				<Text style={styles.helpText}>
+				<Text style={[styles.helpText, { color: theme.textMuted }]}>
 					Cliquez sur "+" pour ajouter {config.multiple ? 'des' : 'un'} {config.entityType === 'series' ? 'série' : config.entityType}{config.multiple && config.entityType !== 'series' ? 's' : ''}
 				</Text>
 			) : null}
@@ -179,12 +181,10 @@ const styles = StyleSheet.create({
 	label: {
 		fontSize: 16,
 		fontWeight: '500',
-		color: '#34495e',
 		flex: 1,
 	},
 	limitText: {
 		fontSize: 12,
-		color: '#7f8c8d',
 		fontStyle: 'italic',
 	},
 	chipsContainer: {
@@ -195,9 +195,7 @@ const styles = StyleSheet.create({
 	addButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#ecf0f1',
 		borderWidth: 1,
-		borderColor: '#bdc3c7',
 		borderStyle: 'dashed',
 		borderRadius: 8,
 		paddingHorizontal: 12,
@@ -205,26 +203,19 @@ const styles = StyleSheet.create({
 		alignSelf: 'flex-start',
 	},
 	addButtonDisabled: {
-		backgroundColor: '#f8f9fa',
 		opacity: 0.6,
 	},
 	addButtonText: {
 		marginLeft: 6,
 		fontSize: 14,
-		color: '#3498db',
 		fontWeight: '500',
 	},
-	addButtonTextDisabled: {
-		color: '#bdc3c7',
-	},
 	errorText: {
-		color: '#e74c3c',
 		fontSize: 14,
 		marginTop: 4,
 		fontStyle: 'italic',
 	},
 	helpText: {
-		color: '#95a5a6',
 		fontSize: 12,
 		fontStyle: 'italic',
 		marginTop: 4,

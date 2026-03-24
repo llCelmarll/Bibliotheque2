@@ -3,6 +3,7 @@ import { BookDetail } from '@/types/book';
 import BookCover from '@/components/BookCover';
 import { BookActions } from './BookActions';
 import { StarRating } from '@/components/StarRating';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BookHeaderProps {
   book: BookDetail;
@@ -11,6 +12,8 @@ interface BookHeaderProps {
 }
 
 export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
+  const theme = useTheme();
+
   const coverUrl = book.base?.cover_url ||
     book.google_books?.imageLinks?.thumbnail ||
     undefined;
@@ -29,7 +32,7 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
     // Google Books authors
     if (book.google_books && book.google_books.authors && book.google_books.authors.length > 0) {
       return (
-          <Text style={styles.author}>
+          <Text style={[styles.author, { color: theme.textSecondary }]}>
             {book.google_books.authors.join(", ")} (Google Books)
           </Text>
       );
@@ -37,7 +40,7 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
     // Base authors
     if (book.base && book.base.authors && book.base.authors.length > 0) {
       return (
-          <Text style={styles.author}>
+          <Text style={[styles.author, { color: theme.textSecondary }]}>
             {book.base.authors.map(author => author.name).join(", ")} (Base)
           </Text>
       );
@@ -45,13 +48,13 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
     // Open Library by_statement
     if (book.open_library && book.open_library.by_statement) {
       return (
-          <Text style={styles.author}>
+          <Text style={[styles.author, { color: theme.textSecondary }]}>
             {book.open_library.by_statement} (Open Library)
           </Text>
       );
     }
     // Fallback
-    return <Text style={styles.author}>Auteur inconnu</Text>;
+    return <Text style={[styles.author, { color: theme.textSecondary }]}>Auteur inconnu</Text>;
   };
 
 
@@ -61,24 +64,25 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
         <BookCover
             url={coverUrl}
             style={styles.cover}
-            containerStyle={styles.coverContainer}
+            containerStyle={[styles.coverContainer, { backgroundColor: theme.bgMuted }]}
             resizeMode="contain"
         />
         <View style={styles.info}>
-          <Text style={styles.title}>{book.base?.title || "Titre inconnu"}</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>{book.base?.title || "Titre inconnu"}</Text>
           {renderAuthors()}
-          <Text style={styles.isbn}>ISBN: {book.base?.isbn || "N/A"}</Text>
+          <Text style={[styles.isbn, { color: theme.textMuted }]}>ISBN: {book.base?.isbn || "N/A"}</Text>
 
           {/* Badge de prêt */}
           {book.base?.current_loan && (
-            <View style={styles.loanBadge}>
-              <Text style={styles.loanBadgeText}>
+            <View style={[styles.loanBadge, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+              <Text style={[styles.loanBadgeText, { color: theme.textPrimary }]}>
                 📖 Prêté à {book.base.current_loan.contact?.name || 'Contact inconnu'}
               </Text>
               {book.base.current_loan.due_date && (
                 <Text style={[
                   styles.loanDateText,
-                  new Date(book.base.current_loan.due_date) < new Date() && styles.loanOverdue
+                  { color: theme.textPrimary },
+                  new Date(book.base.current_loan.due_date) < new Date() && { color: theme.danger, fontWeight: '600' }
                 ]}>
                   Retour prévu : {formatDate(book.base.current_loan.due_date)}
                 </Text>
@@ -88,14 +92,15 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
 
           {/* Badge d'emprunt */}
           {book.base?.borrowed_book && book.base.borrowed_book.status === 'active' && (
-            <View style={styles.borrowBadge}>
-              <Text style={styles.borrowBadgeText}>
+            <View style={[styles.borrowBadge, { backgroundColor: theme.accentLight, borderColor: theme.accent }]}>
+              <Text style={[styles.borrowBadgeText, { color: theme.textPrimary }]}>
                 📚 Emprunté à {book.base.borrowed_book.contact?.name || book.base.borrowed_book.borrowed_from}
               </Text>
               {book.base.borrowed_book.expected_return_date && (
                 <Text style={[
                   styles.borrowDateText,
-                  new Date(book.base.borrowed_book.expected_return_date) < new Date() && styles.borrowOverdue
+                  { color: theme.textPrimary },
+                  new Date(book.base.borrowed_book.expected_return_date) < new Date() && { color: theme.danger, fontWeight: '600' }
                 ]}>
                   {new Date(book.base.borrowed_book.expected_return_date) < new Date() ? '⚠️ ' : ''}
                   Retour prévu : {formatDate(book.base.borrowed_book.expected_return_date)}
@@ -106,15 +111,15 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
 
           {/* Badge de lecture */}
           {book.base?.is_read === true && (
-            <View style={styles.readBadge}>
-              <Text style={styles.readBadgeText}>
+            <View style={[styles.readBadge, { backgroundColor: theme.successBg, borderColor: theme.success }]}>
+              <Text style={[styles.readBadgeText, { color: theme.success }]}>
                 ✓ Lu {book.base.read_date ? `le ${formatDate(book.base.read_date)}` : ''}
               </Text>
             </View>
           )}
           {book.base?.is_read === false && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>Non lu</Text>
+            <View style={[styles.unreadBadge, { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium }]}>
+              <Text style={[styles.unreadBadgeText, { color: theme.textSecondary }]}>Non lu</Text>
             </View>
           )}
 
@@ -156,7 +161,6 @@ const styles = StyleSheet.create({
     height: COVER_WIDTH / COVER_RATIO,
     marginRight: 16,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
   },
   cover: {
     width: COVER_WIDTH,
@@ -174,87 +178,63 @@ const styles = StyleSheet.create({
   },
   author: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 4,
   },
   isbn: {
     fontSize: 14,
-    color: '#888',
     marginBottom: 8,
   },
   loanBadge: {
     marginTop: 8,
     marginBottom: 8,
     padding: 10,
-    backgroundColor: '#fff3cd',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ffc107',
   },
   loanBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#856404',
     marginBottom: 4,
   },
   loanDateText: {
     fontSize: 12,
-    color: '#856404',
-  },
-  loanOverdue: {
-    color: '#dc3545',
-    fontWeight: '600',
   },
   borrowBadge: {
     marginTop: 8,
     marginBottom: 8,
     padding: 10,
-    backgroundColor: '#d1ecf1',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#17a2b8',
   },
   borrowBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0c5460',
     marginBottom: 4,
   },
   borrowDateText: {
     fontSize: 12,
-    color: '#0c5460',
-  },
-  borrowOverdue: {
-    color: '#dc3545',
-    fontWeight: '600',
   },
   readBadge: {
     marginTop: 8,
     marginBottom: 8,
     padding: 10,
-    backgroundColor: '#d4edda',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#28a745',
   },
   readBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#155724',
   },
   unreadBadge: {
     marginTop: 8,
     marginBottom: 8,
     padding: 10,
-    backgroundColor: '#e9ecef',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#6c757d',
   },
   unreadBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#495057',
   },
   ratingContainer: {
     marginTop: 8,

@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { EntityChip } from './EntityChip';
 import { EntitySearchModal } from './EntitySearchModal';
 import { Entity, SeriesMetadata } from '@/types/entityTypes';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SeriesSelectorProps {
 	selectedEntities: Entity<SeriesMetadata>[];
@@ -21,6 +22,7 @@ export const SeriesSelector: React.FC<SeriesSelectorProps> = ({
 	disabled = false,
 	error
 }) => {
+	const theme = useTheme();
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	const handleVolumeChange = (index: number, text: string) => {
@@ -61,8 +63,8 @@ export const SeriesSelector: React.FC<SeriesSelectorProps> = ({
 		<View style={styles.container}>
 			{/* Label */}
 			<View style={styles.labelContainer}>
-				<Text style={styles.label}>📚 Séries</Text>
-				<Text style={styles.limitText}>
+				<Text style={[styles.label, { color: theme.textSecondary }]}>📚 Séries</Text>
+				<Text style={[styles.limitText, { color: theme.textMuted }]}>
 					{selectedEntities.length} / {MAX_SELECTIONS}
 				</Text>
 			</View>
@@ -78,12 +80,13 @@ export const SeriesSelector: React.FC<SeriesSelectorProps> = ({
 						/>
 					</View>
 					<View style={styles.volumeContainer}>
-						<Text style={styles.volumeLabel}>Tome</Text>
+						<Text style={[styles.volumeLabel, { color: theme.textMuted }]}>Tome</Text>
 						<TextInput
-							style={[styles.volumeInput, disabled && styles.volumeInputDisabled]}
+							style={[styles.volumeInput, { borderColor: theme.borderLight, backgroundColor: theme.bgCard, color: theme.textPrimary }, disabled && { backgroundColor: theme.bgSecondary, opacity: 0.6 }]}
 							value={entity.metadata?.volume_number?.toString() || ''}
 							onChangeText={(text) => handleVolumeChange(index, text)}
 							placeholder="N°"
+							placeholderTextColor={theme.textMuted}
 							keyboardType="numeric"
 							editable={!disabled}
 							maxLength={4}
@@ -95,23 +98,23 @@ export const SeriesSelector: React.FC<SeriesSelectorProps> = ({
 			{/* Bouton d'ajout */}
 			{canAdd && (
 				<TouchableOpacity
-					style={[styles.addButton, disabled && styles.addButtonDisabled]}
+					style={[styles.addButton, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }, disabled && styles.addButtonDisabled]}
 					onPress={() => setIsModalOpen(true)}
 					disabled={disabled}
 				>
-					<MaterialIcons name="add" size={16} color={disabled ? '#bdc3c7' : '#3498db'} />
-					<Text style={[styles.addButtonText, disabled && styles.addButtonTextDisabled]}>
+					<MaterialIcons name="add" size={16} color={disabled ? theme.textMuted : theme.accent} />
+					<Text style={[styles.addButtonText, { color: theme.accent }, disabled && { color: theme.textMuted }]}>
 						Ajouter une série
 					</Text>
 				</TouchableOpacity>
 			)}
 
 			{/* Message d'erreur */}
-			{error ? <Text style={styles.errorText}>{error}</Text> : null}
+			{error ? <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text> : null}
 
 			{/* Message d'aide */}
 			{selectedEntities.length === 0 && !error ? (
-				<Text style={styles.helpText}>
+				<Text style={[styles.helpText, { color: theme.textMuted }]}>
 					Cliquez sur "+" pour ajouter des séries
 				</Text>
 			) : null}
@@ -141,12 +144,10 @@ const styles = StyleSheet.create({
 	label: {
 		fontSize: 16,
 		fontWeight: '500',
-		color: '#34495e',
 		flex: 1,
 	},
 	limitText: {
 		fontSize: 12,
-		color: '#7f8c8d',
 		fontStyle: 'italic',
 	},
 	seriesRow: {
@@ -165,31 +166,21 @@ const styles = StyleSheet.create({
 	},
 	volumeLabel: {
 		fontSize: 12,
-		color: '#7f8c8d',
 		marginRight: 2,
 	},
 	volumeInput: {
 		borderWidth: 1,
-		borderColor: '#bdc3c7',
 		borderRadius: 8,
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		fontSize: 14,
-		backgroundColor: '#ffffff',
-		color: '#2c3e50',
 		width: 50,
 		textAlign: 'center',
-	},
-	volumeInputDisabled: {
-		backgroundColor: '#f8f9fa',
-		opacity: 0.6,
 	},
 	addButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#ecf0f1',
 		borderWidth: 1,
-		borderColor: '#bdc3c7',
 		borderStyle: 'dashed',
 		borderRadius: 8,
 		paddingHorizontal: 12,
@@ -198,26 +189,19 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 	},
 	addButtonDisabled: {
-		backgroundColor: '#f8f9fa',
 		opacity: 0.6,
 	},
 	addButtonText: {
 		marginLeft: 6,
 		fontSize: 14,
-		color: '#3498db',
 		fontWeight: '500',
 	},
-	addButtonTextDisabled: {
-		color: '#bdc3c7',
-	},
 	errorText: {
-		color: '#e74c3c',
 		fontSize: 14,
 		marginTop: 4,
 		fontStyle: 'italic',
 	},
 	helpText: {
-		color: '#95a5a6',
 		fontSize: 12,
 		fontStyle: 'italic',
 		marginTop: 4,

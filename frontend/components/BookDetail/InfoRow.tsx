@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet} from "react-native";
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface InfoRowProps {
 	label: string;
@@ -7,10 +8,11 @@ interface InfoRowProps {
 }
 
 export function InfoRow({label, value}: InfoRowProps) {
+	const theme = useTheme();
 	return (
-		<View style={styles.container}>
-			<Text style={styles.label}>{label}</Text>
-			<Text style={styles.value}>{value}</Text>
+		<View style={[styles.container, { borderBottomColor: theme.borderLight }]}>
+			<Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
+			<Text style={[styles.value, { color: theme.textPrimary }]}>{value}</Text>
 		</View>
 	);
 }
@@ -20,12 +22,10 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		paddingVertical: 8,
 		borderBottomWidth: 1,
-		borderBottomColor: '#eee',
 	},
 	label: {
 		flex: 1,
 		fontSize: 14,
-		color: '#666',
 	},
 	value: {
 		flex: 2,

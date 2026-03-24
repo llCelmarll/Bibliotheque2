@@ -5,6 +5,7 @@ import { Book } from '@/types/book';
 import { fetchBooks } from '@/services/booksService';
 import { loanService } from '@/services/loanService';
 import BookCover from '@/components/BookCover';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BookSelectorProps {
   selectedBook: Book | null;
@@ -24,6 +25,7 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
   disabled = false,
   error,
 }) => {
+  const theme = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [books, setBooks] = useState<BookWithLoanStatus[]>([]);
@@ -87,7 +89,7 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
 
     return (
       <TouchableOpacity
-        style={[styles.bookItem, isLoaned && styles.bookItemLoaned]}
+        style={[styles.bookItem, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }, isLoaned && { backgroundColor: theme.bgSecondary, opacity: 0.6 }]}
         onPress={() => !isLoaned && handleSelectBook(item)}
         disabled={isLoaned}
       >
@@ -98,29 +100,29 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
           resizeMode="cover"
         />
         <View style={styles.bookInfo}>
-          <Text style={[styles.bookTitle, isLoaned && styles.bookTitleLoaned]} numberOfLines={2}>
+          <Text style={[styles.bookTitle, { color: theme.textPrimary }, isLoaned && { color: theme.textMuted }]} numberOfLines={2}>
             {item.title}
           </Text>
           {item.authors && item.authors.length > 0 && (
-            <Text style={styles.bookAuthors} numberOfLines={1}>
+            <Text style={[styles.bookAuthors, { color: theme.textSecondary }]} numberOfLines={1}>
               {item.authors.map((a) => a.name).join(', ')}
             </Text>
           )}
           {isLoaned ? (
-            <View style={styles.loanedBadge}>
-              <MaterialIcons name="person" size={12} color="#F44336" />
-              <Text style={styles.loanedText}>Prêté à {item.loanedTo}</Text>
+            <View style={[styles.loanedBadge, { backgroundColor: theme.dangerBg }]}>
+              <MaterialIcons name="person" size={12} color={theme.danger} />
+              <Text style={[styles.loanedText, { color: theme.danger }]}>Prêté à {item.loanedTo}</Text>
             </View>
           ) : (
             item.isbn && (
-              <Text style={styles.bookIsbn}>ISBN: {item.isbn}</Text>
+              <Text style={[styles.bookIsbn, { color: theme.textMuted }]}>ISBN: {item.isbn}</Text>
             )
           )}
         </View>
         {isLoaned ? (
-          <MaterialIcons name="block" size={24} color="#F44336" />
+          <MaterialIcons name="block" size={24} color={theme.danger} />
         ) : (
-          <MaterialIcons name="chevron-right" size={24} color="#BDBDBD" />
+          <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
         )}
       </TouchableOpacity>
     );
@@ -128,10 +130,10 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Livre</Text>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>Livre</Text>
 
       {selectedBook ? (
-        <View style={styles.selectedContainer}>
+        <View style={[styles.selectedContainer, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }]}>
           <BookCover
             url={selectedBook.cover_url}
             style={styles.selectedCover}
@@ -139,35 +141,35 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
             resizeMode="cover"
           />
           <View style={styles.selectedInfo}>
-            <Text style={styles.selectedTitle} numberOfLines={2}>
+            <Text style={[styles.selectedTitle, { color: theme.textPrimary }]} numberOfLines={2}>
               {selectedBook.title}
             </Text>
             {selectedBook.authors && selectedBook.authors.length > 0 && (
-              <Text style={styles.selectedAuthors} numberOfLines={1}>
+              <Text style={[styles.selectedAuthors, { color: theme.textSecondary }]} numberOfLines={1}>
                 {selectedBook.authors.map((a) => a.name).join(', ')}
               </Text>
             )}
           </View>
           {!disabled && (
             <TouchableOpacity onPress={handleRemoveBook}>
-              <MaterialIcons name="close" size={24} color="#757575" />
+              <MaterialIcons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
       ) : (
         <TouchableOpacity
-          style={[styles.selectButton, disabled && styles.selectButtonDisabled]}
+          style={[styles.selectButton, { backgroundColor: theme.bgCard, borderColor: theme.accent }, disabled && { borderColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}
           onPress={() => setIsModalOpen(true)}
           disabled={disabled}
         >
-          <MaterialIcons name="library-books" size={20} color={disabled ? '#BDBDBD' : '#2196F3'} />
-          <Text style={[styles.selectButtonText, disabled && styles.selectButtonTextDisabled]}>
+          <MaterialIcons name="library-books" size={20} color={disabled ? theme.textMuted : theme.accent} />
+          <Text style={[styles.selectButtonText, { color: theme.accent }, disabled && { color: theme.textMuted }]}>
             Sélectionner un livre
           </Text>
         </TouchableOpacity>
       )}
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>}
 
       <Modal
         visible={isModalOpen}
@@ -175,31 +177,32 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
         transparent={false}
         onRequestClose={() => setIsModalOpen(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Sélectionner un livre</Text>
+        <View style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Sélectionner un livre</Text>
             <TouchableOpacity onPress={() => setIsModalOpen(false)}>
-              <MaterialIcons name="close" size={28} color="#212121" />
+              <MaterialIcons name="close" size={28} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.searchContainer}>
+          <View style={[styles.searchContainer, { borderBottomColor: theme.borderLight }]}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { backgroundColor: theme.bgSecondary, color: theme.textPrimary }]}
               placeholder="Rechercher un livre..."
+              placeholderTextColor={theme.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
               autoFocus
             />
             <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-              <MaterialIcons name="search" size={24} color="#2196F3" />
+              <MaterialIcons name="search" size={24} color={theme.accent} />
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2196F3" />
+              <ActivityIndicator size="large" color={theme.accent} />
             </View>
           ) : (
             <FlatList
@@ -208,8 +211,8 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
               renderItem={renderBookItem}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <MaterialIcons name="library-books" size={64} color="#E0E0E0" />
-                  <Text style={styles.emptyText}>
+                  <MaterialIcons name="library-books" size={64} color={theme.borderLight} />
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
                     {searchQuery ? 'Aucun livre trouvé' : 'Aucun livre'}
                   </Text>
                 </View>
@@ -229,17 +232,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#424242',
     marginBottom: 8,
   },
   selectedContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   selectedCover: {
     width: 40,
@@ -256,44 +256,30 @@ const styles = StyleSheet.create({
   selectedTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 4,
   },
   selectedAuthors: {
     fontSize: 12,
-    color: '#757575',
   },
   selectButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2196F3',
     borderStyle: 'dashed',
-  },
-  selectButtonDisabled: {
-    borderColor: '#E0E0E0',
-    backgroundColor: '#F5F5F5',
   },
   selectButtonText: {
     fontSize: 14,
-    color: '#2196F3',
     marginLeft: 8,
-  },
-  selectButtonTextDisabled: {
-    color: '#BDBDBD',
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
     marginTop: 4,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -301,24 +287,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   searchInput: {
     flex: 1,
     height: 44,
-    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 14,
@@ -338,7 +320,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#757575',
     textAlign: 'center',
     marginTop: 16,
   },
@@ -347,19 +328,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: '#FFFFFF',
   },
-  bookItemLoaned: {
-    backgroundColor: '#FAFAFA',
-    opacity: 0.6,
+  bookCoverLoaned: {
+    opacity: 0.5,
   },
   bookCover: {
     width: 50,
     height: 75,
-  },
-  bookCoverLoaned: {
-    opacity: 0.5,
   },
   bookCoverContainer: {
     width: 50,
@@ -372,25 +347,18 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 4,
-  },
-  bookTitleLoaned: {
-    color: '#9E9E9E',
   },
   bookAuthors: {
     fontSize: 12,
-    color: '#757575',
     marginBottom: 2,
   },
   bookIsbn: {
     fontSize: 11,
-    color: '#9E9E9E',
   },
   loanedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFEBEE',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
@@ -399,7 +367,6 @@ const styles = StyleSheet.create({
   },
   loanedText: {
     fontSize: 11,
-    color: '#F44336',
     marginLeft: 4,
     fontWeight: '600',
   },

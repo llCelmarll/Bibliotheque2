@@ -20,6 +20,7 @@ import { SharedBookView } from '@/components/BookDetail/SharedBookView';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { UserLoanRequestStatus } from '@/types/userLoanRequest';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function SharedBookDetailScreen() {
     const router = useRouter();
@@ -27,6 +28,7 @@ function SharedBookDetailScreen() {
     const lenderId = parseInt(userId as string);
     const bookIdNum = parseInt(bookId as string);
     const { outgoingLoanRequests } = useNotifications();
+    const theme = useTheme();
     const isAlreadyBorrowed = outgoingLoanRequests.some(
         r => r.book.id === bookIdNum && r.status === UserLoanRequestStatus.ACCEPTED
     );
@@ -85,14 +87,14 @@ function SharedBookDetailScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
-                <View style={styles.header}>
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
+                <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back" size={24} color="#212121" />
+                        <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.centered}>
-                    <ActivityIndicator size="large" color="#2196F3" />
+                    <ActivityIndicator size="large" color={theme.accent} />
                 </View>
             </SafeAreaView>
         );
@@ -100,17 +102,17 @@ function SharedBookDetailScreen() {
 
     if (error || !book) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
-                <View style={styles.header}>
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
+                <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back" size={24} color="#212121" />
+                        <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.centered}>
-                    <MaterialIcons name="error-outline" size={64} color="#E0E0E0" />
-                    <Text style={styles.errorText}>{error || 'Livre introuvable'}</Text>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                        <Text style={styles.backBtnText}>Retour</Text>
+                    <MaterialIcons name="error-outline" size={64} color={theme.borderMedium} />
+                    <Text style={[styles.errorText, { color: theme.textMuted }]}>{error || 'Livre introuvable'}</Text>
+                    <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.accent }]} onPress={() => router.back()}>
+                        <Text style={[styles.backBtnText, { color: theme.textInverse }]}>Retour</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -118,14 +120,14 @@ function SharedBookDetailScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
             <Head><title>{book.title}</title></Head>
 
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color="#212121" />
+                    <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{book.title}</Text>
+                <Text style={[styles.headerTitle, { color: theme.textPrimary }]} numberOfLines={1}>{book.title}</Text>
                 <View style={{ width: 32 }} />
             </View>
 
@@ -144,40 +146,40 @@ function SharedBookDetailScreen() {
                 animationType="slide"
                 onRequestClose={() => setShowRequestModal(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Demander "{book.title}"</Text>
-                        <Text style={styles.modalSubtitle}>
+                <View style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
+                        <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Demander "{book.title}"</Text>
+                        <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
                             Ajoutez un message optionnel pour accompagner votre demande.
                         </Text>
                         <TextInput
-                            style={styles.messageInput}
+                            style={[styles.messageInput, { borderColor: theme.borderLight, color: theme.textPrimary }]}
                             placeholder="Message (optionnel)..."
                             value={requestMessage}
                             onChangeText={setRequestMessage}
                             multiline
                             numberOfLines={3}
-                            placeholderTextColor="#9E9E9E"
+                            placeholderTextColor={theme.textMuted}
                         />
                         <View style={styles.modalActions}>
                             <TouchableOpacity
-                                style={styles.cancelButton}
+                                style={[styles.cancelButton, { borderColor: theme.borderLight }]}
                                 onPress={() => {
                                     setShowRequestModal(false);
                                     setRequestMessage('');
                                 }}
                             >
-                                <Text style={styles.cancelButtonText}>Annuler</Text>
+                                <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Annuler</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.confirmButton, requesting && styles.buttonDisabled]}
+                                style={[styles.confirmButton, { backgroundColor: theme.accent }, requesting && styles.buttonDisabled]}
                                 onPress={handleRequest}
                                 disabled={requesting}
                             >
                                 {requesting ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                    <ActivityIndicator size="small" color={theme.textInverse} />
                                 ) : (
-                                    <Text style={styles.confirmButtonText}>Envoyer</Text>
+                                    <Text style={[styles.confirmButtonText, { color: theme.textInverse }]}>Envoyer</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -199,15 +201,12 @@ export default function SharedBookDetail() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
     },
     backButton: {
         padding: 4,
@@ -217,7 +216,6 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 18,
         fontWeight: '600',
-        color: '#212121',
     },
     centered: {
         flex: 1,
@@ -227,19 +225,16 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 16,
-        color: '#9E9E9E',
         marginTop: 16,
         marginBottom: 24,
         textAlign: 'center',
     },
     backBtn: {
-        backgroundColor: '#2196F3',
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 8,
     },
     backBtnText: {
-        color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -249,11 +244,9 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'flex-end',
     },
     modalContent: {
-        backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 24,
@@ -261,21 +254,17 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#212121',
         marginBottom: 8,
     },
     modalSubtitle: {
         fontSize: 14,
-        color: '#757575',
         marginBottom: 16,
     },
     messageInput: {
         borderWidth: 1,
-        borderColor: '#E0E0E0',
         borderRadius: 8,
         padding: 12,
         fontSize: 14,
-        color: '#212121',
         minHeight: 80,
         textAlignVertical: 'top',
         marginBottom: 16,
@@ -290,21 +279,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
     },
     cancelButtonText: {
-        color: '#757575',
         fontSize: 14,
         fontWeight: '600',
     },
     confirmButton: {
-        backgroundColor: '#7C3AED',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 8,
     },
     confirmButtonText: {
-        color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '600',
     },

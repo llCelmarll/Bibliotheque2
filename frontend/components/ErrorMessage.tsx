@@ -1,32 +1,35 @@
-import {View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Ionicons} from "@expo/vector-icons";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface ErrorMessageProps {
 	message: string;
 	onRetry: () => void;
 }
 
-export function ErrorMessage({message, onRetry}: ErrorMessageProps) {
+export function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
+	const theme = useTheme();
+
 	return (
 		<View style={styles.container}>
 			<Ionicons
 				name="alert-circle-outline"
 				size={48}
-				color="#dc3545"
+				color={theme.danger}
 			/>
-			<Text style={styles.message}>{message}</Text>
+			<Text style={[styles.message, { color: theme.textSecondary }]}>{message}</Text>
 
 			{onRetry && (
 				<TouchableOpacity
-					style={styles.retryButton}
+					style={[styles.retryButton, { backgroundColor: theme.accent }]}
 					onPress={onRetry}
 				>
 					<Ionicons
 						name="refresh-outline"
 						size={20}
-						color="#fff"
+						color={theme.textInverse}
 					/>
-					<Text style={styles.retryText}>Réessayer</Text>
+					<Text style={[styles.retryText, { color: theme.textInverse }]}>Réessayer</Text>
 				</TouchableOpacity>
 			)}
 		</View>
@@ -43,20 +46,17 @@ const styles = StyleSheet.create({
 	message: {
 		marginTop: 12,
 		fontSize: 16,
-		color: '#666',
 		textAlign: 'center',
 		marginBottom: 20,
 	},
 	retryButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#007bff',
 		paddingHorizontal: 20,
 		paddingVertical: 10,
 		borderRadius: 8,
 	},
 	retryText: {
-		color: '#fff',
 		marginLeft: 8,
 		fontSize: 16,
 	},

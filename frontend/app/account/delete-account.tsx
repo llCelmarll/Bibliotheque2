@@ -15,12 +15,14 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { accountService } from '@/services/accountService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const CONFIRMATION_WORD = 'SUPPRIMER';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
   const { logout } = useAuth();
+  const theme = useTheme();
 
   const [password, setPassword] = useState('');
   const [confirmationText, setConfirmationText] = useState('');
@@ -65,61 +67,63 @@ export default function DeleteAccountScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bgPrimary }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Avertissement */}
-        <View style={styles.warningBanner}>
-          <MaterialIcons name="warning" size={24} color="#b71c1c" />
-          <Text style={styles.warningText}>
+        <View style={[styles.warningBanner, { backgroundColor: theme.dangerBg, borderLeftColor: theme.danger }]}>
+          <MaterialIcons name="warning" size={24} color={theme.danger} />
+          <Text style={[styles.warningText, { color: theme.danger }]}>
             Cette action est irréversible. Toutes vos données seront supprimées définitivement.
           </Text>
         </View>
 
         {/* Liste des données supprimées */}
-        <View style={styles.dataList}>
-          <Text style={styles.dataListTitle}>Données qui seront supprimées :</Text>
+        <View style={[styles.dataList, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
+          <Text style={[styles.dataListTitle, { color: theme.textPrimary }]}>Données qui seront supprimées :</Text>
           {['Votre compte et vos informations', 'Tous vos livres', 'Tous vos prêts', 'Tous vos contacts', 'Tous vos livres empruntés'].map((item) => (
             <View key={item} style={styles.dataListItem}>
-              <MaterialIcons name="remove-circle-outline" size={16} color="#f44336" />
-              <Text style={styles.dataListItemText}>{item}</Text>
+              <MaterialIcons name="remove-circle-outline" size={16} color={theme.danger} />
+              <Text style={[styles.dataListItemText, { color: theme.textSecondary }]}>{item}</Text>
             </View>
           ))}
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
           {errorMessage ? (
-            <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color="#f44336" />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+            <View style={[styles.errorContainer, { backgroundColor: theme.dangerBg, borderLeftColor: theme.danger }]}>
+              <MaterialIcons name="error-outline" size={20} color={theme.danger} />
+              <Text style={[styles.errorText, { color: theme.danger }]}>{errorMessage}</Text>
             </View>
           ) : null}
 
-          <Text style={styles.label}>Mot de passe</Text>
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="lock" size={24} color="#666" style={styles.inputIcon} />
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Mot de passe</Text>
+          <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
+            <MaterialIcons name="lock" size={24} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.textPrimary }]}
               placeholder="Votre mot de passe actuel"
+              placeholderTextColor={theme.textMuted}
               value={password}
               onChangeText={(text) => { setPassword(text); if (errorMessage) setErrorMessage(''); }}
               secureTextEntry={!showPassword}
               editable={!isLoading}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-              <MaterialIcons name={showPassword ? 'visibility-off' : 'visibility'} size={24} color="#666" />
+              <MaterialIcons name={showPassword ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>
-            Tapez <Text style={styles.confirmWord}>{CONFIRMATION_WORD}</Text> pour confirmer
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            Tapez <Text style={{ color: theme.danger, fontWeight: '700' }}>{CONFIRMATION_WORD}</Text> pour confirmer
           </Text>
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="delete-forever" size={24} color="#f44336" style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
+            <MaterialIcons name="delete-forever" size={24} color={theme.danger} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.textPrimary }]}
               placeholder={CONFIRMATION_WORD}
+              placeholderTextColor={theme.textMuted}
               value={confirmationText}
               onChangeText={(text) => { setConfirmationText(text); if (errorMessage) setErrorMessage(''); }}
               autoCapitalize="characters"
@@ -128,14 +132,14 @@ export default function DeleteAccountScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.deleteButton, (!canSubmit || isLoading) && styles.buttonDisabled]}
+            style={[styles.deleteButton, { backgroundColor: theme.danger }, (!canSubmit || isLoading) && { backgroundColor: theme.borderMedium }]}
             onPress={handleDelete}
             disabled={!canSubmit || isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#FFF" size="small" />
+              <ActivityIndicator color={theme.textInverse} size="small" />
             ) : (
-              <Text style={styles.deleteButtonText}>Supprimer définitivement mon compte</Text>
+              <Text style={[styles.deleteButtonText, { color: theme.textInverse }]}>Supprimer définitivement mon compte</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -147,7 +151,6 @@ export default function DeleteAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -157,25 +160,20 @@ const styles = StyleSheet.create({
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffebee',
     borderRadius: 10,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
     gap: 12,
   },
   warningText: {
     flex: 1,
-    color: '#b71c1c',
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
   },
   dataList: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -184,7 +182,6 @@ const styles = StyleSheet.create({
   dataListTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 10,
   },
   dataListItem: {
@@ -195,13 +192,10 @@ const styles = StyleSheet.create({
   },
   dataListItemText: {
     fontSize: 14,
-    color: '#555',
   },
   form: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -210,15 +204,12 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffebee',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
   },
   errorText: {
-    color: '#c62828',
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -226,22 +217,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
     marginBottom: 6,
-  },
-  confirmWord: {
-    color: '#f44336',
-    fontWeight: '700',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     marginBottom: 16,
     paddingHorizontal: 12,
-    backgroundColor: '#fafafa',
   },
   inputIcon: {
     marginRight: 12,
@@ -250,24 +234,18 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     fontSize: 16,
-    color: '#333',
   },
   eyeIcon: {
     padding: 4,
   },
   deleteButton: {
-    backgroundColor: '#f44336',
     borderRadius: 8,
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
   deleteButtonText: {
-    color: '#fff',
     fontSize: 15,
     fontWeight: '600',
   },

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BorrowStatus } from '@/types/borrowedBook';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BorrowStatusBadgeProps {
   status: BorrowStatus;
@@ -9,48 +10,50 @@ interface BorrowStatusBadgeProps {
 }
 
 export function BorrowStatusBadge({ status, daysOverdue = 0, daysRemaining = 0 }: BorrowStatusBadgeProps) {
+  const theme = useTheme();
+
   const getStatusInfo = () => {
     switch (status) {
       case BorrowStatus.ACTIVE:
         if (daysOverdue > 0) {
           return {
             label: `En retard de ${daysOverdue} jour${daysOverdue > 1 ? 's' : ''}`,
-            color: '#F44336',
-            backgroundColor: '#FFEBEE',
+            color: theme.danger,
+            backgroundColor: theme.dangerBg,
           };
         }
         if (daysRemaining > 0) {
           return {
             label: `${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} restant${daysRemaining > 1 ? 's' : ''}`,
-            color: '#2196F3',
-            backgroundColor: '#E3F2FD',
+            color: theme.accent,
+            backgroundColor: theme.accentLight,
           };
         }
         return {
           label: 'Actif',
-          color: '#2196F3',
-          backgroundColor: '#E3F2FD',
+          color: theme.accent,
+          backgroundColor: theme.accentLight,
         };
 
       case BorrowStatus.RETURNED:
         return {
           label: 'Retourné',
-          color: '#4CAF50',
-          backgroundColor: '#E8F5E9',
+          color: theme.success,
+          backgroundColor: theme.successBg,
         };
 
       case BorrowStatus.OVERDUE:
         return {
           label: `En retard de ${daysOverdue} jour${daysOverdue > 1 ? 's' : ''}`,
-          color: '#F44336',
-          backgroundColor: '#FFEBEE',
+          color: theme.danger,
+          backgroundColor: theme.dangerBg,
         };
 
       default:
         return {
           label: 'Inconnu',
-          color: '#9E9E9E',
-          backgroundColor: '#F5F5F5',
+          color: theme.textMuted,
+          backgroundColor: theme.bgMuted,
         };
     }
   };

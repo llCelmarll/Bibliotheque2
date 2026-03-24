@@ -21,9 +21,11 @@ import { Contact, ContactUpdate } from '@/types/contact';
 import { Loan, LoanStatus } from '@/types/loan';
 import { BorrowedBook, BorrowStatus } from '@/types/borrowedBook';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function ContactDetailScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const params = useLocalSearchParams();
   const contactId = parseInt(params.id as string);
 
@@ -242,9 +244,9 @@ function ContactDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       </SafeAreaView>
     );
@@ -252,12 +254,12 @@ function ContactDetailScreen() {
 
   if (!contact) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
         <View style={styles.errorContainer}>
-          <MaterialIcons name="error-outline" size={64} color="#E0E0E0" />
-          <Text style={styles.errorText}>Contact introuvable</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Retour</Text>
+          <MaterialIcons name="error-outline" size={64} color={theme.borderLight} />
+          <Text style={[styles.errorText, { color: theme.textMuted }]}>Contact introuvable</Text>
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: theme.accent }]} onPress={() => router.back()}>
+            <Text style={[styles.backButtonText, { color: theme.textInverse }]}>Retour</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -273,31 +275,31 @@ function ContactDetailScreen() {
   const returnedBorrows = borrows.filter(b => b.status === 'returned');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.headerBackButton}
           accessibilityLabel="Retour"
         >
-          <MaterialIcons name="arrow-back" size={24} color="#212121" />
+          <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Détails contact</Text>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Détails contact</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
             onPress={startEditing}
             style={styles.headerActionButton}
             accessibilityLabel="Modifier le contact"
           >
-            <MaterialIcons name="edit" size={24} color="#2196F3" />
+            <MaterialIcons name="edit" size={24} color={theme.accent} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDelete}
             style={styles.headerActionButton}
             accessibilityLabel="Supprimer le contact"
           >
-            <MaterialIcons name="delete" size={24} color="#F44336" />
+            <MaterialIcons name="delete" size={24} color={theme.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -305,21 +307,21 @@ function ContactDetailScreen() {
       <ScrollView style={styles.content}>
         {/* Informations du contact (mode lecture ou édition) */}
         {editing ? (
-          <View style={styles.infoCard}>
-            <Text style={styles.editSectionTitle}>Modifier le contact</Text>
+          <View style={[styles.infoCard, { backgroundColor: theme.bgCard }]}>
+            <Text style={[styles.editSectionTitle, { color: theme.textPrimary }]}>Modifier le contact</Text>
             <View style={styles.editField}>
-              <Text style={styles.editLabel}>Nom *</Text>
+              <Text style={[styles.editLabel, { color: theme.textSecondary }]}>Nom *</Text>
               <TextInput
-                style={styles.editInput}
+                style={[styles.editInput, { borderColor: theme.borderLight, color: theme.textPrimary, backgroundColor: theme.bgInput }]}
                 value={editForm.name}
                 onChangeText={(text) => setEditForm({ ...editForm, name: text })}
                 placeholder="Nom du contact"
               />
             </View>
             <View style={styles.editField}>
-              <Text style={styles.editLabel}>Email</Text>
+              <Text style={[styles.editLabel, { color: theme.textSecondary }]}>Email</Text>
               <TextInput
-                style={styles.editInput}
+                style={[styles.editInput, { borderColor: theme.borderLight, color: theme.textPrimary, backgroundColor: theme.bgInput }]}
                 value={editForm.email}
                 onChangeText={(text) => setEditForm({ ...editForm, email: text })}
                 placeholder="Email"
@@ -328,9 +330,9 @@ function ContactDetailScreen() {
               />
             </View>
             <View style={styles.editField}>
-              <Text style={styles.editLabel}>Téléphone</Text>
+              <Text style={[styles.editLabel, { color: theme.textSecondary }]}>Téléphone</Text>
               <TextInput
-                style={styles.editInput}
+                style={[styles.editInput, { borderColor: theme.borderLight, color: theme.textPrimary, backgroundColor: theme.bgInput }]}
                 value={editForm.phone}
                 onChangeText={(text) => setEditForm({ ...editForm, phone: text })}
                 placeholder="Téléphone"
@@ -338,9 +340,9 @@ function ContactDetailScreen() {
               />
             </View>
             <View style={styles.editField}>
-              <Text style={styles.editLabel}>Notes</Text>
+              <Text style={[styles.editLabel, { color: theme.textSecondary }]}>Notes</Text>
               <TextInput
-                style={[styles.editInput, styles.editTextarea]}
+                style={[styles.editInput, styles.editTextarea, { borderColor: theme.borderLight, color: theme.textPrimary, backgroundColor: theme.bgInput }]}
                 value={editForm.notes}
                 onChangeText={(text) => setEditForm({ ...editForm, notes: text })}
                 placeholder="Notes"
@@ -349,47 +351,47 @@ function ContactDetailScreen() {
               />
             </View>
             <View style={styles.editActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={cancelEditing}>
-                <Text style={styles.cancelButtonText}>Annuler</Text>
+              <TouchableOpacity style={[styles.cancelButton, { borderColor: theme.borderLight }]} onPress={cancelEditing}>
+                <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Annuler</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.saveButton, actionLoading && styles.buttonDisabled]}
+                style={[styles.saveButton, { backgroundColor: theme.accent }, actionLoading && styles.buttonDisabled]}
                 onPress={handleSaveEdit}
                 disabled={actionLoading}
               >
                 {actionLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={theme.textInverse} />
                 ) : (
-                  <Text style={styles.saveButtonText}>Enregistrer</Text>
+                  <Text style={[styles.saveButtonText, { color: theme.textInverse }]}>Enregistrer</Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
         ) : (
-          <View style={styles.infoCard}>
-            <View style={styles.iconContainer}>
-              <MaterialIcons name="person" size={32} color="#2196F3" />
+          <View style={[styles.infoCard, { backgroundColor: theme.bgCard }]}>
+            <View style={[styles.iconContainer, { backgroundColor: theme.accentLight }]}>
+              <MaterialIcons name="person" size={32} color={theme.accent} />
             </View>
-            <Text style={styles.contactName}>{contact.name}</Text>
+            <Text style={[styles.contactName, { color: theme.textPrimary }]}>{contact.name}</Text>
 
             {contact.email && (
               <View style={styles.contactRow}>
-                <MaterialIcons name="email" size={16} color="#757575" />
-                <Text style={styles.contactText}>{contact.email}</Text>
+                <MaterialIcons name="email" size={16} color={theme.textSecondary} />
+                <Text style={[styles.contactText, { color: theme.textSecondary }]}>{contact.email}</Text>
               </View>
             )}
 
             {contact.phone && (
               <View style={styles.contactRow}>
-                <MaterialIcons name="phone" size={16} color="#757575" />
-                <Text style={styles.contactText}>{contact.phone}</Text>
+                <MaterialIcons name="phone" size={16} color={theme.textSecondary} />
+                <Text style={[styles.contactText, { color: theme.textSecondary }]}>{contact.phone}</Text>
               </View>
             )}
 
             {contact.notes && (
-              <View style={styles.notesContainer}>
-                <Text style={styles.notesLabel}>Notes</Text>
-                <Text style={styles.notesText}>{contact.notes}</Text>
+              <View style={[styles.notesContainer, { borderTopColor: theme.borderLight }]}>
+                <Text style={[styles.notesLabel, { color: theme.textSecondary }]}>Notes</Text>
+                <Text style={[styles.notesText, { color: theme.textPrimary }]}>{contact.notes}</Text>
               </View>
             )}
           </View>
@@ -397,93 +399,93 @@ function ContactDetailScreen() {
 
         {/* Section Utilisateur lié */}
         {contact.linked_user_id ? (
-          <View style={styles.linkedUserCard}>
+          <View style={[styles.linkedUserCard, { backgroundColor: theme.bgCard, borderLeftColor: theme.accentMedium }]}>
             <View style={styles.linkedUserHeader}>
-              <MaterialIcons name="account-circle" size={20} color="#7C3AED" />
-              <Text style={styles.linkedUserTitle}>Utilisateur lié</Text>
+              <MaterialIcons name="account-circle" size={20} color={theme.accentMedium} />
+              <Text style={[styles.linkedUserTitle, { color: theme.accentMedium }]}>Utilisateur lié</Text>
             </View>
-            <Text style={styles.linkedUserName}>{contact.linked_user_username}</Text>
+            <Text style={[styles.linkedUserName, { color: theme.textPrimary }]}>{contact.linked_user_username}</Text>
             <View style={styles.librarySharedRow}>
               <View style={styles.librarySharedLabel}>
-                <MaterialIcons name="menu-book" size={16} color="#757575" />
-                <Text style={styles.librarySharedText}>Partager ma bibliothèque</Text>
+                <MaterialIcons name="menu-book" size={16} color={theme.textSecondary} />
+                <Text style={[styles.librarySharedText, { color: theme.textPrimary }]}>Partager ma bibliothèque</Text>
               </View>
               <Switch
                 value={contact.library_shared}
                 onValueChange={handleToggleLibraryShared}
                 disabled={actionLoading}
-                trackColor={{ false: '#E0E0E0', true: '#C4B5FD' }}
-                thumbColor={contact.library_shared ? '#7C3AED' : '#9E9E9E'}
+                trackColor={{ false: theme.borderLight, true: theme.accentLight }}
+                thumbColor={contact.library_shared ? theme.accentMedium : theme.textMuted}
               />
             </View>
-            <TouchableOpacity style={styles.viewLibraryButton} onPress={handleViewLibrary}>
-              <MaterialIcons name="library-books" size={16} color="#7C3AED" />
-              <Text style={styles.viewLibraryButtonText}>Voir sa bibliothèque</Text>
+            <TouchableOpacity style={[styles.viewLibraryButton, { backgroundColor: theme.bgMuted }]} onPress={handleViewLibrary}>
+              <MaterialIcons name="library-books" size={16} color={theme.accentMedium} />
+              <Text style={[styles.viewLibraryButtonText, { color: theme.accentMedium }]}>Voir sa bibliothèque</Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
         {/* Statistiques Prêts */}
-        <View style={styles.statsCard}>
-          <Text style={styles.cardTitle}>Prêts</Text>
+        <View style={[styles.statsCard, { backgroundColor: theme.bgCard }]}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Prêts</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{loans.length}</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={[styles.statValue, { color: theme.accent }]}>{loans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#4CAF50' }]}>{activeLoans.length}</Text>
-              <Text style={styles.statLabel}>En cours</Text>
+              <Text style={[styles.statValue, { color: theme.success }]}>{activeLoans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>En cours</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#F44336' }]}>{overdueLoans.length}</Text>
-              <Text style={styles.statLabel}>En retard</Text>
+              <Text style={[styles.statValue, { color: theme.danger }]}>{overdueLoans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>En retard</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#757575' }]}>{returnedLoans.length}</Text>
-              <Text style={styles.statLabel}>Retournés</Text>
+              <Text style={[styles.statValue, { color: theme.textSecondary }]}>{returnedLoans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Retournés</Text>
             </View>
           </View>
         </View>
 
         {/* Statistiques Emprunts */}
-        <View style={styles.statsCard}>
-          <Text style={styles.cardTitle}>Emprunts</Text>
+        <View style={[styles.statsCard, { backgroundColor: theme.bgCard }]}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Emprunts</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{borrows.length}</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={[styles.statValue, { color: theme.accent }]}>{borrows.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#4CAF50' }]}>{activeBorrows.length}</Text>
-              <Text style={styles.statLabel}>En cours</Text>
+              <Text style={[styles.statValue, { color: theme.success }]}>{activeBorrows.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>En cours</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#F44336' }]}>{overdueBorrows.length}</Text>
-              <Text style={styles.statLabel}>En retard</Text>
+              <Text style={[styles.statValue, { color: theme.danger }]}>{overdueBorrows.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>En retard</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#757575' }]}>{returnedBorrows.length}</Text>
-              <Text style={styles.statLabel}>Retournés</Text>
+              <Text style={[styles.statValue, { color: theme.textSecondary }]}>{returnedBorrows.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Retournés</Text>
             </View>
           </View>
         </View>
 
         {/* Historique des prêts */}
-        <View style={styles.loansCard}>
+        <View style={[styles.loansCard, { backgroundColor: theme.bgCard }]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Historique des prêts</Text>
+            <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Historique des prêts</Text>
             <TouchableOpacity onPress={handleCreateLoan}>
-              <MaterialIcons name="add-circle" size={24} color="#2196F3" />
+              <MaterialIcons name="add-circle" size={24} color={theme.accent} />
             </TouchableOpacity>
           </View>
 
           {loans.length === 0 ? (
             <View style={styles.emptyLoans}>
-              <MaterialIcons name="library-books" size={48} color="#E0E0E0" />
-              <Text style={styles.emptyLoansText}>Aucun prêt</Text>
-              <TouchableOpacity style={styles.createLoanButton} onPress={handleCreateLoan}>
-                <Text style={styles.createLoanButtonText}>Créer un prêt</Text>
+              <MaterialIcons name="library-books" size={48} color={theme.borderLight} />
+              <Text style={[styles.emptyLoansText, { color: theme.textMuted }]}>Aucun prêt</Text>
+              <TouchableOpacity style={[styles.createLoanButton, { backgroundColor: theme.accent }]} onPress={handleCreateLoan}>
+                <Text style={[styles.createLoanButtonText, { color: theme.textInverse }]}>Créer un prêt</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -491,36 +493,36 @@ function ContactDetailScreen() {
               const canReturn = loan.status === 'active' || loan.status === 'overdue';
 
               return (
-                <View key={loan.id} style={styles.loanItemContainer}>
+                <View key={loan.id} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
                   <TouchableOpacity
                     style={styles.loanItem}
                     onPress={() => handleLoanPress(loan)}
                   >
                     <View style={styles.loanInfo}>
-                      <Text style={styles.loanTitle} numberOfLines={1}>{loan.book.title}</Text>
-                      <Text style={styles.loanDate}>
+                      <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>{loan.book.title}</Text>
+                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
                         Prêté le {formatDate(loan.loan_date)}
                       </Text>
                       {loan.due_date && (
-                        <Text style={styles.loanDate}>
+                        <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
                           Retour prévu : {formatDate(loan.due_date)}
                         </Text>
                       )}
                     </View>
                     <View style={styles.loanStatus}>
                       {loan.status === 'overdue' && (
-                        <View style={[styles.statusBadge, styles.statusOverdue]}>
-                          <Text style={styles.statusText}>En retard</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}>
+                          <Text style={[styles.statusText, { color: theme.danger }]}>En retard</Text>
                         </View>
                       )}
                       {loan.status === 'active' && (
-                        <View style={[styles.statusBadge, styles.statusActive]}>
-                          <Text style={styles.statusText}>En cours</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}>
+                          <Text style={[styles.statusText, { color: theme.success }]}>En cours</Text>
                         </View>
                       )}
                       {loan.status === 'returned' && (
-                        <View style={[styles.statusBadge, styles.statusReturned]}>
-                          <Text style={styles.statusText}>Retourné</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}>
+                          <Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text>
                         </View>
                       )}
                       {canReturn ? (
@@ -532,11 +534,11 @@ function ContactDetailScreen() {
                           <MaterialIcons
                             name="assignment-return"
                             size={20}
-                            color={actionLoading ? '#BDBDBD' : '#4CAF50'}
+                            color={actionLoading ? theme.textMuted : theme.success}
                           />
                         </TouchableOpacity>
                       ) : (
-                        <MaterialIcons name="chevron-right" size={20} color="#BDBDBD" />
+                        <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -547,51 +549,51 @@ function ContactDetailScreen() {
         </View>
 
         {/* Historique des emprunts */}
-        <View style={styles.loansCard}>
-          <Text style={styles.cardTitle}>Historique des emprunts</Text>
+        <View style={[styles.loansCard, { backgroundColor: theme.bgCard }]}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Historique des emprunts</Text>
 
           {borrows.length === 0 ? (
             <View style={styles.emptyLoans}>
-              <MaterialIcons name="menu-book" size={48} color="#E0E0E0" />
-              <Text style={styles.emptyLoansText}>Aucun emprunt</Text>
+              <MaterialIcons name="menu-book" size={48} color={theme.borderLight} />
+              <Text style={[styles.emptyLoansText, { color: theme.textMuted }]}>Aucun emprunt</Text>
             </View>
           ) : (
             sortedBorrows.map((borrow) => (
-              <View key={`borrow-${borrow.id}`} style={styles.loanItemContainer}>
+              <View key={`borrow-${borrow.id}`} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
                 <TouchableOpacity
                   style={styles.loanItem}
                   onPress={() => router.push(`/(tabs)/borrows/${borrow.id}`)}
                 >
                   <View style={styles.loanInfo}>
-                    <Text style={styles.loanTitle} numberOfLines={1}>
+                    <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>
                       {borrow.book?.title || 'Livre inconnu'}
                     </Text>
-                    <Text style={styles.loanDate}>
+                    <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
                       Emprunté le {formatDate(borrow.borrowed_date)}
                     </Text>
                     {borrow.expected_return_date && (
-                      <Text style={styles.loanDate}>
+                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
                         Retour prévu : {formatDate(borrow.expected_return_date)}
                       </Text>
                     )}
                   </View>
                   <View style={styles.loanStatus}>
                     {borrow.status === 'overdue' && (
-                      <View style={[styles.statusBadge, styles.statusOverdue]}>
-                        <Text style={styles.statusText}>En retard</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}>
+                        <Text style={[styles.statusText, { color: theme.danger }]}>En retard</Text>
                       </View>
                     )}
                     {borrow.status === 'active' && (
-                      <View style={[styles.statusBadge, styles.statusActive]}>
-                        <Text style={styles.statusText}>En cours</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}>
+                        <Text style={[styles.statusText, { color: theme.success }]}>En cours</Text>
                       </View>
                     )}
                     {borrow.status === 'returned' && (
-                      <View style={[styles.statusBadge, styles.statusReturned]}>
-                        <Text style={styles.statusText}>Retourné</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}>
+                        <Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text>
                       </View>
                     )}
-                    <MaterialIcons name="chevron-right" size={20} color="#BDBDBD" />
+                    <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -614,16 +616,13 @@ export default function ContactDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   headerBackButton: {
     padding: 4,
@@ -631,7 +630,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
   },
   headerActions: {
     flexDirection: 'row',
@@ -656,23 +654,19 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#9E9E9E',
     marginTop: 16,
     marginBottom: 24,
   },
   backButton: {
-    backgroundColor: '#2196F3',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
   backButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
   infoCard: {
-    backgroundColor: '#FFFFFF',
     margin: 16,
     marginBottom: 8,
     padding: 20,
@@ -683,7 +677,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -691,7 +684,6 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#212121',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -702,7 +694,6 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: '#757575',
     marginLeft: 8,
   },
   notesContainer: {
@@ -710,21 +701,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   notesLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#757575',
     marginBottom: 4,
   },
   notesText: {
     fontSize: 14,
-    color: '#424242',
     lineHeight: 20,
   },
   statsCard: {
-    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
@@ -733,7 +720,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 12,
   },
   statsRow: {
@@ -746,15 +732,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2196F3',
   },
   statLabel: {
     fontSize: 11,
-    color: '#757575',
     marginTop: 4,
   },
   loansCard: {
-    backgroundColor: '#FFFFFF',
     margin: 16,
     marginTop: 8,
     marginBottom: 32,
@@ -773,24 +756,20 @@ const styles = StyleSheet.create({
   },
   emptyLoansText: {
     fontSize: 14,
-    color: '#9E9E9E',
     marginTop: 12,
     marginBottom: 16,
   },
   createLoanButton: {
-    backgroundColor: '#2196F3',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
   },
   createLoanButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
   loanItemContainer: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
   },
   loanItem: {
     flexDirection: 'row',
@@ -804,12 +783,10 @@ const styles = StyleSheet.create({
   loanTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 4,
   },
   loanDate: {
     fontSize: 12,
-    color: '#757575',
     marginTop: 2,
   },
   loanStatus: {
@@ -826,15 +803,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 4,
   },
-  statusActive: {
-    backgroundColor: '#E8F5E9',
-  },
-  statusOverdue: {
-    backgroundColor: '#FFEBEE',
-  },
-  statusReturned: {
-    backgroundColor: '#F5F5F5',
-  },
   statusText: {
     fontSize: 11,
     fontWeight: '600',
@@ -842,7 +810,6 @@ const styles = StyleSheet.create({
   editSectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -853,17 +820,13 @@ const styles = StyleSheet.create({
   editLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#757575',
     marginBottom: 4,
   },
   editInput: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#212121',
-    backgroundColor: '#FAFAFA',
   },
   editTextarea: {
     minHeight: 80,
@@ -880,21 +843,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   cancelButtonText: {
-    color: '#757575',
     fontSize: 14,
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#2196F3',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
   },
   saveButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -902,13 +861,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   linkedUserCard: {
-    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#7C3AED',
   },
   linkedUserHeader: {
     flexDirection: 'row',
@@ -919,12 +876,10 @@ const styles = StyleSheet.create({
   linkedUserTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#7C3AED',
   },
   linkedUserName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#212121',
     marginBottom: 12,
   },
   librarySharedRow: {
@@ -940,7 +895,6 @@ const styles = StyleSheet.create({
   },
   librarySharedText: {
     fontSize: 14,
-    color: '#424242',
   },
   viewLibraryButton: {
     flexDirection: 'row',
@@ -949,13 +903,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#F3F0FF',
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   viewLibraryButtonText: {
     fontSize: 14,
-    color: '#7C3AED',
     fontWeight: '600',
   },
 });

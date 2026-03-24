@@ -11,6 +11,7 @@ import {
     Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export interface SharedLibraryAdvancedParams {
     title?: string;
@@ -41,6 +42,7 @@ export const SharedLibraryAdvancedModal: React.FC<SharedLibraryAdvancedModalProp
     sortBy,
     sortOrder,
 }) => {
+    const theme = useTheme();
     const [title, setTitle] = useState('');
     const [author, setAuthor] = useState('');
     const [publisher, setPublisher] = useState('');
@@ -93,14 +95,14 @@ export const SharedLibraryAdvancedModal: React.FC<SharedLibraryAdvancedModalProp
             transparent
         >
             <KeyboardAvoidingView
-                style={styles.overlay}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                style={[styles.overlay, { backgroundColor: `${theme.textPrimary}80` }]}
+                behavior={undefined}
             >
-                <View style={styles.modal}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Recherche avancée</Text>
+                <View style={[styles.modal, { backgroundColor: theme.bgCard }]}>
+                    <View style={[styles.header, { borderBottomColor: theme.borderLight }]}>
+                        <Text style={[styles.title, { color: theme.textPrimary }]}>Recherche avancée</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <MaterialIcons name="close" size={24} color="#333" />
+                            <MaterialIcons name="close" size={24} color={theme.textPrimary} />
                         </TouchableOpacity>
                     </View>
                     <ScrollView
@@ -108,94 +110,103 @@ export const SharedLibraryAdvancedModal: React.FC<SharedLibraryAdvancedModalProp
                         contentContainerStyle={styles.scrollContent}
                         keyboardShouldPersistTaps="handled"
                     >
-                        <Text style={styles.label}>Titre</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Titre</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                             value={title}
                             onChangeText={setTitle}
                             placeholder="Rechercher dans le titre"
+                            placeholderTextColor={theme.textMuted}
                             autoCapitalize="none"
                         />
-                        <Text style={styles.label}>Auteur</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Auteur</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                             value={author}
                             onChangeText={setAuthor}
                             placeholder="Nom de l'auteur"
+                            placeholderTextColor={theme.textMuted}
                         />
-                        <Text style={styles.label}>Éditeur</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Éditeur</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                             value={publisher}
                             onChangeText={setPublisher}
                             placeholder="Nom de l'éditeur"
+                            placeholderTextColor={theme.textMuted}
                         />
-                        <Text style={styles.label}>Genre</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Genre</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                             value={genre}
                             onChangeText={setGenre}
                             placeholder="Nom du genre"
+                            placeholderTextColor={theme.textMuted}
                         />
-                        <Text style={styles.label}>ISBN</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>ISBN</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                             value={isbn}
                             onChangeText={setIsbn}
                             placeholder="ISBN"
+                            placeholderTextColor={theme.textMuted}
                         />
                         <View style={styles.row}>
                             <View style={styles.half}>
-                                <Text style={styles.label}>Année min</Text>
+                                <Text style={[styles.label, { color: theme.textSecondary }]}>Année min</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                                     value={yearMin}
                                     onChangeText={setYearMin}
                                     placeholder="ex. 1990"
+                                    placeholderTextColor={theme.textMuted}
                                     keyboardType="number-pad"
                                 />
                             </View>
                             <View style={styles.half}>
-                                <Text style={styles.label}>Année max</Text>
+                                <Text style={[styles.label, { color: theme.textSecondary }]}>Année max</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                                     value={yearMax}
                                     onChangeText={setYearMax}
                                     placeholder="ex. 2024"
+                                    placeholderTextColor={theme.textMuted}
                                     keyboardType="number-pad"
                                 />
                             </View>
                         </View>
                         <View style={styles.row}>
                             <View style={styles.half}>
-                                <Text style={styles.label}>Pages min</Text>
+                                <Text style={[styles.label, { color: theme.textSecondary }]}>Pages min</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                                     value={pageMin}
                                     onChangeText={setPageMin}
                                     placeholder="ex. 100"
+                                    placeholderTextColor={theme.textMuted}
                                     keyboardType="number-pad"
                                 />
                             </View>
                             <View style={styles.half}>
-                                <Text style={styles.label}>Pages max</Text>
+                                <Text style={[styles.label, { color: theme.textSecondary }]}>Pages max</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
                                     value={pageMax}
                                     onChangeText={setPageMax}
                                     placeholder="ex. 500"
+                                    placeholderTextColor={theme.textMuted}
                                     keyboardType="number-pad"
                                 />
                             </View>
                         </View>
                     </ScrollView>
-                    <View style={styles.footer}>
-                        <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                            <Text style={styles.resetButtonText}>Réinitialiser</Text>
+                    <View style={[styles.footer, { borderTopColor: theme.borderLight }]}>
+                        <TouchableOpacity style={[styles.resetButton, { backgroundColor: theme.bgSecondary }]} onPress={handleReset}>
+                            <Text style={[styles.resetButtonText, { color: theme.textPrimary }]}>Réinitialiser</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-                            <MaterialIcons name="search" size={20} color="#fff" />
-                            <Text style={styles.searchButtonText}>Rechercher</Text>
+                        <TouchableOpacity style={[styles.searchButton, { backgroundColor: theme.accent }]} onPress={handleSearch}>
+                            <MaterialIcons name="search" size={20} color={theme.textInverse} />
+                            <Text style={[styles.searchButtonText, { color: theme.textInverse }]}>Rechercher</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -207,11 +218,9 @@ export const SharedLibraryAdvancedModal: React.FC<SharedLibraryAdvancedModalProp
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'flex-end',
     },
     modal: {
-        backgroundColor: '#fff',
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
         maxHeight: '90%',
@@ -222,12 +231,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
     },
     title: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#333',
     },
     closeButton: {
         padding: 4,
@@ -242,18 +249,15 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#555',
         marginBottom: 6,
         marginTop: 12,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ddd',
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 16,
-        backgroundColor: '#fff',
     },
     row: {
         flexDirection: 'row',
@@ -268,17 +272,14 @@ const styles = StyleSheet.create({
         gap: 12,
         padding: 16,
         borderTopWidth: 1,
-        borderTopColor: '#eee',
     },
     resetButton: {
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 8,
-        backgroundColor: '#f0f0f0',
     },
     resetButtonText: {
         fontSize: 16,
-        color: '#333',
     },
     searchButton: {
         flex: 1,
@@ -288,11 +289,9 @@ const styles = StyleSheet.create({
         gap: 8,
         paddingVertical: 12,
         borderRadius: 8,
-        backgroundColor: '#3498db',
     },
     searchButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#fff',
     },
 });

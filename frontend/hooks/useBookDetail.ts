@@ -25,6 +25,10 @@ export function useBookDetail(bookId: string) {
 		try{
 			setLoading(true);
 			const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}`);
+			console.log("[BookDetail] API /books/:id payload", {
+				bookId,
+				data: response.data,
+			});
 			setBook(response.data);
 			setError(null);
 		} catch (error) {

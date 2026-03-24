@@ -2,6 +2,7 @@ import React from "react";
 import { View, TextInput, Pressable, Text, StyleSheet } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SortMenu } from "@/components/SortMenu";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SearchBarProps {
 	searchQuery: string;
@@ -28,31 +29,33 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 	onAdvancedPress,
 	isAdvancedMode,
 }) => {
+	const theme = useTheme();
 	return (
-		<View style={styles.container}>
+		<View style={[styles.container, { backgroundColor: theme.bgPrimary }]}>
 			<View style={styles.searchContainer}>
 				<TextInput
-					style={styles.input}
+					style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary, borderRadius: theme.radiusInput }]}
 					value={searchQuery}
 					onChangeText={setSearchQuery}
 					placeholder="Rechercher (titre, auteur, notes…)"
+					placeholderTextColor={theme.textMuted}
 					onSubmitEditing={handleSearch}
 					returnKeyType="search"
 				/>
 				{onAdvancedPress && (
 					<Pressable
-						style={[styles.searchButton, isAdvancedMode && styles.advancedActive]}
+						style={[styles.searchButton, { backgroundColor: isAdvancedMode ? theme.accent : theme.bgMuted, borderRadius: theme.radiusInput }]}
 						onPress={onAdvancedPress}
 					>
 						<MaterialIcons
 							name="tune"
-							size={24}
-							color={isAdvancedMode ? "#fff" : "#333"}
+							size={22}
+							color={isAdvancedMode ? theme.textInverse : theme.textSecondary}
 						/>
 					</Pressable>
 				)}
-				<Pressable style={styles.searchButton} onPress={handleSearch}>
-					<MaterialIcons name="search" size={24} color="#333" />
+				<Pressable style={[styles.searchButton, { backgroundColor: theme.bgMuted, borderRadius: theme.radiusInput }]} onPress={handleSearch}>
+					<MaterialIcons name="search" size={22} color={theme.textSecondary} />
 				</Pressable>
 			</View>
 
@@ -62,11 +65,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 					currentOrder={order}
 					onSortChange={onSortChange}
 				/>
-				<Pressable style={styles.viewButton} onPress={toggleView}>
+				<Pressable style={[styles.viewButton, { backgroundColor: theme.bgMuted, borderRadius: theme.radiusInput }]} onPress={toggleView}>
 					<MaterialIcons
 						name={isGridView ? "view-list" : "grid-view"}
-						size={24}
-						color="#333"
+						size={22}
+						color={theme.textSecondary}
 					/>
 				</Pressable>
 			</View>
@@ -85,20 +88,15 @@ const styles = StyleSheet.create({
 	},
 	input: {
 		flex: 1,
-		height: 40,
+		height: 42,
 		borderWidth: 1,
-		borderColor: '#ddd',
-		borderRadius: 8,
 		paddingHorizontal: 12,
-		backgroundColor: 'white',
 	},
 	searchButton: {
-		width: 40,
-		height: 40,
-		backgroundColor: '#f0f0f0',
+		width: 42,
+		height: 42,
 		justifyContent: 'center',
 		alignItems: 'center',
-		borderRadius: 8,
 	},
 	actions: {
 		flexDirection: 'row',
@@ -107,14 +105,9 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	viewButton: {
-		width: 40,
-		height: 40,
-		backgroundColor: '#f0f0f0',
+		width: 42,
+		height: 42,
 		justifyContent: 'center',
 		alignItems: 'center',
-		borderRadius: 8,
-	},
-	advancedActive: {
-		backgroundColor: '#3498db',
 	},
 });

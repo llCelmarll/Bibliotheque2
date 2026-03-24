@@ -1,4 +1,5 @@
 import { View, ActivityIndicator } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -8,6 +9,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { AppThemeProvider } from '@/contexts/ThemeContext';
 import { UpdateChecker } from '@/components/UpdateChecker';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { useChangelog } from '@/utils/useChangelog';
@@ -48,12 +50,14 @@ export default function RootLayout() {
 
   // Ajout de la logique de redirection ici
   return (
-    <AuthProvider>
-      <UpdateChecker />
-      <AuthRedirectWrapper>
-        <RootLayoutNav />
-      </AuthRedirectWrapper>
-    </AuthProvider>
+    <AppThemeProvider>
+      <AuthProvider>
+        <UpdateChecker />
+        <AuthRedirectWrapper>
+          <RootLayoutNav />
+        </AuthRedirectWrapper>
+      </AuthProvider>
+    </AppThemeProvider>
   );
 }
 
@@ -65,6 +69,7 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuth();
+  const theme = useTheme();
   const initialCheckDone = useRef(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const { hasNew, latestEntry, markAsSeen, loading: changelogLoading } = useChangelog();
@@ -105,8 +110,8 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
   // Pas pendant les opérations login/register
   if (isLoading && !initialCheckDone.current) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
-        <ActivityIndicator size="large" color="#2196F3" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.bgPrimary }}>
+        <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
   }

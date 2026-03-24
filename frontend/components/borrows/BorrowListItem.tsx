@@ -7,6 +7,7 @@ import BookCover from '@/components/BookCover';
 import { useRouter } from 'expo-router';
 import { borrowedBookService } from '@/services/borrowedBookService';
 import { calendarService } from '@/services/calendarService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BorrowListItemProps {
   borrow: BorrowedBook;
@@ -15,6 +16,7 @@ interface BorrowListItemProps {
 
 export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn }) => {
   const router = useRouter();
+  const theme = useTheme();
   const [returning, setReturning] = useState(false);
 
   const handlePress = () => {
@@ -49,13 +51,11 @@ export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn
   const confirmReturn = async () => {
     setReturning(true);
     try {
-      // Si un rappel calendrier existe, le supprimer automatiquement
       if (borrow.calendar_event_id) {
         try {
           await calendarService.deleteBookReturnReminder(borrow.calendar_event_id);
         } catch (error) {
           console.warn('Impossible de supprimer le rappel calendrier:', error);
-          // Ne pas bloquer le retour du livre si la suppression échoue
         }
       }
 
@@ -123,7 +123,7 @@ export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}
       onPress={handlePress}
       testID={`borrow-item-${borrow.id}`}
     >
@@ -135,20 +135,20 @@ export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn
       />
 
       <View style={styles.infoContainer}>
-        <Text style={styles.bookTitle} numberOfLines={2}>
+        <Text style={[styles.bookTitle, { color: theme.textPrimary }]} numberOfLines={2}>
           {borrow.book?.title || 'Sans titre'}
         </Text>
 
-        <Text style={styles.borrowedFromText}>
-          Emprunté à : <Text style={styles.borrowedFromBold}>{borrow.contact?.name || borrow.borrowed_from}</Text>
+        <Text style={[styles.borrowedFromText, { color: theme.textSecondary }]}>
+          Emprunté à : <Text style={[styles.borrowedFromBold, { color: theme.textPrimary }]}>{borrow.contact?.name || borrow.borrowed_from}</Text>
         </Text>
 
         <View style={styles.datesContainer}>
-          <Text style={styles.dateText}>
+          <Text style={[styles.dateText, { color: theme.textMuted }]}>
             Emprunté le {formatDate(borrow.borrowed_date)}
           </Text>
           {borrow.expected_return_date && (
-            <Text style={styles.dateText}>
+            <Text style={[styles.dateText, { color: theme.textMuted }]}>
               Retour prévu : {formatDate(borrow.expected_return_date)}
             </Text>
           )}
@@ -163,7 +163,7 @@ export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn
 
       {canReturn && (
         <Pressable
-          style={styles.returnButton}
+          style={[styles.returnButton, { borderLeftColor: theme.borderLight }]}
           onPress={handleReturn}
           disabled={returning}
           accessibilityLabel="Marquer comme retourné"
@@ -171,9 +171,9 @@ export const BorrowListItem: React.FC<BorrowListItemProps> = ({ borrow, onReturn
           <MaterialIcons
             name="assignment-return"
             size={20}
-            color={returning ? '#BDBDBD' : '#4CAF50'}
+            color={returning ? theme.textMuted : theme.success}
           />
-          <Text style={[styles.returnButtonText, returning && styles.returnButtonTextDisabled]}>
+          <Text style={[styles.returnButtonText, { color: returning ? theme.textMuted : theme.success }]}>
             Retourner
           </Text>
         </Pressable>
@@ -186,10 +186,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#FFFFFF',
     marginBottom: 8,
     borderRadius: 8,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -211,24 +209,20 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 4,
   },
   borrowedFromText: {
     fontSize: 14,
-    color: '#757575',
     marginBottom: 4,
   },
   borrowedFromBold: {
     fontWeight: '600',
-    color: '#424242',
   },
   datesContainer: {
     marginVertical: 4,
   },
   dateText: {
     fontSize: 12,
-    color: '#9E9E9E',
     marginBottom: 2,
   },
   returnButton: {
@@ -236,16 +230,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     borderLeftWidth: 1,
-    borderLeftColor: '#E0E0E0',
     marginLeft: 8,
   },
   returnButtonText: {
     fontSize: 12,
-    color: '#4CAF50',
     fontWeight: '600',
     marginTop: 4,
-  },
-  returnButtonTextDisabled: {
-    color: '#BDBDBD',
   },
 });

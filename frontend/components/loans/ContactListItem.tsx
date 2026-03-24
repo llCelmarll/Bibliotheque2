@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Contact } from '@/types/contact';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ContactListItemProps {
   contact: Contact;
@@ -16,6 +17,8 @@ export const ContactListItem: React.FC<ContactListItemProps> = ({
   showContact = true,
   showStats = false,
 }) => {
+  const theme = useTheme();
+
   const handlePress = () => {
     onPress?.(contact);
   };
@@ -25,21 +28,21 @@ export const ContactListItem: React.FC<ContactListItemProps> = ({
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, { borderBottomColor: theme.borderLight, backgroundColor: theme.bgCard }]}
       onPress={handlePress}
       disabled={!onPress}
       testID={`contact-item-${contact.id}`}
     >
-      <View style={[styles.iconContainer, contact.linked_user_id ? styles.iconContainerMember : null]}>
-        <MaterialIcons name="person" size={32} color={contact.linked_user_id ? '#7C3AED' : '#2196F3'} />
+      <View style={[styles.iconContainer, { backgroundColor: contact.linked_user_id ? theme.accentLight : theme.accentLight }]}>
+        <MaterialIcons name="person" size={32} color={contact.linked_user_id ? theme.accentMedium : theme.accent} />
       </View>
 
       <View style={styles.infoContainer}>
         <View style={styles.nameRow}>
-          <Text style={styles.name}>{contact.name}</Text>
+          <Text style={[styles.name, { color: theme.textPrimary }]}>{contact.name}</Text>
           {contact.linked_user_id && (
-            <View style={styles.memberBadge}>
-              <Text style={styles.memberBadgeText}>Membre</Text>
+            <View style={[styles.memberBadge, { backgroundColor: theme.accentMedium }]}>
+              <Text style={[styles.memberBadgeText, { color: theme.textInverse }]}>Membre</Text>
             </View>
           )}
         </View>
@@ -47,23 +50,23 @@ export const ContactListItem: React.FC<ContactListItemProps> = ({
         {showStats ? (
           <View style={styles.statsRow}>
             {activeLoans > 0 && (
-              <View style={styles.statBadge}>
-                <MaterialIcons name="call-made" size={14} color="#4CAF50" />
-                <Text style={styles.statText}>
+              <View style={[styles.statBadge, { backgroundColor: theme.successBg }]}>
+                <MaterialIcons name="call-made" size={14} color={theme.success} />
+                <Text style={[styles.statText, { color: theme.success }]}>
                   {activeLoans} {activeLoans === 1 ? 'prêt' : 'prêts'}
                 </Text>
               </View>
             )}
             {activeBorrows > 0 && (
-              <View style={[styles.statBadge, styles.borrowBadge]}>
-                <MaterialIcons name="call-received" size={14} color="#FF9800" />
-                <Text style={[styles.statText, styles.borrowText]}>
+              <View style={[styles.statBadge, { backgroundColor: theme.warningBg }]}>
+                <MaterialIcons name="call-received" size={14} color={theme.warning} />
+                <Text style={[styles.statText, { color: theme.warning }]}>
                   {activeBorrows} {activeBorrows === 1 ? 'emprunt' : 'emprunts'}
                 </Text>
               </View>
             )}
             {activeLoans === 0 && activeBorrows === 0 && (
-              <Text style={styles.noLoanText}>Aucun en cours</Text>
+              <Text style={[styles.noLoanText, { color: theme.textMuted }]}>Aucun en cours</Text>
             )}
           </View>
         ) : (
@@ -71,22 +74,22 @@ export const ContactListItem: React.FC<ContactListItemProps> = ({
             <>
               {contact.email && (
                 <View style={styles.contactRow}>
-                  <MaterialIcons name="email" size={14} color="#757575" />
-                  <Text style={styles.contactText}>{contact.email}</Text>
+                  <MaterialIcons name="email" size={14} color={theme.textMuted} />
+                  <Text style={[styles.contactText, { color: theme.textSecondary }]}>{contact.email}</Text>
                 </View>
               )}
 
               {contact.phone && (
                 <View style={styles.contactRow}>
-                  <MaterialIcons name="phone" size={14} color="#757575" />
-                  <Text style={styles.contactText}>{contact.phone}</Text>
+                  <MaterialIcons name="phone" size={14} color={theme.textMuted} />
+                  <Text style={[styles.contactText, { color: theme.textSecondary }]}>{contact.phone}</Text>
                 </View>
               )}
 
               {contact.notes && (
                 <View style={styles.contactRow}>
-                  <MaterialIcons name="note" size={14} color="#757575" />
-                  <Text style={styles.contactText} numberOfLines={1}>
+                  <MaterialIcons name="note" size={14} color={theme.textMuted} />
+                  <Text style={[styles.contactText, { color: theme.textSecondary }]} numberOfLines={1}>
                     {contact.notes}
                   </Text>
                 </View>
@@ -97,7 +100,7 @@ export const ContactListItem: React.FC<ContactListItemProps> = ({
       </View>
 
       {onPress && (
-        <MaterialIcons name="chevron-right" size={24} color="#BDBDBD" />
+        <MaterialIcons name="chevron-right" size={24} color={theme.textMuted} />
       )}
     </TouchableOpacity>
   );
@@ -109,20 +112,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: '#FFFFFF',
   },
   iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  iconContainerMember: {
-    backgroundColor: '#F3F0FF',
   },
   infoContainer: {
     flex: 1,
@@ -136,10 +133,8 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
   },
   memberBadge: {
-    backgroundColor: '#7C3AED',
     borderRadius: 10,
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -147,7 +142,6 @@ const styles = StyleSheet.create({
   memberBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   contactRow: {
     flexDirection: 'row',
@@ -156,7 +150,6 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 13,
-    color: '#757575',
     marginLeft: 6,
     flex: 1,
   },
@@ -169,26 +162,17 @@ const styles = StyleSheet.create({
   statBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
   },
-  borrowBadge: {
-    backgroundColor: '#FFF3E0',
-  },
   statText: {
     fontSize: 12,
-    color: '#4CAF50',
     marginLeft: 4,
     fontWeight: '600',
   },
-  borrowText: {
-    color: '#FF9800',
-  },
   noLoanText: {
     fontSize: 13,
-    color: '#9E9E9E',
     fontStyle: 'italic',
   },
 });

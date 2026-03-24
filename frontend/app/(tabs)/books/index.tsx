@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Book } from "@/types/book";
 import { BookListItem } from "@/components/BookListItem";
 import { BookCardItem } from "@/components/BookCardItem";
@@ -29,6 +30,7 @@ export default function Index() {
 	const [isGridView, setIsGridView] = useState(false);
 	const [advancedModalVisible, setAdvancedModalVisible] = useState(false);
 	const router = useRouter();
+	const theme = useTheme();
 	const { outgoingLoanRequests } = useNotifications();
 	const acceptedOutgoing = outgoingLoanRequests.filter(r => r.status === UserLoanRequestStatus.ACCEPTED);
 	const {
@@ -100,18 +102,18 @@ export default function Index() {
 
 		if (loadError && hasMore) {
 			return (
-				<View style={styles.footerError}>
-					<Text style={styles.footerErrorText}>
+				<View style={[styles.footerError, { backgroundColor: theme.dangerBg }]}>
+					<Text style={[styles.footerErrorText, { color: theme.danger }]}>
 						Une erreur est survenue lors du chargement
 					</Text>
-					<Text style={styles.footerSubText}>
+					<Text style={[styles.footerSubText, { color: theme.textSecondary }]}>
 						Appuyez pour réessayer
 					</Text>
 					<TouchableOpacity
-						style={styles.retryButton}
+						style={[styles.retryButton, { backgroundColor: theme.danger }]}
 						onPress={handleLoadMore}
 					>
-						<Text style={styles.retryButtonText}>Réessayer</Text>
+						<Text style={[styles.retryButtonText, { color: theme.textInverse }]}>Réessayer</Text>
 					</TouchableOpacity>
 				</View>
 			);
@@ -120,7 +122,7 @@ export default function Index() {
 		if (hasMore) {
 			return (
 				<View style={styles.footerInfo}>
-					<Text style={styles.footerInfoText}>
+					<Text style={[styles.footerInfoText, { color: theme.textSecondary }]}>
 						Tirez pour charger plus de livres
 					</Text>
 				</View>
@@ -144,7 +146,7 @@ export default function Index() {
 	}, [activeFilters, isRead, ratingMin, isAdvancedMode]);
 
 	return (
-		<View style={styles.container}>
+		<View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
 			<SearchBar
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
@@ -159,10 +161,10 @@ export default function Index() {
 			/>
 
 			{isAdvancedMode ? (
-				<View style={styles.advancedBanner}>
-					<Text style={styles.advancedBannerText}>Recherche avancée active</Text>
+				<View style={[styles.advancedBanner, { backgroundColor: theme.accentLight, borderBottomColor: theme.borderMedium }]}>
+					<Text style={[styles.advancedBannerText, { color: theme.accent }]}>Recherche avancée active</Text>
 					<TouchableOpacity onPress={clearAdvancedSearch}>
-						<Text style={styles.advancedBannerLink}>Réinitialiser</Text>
+						<Text style={[styles.advancedBannerLink, { color: theme.accent }]}>Réinitialiser</Text>
 					</TouchableOpacity>
 				</View>
 			) : (
@@ -191,8 +193,8 @@ export default function Index() {
 					onEndReachedThreshold={0.5}
 					ListFooterComponent={renderFooter}
 					ListHeaderComponent={acceptedOutgoing.length > 0 ? (
-						<View style={styles.borrowedSection}>
-							<Text style={styles.borrowedSectionTitle}>
+						<View style={[styles.borrowedSection, { backgroundColor: theme.warningBg, borderColor: theme.borderMedium }]}>
+							<Text style={[styles.borrowedSectionTitle, { color: theme.warning, backgroundColor: theme.accentLight }]}>
 								📚 Emprunts en cours ({acceptedOutgoing.length})
 							</Text>
 							{acceptedOutgoing.map(r => {
@@ -202,7 +204,7 @@ export default function Index() {
 								return (
 									<TouchableOpacity
 										key={r.id}
-										style={styles.borrowedItem}
+										style={[styles.borrowedItem, { borderTopColor: theme.borderLight }]}
 										onPress={() => router.push(`/(tabs)/loans/library/${r.lender_id}/book/${r.book.id}`)}
 										activeOpacity={0.7}
 									>
@@ -213,15 +215,15 @@ export default function Index() {
 											resizeMode="cover"
 										/>
 										<View style={styles.borrowedInfo}>
-											<Text style={styles.borrowedTitle} numberOfLines={2}>{r.book.title}</Text>
-											<Text style={styles.borrowedFrom}>Emprunté à {r.lender_username}</Text>
+											<Text style={[styles.borrowedTitle, { color: theme.textPrimary }]} numberOfLines={2}>{r.book.title}</Text>
+											<Text style={[styles.borrowedFrom, { color: theme.warning }]}>Emprunté à {r.lender_username}</Text>
 											{dueDate && (
-												<Text style={[styles.borrowedDue, isOverdue && styles.borrowedOverdue]}>
+												<Text style={[styles.borrowedDue, { color: theme.textMuted }, isOverdue && { color: theme.danger, fontWeight: '600' }]}>
 													{isOverdue ? '⚠️ ' : ''}Retour : {dueDate}
 												</Text>
 											)}
 										</View>
-										<MaterialIcons name="chevron-right" size={20} color="#9E9E9E" />
+										<MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
 									</TouchableOpacity>
 								);
 							})}
@@ -242,12 +244,22 @@ export default function Index() {
 			/>
 
 			{/* Bouton d'ajout manuel flottant */}
-			<TouchableOpacity 
-				style={styles.addButton}
+			<TouchableOpacity
+				style={[
+					styles.addButton,
+					{
+						backgroundColor: theme.accent,
+						...Platform.select({
+							web: {
+								boxShadow: `0 4px 12px ${theme.textPrimary}4D`,
+							},
+						}),
+					},
+				]}
 				onPress={() => router.push('/scan/manual')}
 				activeOpacity={0.8}
 			>
-				<MaterialIcons name="add" size={24} color="#fff" />
+				<MaterialIcons name="add" size={24} color={theme.textInverse} />
 			</TouchableOpacity>
 		</View>
 	);
@@ -256,7 +268,6 @@ export default function Index() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#fff",
 		paddingTop: Platform.OS === 'android' ? 40 : Platform.OS === 'ios' ? 44 : 0,
 	},
 	loader: {
@@ -280,28 +291,23 @@ const styles = StyleSheet.create({
 	footerError: {
 		padding: 20,
 		alignItems: 'center',
-		backgroundColor: '#fff8f8',
 		borderRadius: 8,
 		margin: 10,
 	},
 	footerErrorText: {
-		color: '#d32f2f',
 		fontSize: 16,
 		marginBottom: 4,
 	},
 	footerSubText: {
-		color: '#666',
 		fontSize: 14,
 		marginBottom: 12,
 	},
 	retryButton: {
-		backgroundColor: '#d32f2f',
 		paddingHorizontal: 20,
 		paddingVertical: 8,
 		borderRadius: 4,
 	},
 	retryButtonText: {
-		color: '#fff',
 		fontWeight: 'bold',
 	},
 	footerInfo: {
@@ -309,7 +315,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	footerInfoText: {
-		color: '#666',
 		fontSize: 14,
 	},
 	advancedBanner: {
@@ -318,17 +323,13 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		paddingHorizontal: 16,
 		paddingVertical: 10,
-		backgroundColor: "#e8f4fc",
 		borderBottomWidth: 1,
-		borderBottomColor: "#b8daff",
 	},
 	advancedBannerText: {
 		fontSize: 14,
-		color: "#004085",
 	},
 	advancedBannerLink: {
 		fontSize: 14,
-		color: "#007bff",
 		fontWeight: "600",
 	},
 	addButton: {
@@ -338,21 +339,11 @@ const styles = StyleSheet.create({
 		width: 56,
 		height: 56,
 		borderRadius: 28,
-		backgroundColor: '#3498db',
 		justifyContent: 'center',
 		alignItems: 'center',
 		...Platform.select({
-			ios: {
-				shadowColor: '#000',
-				shadowOffset: { width: 0, height: 4 },
-				shadowOpacity: 0.3,
-				shadowRadius: 6,
-			},
 			android: {
 				elevation: 8,
-			},
-			web: {
-				boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
 			},
 		}),
 	},
@@ -365,38 +356,31 @@ const styles = StyleSheet.create({
 	authLoadingText: {
 		marginTop: 16,
 		fontSize: 16,
-		color: '#666',
 		textAlign: 'center',
 	},
 	borrowedSection: {
 		marginBottom: 8,
-		backgroundColor: '#EDE9FE',
 		borderRadius: 10,
 		overflow: 'hidden',
 		borderWidth: 1,
-		borderColor: '#C4B5FD',
 	},
 	borrowedSectionTitle: {
 		fontSize: 13,
 		fontWeight: '700',
-		color: '#5B21B6',
 		paddingHorizontal: 12,
 		paddingVertical: 10,
-		backgroundColor: '#DDD6FE',
 	},
 	borrowedItem: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		padding: 10,
 		borderTopWidth: 1,
-		borderTopColor: '#C4B5FD',
 		gap: 10,
 	},
 	borrowedCoverContainer: {
 		width: 44,
 		height: 64,
 		borderRadius: 4,
-		backgroundColor: '#F0F0F0',
 		flexShrink: 0,
 	},
 	borrowedCover: {
@@ -410,20 +394,16 @@ const styles = StyleSheet.create({
 	borrowedTitle: {
 		fontSize: 14,
 		fontWeight: '600',
-		color: '#1F2937',
 		marginBottom: 2,
 	},
 	borrowedFrom: {
 		fontSize: 12,
-		color: '#6D28D9',
 		marginBottom: 2,
 	},
 	borrowedDue: {
 		fontSize: 11,
-		color: '#6B7280',
 	},
 	borrowedOverdue: {
-		color: '#DC2626',
 		fontWeight: '600',
 	},
 });

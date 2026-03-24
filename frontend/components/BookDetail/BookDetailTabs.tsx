@@ -5,6 +5,7 @@ import {Google} from "@expo/config-plugins/build/ios";
 import {BaseInfoTab} from "@/components/BookDetail/BaseInfoTab";
 import {GoogleBooksTab} from "@/components/BookDetail/GoogleBooksTab";
 import {OpenLibraryTab} from "@/components/BookDetail/OpenLibraryTab";
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BookDetailTabsProps {
 	book: BookDetail;
@@ -15,12 +16,13 @@ interface BookDetailTabsProps {
 const Tab = createMaterialTopTabNavigator();
 
 export function BookDetailTabs({book, onBookUpdated, readOnly}: BookDetailTabsProps) {
+	const theme = useTheme();
 	return (
 		<Tab.Navigator
 		screenOptions={{
 			tabBarLabelStyle: { fontSize: 12 },
-			tabBarStyle: { backgroundColor: '#fff' },
-			tabBarIndicatorStyle: { backgroundColor: '#000' },
+			tabBarStyle: { backgroundColor: theme.bgCard },
+			tabBarIndicatorStyle: { backgroundColor: theme.textPrimary },
 		}}
 		>
 			{book.base && (

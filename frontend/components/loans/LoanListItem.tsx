@@ -7,6 +7,7 @@ import BookCover from '@/components/BookCover';
 import { useRouter } from 'expo-router';
 import { loanService } from '@/services/loanService';
 import { calendarService } from '@/services/calendarService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface LoanListItemProps {
   loan: Loan;
@@ -15,6 +16,7 @@ interface LoanListItemProps {
 
 export const LoanListItem: React.FC<LoanListItemProps> = ({ loan, onReturn }) => {
   const router = useRouter();
+  const theme = useTheme();
   const [returning, setReturning] = useState(false);
 
   const handlePress = () => {
@@ -95,7 +97,7 @@ export const LoanListItem: React.FC<LoanListItemProps> = ({ loan, onReturn }) =>
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, { borderBottomColor: theme.borderLight, backgroundColor: theme.bgCard }]}
       onPress={handlePress}
       testID={`loan-item-${loan.id}`}
     >
@@ -107,20 +109,20 @@ export const LoanListItem: React.FC<LoanListItemProps> = ({ loan, onReturn }) =>
       />
 
       <View style={styles.infoContainer}>
-        <Text style={styles.bookTitle} numberOfLines={2}>
+        <Text style={[styles.bookTitle, { color: theme.textPrimary }]} numberOfLines={2}>
           {loan.book.title}
         </Text>
 
-        <Text style={styles.borrowerName}>
-          Prêté à : <Text style={styles.borrowerNameBold}>{loan.contact.name}</Text>
+        <Text style={[styles.borrowerName, { color: theme.textSecondary }]}>
+          Prêté à : <Text style={[styles.borrowerNameBold, { color: theme.textPrimary }]}>{loan.contact.name}</Text>
         </Text>
 
         <View style={styles.datesContainer}>
-          <Text style={styles.dateText}>
+          <Text style={[styles.dateText, { color: theme.textMuted }]}>
             Prêté le {formatDate(loan.loan_date)}
           </Text>
           {loan.due_date && (
-            <Text style={styles.dateText}>
+            <Text style={[styles.dateText, { color: theme.textMuted }]}>
               Retour prévu : {formatDate(loan.due_date)}
             </Text>
           )}
@@ -144,9 +146,9 @@ export const LoanListItem: React.FC<LoanListItemProps> = ({ loan, onReturn }) =>
           <MaterialIcons
             name="assignment-return"
             size={20}
-            color={returning ? '#BDBDBD' : '#4CAF50'}
+            color={returning ? theme.bgMuted : theme.success}
           />
-          <Text style={[styles.returnButtonText, returning && styles.returnButtonTextDisabled]}>
+          <Text style={[styles.returnButtonText, { color: returning ? theme.textMuted : theme.success }]}>
             Retourner
           </Text>
         </Pressable>
@@ -160,18 +162,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
   },
   cover: {
     width: 60,
     height: 90,
+    borderRadius: 6,
   },
   coverContainer: {
     width: 60,
     height: 90,
     marginRight: 12,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   infoContainer: {
     flex: 1,
@@ -180,24 +183,20 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 4,
   },
   borrowerName: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 6,
   },
   borrowerNameBold: {
     fontWeight: '600',
-    color: '#424242',
   },
   datesContainer: {
     marginBottom: 6,
   },
   dateText: {
     fontSize: 12,
-    color: '#757575',
     marginBottom: 2,
   },
   returnButton: {
@@ -210,9 +209,5 @@ const styles = StyleSheet.create({
   returnButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4CAF50',
-  },
-  returnButtonTextDisabled: {
-    color: '#BDBDBD',
   },
 });

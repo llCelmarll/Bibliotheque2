@@ -2,19 +2,21 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, View, Text, StyleSheet } from 'react-native';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function SubTabsLayout() {
   const { totalPendingCount: totalNotifications } = useNotifications();
+  const theme = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2196F3',
-        tabBarInactiveTintColor: '#757575',
+        tabBarActiveTintColor: theme.tabActive,
+        tabBarInactiveTintColor: theme.tabInactive,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.tabBg,
           borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
+          borderTopColor: theme.borderLight,
           height: Platform.OS === 'web' ? 60 : 56,
           paddingBottom: Platform.OS === 'web' ? 0 : 4,
           paddingTop: Platform.OS === 'web' ? 0 : 4,
@@ -64,8 +66,8 @@ export default function SubTabsLayout() {
             <View>
               <Ionicons name="notifications-outline" size={size} color={color} />
               {totalNotifications > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
+                <View style={[styles.badge, { backgroundColor: theme.danger }]}>
+                  <Text style={[styles.badgeText, { color: theme.textInverse }]}>
                     {totalNotifications > 9 ? '9+' : totalNotifications}
                   </Text>
                 </View>
@@ -83,7 +85,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -6,
-    backgroundColor: '#F44336',
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -92,7 +93,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeText: {
-    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '700',
   },

@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Borrower } from '@/types/borrower';
 import { useBorrowers } from '@/hooks/useBorrowers';
 import { BorrowerListItem } from '../loans/BorrowerListItem';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BorrowerSelectorProps {
   selectedBorrower: Borrower | string | null;
@@ -18,6 +19,7 @@ export const BorrowerSelector: React.FC<BorrowerSelectorProps> = ({
   disabled = false,
   error,
 }) => {
+  const theme = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { borrowers, loading, searchBorrowers, loadBorrowers } = useBorrowers({ autoLoad: false });
@@ -56,44 +58,44 @@ export const BorrowerSelector: React.FC<BorrowerSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Emprunteur</Text>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>Emprunteur</Text>
 
       {selectedBorrower ? (
-        <View style={styles.selectedContainer}>
+        <View style={[styles.selectedContainer, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }]}>
           <View style={styles.selectedInfo}>
-            <MaterialIcons name="person" size={24} color="#2196F3" />
+            <MaterialIcons name="person" size={24} color={theme.accent} />
             <View style={styles.selectedTextContainer}>
-              <Text style={styles.selectedName}>
+              <Text style={[styles.selectedName, { color: theme.textPrimary }]}>
                 {typeof selectedBorrower === 'string' ? selectedBorrower : selectedBorrower.name}
               </Text>
               {typeof selectedBorrower === 'object' && selectedBorrower.email && (
-                <Text style={styles.selectedEmail}>{selectedBorrower.email}</Text>
+                <Text style={[styles.selectedEmail, { color: theme.textSecondary }]}>{selectedBorrower.email}</Text>
               )}
               {typeof selectedBorrower === 'string' && (
-                <Text style={styles.selectedEmail}>Nouveau (sera créé)</Text>
+                <Text style={[styles.selectedEmail, { color: theme.textSecondary }]}>Nouveau (sera créé)</Text>
               )}
             </View>
           </View>
           {!disabled && (
             <TouchableOpacity onPress={handleRemoveBorrower}>
-              <MaterialIcons name="close" size={24} color="#757575" />
+              <MaterialIcons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
       ) : (
         <TouchableOpacity
-          style={[styles.selectButton, disabled && styles.selectButtonDisabled]}
+          style={[styles.selectButton, { backgroundColor: theme.bgCard, borderColor: theme.accent }, disabled && { borderColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}
           onPress={() => setIsModalOpen(true)}
           disabled={disabled}
         >
-          <MaterialIcons name="person-add" size={20} color={disabled ? '#BDBDBD' : '#2196F3'} />
-          <Text style={[styles.selectButtonText, disabled && styles.selectButtonTextDisabled]}>
+          <MaterialIcons name="person-add" size={20} color={disabled ? theme.textMuted : theme.accent} />
+          <Text style={[styles.selectButtonText, { color: theme.accent }, disabled && { color: theme.textMuted }]}>
             Sélectionner un emprunteur
           </Text>
         </TouchableOpacity>
       )}
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>}
 
       <Modal
         visible={isModalOpen}
@@ -101,32 +103,33 @@ export const BorrowerSelector: React.FC<BorrowerSelectorProps> = ({
         transparent={false}
         onRequestClose={() => setIsModalOpen(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Sélectionner un emprunteur</Text>
+        <View style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Sélectionner un emprunteur</Text>
             <TouchableOpacity onPress={() => setIsModalOpen(false)}>
-              <MaterialIcons name="close" size={28} color="#212121" />
+              <MaterialIcons name="close" size={28} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.searchContainer}>
+          <View style={[styles.searchContainer, { borderBottomColor: theme.borderLight }]}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { backgroundColor: theme.bgSecondary, color: theme.textPrimary }]}
               placeholder="Rechercher ou créer un emprunteur..."
+              placeholderTextColor={theme.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
               autoFocus
             />
             <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-              <MaterialIcons name="search" size={24} color="#2196F3" />
+              <MaterialIcons name="search" size={24} color={theme.accent} />
             </TouchableOpacity>
           </View>
 
           {searchQuery.trim() && (
-            <TouchableOpacity style={styles.createButton} onPress={handleCreateNew}>
-              <MaterialIcons name="add-circle" size={24} color="#4CAF50" />
-              <Text style={styles.createButtonText}>
+            <TouchableOpacity style={[styles.createButton, { backgroundColor: theme.successBg, borderBottomColor: theme.borderLight }]} onPress={handleCreateNew}>
+              <MaterialIcons name="add-circle" size={24} color={theme.success} />
+              <Text style={[styles.createButtonText, { color: theme.success }]}>
                 Créer "{searchQuery}"
               </Text>
             </TouchableOpacity>
@@ -134,7 +137,7 @@ export const BorrowerSelector: React.FC<BorrowerSelectorProps> = ({
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2196F3" />
+              <ActivityIndicator size="large" color={theme.accent} />
             </View>
           ) : (
             <FlatList
@@ -149,11 +152,11 @@ export const BorrowerSelector: React.FC<BorrowerSelectorProps> = ({
               )}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
                     {searchQuery ? 'Aucun emprunteur trouvé' : 'Aucun emprunteur'}
                   </Text>
                   {searchQuery && (
-                    <Text style={styles.emptyHint}>
+                    <Text style={[styles.emptyHint, { color: theme.textMuted }]}>
                       Appuyez sur "Créer" pour ajouter cet emprunteur
                     </Text>
                   )}
@@ -174,7 +177,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#424242',
     marginBottom: 8,
   },
   selectedContainer: {
@@ -182,10 +184,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 12,
-    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   selectedInfo: {
     flexDirection: 'row',
@@ -199,11 +199,9 @@ const styles = StyleSheet.create({
   selectedName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
   },
   selectedEmail: {
     fontSize: 13,
-    color: '#757575',
     marginTop: 2,
   },
   selectButton: {
@@ -211,32 +209,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2196F3',
     borderStyle: 'dashed',
-  },
-  selectButtonDisabled: {
-    borderColor: '#E0E0E0',
-    backgroundColor: '#F5F5F5',
   },
   selectButtonText: {
     fontSize: 14,
-    color: '#2196F3',
     marginLeft: 8,
-  },
-  selectButtonTextDisabled: {
-    color: '#BDBDBD',
   },
   errorText: {
     fontSize: 12,
-    color: '#F44336',
     marginTop: 4,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -244,24 +230,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   searchInput: {
     flex: 1,
     height: 44,
-    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 14,
@@ -274,14 +256,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#E8F5E9',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   createButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4CAF50',
     marginLeft: 8,
   },
   loadingContainer: {
@@ -295,12 +274,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#757575',
     textAlign: 'center',
   },
   emptyHint: {
     fontSize: 12,
-    color: '#BDBDBD',
     textAlign: 'center',
     marginTop: 8,
   },

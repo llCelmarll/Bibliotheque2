@@ -17,9 +17,11 @@ import { loanService } from '@/services/loanService';
 import { Borrower } from '@/types/borrower';
 import { Loan, LoanStatus } from '@/types/loan';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function BorrowerDetailScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const params = useLocalSearchParams();
   const borrowerId = parseInt(params.id as string);
 
@@ -164,9 +166,9 @@ function BorrowerDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       </SafeAreaView>
     );
@@ -174,12 +176,12 @@ function BorrowerDetailScreen() {
 
   if (!borrower) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
         <View style={styles.errorContainer}>
-          <MaterialIcons name="error-outline" size={64} color="#E0E0E0" />
-          <Text style={styles.errorText}>Emprunteur introuvable</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Retour</Text>
+          <MaterialIcons name="error-outline" size={64} color={theme.borderLight} />
+          <Text style={[styles.errorText, { color: theme.textMuted }]}>Emprunteur introuvable</Text>
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: theme.accent }]} onPress={() => router.back()}>
+            <Text style={[styles.backButtonText, { color: theme.textInverse }]}>Retour</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -191,9 +193,9 @@ function BorrowerDetailScreen() {
   const returnedLoans = loans.filter(l => l.status === 'returned');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.headerBackButton}
@@ -201,9 +203,9 @@ function BorrowerDetailScreen() {
           // @ts-ignore - title works on web for tooltip
           title="Retour"
         >
-          <MaterialIcons name="arrow-back" size={24} color="#212121" />
+          <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Détails emprunteur</Text>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Détails emprunteur</Text>
         <TouchableOpacity
           onPress={handleDelete}
           style={styles.headerDeleteButton}
@@ -212,83 +214,83 @@ function BorrowerDetailScreen() {
           // @ts-ignore - title works on web for tooltip
           title="Supprimer l'emprunteur"
         >
-          <MaterialIcons name="delete" size={24} color="#F44336" />
+          <MaterialIcons name="delete" size={24} color={theme.danger} />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
         {/* Informations de l'emprunteur */}
-        <View style={styles.infoCard}>
-          <View style={styles.iconContainer}>
-            <MaterialIcons name="person" size={32} color="#2196F3" />
+        <View style={[styles.infoCard, { backgroundColor: theme.bgCard }]}>
+          <View style={[styles.iconContainer, { backgroundColor: theme.accentLight }]}>
+            <MaterialIcons name="person" size={32} color={theme.accent} />
           </View>
-          <Text style={styles.borrowerName}>{borrower.name}</Text>
+          <Text style={[styles.borrowerName, { color: theme.textPrimary }]}>{borrower.name}</Text>
 
           {borrower.email && (
             <View style={styles.contactRow}>
-              <MaterialIcons name="email" size={16} color="#757575" />
-              <Text style={styles.contactText}>{borrower.email}</Text>
+              <MaterialIcons name="email" size={16} color={theme.textSecondary} />
+              <Text style={[styles.contactText, { color: theme.textSecondary }]}>{borrower.email}</Text>
             </View>
           )}
 
           {borrower.phone && (
             <View style={styles.contactRow}>
-              <MaterialIcons name="phone" size={16} color="#757575" />
-              <Text style={styles.contactText}>{borrower.phone}</Text>
+              <MaterialIcons name="phone" size={16} color={theme.textSecondary} />
+              <Text style={[styles.contactText, { color: theme.textSecondary }]}>{borrower.phone}</Text>
             </View>
           )}
 
           {borrower.notes && (
-            <View style={styles.notesContainer}>
-              <Text style={styles.notesLabel}>Notes</Text>
-              <Text style={styles.notesText}>{borrower.notes}</Text>
+            <View style={[styles.notesContainer, { borderTopColor: theme.borderLight }]}>
+              <Text style={[styles.notesLabel, { color: theme.textSecondary }]}>Notes</Text>
+              <Text style={[styles.notesText, { color: theme.textPrimary }]}>{borrower.notes}</Text>
             </View>
           )}
         </View>
 
         {/* Statistiques */}
-        <View style={styles.statsCard}>
-          <Text style={styles.cardTitle}>Statistiques</Text>
+        <View style={[styles.statsCard, { backgroundColor: theme.bgCard }]}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Statistiques</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{loans.length}</Text>
-              <Text style={styles.statLabel}>Total prêts</Text>
+              <Text style={[styles.statValue, { color: theme.accent }]}>{loans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total prêts</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#4CAF50' }]}>{activeLoans.length}</Text>
-              <Text style={styles.statLabel}>En cours</Text>
+              <Text style={[styles.statValue, { color: theme.success }]}>{activeLoans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>En cours</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#F44336' }]}>{overdueLoans.length}</Text>
-              <Text style={styles.statLabel}>En retard</Text>
+              <Text style={[styles.statValue, { color: theme.danger }]}>{overdueLoans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>En retard</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#757575' }]}>{returnedLoans.length}</Text>
-              <Text style={styles.statLabel}>Retournés</Text>
+              <Text style={[styles.statValue, { color: theme.textSecondary }]}>{returnedLoans.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Retournés</Text>
             </View>
           </View>
         </View>
 
         {/* Historique des prêts */}
-        <View style={styles.loansCard}>
+        <View style={[styles.loansCard, { backgroundColor: theme.bgCard }]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Historique des prêts</Text>
+            <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Historique des prêts</Text>
             <TouchableOpacity
               onPress={handleCreateLoan}
               accessibilityLabel="Créer un nouveau prêt"
               // @ts-ignore - title works on web for tooltip
               title="Créer un nouveau prêt"
             >
-              <MaterialIcons name="add-circle" size={24} color="#2196F3" />
+              <MaterialIcons name="add-circle" size={24} color={theme.accent} />
             </TouchableOpacity>
           </View>
 
           {loans.length === 0 ? (
             <View style={styles.emptyLoans}>
-              <MaterialIcons name="library-books" size={48} color="#E0E0E0" />
-              <Text style={styles.emptyLoansText}>Aucun prêt</Text>
-              <TouchableOpacity style={styles.createLoanButton} onPress={handleCreateLoan}>
-                <Text style={styles.createLoanButtonText}>Créer un prêt</Text>
+              <MaterialIcons name="library-books" size={48} color={theme.borderLight} />
+              <Text style={[styles.emptyLoansText, { color: theme.textMuted }]}>Aucun prêt</Text>
+              <TouchableOpacity style={[styles.createLoanButton, { backgroundColor: theme.accent }]} onPress={handleCreateLoan}>
+                <Text style={[styles.createLoanButtonText, { color: theme.textInverse }]}>Créer un prêt</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -296,39 +298,39 @@ function BorrowerDetailScreen() {
               const canReturn = loan.status === 'active' || loan.status === 'overdue';
 
               return (
-                <View key={loan.id} style={styles.loanItemContainer}>
+                <View key={loan.id} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
                   <TouchableOpacity
                     style={styles.loanItem}
                     onPress={() => handleLoanPress(loan)}
                   >
                     <View style={styles.loanInfo}>
-                      <Text style={styles.loanTitle} numberOfLines={1}>{loan.book.title}</Text>
-                      <Text style={styles.loanDate}>
+                      <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>{loan.book.title}</Text>
+                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
                         Prêté à : {loan.borrower.name}
                       </Text>
-                      <Text style={styles.loanDate}>
+                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
                         Prêté le {formatDate(loan.loan_date)}
                       </Text>
                       {loan.due_date && (
-                        <Text style={styles.loanDate}>
+                        <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
                           Retour prévu : {formatDate(loan.due_date)}
                         </Text>
                       )}
                     </View>
                     <View style={styles.loanStatus}>
                       {loan.status === 'overdue' && (
-                        <View style={[styles.statusBadge, styles.statusOverdue]}>
-                          <Text style={styles.statusText}>En retard</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}>
+                          <Text style={[styles.statusText, { color: theme.danger }]}>En retard</Text>
                         </View>
                       )}
                       {loan.status === 'active' && (
-                        <View style={[styles.statusBadge, styles.statusActive]}>
-                          <Text style={styles.statusText}>En cours</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}>
+                          <Text style={[styles.statusText, { color: theme.success }]}>En cours</Text>
                         </View>
                       )}
                       {loan.status === 'returned' && (
-                        <View style={[styles.statusBadge, styles.statusReturned]}>
-                          <Text style={styles.statusText}>Retourné</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}>
+                          <Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text>
                         </View>
                       )}
                       {canReturn ? (
@@ -344,11 +346,11 @@ function BorrowerDetailScreen() {
                           <MaterialIcons
                             name="assignment-return"
                             size={20}
-                            color={actionLoading ? '#BDBDBD' : '#4CAF50'}
+                            color={actionLoading ? theme.textMuted : theme.success}
                           />
                         </TouchableOpacity>
                       ) : (
-                        <MaterialIcons name="chevron-right" size={20} color="#BDBDBD" />
+                        <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -373,16 +375,13 @@ export default function BorrowerDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   headerBackButton: {
     padding: 4,
@@ -390,7 +389,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
   },
   headerDeleteButton: {
     padding: 4,
@@ -411,23 +409,19 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#9E9E9E',
     marginTop: 16,
     marginBottom: 24,
   },
   backButton: {
-    backgroundColor: '#2196F3',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
   backButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
   infoCard: {
-    backgroundColor: '#FFFFFF',
     margin: 16,
     marginBottom: 8,
     padding: 20,
@@ -438,7 +432,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -446,7 +439,6 @@ const styles = StyleSheet.create({
   borrowerName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#212121',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -457,7 +449,6 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: '#757575',
     marginLeft: 8,
   },
   notesContainer: {
@@ -465,21 +456,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   notesLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#757575',
     marginBottom: 4,
   },
   notesText: {
     fontSize: 14,
-    color: '#424242',
     lineHeight: 20,
   },
   statsCard: {
-    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
@@ -488,7 +475,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 12,
   },
   statsRow: {
@@ -501,15 +487,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2196F3',
   },
   statLabel: {
     fontSize: 11,
-    color: '#757575',
     marginTop: 4,
   },
   loansCard: {
-    backgroundColor: '#FFFFFF',
     margin: 16,
     marginTop: 8,
     marginBottom: 32,
@@ -528,24 +511,20 @@ const styles = StyleSheet.create({
   },
   emptyLoansText: {
     fontSize: 14,
-    color: '#9E9E9E',
     marginTop: 12,
     marginBottom: 16,
   },
   createLoanButton: {
-    backgroundColor: '#2196F3',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
   },
   createLoanButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
   loanItemContainer: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
   },
   loanItem: {
     flexDirection: 'row',
@@ -559,12 +538,10 @@ const styles = StyleSheet.create({
   loanTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 4,
   },
   loanDate: {
     fontSize: 12,
-    color: '#757575',
     marginTop: 2,
   },
   loanStatus: {
@@ -580,15 +557,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 12,
     marginBottom: 4,
-  },
-  statusActive: {
-    backgroundColor: '#E8F5E9',
-  },
-  statusOverdue: {
-    backgroundColor: '#FFEBEE',
-  },
-  statusReturned: {
-    backgroundColor: '#F5F5F5',
   },
   statusText: {
     fontSize: 11,

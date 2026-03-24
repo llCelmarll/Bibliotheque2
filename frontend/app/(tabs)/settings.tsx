@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 import * as Updates from 'expo-updates';
 import ImportCSV from "@/components/ImportCSV";
 import { CalendarPreferencesSection } from "@/components/settings/CalendarPreferencesSection";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const theme = useTheme();
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{
     updateId?: string;
@@ -92,8 +94,8 @@ export default function SettingsScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.bgPrimary }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
   }
@@ -103,20 +105,20 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bgPrimary }]}>
       <View style={styles.content}>
-        <Text style={styles.title}>⚙️ Paramètres</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>⚙️ Paramètres</Text>
 
         {/* Section Utilisateur */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informations utilisateur</Text>
-          <View style={styles.userCard}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Informations utilisateur</Text>
+          <View style={[styles.userCard, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
             <View style={styles.userInfo}>
-              <MaterialIcons name="account-circle" size={60} color="#2196F3" />
+              <MaterialIcons name="account-circle" size={60} color={theme.accent} />
               <View style={styles.userDetails}>
-                <Text style={styles.username}>{user?.username}</Text>
-                <Text style={styles.email}>{user?.email}</Text>
-                <Text style={styles.userMeta}>
+                <Text style={[styles.username, { color: theme.textPrimary }]}>{user?.username}</Text>
+                <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email}</Text>
+                <Text style={[styles.userMeta, { color: theme.textMuted }]}>
                   Compte créé le {user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : 'N/A'}
                 </Text>
               </View>
@@ -129,60 +131,60 @@ export default function SettingsScreen() {
 
         {/* Section Gestion du compte */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Gestion du compte</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Gestion du compte</Text>
 
           <TouchableOpacity
-            style={[styles.actionButton, { marginBottom: 12 }]}
+            style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent, marginBottom: 12 }]}
             onPress={() => router.push('/account/edit-profile')}
           >
-            <MaterialIcons name="edit" size={24} color="#2196F3" />
-            <Text style={styles.updateButtonText}>Modifier le profil</Text>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+            <MaterialIcons name="edit" size={24} color={theme.accent} />
+            <Text style={[styles.updateButtonText, { color: theme.accent }]}>Modifier le profil</Text>
+            <MaterialIcons name="chevron-right" size={24} color={theme.borderMedium} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { marginBottom: 12 }]}
+            style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent, marginBottom: 12 }]}
             onPress={() => router.push('/account/change-password')}
           >
-            <MaterialIcons name="lock" size={24} color="#2196F3" />
-            <Text style={styles.updateButtonText}>Changer le mot de passe</Text>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+            <MaterialIcons name="lock" size={24} color={theme.accent} />
+            <Text style={[styles.updateButtonText, { color: theme.accent }]}>Changer le mot de passe</Text>
+            <MaterialIcons name="chevron-right" size={24} color={theme.borderMedium} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}
             onPress={() => router.push('/account/delete-account')}
           >
-            <MaterialIcons name="delete-forever" size={24} color="#f44336" />
-            <Text style={styles.logoutButtonText}>Supprimer le compte</Text>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+            <MaterialIcons name="delete-forever" size={24} color={theme.danger} />
+            <Text style={[styles.logoutButtonText, { color: theme.danger }]}>Supprimer le compte</Text>
+            <MaterialIcons name="chevron-right" size={24} color={theme.borderMedium} />
           </TouchableOpacity>
         </View>
 
         {/* Section Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Actions</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Actions</Text>
 
           {Platform.OS !== 'web' && (
             <TouchableOpacity
-              style={[styles.actionButton, { marginBottom: 12 }]}
+              style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent, marginBottom: 12 }]}
               onPress={checkForUpdates}
               disabled={isCheckingUpdates}
             >
-              <MaterialIcons name="system-update" size={24} color="#2196F3" />
-              <Text style={styles.updateButtonText}>
+              <MaterialIcons name="system-update" size={24} color={theme.accent} />
+              <Text style={[styles.updateButtonText, { color: theme.accent }]}>
                 {isCheckingUpdates ? 'Vérification...' : 'Vérifier les mises à jour'}
               </Text>
               {isCheckingUpdates ? (
-                <ActivityIndicator size="small" color="#2196F3" />
+                <ActivityIndicator size="small" color={theme.accent} />
               ) : (
-                <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+                <MaterialIcons name="chevron-right" size={24} color={theme.borderMedium} />
               )}
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}
             onPress={async () => {
               try {
                 await logout();
@@ -192,62 +194,65 @@ export default function SettingsScreen() {
               }
             }}
           >
-            <MaterialIcons name="logout" size={24} color="#f44336" />
-            <Text style={styles.logoutButtonText}>Se déconnecter</Text>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+            <MaterialIcons name="logout" size={24} color={theme.danger} />
+            <Text style={[styles.logoutButtonText, { color: theme.danger }]}>Se déconnecter</Text>
+            <MaterialIcons name="chevron-right" size={24} color={theme.borderMedium} />
           </TouchableOpacity>
         </View>
 
         {/* Section Import CSV (Web uniquement) */}
         {Platform.OS === 'web' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Import de données</Text>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Import de données</Text>
             <ImportCSV />
           </View>
         )}
 
         {/* Section Informations */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Application</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Application</Text>
 
           <TouchableOpacity
-            style={[styles.actionButton, { marginBottom: 12 }]}
+            style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent, marginBottom: 12 }]}
             onPress={() => router.push('/account/changelog')}
           >
-            <MaterialIcons name="new-releases" size={24} color="#2196F3" />
-            <Text style={styles.updateButtonText}>Historique des versions</Text>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+            <MaterialIcons name="new-releases" size={24} color={theme.accent} />
+            <Text style={[styles.updateButtonText, { color: theme.accent }]}>Historique des versions</Text>
+            <MaterialIcons name="chevron-right" size={24} color={theme.borderMedium} />
           </TouchableOpacity>
 
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>Version de développement</Text>
-            <Text style={styles.infoText}>Authentification activée</Text>
-            <Text style={styles.infoText}>Bibliothèque personnelle</Text>
+          {/* TODO: Sélecteur de thème */}
+          {/* <ThemeSelector /> */}
+
+          <View style={[styles.infoCard, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
+            <Text style={[styles.infoText, { color: theme.textMuted }]}>Version de développement</Text>
+            <Text style={[styles.infoText, { color: theme.textMuted }]}>Authentification activée</Text>
+            <Text style={[styles.infoText, { color: theme.textMuted }]}>Bibliothèque personnelle</Text>
 
             {/* Debug OTA - Informations dynamiques */}
             {Platform.OS !== 'web' && (
               <>
-                <Text style={[styles.infoText, { marginTop: 12, fontWeight: '600' }]}>
+                <Text style={[styles.infoText, { color: theme.textSecondary, marginTop: 12, fontWeight: '600' }]}>
                   Informations OTA :
                 </Text>
-                <Text style={styles.infoText}>
+                <Text style={[styles.infoText, { color: theme.textMuted }]}>
                   Channel : {updateInfo?.channel || 'Non défini'}
                 </Text>
-                <Text style={styles.infoText}>
+                <Text style={[styles.infoText, { color: theme.textMuted }]}>
                   RuntimeVersion : {updateInfo?.runtimeVersion || 'Non défini'}
                 </Text>
-                <Text style={styles.infoText}>
+                <Text style={[styles.infoText, { color: theme.textMuted }]}>
                   Update ID : {updateInfo?.updateId || 'Aucune mise à jour'}
                 </Text>
                 {updateInfo?.createdAt && (
-                  <Text style={styles.infoText}>
+                  <Text style={[styles.infoText, { color: theme.textMuted }]}>
                     Date update : {new Date(updateInfo.createdAt).toLocaleString('fr-FR')}
                   </Text>
                 )}
-                <Text style={styles.infoText}>
+                <Text style={[styles.infoText, { color: theme.textMuted }]}>
                   Embedded launch : {updateInfo?.isEmbeddedLaunch ? 'Oui' : 'Non'}
                 </Text>
-                <Text style={styles.infoText}>
+                <Text style={[styles.infoText, { color: theme.textMuted }]}>
                   Emergency launch : {updateInfo?.isEmergencyLaunch ? 'Oui' : 'Non'}
                 </Text>
               </>
@@ -262,14 +267,12 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
     paddingTop: Platform.OS === 'android' ? 40 : Platform.OS === 'ios' ? 44 : 0,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
   },
   content: {
     padding: 20,
@@ -279,7 +282,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 30,
-    color: "#333",
   },
   section: {
     marginBottom: 30,
@@ -287,14 +289,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 12,
   },
   userCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 20,
-    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -314,25 +313,20 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 4,
   },
   email: {
     fontSize: 16,
-    color: "#666",
     marginBottom: 4,
   },
   userMeta: {
     fontSize: 14,
-    color: "#999",
   },
   actionButton: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -343,23 +337,19 @@ const styles = StyleSheet.create({
   },
   updateButtonText: {
     fontSize: 16,
-    color: "#2196F3",
     fontWeight: "500",
     flex: 1,
     marginLeft: 12,
   },
   logoutButtonText: {
     fontSize: 16,
-    color: "#f44336",
     fontWeight: "500",
     flex: 1,
     marginLeft: 12,
   },
   infoCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 20,
-    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -370,7 +360,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 8,
   },
 });

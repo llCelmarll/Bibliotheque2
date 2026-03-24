@@ -20,9 +20,11 @@ import { UserLoanRequest, UserLoanRequestStatus } from '@/types/userLoanRequest'
 import { UserLoanRequestListItem } from '@/components/loans/UserLoanRequestListItem';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function NotificationsScreen() {
     const router = useRouter();
+    const theme = useTheme();
     const [tab, setTab] = useState<'loans' | 'contacts'>('loans');
 
     const {
@@ -157,39 +159,41 @@ function NotificationsScreen() {
         });
 
     const renderReceivedItem = ({ item }: { item: ContactInvitation }) => (
-        <View style={styles.invitationCard}>
+        <View style={[styles.invitationCard, { backgroundColor: theme.bgCard }]}>
             <View style={styles.invitationHeader}>
-                <View style={styles.userIcon}>
-                    <MaterialIcons name="person" size={20} color="#7C3AED" />
+                <View style={[styles.userIcon, { backgroundColor: theme.accentLight }]}>
+                    <MaterialIcons name="person" size={20} color={theme.accent} />
                 </View>
                 <View style={styles.invitationInfo}>
-                    <Text style={styles.invitationName}>{item.sender_username}</Text>
-                    <Text style={styles.invitationDate}>{formatDate(item.created_at)}</Text>
+                    <Text style={[styles.invitationName, { color: theme.textPrimary }]}>{item.sender_username}</Text>
+                    <Text style={[styles.invitationDate, { color: theme.textMuted }]}>{formatDate(item.created_at)}</Text>
                 </View>
                 {item.status === InvitationStatus.PENDING && (
-                    <View style={styles.pendingBadge}><Text style={styles.pendingBadgeText}>En attente</Text></View>
+                    <View style={[styles.pendingBadge, { backgroundColor: theme.warningBg }]}>
+                        <Text style={[styles.pendingBadgeText, { color: theme.warning }]}>En attente</Text>
+                    </View>
                 )}
                 {item.status === InvitationStatus.ACCEPTED && (
-                    <View style={[styles.pendingBadge, { backgroundColor: '#E8F5E9' }]}>
-                        <Text style={[styles.pendingBadgeText, { color: '#4CAF50' }]}>Acceptée</Text>
+                    <View style={[styles.pendingBadge, { backgroundColor: theme.successBg }]}>
+                        <Text style={[styles.pendingBadgeText, { color: theme.success }]}>Acceptée</Text>
                     </View>
                 )}
                 {item.status === InvitationStatus.DECLINED && (
-                    <View style={[styles.pendingBadge, { backgroundColor: '#FFEBEE' }]}>
-                        <Text style={[styles.pendingBadgeText, { color: '#F44336' }]}>Refusée</Text>
+                    <View style={[styles.pendingBadge, { backgroundColor: theme.dangerBg }]}>
+                        <Text style={[styles.pendingBadgeText, { color: theme.danger }]}>Refusée</Text>
                     </View>
                 )}
             </View>
-            {item.message && <Text style={styles.invitationMessage}>"{item.message}"</Text>}
+            {item.message && <Text style={[styles.invitationMessage, { color: theme.textSecondary }]}>"{item.message}"</Text>}
             {item.status === InvitationStatus.PENDING && (
                 <View style={styles.invitationActions}>
-                    <TouchableOpacity style={styles.declineBtn} onPress={() => handleDecline(item)}>
-                        <MaterialIcons name="close" size={16} color="#F44336" />
-                        <Text style={styles.declineBtnText}>Refuser</Text>
+                    <TouchableOpacity style={[styles.declineBtn, { borderColor: theme.danger }]} onPress={() => handleDecline(item)}>
+                        <MaterialIcons name="close" size={16} color={theme.danger} />
+                        <Text style={[styles.declineBtnText, { color: theme.danger }]}>Refuser</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(item)}>
-                        <MaterialIcons name="check" size={16} color="#FFFFFF" />
-                        <Text style={styles.acceptBtnText}>Accepter</Text>
+                    <TouchableOpacity style={[styles.acceptBtn, { backgroundColor: theme.accent }]} onPress={() => handleAccept(item)}>
+                        <MaterialIcons name="check" size={16} color={theme.textInverse} />
+                        <Text style={[styles.acceptBtnText, { color: theme.textInverse }]}>Accepter</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -197,74 +201,74 @@ function NotificationsScreen() {
     );
 
     const renderSentItem = ({ item }: { item: ContactInvitation }) => (
-        <View style={styles.invitationCard}>
+        <View style={[styles.invitationCard, { backgroundColor: theme.bgCard }]}>
             <View style={styles.invitationHeader}>
-                <View style={[styles.userIcon, { backgroundColor: '#E3F2FD' }]}>
-                    <MaterialIcons name="person-outline" size={20} color="#2196F3" />
+                <View style={[styles.userIcon, { backgroundColor: theme.bgMuted }]}>
+                    <MaterialIcons name="person-outline" size={20} color={theme.textSecondary} />
                 </View>
                 <View style={styles.invitationInfo}>
-                    <Text style={styles.invitationName}>{item.recipient_username}</Text>
-                    <Text style={styles.invitationDate}>{formatDate(item.created_at)}</Text>
+                    <Text style={[styles.invitationName, { color: theme.textPrimary }]}>{item.recipient_username}</Text>
+                    <Text style={[styles.invitationDate, { color: theme.textMuted }]}>{formatDate(item.created_at)}</Text>
                 </View>
                 {item.status === InvitationStatus.PENDING && (
-                    <TouchableOpacity style={styles.cancelSmallBtn} onPress={() => handleCancel(item)}>
-                        <Text style={styles.cancelSmallBtnText}>Annuler</Text>
+                    <TouchableOpacity style={[styles.cancelSmallBtn, { borderColor: theme.borderMedium }]} onPress={() => handleCancel(item)}>
+                        <Text style={[styles.cancelSmallBtnText, { color: theme.textSecondary }]}>Annuler</Text>
                     </TouchableOpacity>
                 )}
                 {item.status === InvitationStatus.ACCEPTED && (
-                    <View style={[styles.pendingBadge, { backgroundColor: '#E8F5E9' }]}>
-                        <Text style={[styles.pendingBadgeText, { color: '#4CAF50' }]}>Acceptée</Text>
+                    <View style={[styles.pendingBadge, { backgroundColor: theme.successBg }]}>
+                        <Text style={[styles.pendingBadgeText, { color: theme.success }]}>Acceptée</Text>
                     </View>
                 )}
                 {item.status === InvitationStatus.DECLINED && (
-                    <View style={[styles.pendingBadge, { backgroundColor: '#FFEBEE' }]}>
-                        <Text style={[styles.pendingBadgeText, { color: '#F44336' }]}>Refusée</Text>
+                    <View style={[styles.pendingBadge, { backgroundColor: theme.dangerBg }]}>
+                        <Text style={[styles.pendingBadgeText, { color: theme.danger }]}>Refusée</Text>
                     </View>
                 )}
             </View>
-            {item.message && <Text style={styles.invitationMessage}>"{item.message}"</Text>}
+            {item.message && <Text style={[styles.invitationMessage, { color: theme.textSecondary }]}>"{item.message}"</Text>}
         </View>
     );
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
             {/* Onglets principaux : Emprunts / Contacts */}
-            <View style={styles.mainTabRow}>
+            <View style={[styles.mainTabRow, { backgroundColor: theme.bgPrimary, borderBottomColor: theme.borderLight }]}>
                 <TouchableOpacity
-                    style={[styles.mainTabBtn, tab === 'loans' && styles.mainTabBtnActive]}
+                    style={[styles.mainTabBtn, tab === 'loans' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
                     onPress={() => setTab('loans')}
                 >
                     <MaterialIcons
                         name="swap-horizontal-circle"
                         size={16}
-                        color={tab === 'loans' ? '#7C3AED' : '#757575'}
+                        color={tab === 'loans' ? theme.accent : theme.textMuted}
                     />
-                    <Text style={[styles.mainTabBtnText, tab === 'loans' && styles.mainTabBtnTextActive]}>
+                    <Text style={[styles.mainTabBtnText, { color: tab === 'loans' ? theme.accent : theme.textMuted }, tab === 'loans' && { fontWeight: '700' }]}>
                         Emprunts
                     </Text>
                     {pendingLoanRequests.length > 0 && (
-                        <View style={styles.smallBadge}>
-                            <Text style={styles.smallBadgeText}>
+                        <View style={[styles.smallBadge, { backgroundColor: theme.danger }]}>
+                            <Text style={[styles.smallBadgeText, { color: theme.textInverse }]}>
                                 {pendingLoanRequests.length > 9 ? '9+' : pendingLoanRequests.length}
                             </Text>
                         </View>
                     )}
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.mainTabBtn, tab === 'contacts' && styles.mainTabBtnActive]}
+                    style={[styles.mainTabBtn, tab === 'contacts' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
                     onPress={() => setTab('contacts')}
                 >
                     <MaterialIcons
                         name="person-add"
                         size={16}
-                        color={tab === 'contacts' ? '#7C3AED' : '#757575'}
+                        color={tab === 'contacts' ? theme.accent : theme.textMuted}
                     />
-                    <Text style={[styles.mainTabBtnText, tab === 'contacts' && styles.mainTabBtnTextActive]}>
+                    <Text style={[styles.mainTabBtnText, { color: tab === 'contacts' ? theme.accent : theme.textMuted }, tab === 'contacts' && { fontWeight: '700' }]}>
                         Contacts
                     </Text>
                     {invitationPendingCount > 0 && (
-                        <View style={styles.smallBadge}>
-                            <Text style={styles.smallBadgeText}>
+                        <View style={[styles.smallBadge, { backgroundColor: theme.danger }]}>
+                            <Text style={[styles.smallBadgeText, { color: theme.textInverse }]}>
                                 {invitationPendingCount > 9 ? '9+' : invitationPendingCount}
                             </Text>
                         </View>
@@ -274,7 +278,7 @@ function NotificationsScreen() {
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#7C3AED" />
+                    <ActivityIndicator size="large" color={theme.accent} />
                 </View>
             ) : tab === 'loans' ? (
                 /* ---- Onglet Emprunts ---- */
@@ -289,8 +293,8 @@ function NotificationsScreen() {
                     )}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
-                            <MaterialIcons name="swap-horizontal-circle" size={64} color="#E0E0E0" />
-                            <Text style={styles.emptyText}>Aucune demande d'emprunt en attente</Text>
+                            <MaterialIcons name="swap-horizontal-circle" size={64} color={theme.borderMedium} />
+                            <Text style={[styles.emptyText, { color: theme.textMuted }]}>Aucune demande d'emprunt en attente</Text>
                         </View>
                     }
                     refreshControl={
@@ -302,20 +306,20 @@ function NotificationsScreen() {
                 /* ---- Onglet Contacts ---- */
                 <>
                     {/* Sous-onglets Reçues / Envoyées */}
-                    <View style={styles.subTabRow}>
+                    <View style={[styles.subTabRow, { backgroundColor: theme.bgSecondary, borderBottomColor: theme.borderLight }]}>
                         <TouchableOpacity
-                            style={[styles.subTabBtn, contactsSubTab === 'received' && styles.subTabBtnActive]}
+                            style={[styles.subTabBtn, contactsSubTab === 'received' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
                             onPress={() => setContactsSubTab('received')}
                         >
-                            <Text style={[styles.subTabBtnText, contactsSubTab === 'received' && styles.subTabBtnTextActive]}>
+                            <Text style={[styles.subTabBtnText, { color: contactsSubTab === 'received' ? theme.accent : theme.textMuted }, contactsSubTab === 'received' && { fontWeight: '600' }]}>
                                 Reçues {invitationPendingCount > 0 && contactsSubTab !== 'received' ? `(${invitationPendingCount})` : ''}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.subTabBtn, contactsSubTab === 'sent' && styles.subTabBtnActive]}
+                            style={[styles.subTabBtn, contactsSubTab === 'sent' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
                             onPress={() => setContactsSubTab('sent')}
                         >
-                            <Text style={[styles.subTabBtnText, contactsSubTab === 'sent' && styles.subTabBtnTextActive]}>
+                            <Text style={[styles.subTabBtnText, { color: contactsSubTab === 'sent' ? theme.accent : theme.textMuted }, contactsSubTab === 'sent' && { fontWeight: '600' }]}>
                                 Envoyées
                             </Text>
                         </TouchableOpacity>
@@ -327,8 +331,8 @@ function NotificationsScreen() {
                         renderItem={contactsSubTab === 'received' ? renderReceivedItem : renderSentItem}
                         ListEmptyComponent={
                             <View style={styles.emptyState}>
-                                <MaterialIcons name="person-add" size={64} color="#E0E0E0" />
-                                <Text style={styles.emptyText}>
+                                <MaterialIcons name="person-add" size={64} color={theme.borderMedium} />
+                                <Text style={[styles.emptyText, { color: theme.textMuted }]}>
                                     {contactsSubTab === 'received' ? 'Aucune invitation reçue' : 'Aucune invitation envoyée'}
                                 </Text>
                             </View>
@@ -341,11 +345,11 @@ function NotificationsScreen() {
 
                     {/* FAB pour envoyer une invitation */}
                     <TouchableOpacity
-                        style={styles.fab}
+                        style={[styles.fab, { backgroundColor: theme.accent }]}
                         onPress={() => setShowSendModal(true)}
                         accessibilityLabel="Envoyer une invitation"
                     >
-                        <MaterialIcons name="person-add" size={24} color="#FFFFFF" />
+                        <MaterialIcons name="person-add" size={24} color={theme.textInverse} />
                     </TouchableOpacity>
 
                     {/* Modal d'invitation */}
@@ -362,10 +366,10 @@ function NotificationsScreen() {
                             setSendError(null);
                         }}
                     >
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
+                        <View style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}>
+                            <View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
                                 <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>Inviter un utilisateur</Text>
+                                    <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Inviter un utilisateur</Text>
                                     <TouchableOpacity onPress={() => {
                                         setShowSendModal(false);
                                         setSelectedUser(null);
@@ -374,77 +378,77 @@ function NotificationsScreen() {
                                         setInviteMessage('');
                                         setSendError(null);
                                     }}>
-                                        <MaterialIcons name="close" size={24} color="#757575" />
+                                        <MaterialIcons name="close" size={24} color={theme.textMuted} />
                                     </TouchableOpacity>
                                 </View>
 
                                 {selectedUser ? (
-                                    <View style={styles.selectedUser}>
-                                        <MaterialIcons name="person" size={20} color="#7C3AED" />
-                                        <Text style={styles.selectedUserName}>{selectedUser.username}</Text>
+                                    <View style={[styles.selectedUser, { backgroundColor: theme.accentLight }]}>
+                                        <MaterialIcons name="person" size={20} color={theme.accent} />
+                                        <Text style={[styles.selectedUserName, { color: theme.accent }]}>{selectedUser.username}</Text>
                                         <TouchableOpacity onPress={() => { setSelectedUser(null); setSearchQuery(''); }}>
-                                            <MaterialIcons name="close" size={18} color="#9E9E9E" />
+                                            <MaterialIcons name="close" size={18} color={theme.textMuted} />
                                         </TouchableOpacity>
                                     </View>
                                 ) : (
                                     <>
-                                        <View style={styles.searchBox}>
-                                            <MaterialIcons name="search" size={20} color="#757575" />
+                                        <View style={[styles.searchBox, { backgroundColor: theme.bgInput }]}>
+                                            <MaterialIcons name="search" size={20} color={theme.textMuted} />
                                             <TextInput
-                                                style={styles.searchInput}
+                                                style={[styles.searchInput, { color: theme.textPrimary }]}
                                                 placeholder="Rechercher par nom d'utilisateur..."
                                                 value={searchQuery}
                                                 onChangeText={handleSearch}
-                                                placeholderTextColor="#9E9E9E"
+                                                placeholderTextColor={theme.textMuted}
                                                 autoFocus
                                             />
-                                            {searchLoading && <ActivityIndicator size="small" color="#7C3AED" />}
+                                            {searchLoading && <ActivityIndicator size="small" color={theme.accent} />}
                                         </View>
                                         {searchResults.map(u => (
                                             <TouchableOpacity
                                                 key={u.id}
-                                                style={styles.searchResult}
+                                                style={[styles.searchResult, { borderBottomColor: theme.borderLight }]}
                                                 onPress={() => {
                                                     setSelectedUser(u);
                                                     setSearchResults([]);
                                                     setSendError(null);
                                                 }}
                                             >
-                                                <MaterialIcons name="person-outline" size={20} color="#757575" />
-                                                <Text style={styles.searchResultName}>{u.username}</Text>
+                                                <MaterialIcons name="person-outline" size={20} color={theme.textMuted} />
+                                                <Text style={[styles.searchResultName, { color: theme.textPrimary }]}>{u.username}</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </>
                                 )}
 
                                 <TextInput
-                                    style={styles.messageInput}
+                                    style={[styles.messageInput, { borderColor: theme.borderLight, color: theme.textPrimary }]}
                                     placeholder="Message d'invitation (optionnel)..."
                                     value={inviteMessage}
                                     onChangeText={(t) => { setInviteMessage(t); setSendError(null); }}
                                     multiline
                                     numberOfLines={2}
-                                    placeholderTextColor="#9E9E9E"
+                                    placeholderTextColor={theme.textMuted}
                                 />
 
                                 {sendError && (
-                                    <View style={styles.errorBanner}>
-                                        <MaterialIcons name="error-outline" size={16} color="#F44336" />
-                                        <Text style={styles.errorBannerText}>{sendError}</Text>
+                                    <View style={[styles.errorBanner, { backgroundColor: theme.dangerBg }]}>
+                                        <MaterialIcons name="error-outline" size={16} color={theme.danger} />
+                                        <Text style={[styles.errorBannerText, { color: theme.danger }]}>{sendError}</Text>
                                     </View>
                                 )}
 
                                 <TouchableOpacity
-                                    style={[styles.sendButton, (!selectedUser || sending) && styles.buttonDisabled]}
+                                    style={[styles.sendButton, { backgroundColor: theme.accent }, (!selectedUser || sending) && styles.buttonDisabled]}
                                     onPress={handleSendInvitation}
                                     disabled={!selectedUser || sending}
                                 >
                                     {sending ? (
-                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                        <ActivityIndicator size="small" color={theme.textInverse} />
                                     ) : (
                                         <>
-                                            <MaterialIcons name="send" size={18} color="#FFFFFF" />
-                                            <Text style={styles.sendButtonText}>Envoyer l'invitation</Text>
+                                            <MaterialIcons name="send" size={18} color={theme.textInverse} />
+                                            <Text style={[styles.sendButtonText, { color: theme.textInverse }]}>Envoyer l'invitation</Text>
                                         </>
                                     )}
                                 </TouchableOpacity>
@@ -468,14 +472,11 @@ export default function NotificationsTab() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
         paddingTop: Platform.OS === 'android' ? 40 : Platform.OS === 'ios' ? 44 : 0,
     },
     mainTabRow: {
         flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
     },
     mainTabBtn: {
         flex: 1,
@@ -485,24 +486,13 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         gap: 6,
     },
-    mainTabBtnActive: {
-        borderBottomWidth: 2,
-        borderBottomColor: '#7C3AED',
-    },
     mainTabBtnText: {
         fontSize: 14,
-        color: '#757575',
         fontWeight: '500',
-    },
-    mainTabBtnTextActive: {
-        color: '#7C3AED',
-        fontWeight: '700',
     },
     subTabRow: {
         flexDirection: 'row',
-        backgroundColor: '#FAFAFA',
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
     },
     subTabBtn: {
         flex: 1,
@@ -512,20 +502,10 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         gap: 4,
     },
-    subTabBtnActive: {
-        borderBottomWidth: 2,
-        borderBottomColor: '#7C3AED',
-    },
     subTabBtnText: {
         fontSize: 13,
-        color: '#757575',
-    },
-    subTabBtnTextActive: {
-        color: '#7C3AED',
-        fontWeight: '600',
     },
     smallBadge: {
-        backgroundColor: '#F44336',
         borderRadius: 8,
         minWidth: 16,
         height: 16,
@@ -534,7 +514,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 3,
     },
     smallBadgeText: {
-        color: '#FFFFFF',
         fontSize: 9,
         fontWeight: '700',
     },
@@ -547,7 +526,6 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
     invitationCard: {
-        backgroundColor: '#FFFFFF',
         marginHorizontal: 12,
         marginVertical: 6,
         borderRadius: 12,
@@ -562,7 +540,6 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: '#F3F0FF',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -573,14 +550,11 @@ const styles = StyleSheet.create({
     invitationName: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#212121',
     },
     invitationDate: {
         fontSize: 12,
-        color: '#9E9E9E',
     },
     pendingBadge: {
-        backgroundColor: '#FFF3E0',
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 3,
@@ -588,11 +562,9 @@ const styles = StyleSheet.create({
     pendingBadgeText: {
         fontSize: 11,
         fontWeight: '600',
-        color: '#FF9800',
     },
     invitationMessage: {
         fontSize: 13,
-        color: '#757575',
         fontStyle: 'italic',
         marginBottom: 8,
     },
@@ -608,30 +580,27 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 4,
         borderWidth: 1,
-        borderColor: '#F44336',
         borderRadius: 8,
         padding: 10,
     },
-    declineBtnText: { color: '#F44336', fontSize: 13, fontWeight: '600' },
+    declineBtnText: { fontSize: 13, fontWeight: '600' },
     acceptBtn: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 4,
-        backgroundColor: '#7C3AED',
         borderRadius: 8,
         padding: 10,
     },
-    acceptBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+    acceptBtnText: { fontSize: 13, fontWeight: '600' },
     cancelSmallBtn: {
         borderWidth: 1,
-        borderColor: '#E0E0E0',
         borderRadius: 6,
         paddingHorizontal: 10,
         paddingVertical: 5,
     },
-    cancelSmallBtnText: { fontSize: 12, color: '#757575' },
+    cancelSmallBtnText: { fontSize: 12 },
     emptyListContainer: { flexGrow: 1 },
     emptyState: {
         flex: 1,
@@ -639,7 +608,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 64,
     },
-    emptyText: { fontSize: 16, color: '#9E9E9E', marginTop: 16, textAlign: 'center' },
+    emptyText: { fontSize: 16, marginTop: 16, textAlign: 'center' },
     fab: {
         position: 'absolute',
         right: 20,
@@ -647,22 +616,18 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#7C3AED',
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 4,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 4,
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'flex-end',
     },
     modalContent: {
-        backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 24,
@@ -674,18 +639,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 16,
     },
-    modalTitle: { fontSize: 18, fontWeight: '700', color: '#212121' },
+    modalTitle: { fontSize: 18, fontWeight: '700' },
     searchBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
         marginBottom: 8,
         gap: 8,
     },
-    searchInput: { flex: 1, fontSize: 14, color: '#212121', padding: 0 },
+    searchInput: { flex: 1, fontSize: 14, padding: 0 },
     searchResult: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -693,26 +657,22 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 4,
         borderBottomWidth: 1,
-        borderBottomColor: '#F5F5F5',
     },
-    searchResultName: { fontSize: 15, color: '#212121', fontWeight: '500' },
+    searchResultName: { fontSize: 15, fontWeight: '500' },
     selectedUser: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: '#F3F0FF',
         borderRadius: 8,
         padding: 10,
         marginBottom: 8,
     },
-    selectedUserName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#7C3AED' },
+    selectedUserName: { flex: 1, fontSize: 15, fontWeight: '600' },
     messageInput: {
         borderWidth: 1,
-        borderColor: '#E0E0E0',
         borderRadius: 8,
         padding: 12,
         fontSize: 14,
-        color: '#212121',
         minHeight: 60,
         textAlignVertical: 'top',
         marginVertical: 12,
@@ -722,20 +682,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#7C3AED',
         borderRadius: 10,
         padding: 14,
     },
-    sendButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+    sendButtonText: { fontSize: 15, fontWeight: '600' },
     buttonDisabled: { opacity: 0.5 },
     errorBanner: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: '#FFEBEE',
         borderRadius: 8,
         padding: 10,
         marginBottom: 8,
     },
-    errorBannerText: { flex: 1, fontSize: 13, color: '#F44336', fontWeight: '500' },
+    errorBannerText: { flex: 1, fontSize: 13, fontWeight: '500' },
 });

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Book } from '@/types/book';
 import BookCover from '@/components/BookCover';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Mêmes constantes que BookHeader
 const COVER_WIDTH = 140;
@@ -16,64 +17,65 @@ interface SharedBookViewProps {
 }
 
 export function SharedBookView({ book, onRequestPress, isUnavailable, isAlreadyBorrowed }: SharedBookViewProps) {
+    const theme = useTheme();
     return (
         <View style={styles.container}>
             {/* Header : couverture + infos (même layout que BookHeader) */}
-            <View style={styles.bookHeader}>
+            <View style={[styles.bookHeader, { backgroundColor: theme.bgCard }]}>
                 <BookCover
                     url={book.cover_url}
                     style={styles.cover}
-                    containerStyle={styles.coverContainer}
+                    containerStyle={[styles.coverContainer, { backgroundColor: theme.bgMuted }]}
                     resizeMode="contain"
                 />
                 <View style={styles.info}>
-                    <Text style={styles.title}>{book.title}</Text>
+                    <Text style={[styles.title, { color: theme.textPrimary }]}>{book.title}</Text>
 
                     {book.authors && book.authors.length > 0 && (
-                        <Text style={styles.author}>
+                        <Text style={[styles.author, { color: theme.textSecondary }]}>
                             {book.authors.map(a => a.name).join(', ')}
                         </Text>
                     )}
 
                     {book.isbn && (
-                        <Text style={styles.isbn}>ISBN : {book.isbn}</Text>
+                        <Text style={[styles.isbn, { color: theme.textMuted }]}>ISBN : {book.isbn}</Text>
                     )}
 
                     {isUnavailable && (
-                        <View style={styles.unavailableBadge}>
-                            <Text style={styles.unavailableBadgeText}>📖 Actuellement prêté</Text>
+                        <View style={[styles.unavailableBadge, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+                            <Text style={[styles.unavailableBadgeText, { color: theme.warning }]}>📖 Actuellement prêté</Text>
                         </View>
                     )}
                 </View>
             </View>
 
             {/* Détails */}
-            <View style={styles.detailsCard}>
+            <View style={[styles.detailsCard, { backgroundColor: theme.bgCard }]}>
                 {book.publisher && (
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Éditeur</Text>
-                        <Text style={styles.infoValue}>{book.publisher.name}</Text>
+                        <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Éditeur</Text>
+                        <Text style={[styles.infoValue, { color: theme.textPrimary }]}>{book.publisher.name}</Text>
                     </View>
                 )}
                 {book.published_date && (
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Publication</Text>
-                        <Text style={styles.infoValue}>{book.published_date}</Text>
+                        <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Publication</Text>
+                        <Text style={[styles.infoValue, { color: theme.textPrimary }]}>{book.published_date}</Text>
                     </View>
                 )}
                 {book.page_count && (
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Pages</Text>
-                        <Text style={styles.infoValue}>{book.page_count}</Text>
+                        <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Pages</Text>
+                        <Text style={[styles.infoValue, { color: theme.textPrimary }]}>{book.page_count}</Text>
                     </View>
                 )}
                 {book.genres && book.genres.length > 0 && (
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Genres</Text>
+                        <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Genres</Text>
                         <View style={styles.tagsRow}>
                             {book.genres.map(g => (
-                                <View key={g.id} style={styles.tag}>
-                                    <Text style={styles.tagText}>{g.name}</Text>
+                                <View key={g.id} style={[styles.tag, { backgroundColor: theme.accentLight }]}>
+                                    <Text style={[styles.tagText, { color: theme.accent }]}>{g.name}</Text>
                                 </View>
                             ))}
                         </View>
@@ -83,23 +85,23 @@ export function SharedBookView({ book, onRequestPress, isUnavailable, isAlreadyB
 
             {/* Action */}
             {isAlreadyBorrowed ? (
-                <View style={styles.alreadyBorrowedContainer}>
-                    <MaterialIcons name="check-circle" size={20} color="#7C3AED" />
-                    <Text style={styles.alreadyBorrowedText}>
+                <View style={[styles.alreadyBorrowedContainer, { backgroundColor: theme.accentLight, borderColor: theme.accentMedium }]}>
+                    <MaterialIcons name="check-circle" size={20} color={theme.accentMedium} />
+                    <Text style={[styles.alreadyBorrowedText, { color: theme.accentMedium }]}>
                         Vous empruntez actuellement ce livre
                     </Text>
                 </View>
             ) : isUnavailable ? (
-                <View style={styles.unavailableContainer}>
-                    <MaterialIcons name="info-outline" size={20} color="#FF9800" />
-                    <Text style={styles.unavailableText}>
+                <View style={[styles.unavailableContainer, { backgroundColor: theme.warningBg }]}>
+                    <MaterialIcons name="info-outline" size={20} color={theme.warning} />
+                    <Text style={[styles.unavailableText, { color: theme.warning }]}>
                         Ce livre est actuellement prêté et ne peut pas être demandé
                     </Text>
                 </View>
             ) : (
-                <TouchableOpacity style={styles.requestButton} onPress={onRequestPress}>
-                    <MaterialIcons name="send" size={20} color="#FFFFFF" />
-                    <Text style={styles.requestButtonText}>Demander ce livre</Text>
+                <TouchableOpacity style={[styles.requestButton, { backgroundColor: theme.accentMedium }]} onPress={onRequestPress}>
+                    <MaterialIcons name="send" size={20} color={theme.textInverse} />
+                    <Text style={[styles.requestButtonText, { color: theme.textInverse }]}>Demander ce livre</Text>
                 </TouchableOpacity>
             )}
         </View>
@@ -114,7 +116,6 @@ const styles = StyleSheet.create({
     bookHeader: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: '#FFFFFF',
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
@@ -124,7 +125,6 @@ const styles = StyleSheet.create({
         height: COVER_WIDTH / COVER_RATIO,
         marginRight: 16,
         borderRadius: 8,
-        backgroundColor: '#F0F0F0',
     },
     cover: {
         width: COVER_WIDTH,
@@ -138,35 +138,28 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#212121',
         marginBottom: 8,
     },
     author: {
         fontSize: 16,
-        color: '#666',
         marginBottom: 4,
     },
     isbn: {
         fontSize: 14,
-        color: '#888',
         marginBottom: 8,
     },
     unavailableBadge: {
         marginTop: 8,
         padding: 8,
-        backgroundColor: '#FFF3E0',
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#FF9800',
     },
     unavailableBadgeText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#E65100',
     },
     // Détails
     detailsCard: {
-        backgroundColor: '#FFFFFF',
         borderRadius: 12,
         padding: 16,
         marginBottom: 16,
@@ -180,13 +173,11 @@ const styles = StyleSheet.create({
     infoLabel: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#757575',
         width: 80,
         flexShrink: 0,
     },
     infoValue: {
         fontSize: 14,
-        color: '#212121',
         flex: 1,
     },
     tagsRow: {
@@ -196,14 +187,12 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     tag: {
-        backgroundColor: '#E3F2FD',
         borderRadius: 10,
         paddingHorizontal: 10,
         paddingVertical: 4,
     },
     tagText: {
         fontSize: 12,
-        color: '#1976D2',
         fontWeight: '500',
     },
     // Action
@@ -212,26 +201,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#7C3AED',
         borderRadius: 12,
         padding: 16,
     },
     requestButtonText: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#FFFFFF',
     },
     unavailableContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: '#FFF3E0',
         borderRadius: 8,
         padding: 12,
     },
     unavailableText: {
         fontSize: 14,
-        color: '#FF9800',
         fontWeight: '500',
         flex: 1,
     },
@@ -239,15 +224,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: '#EDE9FE',
         borderRadius: 8,
         padding: 12,
         borderWidth: 1,
-        borderColor: '#C4B5FD',
     },
     alreadyBorrowedText: {
         fontSize: 14,
-        color: '#7C3AED',
         fontWeight: '500',
         flex: 1,
     },

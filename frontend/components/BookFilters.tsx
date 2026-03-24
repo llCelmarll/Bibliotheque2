@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { FilterType, BookFilter} from "@/types/filter";
 import {ClickableTag} from "@/components/ClickableTag";
 import { isFilterActive} from "@/services/filtersService";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface BookFiltersProps {
 	activeFilters: BookFilter[];
@@ -15,13 +16,14 @@ export const BookFilters : React.FC<BookFiltersProps> = ({
 	onFilterRemove,
 	onClearFilters
 }) => {
+	const theme = useTheme();
 	if (activeFilters.length === 0) return null;
 
 	return (
-		<View style={styles.container}>
+		<View style={[styles.container, { backgroundColor: theme.bgPrimary, borderBottomColor: theme.borderLight }]}>
 			<View style={styles.header}>
-				<Text style={styles.title}>Filtres actifs</Text>
-				<Text style={styles.clearButton} onPress={onClearFilters}>
+				<Text style={[styles.title, { color: theme.textPrimary }]}>Filtres actifs</Text>
+				<Text style={[styles.clearButton, { color: theme.accent }]} onPress={onClearFilters}>
 					Effacer tous les filtres
 				</Text>
 			</View>
@@ -41,7 +43,7 @@ export const BookFilters : React.FC<BookFiltersProps> = ({
 const styles = StyleSheet.create({
 	container: {
 		padding: 10,
-		backgroundColor: '#f5f5f5',
+		borderBottomWidth: 1,
 	},
 	header: {
 		flexDirection: 'row',
@@ -51,11 +53,11 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontWeight: '600',
-		fontSize: 16,
+		fontSize: 15,
 	},
 	clearButton: {
-		color: '#007AFF',
 		fontSize: 14,
+		fontWeight: '500',
 	},
 	filterList: {
 		flexDirection: 'row',

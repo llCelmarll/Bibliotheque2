@@ -6,6 +6,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ImagePreview } from './ImagePreview';
 import { resolveCoverUrl } from '@/utils/coverUrl';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const ASPECT_W = 2;
 const ASPECT_H = 3;
@@ -67,6 +68,7 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
     onClearCover,
     error,
 }) => {
+    const theme = useTheme();
     const [showUrlInput, setShowUrlInput] = useState(false);
     const [imageLoadError, setImageLoadError] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
@@ -178,18 +180,18 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
 
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>Couverture</Text>
+            <Text style={[styles.label, { color: theme.textPrimary }]}>Couverture</Text>
 
             {/* Apercu de l'image locale */}
             {localImageUri ? (
                 <View style={styles.previewContainer}>
                     <Image
                         source={{ uri: localImageUri }}
-                        style={styles.preview}
+                        style={[styles.preview, { borderColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}
                         resizeMode="contain"
                     />
-                    <TouchableOpacity style={styles.removeBtn} onPress={onClearCover}>
-                        <Text style={styles.removeBtnText}>Supprimer</Text>
+                    <TouchableOpacity style={[styles.removeBtn, { backgroundColor: theme.danger }]} onPress={onClearCover}>
+                        <Text style={[styles.removeBtnText, { color: theme.textInverse }]}>Supprimer</Text>
                     </TouchableOpacity>
                 </View>
             ) : coverUrl && !imageLoadError ? (
@@ -197,15 +199,15 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
                     {coverUrl.startsWith('http') || coverUrl.startsWith('/covers/') ? (
                         <Image
                             source={{ uri: resolvedCoverUrl }}
-                            style={styles.preview}
+                            style={[styles.preview, { borderColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}
                             resizeMode="contain"
                             onError={() => setImageLoadError(true)}
                         />
                     ) : (
                         <ImagePreview url={coverUrl} debounceMs={1500} />
                     )}
-                    <TouchableOpacity style={styles.removeBtn} onPress={onClearCover}>
-                        <Text style={styles.removeBtnText}>Supprimer</Text>
+                    <TouchableOpacity style={[styles.removeBtn, { backgroundColor: theme.danger }]} onPress={onClearCover}>
+                        <Text style={[styles.removeBtnText, { color: theme.textInverse }]}>Supprimer</Text>
                     </TouchableOpacity>
                 </View>
             ) : null}
@@ -214,20 +216,20 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             {!hasImage && (
                 <View style={styles.buttonsContainer}>
                     {Platform.OS !== 'web' && (
-                        <TouchableOpacity style={styles.actionBtn} onPress={openCamera}>
-                            <Text style={styles.actionBtnText}>Prendre une photo</Text>
+                        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accent }]} onPress={openCamera}>
+                            <Text style={[styles.actionBtnText, { color: theme.textInverse }]}>Prendre une photo</Text>
                         </TouchableOpacity>
                     )}
-                    <TouchableOpacity style={styles.actionBtn} onPress={pickFromGallery}>
-                        <Text style={styles.actionBtnText}>
+                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accent }]} onPress={pickFromGallery}>
+                        <Text style={[styles.actionBtnText, { color: theme.textInverse }]}>
                             {Platform.OS === 'web' ? 'Choisir un fichier' : 'Galerie'}
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.actionBtn, styles.urlBtn]}
+                        style={[styles.actionBtn, styles.urlBtn, { backgroundColor: theme.textMuted }]}
                         onPress={() => setShowUrlInput(true)}
                     >
-                        <Text style={styles.actionBtnText}>Coller une URL</Text>
+                        <Text style={[styles.actionBtnText, { color: theme.textInverse }]}>Coller une URL</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -235,18 +237,18 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             {/* Champ URL (masque par defaut) */}
             {showUrlInput && !localImageUri && (
                 <TextInput
-                    style={styles.urlInput}
+                    style={[styles.urlInput, { borderColor: theme.borderLight, backgroundColor: theme.bgCard, color: theme.textPrimary }]}
                     value={coverUrl}
                     onChangeText={onCoverUrlChange}
                     placeholder="https://example.com/couverture.jpg"
-                    placeholderTextColor="#aaa"
+                    placeholderTextColor={theme.textMuted}
                     keyboardType="url"
                     autoCapitalize="none"
                     autoCorrect={false}
                 />
             )}
 
-            {error && <Text style={styles.errorText}>{error}</Text>}
+            {error && <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>}
 
             {/* Modal camera plein ecran */}
             {Platform.OS !== 'web' && (
@@ -292,7 +294,6 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#2c3e50',
         marginBottom: 8,
     },
     previewContainer: {
@@ -304,18 +305,14 @@ const styles = StyleSheet.create({
         height: 180,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#dee2e6',
-        backgroundColor: '#f8f9fa',
     },
     removeBtn: {
         marginTop: 8,
         paddingVertical: 6,
         paddingHorizontal: 16,
-        backgroundColor: '#e74c3c',
         borderRadius: 6,
     },
     removeBtnText: {
-        color: '#fff',
         fontSize: 13,
         fontWeight: '500',
     },
@@ -329,29 +326,24 @@ const styles = StyleSheet.create({
         minWidth: 100,
         paddingVertical: 10,
         paddingHorizontal: 12,
-        backgroundColor: '#3498db',
         borderRadius: 8,
         alignItems: 'center',
     },
     urlBtn: {
-        backgroundColor: '#95a5a6',
+        // backgroundColor applied inline via theme.textMuted
     },
     actionBtnText: {
-        color: '#fff',
         fontSize: 13,
         fontWeight: '500',
     },
     urlInput: {
         marginTop: 8,
         borderWidth: 1,
-        borderColor: '#ddd',
         borderRadius: 8,
         padding: 10,
         fontSize: 14,
-        backgroundColor: '#fff',
     },
     errorText: {
-        color: '#e74c3c',
         fontSize: 12,
         marginTop: 4,
     },

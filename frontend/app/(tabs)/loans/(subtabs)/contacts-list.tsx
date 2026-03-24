@@ -17,9 +17,11 @@ import { ContactListItem } from '@/components/loans/ContactListItem';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Contact } from '@/types/contact';
 import { useLoans } from '@/hooks/useLoans';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function ContactsScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { contacts, loading, refresh, searchQuery, setSearchQuery, handleSearch } = useContacts();
   const { statistics: loanStats } = useLoans({ autoLoad: true });
   const [refreshing, setRefreshing] = useState(false);
@@ -43,13 +45,13 @@ function ContactsScreen() {
 
     return (
       <View style={styles.emptyState}>
-        <MaterialIcons name="people" size={64} color="#E0E0E0" />
-        <Text style={styles.emptyStateText}>
+        <MaterialIcons name="people" size={64} color={theme.borderMedium} />
+        <Text style={[styles.emptyStateText, { color: theme.textMuted }]}>
           {searchQuery ? 'Aucun contact trouvé' : 'Aucun contact'}
         </Text>
         {!searchQuery && (
-          <TouchableOpacity style={styles.emptyStateButton} onPress={handleCreateContact}>
-            <Text style={styles.emptyStateButtonText}>Créer un contact</Text>
+          <TouchableOpacity style={[styles.emptyStateButton, { backgroundColor: theme.accent }]} onPress={handleCreateContact}>
+            <Text style={[styles.emptyStateButtonText, { color: theme.textInverse }]}>Créer un contact</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -57,49 +59,50 @@ function ContactsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
       {/* En-tête avec statistiques */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.bgPrimary, borderBottomColor: theme.borderLight }]}>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{contacts.length}</Text>
-            <Text style={styles.statLabel}>Contacts</Text>
+            <Text style={[styles.statValue, { color: theme.accent }]}>{contacts.length}</Text>
+            <Text style={[styles.statLabel, { color: theme.textMuted }]}>Contacts</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.borderLight }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>
+            <Text style={[styles.statValue, { color: theme.accent }]}>
               {contacts.filter(c => (c.active_loans_count && c.active_loans_count > 0) || (c.active_borrows_count && c.active_borrows_count > 0)).length}
             </Text>
-            <Text style={styles.statLabel}>Avec activité</Text>
+            <Text style={[styles.statLabel, { color: theme.textMuted }]}>Avec activité</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.borderLight }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{loanStats?.total_loans || 0}</Text>
-            <Text style={styles.statLabel}>Prêts totaux</Text>
+            <Text style={[styles.statValue, { color: theme.accent }]}>{loanStats?.total_loans || 0}</Text>
+            <Text style={[styles.statLabel, { color: theme.textMuted }]}>Prêts totaux</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.borderLight }]} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, loanStats?.overdue_loans ? styles.statValueDanger : null]}>
+            <Text style={[styles.statValue, { color: theme.accent }, loanStats?.overdue_loans ? { color: theme.danger } : null]}>
               {loanStats?.overdue_loans || 0}
             </Text>
-            <Text style={styles.statLabel}>En retard</Text>
+            <Text style={[styles.statLabel, { color: theme.textMuted }]}>En retard</Text>
           </View>
         </View>
       </View>
 
       {/* Barre de recherche */}
-      <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={20} color="#757575" />
+      <View style={[styles.searchContainer, { backgroundColor: theme.bgPrimary, borderBottomColor: theme.borderLight }]}>
+        <MaterialIcons name="search" size={20} color={theme.textMuted} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: theme.textPrimary }]}
           placeholder="Rechercher un contact..."
+          placeholderTextColor={theme.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <MaterialIcons name="close" size={20} color="#757575" />
+            <MaterialIcons name="close" size={20} color={theme.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -107,7 +110,7 @@ function ContactsScreen() {
       {/* Liste des contacts */}
       {loading && contacts.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       ) : (
         <FlatList
@@ -131,8 +134,8 @@ function ContactsScreen() {
       )}
 
       {/* Bouton Flottant pour créer un contact */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreateContact}>
-        <MaterialIcons name="add" size={28} color="#FFFFFF" />
+      <TouchableOpacity style={[styles.fab, { backgroundColor: theme.accent }]} onPress={handleCreateContact}>
+        <MaterialIcons name="add" size={28} color={theme.textInverse} />
       </TouchableOpacity>
     </View>
   );
@@ -149,13 +152,10 @@ export default function ContactsList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
     paddingTop: Platform.OS === 'android' ? 40 : Platform.OS === 'ios' ? 44 : 0,
   },
   header: {
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
     paddingVertical: 16,
   },
   statsContainer: {
@@ -170,36 +170,27 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2196F3',
-  },
-  statValueDanger: {
-    color: '#F44336',
   },
   statLabel: {
     fontSize: 11,
-    color: '#757575',
     marginTop: 4,
     textAlign: 'center',
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#E0E0E0',
     marginHorizontal: 16,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   searchInput: {
     flex: 1,
     height: 40,
     fontSize: 14,
-    color: '#212121',
     marginLeft: 8,
   },
   loadingContainer: {
@@ -221,18 +212,15 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#9E9E9E',
     marginTop: 16,
     marginBottom: 24,
   },
   emptyStateButton: {
-    backgroundColor: '#2196F3',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
   emptyStateButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -243,11 +231,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2196F3',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

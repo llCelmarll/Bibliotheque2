@@ -7,6 +7,7 @@ import {StarRating} from "@/components/StarRating";
 import {BookFilter, FilterType} from "@/types/filter";
 import {createFilter} from "@/services/filtersService";
 import { useRouter} from "expo-router";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface BookListItemProps {
 	book: Book;
@@ -16,6 +17,7 @@ interface BookListItemProps {
 export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelect}) => {
 
 	const router = useRouter();
+	const theme = useTheme();
 
 	const handlePress = () => {
 		router.push(`/(tabs)/books/${book.id}`);
@@ -32,9 +34,8 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 	};
 
 	return (
-		<View style={styles.container}>
+		<View style={[styles.container, { borderBottomColor: theme.borderLight }]}>
 			<TouchableOpacity onPress={handlePress} testID="book-item-touchable">
-				{/* Couverture du livre */}
 				<BookCover
 					url={book.cover_url}
 					style={styles.cover}
@@ -43,21 +44,20 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 				/>
 			</TouchableOpacity>
 
-
 			<View style={styles.infoContainer}>
 				{/* Titre + badge lecture */}
 				<View style={styles.titleRow}>
 					<TouchableOpacity onPress={handlePress} style={styles.titleTouchable}>
-						<Text style={styles.title}>{book.title}</Text>
+						<Text style={[styles.title, { color: theme.textPrimary }]}>{book.title}</Text>
 					</TouchableOpacity>
 					{book.is_read === true && (
-						<View style={styles.readBadge}>
-							<Text style={styles.readBadgeText}>Lu</Text>
+						<View style={[styles.readBadge, { backgroundColor: theme.successBg }]}>
+							<Text style={[styles.readBadgeText, { color: theme.success }]}>Lu</Text>
 						</View>
 					)}
 					{book.is_read === false && (
-						<View style={styles.unreadBadge}>
-							<Text style={styles.unreadBadgeText}>Non lu</Text>
+						<View style={[styles.unreadBadge, { backgroundColor: theme.bgMuted }]}>
+							<Text style={[styles.unreadBadgeText, { color: theme.textMuted }]}>Non lu</Text>
 						</View>
 					)}
 					{book.rating != null && book.rating > 0 && (
@@ -68,7 +68,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 				{/* Auteurs */}
 				{book.authors && book.authors.length > 0 && (
 					<View style={styles.author}>
-						<Text>{book.authors.length > 1? "Auteurs" : "Auteur"} :</Text>
+						<Text style={{ color: theme.textSecondary }}>{book.authors.length > 1? "Auteurs" : "Auteur"} :</Text>
 						{book.authors.map((author: Author) => (
 							<ClickableTag
 								key={author.id}
@@ -82,7 +82,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 				{/* Éditeur */}
 				{book.publisher && (
 					<View style={styles.publisher}>
-						<Text>Editeur : </Text>
+						<Text style={{ color: theme.textSecondary }}>Editeur : </Text>
 						<ClickableTag
 							filter={createFilter("publisher", book.publisher)}
 							onPress={onFilterSelect}
@@ -93,7 +93,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 				{/* Genres */}
 				{book.genres && book.genres.length > 0 && (
 					<View style={styles.genre}>
-						<Text>{book.genres.length > 1? "Genres" : "Genre"} : </Text>
+						<Text style={{ color: theme.textSecondary }}>{book.genres.length > 1? "Genres" : "Genre"} : </Text>
 						{book.genres.map((genre: Genre) => (
 							<ClickableTag
 								key={genre.id}
@@ -107,7 +107,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 				{/* Séries */}
 				{book.series && book.series.length > 0 && (
 					<View style={styles.series}>
-						<Text>{book.series.length > 1 ? "Séries" : "Série"} : </Text>
+						<Text style={{ color: theme.textSecondary }}>{book.series.length > 1 ? "Séries" : "Série"} : </Text>
 						{book.series.map((s: BookSeries) => (
 							<ClickableTag
 								key={s.id}
@@ -123,21 +123,22 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 
 				{/* Nombre de pages */}
 				{book.page_count && (
-					<Text style={styles.pages}>
+					<Text style={[styles.pages, { color: theme.textMuted }]}>
 						{book.page_count} pages
 					</Text>
 				)}
 
 				{/* Badge de prêt (TO other) */}
 				{book.current_loan && (
-					<View style={styles.loanBadge}>
-						<Text style={styles.loanBadgeText}>
+					<View style={[styles.loanBadge, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+						<Text style={[styles.loanBadgeText, { color: theme.warning }]}>
 							📖 Prêté à {book.current_loan.contact?.name || 'Contact inconnu'}
 						</Text>
 						{book.current_loan.due_date && (
 							<Text style={[
 								styles.loanDateText,
-								new Date(book.current_loan.due_date) < new Date() && styles.loanOverdue
+								{ color: theme.warning },
+								new Date(book.current_loan.due_date) < new Date() && { color: theme.danger, fontWeight: '600' }
 							]}>
 								Retour : {formatDate(book.current_loan.due_date)}
 							</Text>
@@ -147,14 +148,15 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 
 				{/* Badge emprunt (FROM other) */}
 				{book.borrowed_book && book.borrowed_book.status === 'active' && (
-					<View style={styles.loanBadge}>
-						<Text style={styles.loanBadgeText}>
+					<View style={[styles.loanBadge, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+						<Text style={[styles.loanBadgeText, { color: theme.warning }]}>
 							📚 Emprunté à {book.borrowed_book.borrowed_from}
 						</Text>
 						{book.borrowed_book.expected_return_date && (
 							<Text style={[
 								styles.loanDateText,
-								new Date(book.borrowed_book.expected_return_date) < new Date() && styles.loanOverdue
+								{ color: theme.warning },
+								new Date(book.borrowed_book.expected_return_date) < new Date() && { color: theme.danger, fontWeight: '600' }
 							]}>
 								{new Date(book.borrowed_book.expected_return_date) < new Date() ? '⚠️ ' : ''}
 								Retour: {formatDate(book.borrowed_book.expected_return_date)}
@@ -169,20 +171,22 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 
 const styles = StyleSheet.create({
 	container: {
-		padding: 10,
+		padding: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: "#ddd",
 		flexDirection: 'row',
 	},
 	cover: {
 		width: 70,
 		height: 100,
-		marginRight: 10,
+		marginRight: 12,
+		borderRadius: 8,
 	},
 	coverContainer: {
 		width: 70,
 		height: 100,
-		marginRight: 10,
+		marginRight: 12,
+		borderRadius: 8,
+		overflow: 'hidden',
 	},
 	infoContainer: {
 		flex: 1,
@@ -203,79 +207,66 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	readBadge: {
-		backgroundColor: '#d4edda',
-		borderRadius: 8,
-		paddingHorizontal: 6,
+		borderRadius: 20,
+		paddingHorizontal: 8,
 		paddingVertical: 2,
 	},
 	readBadgeText: {
 		fontSize: 10,
 		fontWeight: '600',
-		color: '#155724',
 	},
 	unreadBadge: {
-		backgroundColor: '#e9ecef',
-		borderRadius: 8,
-		paddingHorizontal: 6,
+		borderRadius: 20,
+		paddingHorizontal: 8,
 		paddingVertical: 2,
 	},
 	unreadBadgeText: {
 		fontSize: 10,
 		fontWeight: '600',
-		color: '#6c757d',
 	},
 	author: {
-		color: "#666",
 		fontSize: 14,
 		marginBottom: 2,
 		flexDirection: "row",
-		flexWrap: "wrap"
+		flexWrap: "wrap",
+		alignItems: "center",
 	},
 	publisher: {
-		color: "#666",
 		fontSize: 13,
 		marginBottom: 2,
 		flexDirection: "row",
-		flexWrap: "wrap"
+		flexWrap: "wrap",
+		alignItems: "center",
 	},
 	genre: {
-		color: "#666",
 		fontSize: 13,
 		marginBottom: 2,
 		flexDirection: "row",
-		flexWrap: "wrap"
+		flexWrap: "wrap",
+		alignItems: "center",
 	},
 	series: {
-		color: "#666",
 		fontSize: 13,
 		marginBottom: 2,
 		flexDirection: "row",
-		flexWrap: "wrap"
+		flexWrap: "wrap",
+		alignItems: "center",
 	},
 	pages: {
-		color: "#888",
 		fontSize: 12,
 	},
 	loanBadge: {
 		marginTop: 6,
 		padding: 6,
-		backgroundColor: '#fff3cd',
-		borderRadius: 4,
+		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: '#ffc107',
 	},
 	loanBadgeText: {
 		fontSize: 11,
 		fontWeight: '600',
-		color: '#856404',
 		marginBottom: 2,
 	},
 	loanDateText: {
 		fontSize: 10,
-		color: '#856404',
-	},
-	loanOverdue: {
-		color: '#dc3545',
-		fontWeight: '600',
 	},
 });

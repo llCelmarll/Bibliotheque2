@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -9,12 +10,13 @@ interface CollapsibleSectionProps {
   defaultExpanded?: boolean;
 }
 
-export function CollapsibleSection({ 
-  title, 
-  children, 
-  defaultExpanded = true 
+export function CollapsibleSection({
+  title,
+  children,
+  defaultExpanded = true
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const theme = useTheme();
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -22,17 +24,17 @@ export function CollapsibleSection({
   };
 
   return (
-    <View style={styles.section}>
-      <TouchableOpacity 
-        style={styles.header} 
+    <View style={[styles.section, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
+      <TouchableOpacity
+        style={[styles.header, { borderBottomColor: theme.borderLight }]}
         onPress={toggleExpand}
         activeOpacity={0.7}
       >
-        <Text style={styles.title}>{title}</Text>
-        <Ionicons 
-          name={isExpanded ? 'chevron-up' : 'chevron-down'} 
-          size={20} 
-          color="#666"
+        <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
+        <Ionicons
+          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color={theme.textSecondary}
         />
       </TouchableOpacity>
       {isExpanded && (
@@ -47,9 +49,7 @@ export function CollapsibleSection({
 const styles = StyleSheet.create({
   section: {
     marginBottom: 16,
-    backgroundColor: '#fff',
     borderRadius: 8,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
@@ -64,12 +64,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
   },
   content: {
     padding: 16,

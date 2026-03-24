@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { StarRating } from "@/components/StarRating";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SimpleSearchFiltersProps {
 	isRead: boolean | null;
@@ -16,23 +17,19 @@ export const SimpleSearchFilters: React.FC<SimpleSearchFiltersProps> = ({
 	ratingMin,
 	setRatingMin,
 }) => {
+	const theme = useTheme();
 	return (
-		<View style={styles.container}>
+		<View style={[styles.container, { backgroundColor: theme.bgPrimary, borderBottomColor: theme.borderLight }]}>
 			<View style={styles.section}>
-				<Text style={styles.label}>Statut</Text>
+				<Text style={[styles.label, { color: theme.textMuted }]}>Statut</Text>
 				<View style={styles.chipRow}>
 					{([null, true, false] as const).map((val) => (
 						<TouchableOpacity
 							key={val === null ? "tous" : val ? "lu" : "nonlu"}
-							style={[styles.chip, isRead === val && styles.chipActive]}
+							style={[styles.chip, { backgroundColor: isRead === val ? theme.accent : theme.bgMuted }]}
 							onPress={() => setIsRead(val)}
 						>
-							<Text
-								style={[
-									styles.chipText,
-									isRead === val && styles.chipTextActive,
-								]}
-							>
+							<Text style={[styles.chipText, { color: isRead === val ? theme.textInverse : theme.textSecondary }]}>
 								{val === null ? "Tous" : val ? "Lu" : "Non lu"}
 							</Text>
 						</TouchableOpacity>
@@ -40,18 +37,13 @@ export const SimpleSearchFilters: React.FC<SimpleSearchFiltersProps> = ({
 				</View>
 			</View>
 			<View style={styles.section}>
-				<Text style={styles.label}>Note min.</Text>
+				<Text style={[styles.label, { color: theme.textMuted }]}>Note min.</Text>
 				<View style={styles.starRow}>
 					<TouchableOpacity
-						style={[styles.chip, ratingMin === null && styles.chipActive]}
+						style={[styles.chip, { backgroundColor: ratingMin === null ? theme.accent : theme.bgMuted }]}
 						onPress={() => setRatingMin(null)}
 					>
-						<Text
-							style={[
-								styles.chipText,
-								ratingMin === null && styles.chipTextActive,
-							]}
-						>
+						<Text style={[styles.chipText, { color: ratingMin === null ? theme.textInverse : theme.textSecondary }]}>
 							Toutes
 						</Text>
 					</TouchableOpacity>
@@ -75,9 +67,7 @@ const styles = StyleSheet.create({
 		gap: 16,
 		paddingHorizontal: 16,
 		paddingVertical: 10,
-		backgroundColor: "#f9f9f9",
 		borderBottomWidth: 1,
-		borderBottomColor: "#eee",
 	},
 	section: {
 		flexDirection: "row",
@@ -86,7 +76,6 @@ const styles = StyleSheet.create({
 	},
 	label: {
 		fontSize: 13,
-		color: "#666",
 		minWidth: 56,
 	},
 	chipRow: {
@@ -96,18 +85,11 @@ const styles = StyleSheet.create({
 	chip: {
 		paddingHorizontal: 12,
 		paddingVertical: 6,
-		borderRadius: 16,
-		backgroundColor: "#eee",
-	},
-	chipActive: {
-		backgroundColor: "#3498db",
+		borderRadius: 20,
 	},
 	chipText: {
 		fontSize: 13,
-		color: "#333",
-	},
-	chipTextActive: {
-		color: "#fff",
+		fontWeight: '500',
 	},
 	starRow: {
 		flexDirection: "row",

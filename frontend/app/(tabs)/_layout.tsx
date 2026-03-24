@@ -4,10 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { View, Text, StyleSheet } from "react-native";
 import { checkForUpdate } from "@/utils/versionCheck";
 import { NotificationsProvider, useNotifications } from "@/contexts/NotificationsContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 function TabLayoutInner() {
   const router = useRouter();
   const { totalPendingCount: totalNotifications } = useNotifications();
+  const theme = useTheme();
 
   useEffect(() => {
     checkForUpdate();
@@ -15,7 +17,10 @@ function TabLayoutInner() {
 
   return (
     <Tabs screenOptions={{
-      headerShown: false, // Cache le header par défaut pour tous les onglets
+      headerShown: false,
+      tabBarActiveTintColor: theme.tabActive,
+      tabBarInactiveTintColor: theme.tabInactive,
+      tabBarStyle: { backgroundColor: theme.tabBg },
     }}>
       <Tabs.Screen
         name="books"
@@ -39,8 +44,8 @@ function TabLayoutInner() {
             <View>
               <Ionicons name="swap-horizontal-outline" size={size} color={color} />
               {totalNotifications > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
+                <View style={[styles.badge, { backgroundColor: theme.danger }]}>
+                  <Text style={[styles.badgeText, { color: theme.textInverse }]}>
                     {totalNotifications > 9 ? '9+' : totalNotifications}
                   </Text>
                 </View>
@@ -111,7 +116,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -6,
-    backgroundColor: '#F44336',
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -120,7 +124,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeText: {
-    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '700',
   },

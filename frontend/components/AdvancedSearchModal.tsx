@@ -13,6 +13,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { FetchBooksAdvancedParams } from "@/services/booksService";
 import { StarRating } from "@/components/StarRating";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface AdvancedSearchModalProps {
 	visible: boolean;
@@ -31,6 +32,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 	sortBy,
 	order,
 }) => {
+	const theme = useTheme();
 	const [title, setTitle] = useState("");
 	const [author, setAuthor] = useState("");
 	const [publisher, setPublisher] = useState("");
@@ -109,14 +111,14 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 			transparent
 		>
 			<KeyboardAvoidingView
-				style={styles.overlay}
-				behavior={Platform.OS === "ios" ? "padding" : undefined}
+				style={[styles.overlay, { backgroundColor: `${theme.textPrimary}80` }]}
+				behavior={undefined}
 			>
-				<View style={styles.modal}>
-					<View style={styles.header}>
-						<Text style={styles.title}>Recherche avancée</Text>
+				<View style={[styles.modal, { backgroundColor: theme.bgCard }]}>
+					<View style={[styles.header, { borderBottomColor: theme.borderLight }]}>
+						<Text style={[styles.title, { color: theme.textPrimary }]}>Recherche avancée</Text>
 						<TouchableOpacity onPress={onClose} style={styles.closeButton}>
-							<MaterialIcons name="close" size={24} color="#333" />
+							<MaterialIcons name="close" size={24} color={theme.textPrimary} />
 						</TouchableOpacity>
 					</View>
 					<ScrollView
@@ -124,102 +126,113 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 						contentContainerStyle={styles.scrollContent}
 						keyboardShouldPersistTaps="handled"
 					>
-						<Text style={styles.label}>Titre</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>Titre</Text>
 						<TextInput
-							style={styles.input}
+							style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 							value={title}
 							onChangeText={setTitle}
 							placeholder="Rechercher dans le titre"
+							placeholderTextColor={theme.textMuted}
 							autoCapitalize="none"
 						/>
-						<Text style={styles.label}>Auteur</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>Auteur</Text>
 						<TextInput
-							style={styles.input}
+							style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 							value={author}
 							onChangeText={setAuthor}
 							placeholder="Nom de l'auteur"
+							placeholderTextColor={theme.textMuted}
 						/>
-						<Text style={styles.label}>Éditeur</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>Éditeur</Text>
 						<TextInput
-							style={styles.input}
+							style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 							value={publisher}
 							onChangeText={setPublisher}
 							placeholder="Nom de l'éditeur"
+							placeholderTextColor={theme.textMuted}
 						/>
-						<Text style={styles.label}>Genre</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>Genre</Text>
 						<TextInput
-							style={styles.input}
+							style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 							value={genre}
 							onChangeText={setGenre}
 							placeholder="Nom du genre"
+							placeholderTextColor={theme.textMuted}
 						/>
-						<Text style={styles.label}>ISBN</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>ISBN</Text>
 						<TextInput
-							style={styles.input}
+							style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 							value={isbn}
 							onChangeText={setIsbn}
 							placeholder="ISBN"
+							placeholderTextColor={theme.textMuted}
 							keyboardType="default"
 						/>
 						<View style={styles.row}>
 							<View style={styles.half}>
-								<Text style={styles.label}>Année min</Text>
+								<Text style={[styles.label, { color: theme.textSecondary }]}>Année min</Text>
 								<TextInput
-									style={styles.input}
+									style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 									value={yearMin}
 									onChangeText={setYearMin}
 									placeholder="ex. 1990"
+									placeholderTextColor={theme.textMuted}
 									keyboardType="number-pad"
 								/>
 							</View>
 							<View style={styles.half}>
-								<Text style={styles.label}>Année max</Text>
+								<Text style={[styles.label, { color: theme.textSecondary }]}>Année max</Text>
 								<TextInput
-									style={styles.input}
+									style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 									value={yearMax}
 									onChangeText={setYearMax}
 									placeholder="ex. 2024"
+									placeholderTextColor={theme.textMuted}
 									keyboardType="number-pad"
 								/>
 							</View>
 						</View>
 						<View style={styles.row}>
 							<View style={styles.half}>
-								<Text style={styles.label}>Pages min</Text>
+								<Text style={[styles.label, { color: theme.textSecondary }]}>Pages min</Text>
 								<TextInput
-									style={styles.input}
+									style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 									value={pageMin}
 									onChangeText={setPageMin}
 									placeholder="ex. 100"
+									placeholderTextColor={theme.textMuted}
 									keyboardType="number-pad"
 								/>
 							</View>
 							<View style={styles.half}>
-								<Text style={styles.label}>Pages max</Text>
+								<Text style={[styles.label, { color: theme.textSecondary }]}>Pages max</Text>
 								<TextInput
-									style={styles.input}
+									style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 									value={pageMax}
 									onChangeText={setPageMax}
 									placeholder="ex. 500"
+									placeholderTextColor={theme.textMuted}
 									keyboardType="number-pad"
 								/>
 							</View>
 						</View>
-						<Text style={styles.label}>Statut de lecture</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>Statut de lecture</Text>
 						<View style={styles.chipRow}>
 							{([null, true, false] as const).map((val) => (
 								<TouchableOpacity
 									key={val === null ? "tous" : val ? "lu" : "nonlu"}
 									style={[
 										styles.chip,
-										isRead === val && styles.chipActive,
+										{ backgroundColor: theme.bgMuted },
+										isRead === val && { backgroundColor: theme.accent },
 									]}
 									onPress={() => setIsRead(val)}
 								>
 									<Text
 										style={[
 											styles.chipText,
-											isRead === val && styles.chipTextActive,
+											{ color: theme.textPrimary },
+											isRead === val && { color: theme.textInverse },
 										]}
 									>
 										{val === null ? "Tous" : val ? "Lu" : "Non lu"}
@@ -227,16 +240,21 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 								</TouchableOpacity>
 							))}
 						</View>
-						<Text style={styles.label}>Note minimale</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>Note minimale</Text>
 						<View style={styles.starRow}>
 							<TouchableOpacity
-								style={[styles.chip, ratingMin === null && styles.chipActive]}
+								style={[
+									styles.chip,
+									{ backgroundColor: theme.bgMuted },
+									ratingMin === null && { backgroundColor: theme.accent },
+								]}
 								onPress={() => setRatingMin(null)}
 							>
 								<Text
 									style={[
 										styles.chipText,
-										ratingMin === null && styles.chipTextActive,
+										{ color: theme.textPrimary },
+										ratingMin === null && { color: theme.textInverse },
 									]}
 								>
 									Toutes
@@ -249,29 +267,30 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 								size={28}
 							/>
 						</View>
-						<Text style={styles.label}>Recherche dans les notes</Text>
+						<Text style={[styles.label, { color: theme.textSecondary }]}>Recherche dans les notes</Text>
 						<TextInput
-							style={[styles.input, styles.notesInput]}
+							style={[styles.input, styles.notesInput, { borderColor: theme.borderLight, backgroundColor: theme.bgInput, color: theme.textPrimary }]}
 							value={notes}
 							onChangeText={setNotes}
 							placeholder="Texte présent dans les notes"
+							placeholderTextColor={theme.textMuted}
 							multiline
 							numberOfLines={2}
 						/>
 					</ScrollView>
-					<View style={styles.footer}>
+					<View style={[styles.footer, { borderTopColor: theme.borderLight }]}>
 						<TouchableOpacity
-							style={styles.resetButton}
+							style={[styles.resetButton, { backgroundColor: theme.bgMuted }]}
 							onPress={handleReset}
 						>
-							<Text style={styles.resetButtonText}>Réinitialiser</Text>
+							<Text style={[styles.resetButtonText, { color: theme.textPrimary }]}>Réinitialiser</Text>
 						</TouchableOpacity>
 						<TouchableOpacity
-							style={styles.searchButton}
+							style={[styles.searchButton, { backgroundColor: theme.accent }]}
 							onPress={handleSearch}
 						>
-							<MaterialIcons name="search" size={20} color="#fff" />
-							<Text style={styles.searchButtonText}>Rechercher</Text>
+							<MaterialIcons name="search" size={20} color={theme.textInverse} />
+							<Text style={[styles.searchButtonText, { color: theme.textInverse }]}>Rechercher</Text>
 						</TouchableOpacity>
 					</View>
 				</View>
@@ -283,11 +302,9 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 const styles = StyleSheet.create({
 	overlay: {
 		flex: 1,
-		backgroundColor: "rgba(0,0,0,0.5)",
 		justifyContent: "flex-end",
 	},
 	modal: {
-		backgroundColor: "#fff",
 		borderTopLeftRadius: 16,
 		borderTopRightRadius: 16,
 		maxHeight: "90%",
@@ -298,12 +315,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		padding: 16,
 		borderBottomWidth: 1,
-		borderBottomColor: "#eee",
 	},
 	title: {
 		fontSize: 18,
 		fontWeight: "600",
-		color: "#333",
 	},
 	closeButton: {
 		padding: 4,
@@ -318,18 +333,15 @@ const styles = StyleSheet.create({
 	label: {
 		fontSize: 14,
 		fontWeight: "500",
-		color: "#555",
 		marginBottom: 6,
 		marginTop: 12,
 	},
 	input: {
 		borderWidth: 1,
-		borderColor: "#ddd",
 		borderRadius: 8,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 		fontSize: 16,
-		backgroundColor: "#fff",
 	},
 	notesInput: {
 		minHeight: 60,
@@ -351,17 +363,9 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 8,
 		borderRadius: 20,
-		backgroundColor: "#f0f0f0",
-	},
-	chipActive: {
-		backgroundColor: "#3498db",
 	},
 	chipText: {
 		fontSize: 14,
-		color: "#333",
-	},
-	chipTextActive: {
-		color: "#fff",
 	},
 	starRow: {
 		flexDirection: "row",
@@ -374,17 +378,14 @@ const styles = StyleSheet.create({
 		gap: 12,
 		padding: 16,
 		borderTopWidth: 1,
-		borderTopColor: "#eee",
 	},
 	resetButton: {
 		paddingVertical: 12,
 		paddingHorizontal: 20,
 		borderRadius: 8,
-		backgroundColor: "#f0f0f0",
 	},
 	resetButtonText: {
 		fontSize: 16,
-		color: "#333",
 	},
 	searchButton: {
 		flex: 1,
@@ -394,11 +395,9 @@ const styles = StyleSheet.create({
 		gap: 8,
 		paddingVertical: 12,
 		borderRadius: 8,
-		backgroundColor: "#3498db",
 	},
 	searchButtonText: {
 		fontSize: 16,
 		fontWeight: "600",
-		color: "#fff",
 	},
 });

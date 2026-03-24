@@ -7,6 +7,7 @@ import { loanService } from '@/services/loanService';
 import { borrowedBookService } from '@/services/borrowedBookService';
 import { CurrentLoan } from '@/types/book';
 import { BorrowedBook } from '@/types/borrowedBook';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BookActionsProps {
   bookId: string;
@@ -19,10 +20,11 @@ interface BookActionsProps {
 
 export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasBorrowHistory, onBookDeleted }: BookActionsProps) {
   const router = useRouter();
+  const theme = useTheme();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoanActionLoading, setIsLoanActionLoading] = useState(false);
   const [isBorrowActionLoading, setIsBorrowActionLoading] = useState(false);
-  
+
   // Détection de la taille de l'écran pour adapter le layout
   const { width } = Dimensions.get('window');
   const isSmallScreen = width < 450; // Seuil ajusté
@@ -210,7 +212,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
 
   const handleDelete = () => {
     console.log('🗑️ Bouton Supprimer cliqué');
-    
+
     if (Platform.OS === 'web') {
       // Sur web, utiliser window.confirm
       const confirmed = window.confirm(
@@ -241,10 +243,10 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
 
   const confirmDelete = async () => {
     setIsDeleting(true);
-    
+
     try {
       await bookService.deleteBook(bookId);
-      
+
       if (Platform.OS === 'web') {
         window.alert('Le livre a été supprimé avec succès.');
         // Appeler le callback si fourni
@@ -289,9 +291,9 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
       <TouchableOpacity
         style={[
           styles.button,
-          currentLoan ? styles.returnButton : styles.loanButton,
+          currentLoan ? { backgroundColor: theme.warning } : { backgroundColor: theme.success },
           isSmallScreen && styles.buttonSmall,
-          hasBorrowHistory && !currentLoan && styles.buttonDisabled
+          hasBorrowHistory && !currentLoan && { opacity: 0.5, backgroundColor: theme.textMuted }
         ]}
         onPress={handleLoanAction}
         disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading || (hasBorrowHistory && !currentLoan)}
@@ -300,9 +302,9 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
         <MaterialIcons
           name={currentLoan ? "assignment-return" : "assignment"}
           size={16}
-          color="#ffffff"
+          color={theme.textInverse}
         />
-        <Text style={[styles.buttonText, isSmallScreen && styles.buttonTextSmall]}>
+        <Text style={[styles.buttonText, { color: theme.textInverse }, isSmallScreen && styles.buttonTextSmall]}>
           {isLoanActionLoading
             ? (currentLoan ? 'Retour...' : 'Prêt...')
             : (currentLoan ? 'Retourner' : 'Prêter')
@@ -314,7 +316,7 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
       <TouchableOpacity
         style={[
           styles.button,
-          borrowedBook?.status === 'active' ? styles.returnButton : styles.borrowButton,
+          borrowedBook?.status === 'active' ? { backgroundColor: theme.warning } : { backgroundColor: theme.accentMedium },
           isSmallScreen && styles.buttonSmall
         ]}
         onPress={handleBorrowAction}
@@ -324,9 +326,9 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
         <MaterialIcons
           name={borrowedBook?.status === 'active' ? "assignment-return" : "book"}
           size={16}
-          color="#ffffff"
+          color={theme.textInverse}
         />
-        <Text style={[styles.buttonText, isSmallScreen && styles.buttonTextSmall]}>
+        <Text style={[styles.buttonText, { color: theme.textInverse }, isSmallScreen && styles.buttonTextSmall]}>
           {isBorrowActionLoading
             ? (borrowedBook?.status === 'active' ? 'Retour...' : 'Emprunt...')
             : (borrowedBook?.status === 'active' ? 'Retourner' : 'Emprunter')
@@ -337,15 +339,15 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
       <TouchableOpacity
         style={[
           styles.button,
-          styles.editButton,
+          { backgroundColor: theme.accent },
           isSmallScreen && styles.buttonSmall
         ]}
         onPress={handleEdit}
         disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading}
         activeOpacity={0.8}
       >
-        <MaterialIcons name="edit" size={16} color="#ffffff" />
-        <Text style={[styles.buttonText, isSmallScreen && styles.buttonTextSmall]}>
+        <MaterialIcons name="edit" size={16} color={theme.textInverse} />
+        <Text style={[styles.buttonText, { color: theme.textInverse }, isSmallScreen && styles.buttonTextSmall]}>
           Modifier
         </Text>
       </TouchableOpacity>
@@ -353,15 +355,15 @@ export function BookActions({ bookId, bookTitle, currentLoan, borrowedBook, hasB
       <TouchableOpacity
         style={[
           styles.button,
-          styles.deleteButton,
+          { backgroundColor: theme.danger },
           isSmallScreen && styles.buttonSmall
         ]}
         onPress={handleDelete}
         disabled={isDeleting || isLoanActionLoading || isBorrowActionLoading}
         activeOpacity={0.8}
       >
-        <MaterialIcons name="delete" size={16} color="#ffffff" />
-        <Text style={[styles.buttonText, isSmallScreen && styles.buttonTextSmall]}>
+        <MaterialIcons name="delete" size={16} color={theme.textInverse} />
+        <Text style={[styles.buttonText, { color: theme.textInverse }, isSmallScreen && styles.buttonTextSmall]}>
           {isDeleting ? 'Suppression...' : 'Supprimer'}
         </Text>
       </TouchableOpacity>
@@ -401,52 +403,7 @@ const styles = StyleSheet.create({
     minWidth: 70, // Réduire la largeur minimale
     flexShrink: 1,
   },
-  buttonDisabled: {
-    opacity: 0.5,
-    backgroundColor: '#BDBDBD',
-  },
-  editButton: {
-    backgroundColor: '#3498db',
-    shadowColor: '#2980b9',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  deleteButton: {
-    backgroundColor: '#e74c3c',
-    shadowColor: '#c0392b',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  loanButton: {
-    backgroundColor: '#27ae60',
-    shadowColor: '#229954',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  borrowButton: {
-    backgroundColor: '#9b59b6',
-    shadowColor: '#8e44ad',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  returnButton: {
-    backgroundColor: '#f39c12',
-    shadowColor: '#e67e22',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
   buttonText: {
-    color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',

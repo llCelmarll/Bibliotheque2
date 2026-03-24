@@ -10,6 +10,7 @@ import { CoverPicker } from './CoverPicker';
 import { Contact } from '@/types/contact';
 import { ContactSelector } from '@/components/forms/ContactSelector';
 import { StarRating } from '@/components/StarRating';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Feature flag pour activer les nouveaux sélecteurs d'entités
 const USE_ENTITY_SELECTORS = true;
@@ -184,6 +185,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 																		forceOwnership = false,
 																		isEditMode = false
 																	}) => {
+	const theme = useTheme();
 	const formInitialValues = suggestedBookToFormData(initialData);
 	const formikRef = useRef<FormikProps<BookFormData> | null>(null);
 	const [localImageUri, setLocalImageUri] = useState<string | null>(null);
@@ -222,9 +224,9 @@ export const BookForm: React.FC<BookFormProps> = ({
 		
 		return (
 			<View style={styles.fieldContainer}>
-				<Text style={styles.label}>{label}</Text>
+				<Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
 				<TextInput
-					style={[styles.input, hasError ? styles.inputError : null]}
+					style={[styles.input, { borderColor: theme.borderLight, backgroundColor: theme.bgCard, color: theme.textPrimary }, hasError ? { borderColor: theme.danger, backgroundColor: theme.dangerBg } : null]}
 					value={formik.values[fieldName]?.toString() || ''}
 					onChangeText={formik.handleChange(fieldName)}
 					onBlur={formik.handleBlur(fieldName)}
@@ -233,7 +235,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 					keyboardType={keyboardType}
 				/>
 				{hasError ? (
-					<Text style={styles.errorText}>
+					<Text style={[styles.errorText, { color: theme.danger }]}>
 						{formik.errors[fieldName] as string}
 					</Text>
 				) : null}
@@ -266,8 +268,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 	};
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.sectionTitle}>Informations du livre</Text>
+		<View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
+			<Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Informations du livre</Text>
 			
 			<Formik
 				initialValues={formInitialValues}
@@ -346,8 +348,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 						)}
 
 						{/* Section Lecture */}
-						<View style={styles.sectionContainer}>
-							<Text style={styles.sectionSubtitle}>Statut de lecture</Text>
+						<View style={[styles.sectionContainer, { borderTopColor: theme.borderLight }]}>
+							<Text style={[styles.sectionSubtitle, { color: theme.textPrimary }]}>Statut de lecture</Text>
 							<View style={styles.readStatusRow}>
 								{([
 									{ key: true, label: 'Lu' },
@@ -358,8 +360,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 										style={[
 											styles.readStatusButton,
 											formik.values.is_read === option.key && styles.readStatusButtonActive,
-											formik.values.is_read === option.key && option.key === true && styles.readStatusButtonRead,
-											formik.values.is_read === option.key && option.key === false && styles.readStatusButtonUnread,
+											formik.values.is_read === option.key && option.key === true && { backgroundColor: theme.successBg, borderColor: theme.success },
+											formik.values.is_read === option.key && option.key === false && { backgroundColor: theme.bgSecondary, borderColor: theme.borderMedium },
 										]}
 										onPress={() => {
 											formik.setFieldValue('is_read', option.key);
@@ -372,7 +374,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 									>
 										<Text style={[
 											styles.readStatusButtonText,
-											formik.values.is_read === option.key && styles.readStatusButtonTextActive,
+											{ color: theme.textSecondary },
+											formik.values.is_read === option.key && { color: theme.textPrimary, fontWeight: '600' as const },
 										]}>
 											{option.label}
 										</Text>
@@ -385,10 +388,10 @@ export const BookForm: React.FC<BookFormProps> = ({
 						</View>
 
 						{/* Section Notation et notes */}
-						<View style={styles.sectionContainer}>
-							<Text style={styles.sectionSubtitle}>Notation et notes</Text>
+						<View style={[styles.sectionContainer, { borderTopColor: theme.borderLight }]}>
+							<Text style={[styles.sectionSubtitle, { color: theme.textPrimary }]}>Notation et notes</Text>
 							<View style={styles.fieldContainer}>
-								<Text style={styles.label}>Note (0-5)</Text>
+								<Text style={[styles.label, { color: theme.textSecondary }]}>Note (0-5)</Text>
 								<StarRating
 									value={formik.values.rating ?? null}
 									editable={true}
@@ -396,11 +399,11 @@ export const BookForm: React.FC<BookFormProps> = ({
 								/>
 							</View>
 							<View style={styles.fieldContainer}>
-								<Text style={styles.label}>Notes personnelles</Text>
+								<Text style={[styles.label, { color: theme.textSecondary }]}>Notes personnelles</Text>
 								<TextInput
-									style={[styles.input, styles.notesInput]}
+									style={[styles.input, styles.notesInput, { borderColor: theme.borderLight, backgroundColor: theme.bgCard, color: theme.textPrimary }]}
 									placeholder="Vos notes sur ce livre..."
-									placeholderTextColor="#999"
+									placeholderTextColor={theme.textMuted}
 									multiline
 									numberOfLines={4}
 									value={formik.values.notes || ''}
@@ -412,15 +415,15 @@ export const BookForm: React.FC<BookFormProps> = ({
 
 						{/* Section Emprunt - cachée si forceOwnership ou en mode modification */}
 						{!forceOwnership && !isEditMode && (
-							<View style={styles.sectionContainer}>
-								<Text style={styles.sectionSubtitle}>📚 Emprunt (optionnel)</Text>
+							<View style={[styles.sectionContainer, { borderTopColor: theme.borderLight }]}>
+								<Text style={[styles.sectionSubtitle, { color: theme.textPrimary }]}>📚 Emprunt (optionnel)</Text>
 
 								{/* Toggle is_borrowed */}
 								<TouchableOpacity
-									style={styles.toggleContainer}
+									style={[styles.toggleContainer, { backgroundColor: theme.bgMuted }]}
 									onPress={() => formik.setFieldValue('is_borrowed', !formik.values.is_borrowed)}
 								>
-									<Text style={styles.toggleLabel}>
+									<Text style={[styles.toggleLabel, { color: theme.textPrimary }]}>
 										{formik.values.is_borrowed ? '☑️' : '☐'} Ce livre est emprunté
 									</Text>
 								</TouchableOpacity>
@@ -451,11 +454,11 @@ export const BookForm: React.FC<BookFormProps> = ({
 						)}
 
 						<TouchableOpacity
-							style={[styles.button, styles.submitButton]}
+							style={[styles.button, styles.submitButton, { backgroundColor: theme.accent, borderColor: theme.accent }]}
 							onPress={() => formik.handleSubmit()}
 							disabled={formik.isSubmitting || !formik.isValid}
 						>
-							<Text style={styles.submitButtonText}>
+							<Text style={[styles.submitButtonText, { color: theme.textInverse }]}>
 								{formik.isSubmitting ? submitButtonLoadingText : submitButtonText}
 							</Text>
 						</TouchableOpacity>
@@ -469,14 +472,12 @@ export const BookForm: React.FC<BookFormProps> = ({
 const styles = StyleSheet.create({
 	container: {
 		padding: 16,
-		backgroundColor: '#f8f9fa',
 		borderRadius: 12,
 		margin: 16,
 	},
 	sectionTitle: {
 		fontSize: 20,
 		fontWeight: '600',
-		color: '#2c3e50',
 		marginBottom: 16,
 		textAlign: 'center',
 	},
@@ -489,24 +490,18 @@ const styles = StyleSheet.create({
 	label: {
 		fontSize: 16,
 		fontWeight: '500',
-		color: '#34495e',
 		marginBottom: 8,
 	},
 	input: {
 		borderWidth: 1,
-		borderColor: '#bdc3c7',
 		borderRadius: 8,
 		padding: 12,
 		fontSize: 16,
-		backgroundColor: '#ffffff',
-		color: '#2c3e50',
 	},
 	inputError: {
-		borderColor: '#e74c3c',
-		backgroundColor: '#fdf2f2',
+		// borderColor and backgroundColor overridden inline via theme.danger
 	},
 	errorText: {
-		color: '#e74c3c',
 		fontSize: 14,
 		marginTop: 4,
 		fontStyle: 'italic',
@@ -521,12 +516,9 @@ const styles = StyleSheet.create({
 		marginBottom: 16,
 	},
 	submitButton: {
-		backgroundColor: '#3498db',
 		borderWidth: 1,
-		borderColor: '#2980b9',
 	},
 	submitButtonText: {
-		color: '#ffffff',
 		fontSize: 16,
 		fontWeight: '600',
 	},
@@ -534,24 +526,20 @@ const styles = StyleSheet.create({
 		marginTop: 24,
 		paddingTop: 16,
 		borderTopWidth: 1,
-		borderTopColor: '#e0e0e0',
 	},
 	sectionSubtitle: {
 		fontSize: 18,
 		fontWeight: '600',
-		color: '#2c3e50',
 		marginBottom: 12,
 	},
 	toggleContainer: {
 		paddingVertical: 12,
 		paddingHorizontal: 16,
-		backgroundColor: '#f0f0f0',
 		borderRadius: 8,
 		marginBottom: 16,
 	},
 	toggleLabel: {
 		fontSize: 16,
-		color: '#2c3e50',
 		fontWeight: '500',
 	},
 	readStatusRow: {
@@ -564,29 +552,13 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 8,
 		borderRadius: 16,
-		backgroundColor: '#f0f0f0',
 		borderWidth: 1,
-		borderColor: '#ddd',
 	},
 	readStatusButtonActive: {
-		backgroundColor: '#e9ecef',
-		borderColor: '#6c757d',
-	},
-	readStatusButtonRead: {
-		backgroundColor: '#d4edda',
-		borderColor: '#28a745',
-	},
-	readStatusButtonUnread: {
-		backgroundColor: '#e9ecef',
-		borderColor: '#6c757d',
+		// colors applied inline via theme tokens
 	},
 	readStatusButtonText: {
 		fontSize: 14,
-		color: '#666',
-	},
-	readStatusButtonTextActive: {
-		color: '#333',
-		fontWeight: '600',
 	},
 	notesInput: {
 		minHeight: 80,

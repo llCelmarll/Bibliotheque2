@@ -1,7 +1,8 @@
 import React from "react";
 import { Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {BookFilter,FilterType} from "@/types/filter";
+import { BookFilter } from "@/types/filter";
+import { useTheme } from "@/contexts/ThemeContext";
 
 
 type ClickableTagProps = {
@@ -10,37 +11,21 @@ type ClickableTagProps = {
 };
 
 export function ClickableTag(props: ClickableTagProps) {
-    // Déterminer l'icône en fonction du type
+    const theme = useTheme();
+
     let iconName: any = "pricetag-outline";
     if (props.filter.type === "author") iconName = "person-outline";
     else if (props.filter.type === "genre") iconName = "bookmark-outline";
     else if (props.filter.type === "publisher") iconName = "book-outline";
     else if (props.filter.type === "series") iconName = "layers-outline";
-    
-    // Déterminer la couleur en fonction du type
-    let tagColor = "#eef";
-    let textColor = "#0066cc";
-    if (props.filter.type === "author") {
-        tagColor = "#e6f7ff";
-        textColor = "#0077cc"; 
-    } else if (props.filter.type === "genre") {
-        tagColor = "#f0f8e6";
-        textColor = "#4caf50";
-    } else if (props.filter.type === "publisher") {
-        tagColor = "#fff3e0";
-        textColor = "#ff9800";
-    } else if (props.filter.type === "series") {
-        tagColor = "#f3e5f5";
-        textColor = "#7b1fa2";
-    }
-    
+
     return (
-        <TouchableOpacity 
-            style={[styles.tag, { backgroundColor: tagColor }]} 
+        <TouchableOpacity
+            style={[styles.tag, { backgroundColor: theme.accentLight }]}
             onPress={() => props.onPress(props.filter)}
             testID="clickable-tag">
-            <Ionicons name={iconName} size={14} color={textColor} />
-            <Text style={[styles.text, { color: textColor }]}>{props.filter.name}</Text>
+            <Ionicons name={iconName} size={13} color={theme.accent} />
+            <Text style={[styles.text, { color: theme.accent }]}>{props.filter.name}</Text>
         </TouchableOpacity>
     );
 }
@@ -50,14 +35,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingVertical: 3,
+        borderRadius: 20,
         marginRight: 4,
         marginBottom: 4,
-        elevation: 1,
     },
     text: {
-        fontSize: 14,
+        fontSize: 13,
         marginLeft: 4,
+        fontWeight: '500',
     },
 });

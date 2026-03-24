@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Calendar from 'expo-calendar';
 import { useCalendarReminder } from '@/hooks/useCalendarReminder';
 import { calendarPreferencesService } from '@/services/calendarPreferences';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * Props du composant CalendarReminderManager
@@ -45,6 +46,7 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
   onReminderDeleted,
   type,
 }) => {
+  const theme = useTheme();
   const {
     hasPermission,
     isLoading,
@@ -335,50 +337,50 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Rappel calendrier</Text>
+    <View style={[styles.container, { backgroundColor: theme.bgCard }]}>
+      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Rappel calendrier</Text>
 
       {existingEventId && reminderInfo ? (
-        <View style={styles.reminderInfo}>
+        <View style={[styles.reminderInfo, { backgroundColor: theme.bgSecondary }]}>
           <View style={styles.reminderHeader}>
-            <MaterialIcons name="event" size={20} color="#4CAF50" />
-            <Text style={styles.reminderActiveText}>Rappel configuré</Text>
+            <MaterialIcons name="event" size={20} color={theme.success} />
+            <Text style={[styles.reminderActiveText, { color: theme.success }]}>Rappel configuré</Text>
           </View>
-          <Text style={styles.reminderDetails}>
+          <Text style={[styles.reminderDetails, { color: theme.textSecondary }]}>
             Calendrier: {reminderInfo.calendarName}
           </Text>
-          <Text style={styles.reminderDetails}>
+          <Text style={[styles.reminderDetails, { color: theme.textSecondary }]}>
             Date de retour: {reminderInfo.date}
           </Text>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
+              style={[styles.button, { backgroundColor: theme.accentLight }]}
               onPress={() => setModalVisible(true)}
             >
-              <MaterialIcons name="edit" size={18} color="#2196F3" />
-              <Text style={styles.secondaryButtonText}>Modifier</Text>
+              <MaterialIcons name="edit" size={18} color={theme.accent} />
+              <Text style={[styles.secondaryButtonText, { color: theme.accent }]}>Modifier</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, styles.dangerButton]}
+              style={[styles.button, { backgroundColor: theme.dangerBg }]}
               onPress={handleDeleteReminder}
             >
-              <MaterialIcons name="delete" size={18} color="#F44336" />
-              <Text style={styles.dangerButtonText}>Supprimer</Text>
+              <MaterialIcons name="delete" size={18} color={theme.danger} />
+              <Text style={[styles.dangerButtonText, { color: theme.danger }]}>Supprimer</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : (
         <View style={styles.noReminder}>
-          <Text style={styles.noReminderText}>Aucun rappel configuré</Text>
+          <Text style={[styles.noReminderText, { color: theme.textSecondary }]}>Aucun rappel configuré</Text>
           <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
+            style={[styles.button, { backgroundColor: theme.accent }]}
             onPress={handleAddReminder}
             disabled={isLoading}
           >
-            <MaterialIcons name="add-alert" size={20} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>Ajouter un rappel</Text>
+            <MaterialIcons name="add-alert" size={20} color={theme.textInverse} />
+            <Text style={[styles.primaryButtonText, { color: theme.textInverse }]}>Ajouter un rappel</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -390,34 +392,35 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+        <View style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
+              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
                 {existingEventId ? 'Modifier le rappel' : 'Nouveau rappel'}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <MaterialIcons name="close" size={24} color="#757575" />
+                <MaterialIcons name="close" size={24} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
               {/* Sélection du calendrier */}
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Calendrier</Text>
+                <Text style={[styles.formLabel, { color: theme.textSecondary }]}>Calendrier</Text>
                 {userCalendars.map((cal) => (
                   <TouchableOpacity
                     key={cal.id}
                     style={[
                       styles.calendarOption,
-                      selectedCalendarId === cal.id && styles.calendarOptionSelected,
+                      { backgroundColor: theme.bgSecondary },
+                      selectedCalendarId === cal.id && { backgroundColor: theme.accentLight, borderWidth: 1, borderColor: theme.accent },
                     ]}
                     onPress={() => setSelectedCalendarId(cal.id)}
                   >
-                    <View style={[styles.calendarColor, { backgroundColor: cal.color || '#2196F3' }]} />
-                    <Text style={styles.calendarName}>{cal.title}</Text>
+                    <View style={[styles.calendarColor, { backgroundColor: cal.color || theme.accent }]} />
+                    <Text style={[styles.calendarName, { color: theme.textPrimary }]}>{cal.title}</Text>
                     {selectedCalendarId === cal.id && (
-                      <MaterialIcons name="check" size={20} color="#2196F3" />
+                      <MaterialIcons name="check" size={20} color={theme.accent} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -425,11 +428,11 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
 
               {/* Sélection du timing */}
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Rappeler</Text>
+                <Text style={[styles.formLabel, { color: theme.textSecondary }]}>Rappeler</Text>
                 {validOffsetOptions.length === 0 ? (
-                  <View style={styles.warningContainer}>
-                    <MaterialIcons name="warning" size={20} color="#FF9800" />
-                    <Text style={styles.warningText}>
+                  <View style={[styles.warningContainer, { backgroundColor: theme.warningBg }]}>
+                    <MaterialIcons name="warning" size={20} color={theme.warning} />
+                    <Text style={[styles.warningText, { color: theme.warning }]}>
                       La date de retour est passée, impossible de configurer un rappel.
                     </Text>
                   </View>
@@ -446,22 +449,23 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
                         key={days}
                         style={[
                           styles.timingOption,
-                          reminderOffsetDays === days && styles.timingOptionSelected,
+                          { backgroundColor: isValid ? theme.bgSecondary : theme.bgMuted },
+                          reminderOffsetDays === days && isValid && { backgroundColor: theme.accentLight, borderWidth: 1, borderColor: theme.accent },
                           !isValid && styles.timingOptionDisabled,
                         ]}
                         onPress={() => isValid && setReminderOffsetDays(days)}
                         disabled={!isValid}
                       >
                         <View style={styles.timingTextContainer}>
-                          <Text style={[styles.timingText, !isValid && styles.timingTextDisabled]}>
+                          <Text style={[styles.timingText, { color: isValid ? theme.textPrimary : theme.textMuted }]}>
                             {getLabel(days)}
                           </Text>
                           {!isValid && (
-                            <Text style={styles.timingDisabledHint}>(passé)</Text>
+                            <Text style={[styles.timingDisabledHint, { color: theme.textMuted }]}>(passé)</Text>
                           )}
                         </View>
                         {reminderOffsetDays === days && isValid && (
-                          <MaterialIcons name="check-circle" size={20} color="#2196F3" />
+                          <MaterialIcons name="check-circle" size={20} color={theme.accent} />
                         )}
                       </TouchableOpacity>
                     );
@@ -470,33 +474,33 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
               </View>
 
               {/* Aperçu */}
-              <View style={styles.previewSection}>
-                <MaterialIcons name="info-outline" size={20} color="#757575" />
-                <Text style={styles.previewText}>
+              <View style={[styles.previewSection, { backgroundColor: theme.warningBg }]}>
+                <MaterialIcons name="info-outline" size={20} color={theme.warning} />
+                <Text style={[styles.previewText, { color: theme.warning }]}>
                   Le rappel sera créé le {getReminderPreview()}
                 </Text>
               </View>
             </ScrollView>
 
             {/* Boutons d'action */}
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { borderTopColor: theme.borderLight }]}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, { backgroundColor: theme.bgSecondary }]}
                 onPress={() => setModalVisible(false)}
                 disabled={isCreating}
               >
-                <Text style={styles.cancelButtonText}>Annuler</Text>
+                <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Annuler</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton, (isCreating || validOffsetOptions.length === 0) && styles.buttonDisabled]}
+                style={[styles.modalButton, { backgroundColor: theme.accent }, (isCreating || validOffsetOptions.length === 0) && styles.buttonDisabled]}
                 onPress={existingEventId ? handleModifyReminder : handleCreateReminder}
                 disabled={isCreating || !selectedCalendarId || validOffsetOptions.length === 0}
               >
                 {isCreating ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <ActivityIndicator color={theme.textInverse} size="small" />
                 ) : (
-                  <Text style={styles.confirmButtonText}>
+                  <Text style={[styles.confirmButtonText, { color: theme.textInverse }]}>
                     {existingEventId ? 'Modifier' : 'Créer'}
                   </Text>
                 )}
@@ -511,7 +515,6 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     padding: 16,
     marginVertical: 8,
     borderRadius: 8,
@@ -519,11 +522,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212121',
     marginBottom: 12,
   },
   reminderInfo: {
-    backgroundColor: '#F5F5F5',
     padding: 12,
     borderRadius: 8,
   },
@@ -535,12 +536,10 @@ const styles = StyleSheet.create({
   reminderActiveText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4CAF50',
     marginLeft: 8,
   },
   reminderDetails: {
     fontSize: 13,
-    color: '#757575',
     marginBottom: 4,
   },
   buttonRow: {
@@ -554,7 +553,6 @@ const styles = StyleSheet.create({
   },
   noReminderText: {
     fontSize: 14,
-    color: '#757575',
     marginBottom: 12,
   },
   button: {
@@ -567,37 +565,23 @@ const styles = StyleSheet.create({
     gap: 6,
     flex: 1,
   },
-  primaryButton: {
-    backgroundColor: '#2196F3',
-  },
   primaryButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: '#E3F2FD',
   },
   secondaryButtonText: {
-    color: '#2196F3',
     fontSize: 14,
     fontWeight: '600',
   },
-  dangerButton: {
-    backgroundColor: '#FFEBEE',
-  },
   dangerButtonText: {
-    color: '#F44336',
     fontSize: 14,
     fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -608,12 +592,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
   },
   modalBody: {
     padding: 16,
@@ -624,7 +606,6 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#424242',
     marginBottom: 12,
   },
   calendarOption: {
@@ -632,13 +613,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
     marginBottom: 8,
-  },
-  calendarOptionSelected: {
-    backgroundColor: '#E3F2FD',
-    borderWidth: 1,
-    borderColor: '#2196F3',
   },
   calendarColor: {
     width: 20,
@@ -649,7 +624,6 @@ const styles = StyleSheet.create({
   calendarName: {
     flex: 1,
     fontSize: 14,
-    color: '#212121',
   },
   timingOption: {
     flexDirection: 'row',
@@ -657,13 +631,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
     marginBottom: 8,
   },
-  timingOptionSelected: {
-    backgroundColor: '#E3F2FD',
-    borderWidth: 1,
-    borderColor: '#2196F3',
+  timingOptionDisabled: {
+    opacity: 0.7,
   },
   timingTextContainer: {
     flexDirection: 'row',
@@ -672,38 +643,26 @@ const styles = StyleSheet.create({
   },
   timingText: {
     fontSize: 14,
-    color: '#212121',
-  },
-  timingTextDisabled: {
-    color: '#9E9E9E',
-  },
-  timingOptionDisabled: {
-    backgroundColor: '#EEEEEE',
-    opacity: 0.7,
   },
   timingDisabledHint: {
     fontSize: 12,
-    color: '#9E9E9E',
     fontStyle: 'italic',
   },
   warningContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: 12,
-    backgroundColor: '#FFF3E0',
     borderRadius: 8,
     gap: 8,
   },
   warningText: {
     flex: 1,
     fontSize: 13,
-    color: '#E65100',
   },
   previewSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: 12,
-    backgroundColor: '#FFF8E1',
     borderRadius: 8,
     marginTop: 8,
     gap: 8,
@@ -711,13 +670,11 @@ const styles = StyleSheet.create({
   previewText: {
     flex: 1,
     fontSize: 13,
-    color: '#F57C00',
   },
   modalFooter: {
     flexDirection: 'row',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
     gap: 12,
   },
   modalButton: {
@@ -727,19 +684,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#F5F5F5',
-  },
   cancelButtonText: {
-    color: '#757575',
     fontSize: 16,
     fontWeight: '600',
   },
-  confirmButton: {
-    backgroundColor: '#2196F3',
-  },
   confirmButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

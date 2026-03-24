@@ -10,6 +10,7 @@ import { StarRating } from "@/components/StarRating";
 import { createFilter } from "@/services/filtersService";
 import { BookFilter } from "@/types/filter";
 import { bookService } from "@/services/bookService";
+import { useTheme } from '@/contexts/ThemeContext';
 
 type ReadStatus = 'unset' | 'read' | 'unread';
 
@@ -29,6 +30,7 @@ function readStatusToIsRead(status: ReadStatus): boolean | null {
 export function BaseInfoTab() {
   const route = useRoute();
   const { book, onBookUpdated, readOnly } = route.params as { book: BookDetail; onBookUpdated?: () => void; readOnly?: boolean };
+  const theme = useTheme();
 
   const [readStatus, setReadStatus] = useState<ReadStatus>(getReadStatus(book.base.is_read));
   const [readDate, setReadDate] = useState<string | null>(book.base.read_date || null);
@@ -115,7 +117,7 @@ export function BaseInfoTab() {
 
   const renderAuthors = () => {
     if (!book.base.authors || book.base.authors.length === 0) {
-      return <Text style={styles.value}>Non renseigné</Text>;
+      return <Text style={[styles.value, { color: theme.textPrimary }]}>Non renseigné</Text>;
     }
     return book.base.authors.map(author => (
       <ClickableTag
@@ -128,7 +130,7 @@ export function BaseInfoTab() {
 
   const renderGenres = () => {
     if (!book.base.genres || book.base.genres.length === 0) {
-      return <Text style={styles.value}>Non renseigné</Text>;
+      return <Text style={[styles.value, { color: theme.textPrimary }]}>Non renseigné</Text>;
     }
     return book.base.genres.map(genre => (
       <ClickableTag
@@ -168,9 +170,9 @@ export function BaseInfoTab() {
   return (
     <ScrollView style={styles.container}>
       <CollapsibleSection title="Informations générales">
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, { borderBottomColor: theme.borderLight }]}>
           <View style={styles.labelContainer}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>
               {getAuthorLabel(book.base.authors?.length)}
             </Text>
           </View>
@@ -182,9 +184,9 @@ export function BaseInfoTab() {
         <InfoRow label="ISBN" value={book.base.isbn || "Non renseigné"} />
         <InfoRow label="Code-barres" value={book.base.barcode || 'Non renseigné'} />
 
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, { borderBottomColor: theme.borderLight }]}>
           <View style={styles.labelContainer}>
-            <Text style={styles.label}>Éditeur</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Éditeur</Text>
           </View>
           <View style={styles.valueContainer}>
             {book.base.publisher ? (
@@ -193,7 +195,7 @@ export function BaseInfoTab() {
                 onPress={handleFilterSelect}
               />
             ) : (
-              <Text style={styles.value}>Non renseigné</Text>
+              <Text style={[styles.value, { color: theme.textPrimary }]}>Non renseigné</Text>
             )}
           </View>
         </View>
@@ -203,9 +205,9 @@ export function BaseInfoTab() {
           value={book.base.published_date || "Non renseigné"}
         />
 
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, { borderBottomColor: theme.borderLight }]}>
           <View style={styles.labelContainer}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>
               {getGenreLabel(book.base.genres?.length)}
             </Text>
           </View>
@@ -215,9 +217,9 @@ export function BaseInfoTab() {
         </View>
 
         {book.base.series && book.base.series.length > 0 && (
-          <View style={styles.infoRow}>
+          <View style={[styles.infoRow, { borderBottomColor: theme.borderLight }]}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
                 {getSeriesLabel(book.base.series?.length)}
               </Text>
             </View>
@@ -235,14 +237,14 @@ export function BaseInfoTab() {
 
       {!readOnly && (
         <CollapsibleSection title="Lecture">
-          <View style={styles.infoRow}>
+          <View style={[styles.infoRow, { borderBottomColor: theme.borderLight }]}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Statut</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Statut</Text>
             </View>
             <View style={styles.segmentedContainer}>
               {readStatus === 'unset' && (
-                <View style={[styles.segmentedButton, styles.segmentedButtonActive]}>
-                  <Text style={[styles.segmentedButtonText, styles.segmentedButtonTextActive]}>
+                <View style={[styles.segmentedButton, styles.segmentedButtonActive, { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium }]}>
+                  <Text style={[styles.segmentedButtonText, styles.segmentedButtonTextActive, { color: theme.textPrimary }]}>
                     Non renseigné
                   </Text>
                 </View>
@@ -252,15 +254,18 @@ export function BaseInfoTab() {
                   key={option.key}
                   style={[
                     styles.segmentedButton,
+                    { backgroundColor: theme.bgMuted, borderColor: theme.borderLight },
                     readStatus === option.key && styles.segmentedButtonActive,
-                    readStatus === option.key && option.key === 'read' && styles.segmentedButtonRead,
-                    readStatus === option.key && option.key === 'unread' && styles.segmentedButtonUnread,
+                    readStatus === option.key && { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium },
+                    readStatus === option.key && option.key === 'read' && { backgroundColor: theme.successBg, borderColor: theme.success },
+                    readStatus === option.key && option.key === 'unread' && { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium },
                   ]}
                   onPress={() => handleReadStatusChange(option.key)}
                 >
                   <Text style={[
                     styles.segmentedButtonText,
-                    readStatus === option.key && styles.segmentedButtonTextActive,
+                    { color: theme.textSecondary },
+                    readStatus === option.key && { color: theme.textPrimary, fontWeight: '600' },
                   ]}>
                     {option.label}
                   </Text>
@@ -276,9 +281,9 @@ export function BaseInfoTab() {
 
       {!readOnly && (
         <CollapsibleSection title="Notation">
-          <View style={styles.infoRow}>
+          <View style={[styles.infoRow, { borderBottomColor: theme.borderLight }]}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Note</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Note</Text>
             </View>
             <View style={styles.valueContainer}>
               <StarRating
@@ -293,16 +298,16 @@ export function BaseInfoTab() {
 
       {!readOnly && (
         <CollapsibleSection title="Prêt">
-          <View style={styles.infoRow}>
+          <View style={[styles.infoRow, { borderBottomColor: theme.borderLight }]}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Visible dans{'\n'}la bibliothèque partagée</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Visible dans{'\n'}la bibliothèque partagée</Text>
             </View>
             <View style={[styles.valueContainer, { alignItems: 'center' }]}>
               <Switch
                 value={isLendable}
                 onValueChange={handleIsLendableChange}
-                trackColor={{ false: '#E0E0E0', true: '#90CAF9' }}
-                thumbColor={isLendable ? '#2196F3' : '#9E9E9E'}
+                trackColor={{ false: theme.borderLight, true: theme.accentLight }}
+                thumbColor={isLendable ? theme.accent : theme.textMuted}
               />
             </View>
           </View>
@@ -313,9 +318,9 @@ export function BaseInfoTab() {
         <CollapsibleSection title="Notes personnelles">
           <View style={styles.notesRow}>
             <TextInput
-              style={styles.notesInput}
+              style={[styles.notesInput, { color: theme.textPrimary, borderColor: theme.borderLight }]}
               placeholder="Ajoutez vos notes personnelles..."
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.textMuted}
               multiline
               numberOfLines={4}
               value={notes}
@@ -350,7 +355,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   labelContainer: {
     flex: 1,
@@ -363,11 +367,9 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#666',
   },
   value: {
     fontSize: 14,
-    color: '#000',
   },
   tag: {
     marginBottom: 4,
@@ -382,28 +384,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f0f0f0',
     borderWidth: 1,
-    borderColor: '#ddd',
   },
-  segmentedButtonActive: {
-    backgroundColor: '#e9ecef',
-    borderColor: '#6c757d',
-  },
-  segmentedButtonRead: {
-    backgroundColor: '#d4edda',
-    borderColor: '#28a745',
-  },
-  segmentedButtonUnread: {
-    backgroundColor: '#e9ecef',
-    borderColor: '#6c757d',
-  },
+  segmentedButtonActive: {},
   segmentedButtonText: {
     fontSize: 13,
-    color: '#666',
   },
   segmentedButtonTextActive: {
-    color: '#333',
     fontWeight: '600',
   },
   notesRow: {
@@ -412,11 +399,9 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     fontSize: 14,
-    color: '#000',
     minHeight: 80,
     padding: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     textAlignVertical: 'top',
     width: '100%',

@@ -6,12 +6,14 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import {BookDetailTabs} from "@/components/BookDetail/BookDetailTabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export  default function BookDetailScreen() {
 	const {id, refresh} = useLocalSearchParams(); // récupération de l'id d'un livre depuis l'URL
 	const { book, loading, error, refetch } = useBookDetail(id as string);
 	const { isAuthenticated, isLoading: authLoading } = useAuth();
 	const router = useRouter();
+	const theme = useTheme();
 
 	// Rafraîchir les données quand le paramètre refresh change
 	useEffect(() => {
@@ -22,6 +24,15 @@ export  default function BookDetailScreen() {
 			router.replace(`/books/${id}`);
 		}
 	}, [refresh, refetch, router, id]);
+
+	useEffect(() => {
+		if (!book) return;
+		console.log("[BookDetail] Data used by UI", {
+			bookId: id,
+			google_books: book.google_books,
+			open_library: book.open_library,
+		});
+	}, [book, id]);
 
 	// Si pas authentifié, ne rien afficher (redirection en cours)
 	if (!authLoading && !isAuthenticated) {
@@ -44,7 +55,7 @@ export  default function BookDetailScreen() {
 							<MaterialIcons
 								name="arrow-back"
 								size={24}
-								color="#222"
+								color={theme.textPrimary}
 								style={{marginLeft: 16}}
 								onPress={() => router.replace('/(tabs)/books')}
 							/>
@@ -53,7 +64,7 @@ export  default function BookDetailScreen() {
 				}}
 			/>
 
-			<View style={styles.container}>
+			<View style={[styles.container, { backgroundColor: theme.bgCard }]}>
 				{loading ? (
 					<ActivityIndicator size="large" style={styles.loader} />
 				) : error ? (
@@ -78,7 +89,6 @@ export  default function BookDetailScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#fff',
 	},
 	loader: {
 		flex: 1,

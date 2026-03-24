@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'rea
 import { MaterialIcons } from '@expo/vector-icons';
 import { entityService } from '@/services/entityService';
 import { Author, Publisher, Genre } from '@/types/entityTypes';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ExternalDataSectionProps {
 	googleData?: any;
@@ -20,6 +21,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 																			openLibraryError,
 																			onImportData
 																		}) => {
+	const theme = useTheme();
 	const [activeTab, setActiveTab] = useState<'google' | 'openLibrary'>('google');
 	const [selectedData, setSelectedData] = useState<{[key: string]: boolean}>({
 		title: false,
@@ -309,14 +311,15 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 
 	// Composant pour afficher une entité avec son statut
 	const renderEntityChip = (entity: Author | Publisher | Genre, type: 'author' | 'publisher' | 'genre') => {
-		const chipStyle = entity.exists ? styles.entityChipExisting : styles.entityChipNew;
 		const iconName = entity.exists ? 'check-circle' : 'add-circle';
-		const iconColor = entity.exists ? '#27ae60' : '#f39c12';
-		
+		const iconColor = entity.exists ? theme.success : theme.warning;
+		const chipBg = entity.exists ? theme.successBg : theme.warningBg;
+		const chipBorder = entity.exists ? theme.success : theme.warning;
+
 		return (
-			<View key={`${type}-${entity.id || entity.name}`} style={[styles.entityChip, chipStyle]}>
+			<View key={`${type}-${entity.id || entity.name}`} style={[styles.entityChip, { backgroundColor: chipBg, borderColor: chipBorder }]}>
 				<MaterialIcons name={iconName} size={14} color={iconColor} />
-				<Text style={styles.entityChipText}>{entity.name}</Text>
+				<Text style={[styles.entityChipText, { color: theme.textPrimary }]}>{entity.name}</Text>
 			</View>
 		);
 	};
@@ -329,18 +332,18 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			return (
 				<TouchableOpacity 
 					key={key}
-					style={[styles.dataItem, isSelected && styles.dataItemSelected]}
+					style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
 					onPress={() => toggleSelection(key)}
 				>
 					<View style={styles.dataItemHeader}>
-						<Text style={styles.dataLabel}>{label}</Text>
+						<Text style={[styles.dataLabel, { color: theme.textMuted }]}>{label}</Text>
 						{isEnriching ? (
-							<MaterialIcons name="hourglass-empty" size={20} color="#f39c12" />
+							<MaterialIcons name="hourglass-empty" size={20} color={theme.warning} />
 						) : (
 							<MaterialIcons
 								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
 								size={20}
-								color={isSelected ? '#27ae60' : '#bdc3c7'}
+								color={isSelected ? theme.success : theme.borderMedium}
 							/>
 						)}
 					</View>
@@ -355,18 +358,18 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			return (
 				<TouchableOpacity 
 					key={key}
-					style={[styles.dataItem, isSelected && styles.dataItemSelected]}
+					style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
 					onPress={() => toggleSelection(key)}
 				>
 					<View style={styles.dataItemHeader}>
-						<Text style={styles.dataLabel}>{label}</Text>
+						<Text style={[styles.dataLabel, { color: theme.textMuted }]}>{label}</Text>
 						{isEnriching ? (
-							<MaterialIcons name="hourglass-empty" size={20} color="#f39c12" />
+							<MaterialIcons name="hourglass-empty" size={20} color={theme.warning} />
 						) : (
 							<MaterialIcons
 								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
 								size={20}
-								color={isSelected ? '#27ae60' : '#bdc3c7'}
+								color={isSelected ? theme.success : theme.borderMedium}
 							/>
 						)}
 					</View>
@@ -381,18 +384,18 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			return (
 				<TouchableOpacity 
 					key={key}
-					style={[styles.dataItem, isSelected && styles.dataItemSelected]}
+					style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
 					onPress={() => toggleSelection(key)}
 				>
 					<View style={styles.dataItemHeader}>
-						<Text style={styles.dataLabel}>Genres</Text>
+						<Text style={[styles.dataLabel, { color: theme.textMuted }]}>Genres</Text>
 						{isEnriching ? (
-							<MaterialIcons name="hourglass-empty" size={20} color="#f39c12" />
+							<MaterialIcons name="hourglass-empty" size={20} color={theme.warning} />
 						) : (
 							<MaterialIcons
 								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
 								size={20}
-								color={isSelected ? '#27ae60' : '#bdc3c7'}
+								color={isSelected ? theme.success : theme.borderMedium}
 							/>
 						)}
 					</View>
@@ -409,18 +412,18 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		return (
 			<TouchableOpacity 
 				key={key}
-				style={[styles.dataItem, isSelected && styles.dataItemSelected]}
+				style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
 				onPress={() => toggleSelection(key)}
 			>
 				<View style={styles.dataItemHeader}>
-					<Text style={styles.dataLabel}>{label}</Text>
+					<Text style={[styles.dataLabel, { color: theme.textMuted }]}>{label}</Text>
 					<MaterialIcons
 						name={isSelected ? 'check-box' : 'check-box-outline-blank'}
 						size={20}
-						color={isSelected ? '#27ae60' : '#bdc3c7'}
+						color={isSelected ? theme.success : theme.borderMedium}
 					/>
 				</View>
-				<Text style={[styles.dataValue, key === 'isbn' && styles.isbnValue]}>
+				<Text style={[styles.dataValue, { color: theme.textPrimary }, key === 'isbn' && { backgroundColor: theme.bgSecondary }]}>
 					{displayValue}
 				</Text>
 			</TouchableOpacity>
@@ -431,9 +434,9 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		if (!bookInfo) return null;
 
 		return (
-			<View style={styles.exploitableSection}>
-				<Text style={styles.subsectionTitle}>📋 Sélectionnez les données à importer</Text>
-				<Text style={styles.subsectionSubtitle}>Cliquez sur les éléments pour les sélectionner/désélectionner</Text>
+			<View style={[styles.exploitableSection, { backgroundColor: theme.accentLight, borderColor: theme.accent }]}>
+				<Text style={[styles.subsectionTitle, { color: theme.textPrimary }]}>📋 Sélectionnez les données à importer</Text>
+				<Text style={[styles.subsectionSubtitle, { color: theme.textMuted }]}>Cliquez sur les éléments pour les sélectionner/désélectionner</Text>
 				
 				<View style={styles.exploitableGrid}>
 					{renderCheckableDataItem('title', 'Titre', bookInfo.title, selectedData.title)}
@@ -448,7 +451,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 				{/* Boutons de sélection rapide */}
 				<View style={styles.selectionButtons}>
 					<TouchableOpacity
-						style={styles.selectAllButton}
+						style={[styles.selectAllButton, { backgroundColor: theme.success }]}
 						onPress={() => setSelectedData({
 							title: true,
 							authors: true,
@@ -460,11 +463,11 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 							thumbnail: true,
 						})}
 					>
-						<Text style={styles.selectAllButtonText}>✓ Tout sélectionner</Text>
+						<Text style={[styles.selectAllButtonText, { color: theme.textInverse }]}>✓ Tout sélectionner</Text>
 					</TouchableOpacity>
 					
 					<TouchableOpacity
-						style={styles.selectNoneButton}
+						style={[styles.selectNoneButton, { backgroundColor: theme.danger }]}
 						onPress={() => setSelectedData({
 							title: false,
 							authors: false,
@@ -476,7 +479,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 							thumbnail: false,
 						})}
 					>
-						<Text style={styles.selectNoneButtonText}>✗ Tout désélectionner</Text>
+						<Text style={[styles.selectNoneButtonText, { color: theme.textInverse }]}>✗ Tout désélectionner</Text>
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -501,14 +504,14 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		};
 
 		return (
-			<View style={styles.rawDataSection}>
-				<Text style={styles.subsectionTitle}>🔍 Toutes les informations détaillées</Text>
+			<View style={[styles.rawDataSection, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }]}>
+				<Text style={[styles.subsectionTitle, { color: theme.textPrimary }]}>🔍 Toutes les informations détaillées</Text>
 				
 				<ScrollView style={styles.rawDataScroll} nestedScrollEnabled>
 					{Object.entries(data).map(([key, value]) => (
-						<View key={key} style={styles.rawDataItem}>
-							<Text style={styles.rawDataKey}>{key}</Text>
-							<Text style={styles.rawDataValue} numberOfLines={3}>
+						<View key={key} style={[styles.rawDataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.borderMedium }]}>
+							<Text style={[styles.rawDataKey, { color: theme.textSecondary }]}>{key}</Text>
+							<Text style={[styles.rawDataValue, { color: theme.textSecondary }]} numberOfLines={3}>
 								{renderValue(value)}
 							</Text>
 						</View>
@@ -526,7 +529,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			if (hasError) return null;
 			return (
 				<View style={styles.noDataContainer}>
-					<Text style={styles.noDataText}>
+					<Text style={[styles.noDataText, { color: theme.textMuted }]}>
 						Livre non trouvé sur {sourceName}
 					</Text>
 				</View>
@@ -543,7 +546,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 					<View style={styles.thumbnailContainer}>
 						<Image 
 							source={{ uri: bookInfo.exploitable.thumbnail }} 
-							style={styles.thumbnail}
+							style={[styles.thumbnail, { borderColor: theme.borderLight }]}
 							resizeMode="cover"
 						/>
 					</View>
@@ -554,11 +557,11 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 
 				{/* Bouton d'import */}
 				<TouchableOpacity
-					style={[styles.importButton, !hasSelectedData() && styles.importButtonDisabled]}
+					style={[styles.importButton, { backgroundColor: theme.success }, !hasSelectedData() && { backgroundColor: theme.borderMedium, opacity: 0.7 }]}
 					onPress={() => handleImport(bookInfo.exploitable, source)}
 					disabled={!hasSelectedData()}
 				>
-					<Text style={[styles.importButtonText, !hasSelectedData() && styles.importButtonTextDisabled]}>
+					<Text style={[styles.importButtonText, { color: theme.textInverse }, !hasSelectedData() && { opacity: 0.8 }]}>
 						✅ Importer les données sélectionnées ({getSelectedCount()})
 					</Text>
 				</TouchableOpacity>
@@ -577,7 +580,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			<View style={styles.container}>
 				<Text style={styles.sectionTitle}>Données externes</Text>
 				<View style={styles.noDataContainer}>
-					<Text style={styles.noDataText}>
+					<Text style={[styles.noDataText, { color: theme.textMuted }]}>
 						Aucune donnée externe disponible
 					</Text>
 				</View>
@@ -586,28 +589,28 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 	}
 
 	const renderErrorBanner = (error: string) => (
-		<View style={styles.errorBanner}>
-			<MaterialIcons name="warning" size={20} color="#856404" />
-			<Text style={styles.errorBannerText}>{error}</Text>
+		<View style={[styles.errorBanner, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+			<MaterialIcons name="warning" size={20} color={theme.warning} />
+			<Text style={[styles.errorBannerText, { color: theme.warning }]}>{error}</Text>
 		</View>
 	);
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.sectionTitle}>Données externes</Text>
+		<View style={[styles.container, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}>
+			<Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Données externes</Text>
 
 			{/* Bandeaux d'erreur en haut, toujours visibles */}
 			{googleError && renderErrorBanner(googleError)}
 			{openLibraryError && renderErrorBanner(openLibraryError)}
 
 			{/* Tabs */}
-			<View style={styles.tabContainer}>
+			<View style={[styles.tabContainer, { backgroundColor: theme.bgMuted }]}>
 				{hasGoogleTab && (
 					<TouchableOpacity
-						style={[styles.tab, activeTab === 'google' && styles.activeTab]}
+						style={[styles.tab, activeTab === 'google' && { backgroundColor: theme.accent }]}
 						onPress={() => setActiveTab('google')}
 					>
-						<Text style={[styles.tabText, activeTab === 'google' && styles.activeTabText]}>
+						<Text style={[styles.tabText, { color: theme.textMuted }, activeTab === 'google' && { color: theme.textInverse }]}>
 							Google Books
 						</Text>
 					</TouchableOpacity>
@@ -615,10 +618,10 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 
 				{hasOpenLibraryTab && (
 					<TouchableOpacity
-						style={[styles.tab, activeTab === 'openLibrary' && styles.activeTab]}
+						style={[styles.tab, activeTab === 'openLibrary' && { backgroundColor: theme.accent }]}
 						onPress={() => setActiveTab('openLibrary')}
 					>
-						<Text style={[styles.tabText, activeTab === 'openLibrary' && styles.activeTabText]}>
+						<Text style={[styles.tabText, { color: theme.textMuted }, activeTab === 'openLibrary' && { color: theme.textInverse }]}>
 							OpenLibrary
 						</Text>
 					</TouchableOpacity>
@@ -637,22 +640,18 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 const styles = StyleSheet.create({
 	container: {
 		padding: 16,
-		backgroundColor: '#ffffff',
 		borderRadius: 12,
 		margin: 16,
 		borderWidth: 1,
-		borderColor: '#e1e8ed',
 	},
 	sectionTitle: {
 		fontSize: 20,
 		fontWeight: '600',
-		color: '#2c3e50',
 		marginBottom: 16,
 		textAlign: 'center',
 	},
 	tabContainer: {
 		flexDirection: 'row',
-		backgroundColor: '#f8f9fa',
 		borderRadius: 8,
 		padding: 4,
 		marginBottom: 16,
@@ -664,23 +663,14 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 		alignItems: 'center',
 	},
-	activeTab: {
-		backgroundColor: '#3498db',
-	},
 	tabText: {
 		fontSize: 14,
 		fontWeight: '500',
-		color: '#7f8c8d',
-	},
-	activeTabText: {
-		color: '#ffffff',
 	},
 	contentContainer: {
 		minHeight: 300,
 	},
 	errorBanner: {
-		backgroundColor: '#fff3cd',
-		borderColor: '#ffc107',
 		borderWidth: 1,
 		borderRadius: 8,
 		padding: 12,
@@ -689,7 +679,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	errorBannerText: {
-		color: '#856404',
 		fontSize: 14,
 		fontWeight: '500',
 		marginLeft: 8,
@@ -702,7 +691,6 @@ const styles = StyleSheet.create({
 	},
 	noDataText: {
 		fontSize: 16,
-		color: '#95a5a6',
 		textAlign: 'center',
 		fontStyle: 'italic',
 	},
@@ -719,27 +707,22 @@ const styles = StyleSheet.create({
 		height: 150,
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: '#e1e8ed',
 	},
 	// Section des données exploitables
 	exploitableSection: {
-		backgroundColor: '#f0f8ff',
 		borderRadius: 12,
 		padding: 16,
 		marginBottom: 20,
 		borderWidth: 2,
-		borderColor: '#3498db',
 	},
 	subsectionTitle: {
 		fontSize: 16,
 		fontWeight: '600',
-		color: '#2c3e50',
 		marginBottom: 8,
 		textAlign: 'center',
 	},
 	subsectionSubtitle: {
 		fontSize: 12,
-		color: '#7f8c8d',
 		textAlign: 'center',
 		marginBottom: 16,
 		fontStyle: 'italic',
@@ -748,73 +731,60 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	dataItem: {
-		backgroundColor: '#ffffff',
 		borderRadius: 8,
 		padding: 12,
 		borderLeftWidth: 4,
-		borderLeftColor: '#3498db',
 	},
 	dataLabel: {
 		fontSize: 12,
 		fontWeight: '600',
-		color: '#7f8c8d',
 		textTransform: 'uppercase',
 		marginBottom: 4,
 	},
 	dataValue: {
 		fontSize: 14,
-		color: '#2c3e50',
 		lineHeight: 20,
 	},
 	isbnValue: {
 		fontFamily: 'monospace',
-		backgroundColor: '#ecf0f1',
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		borderRadius: 4,
 	},
 	// Section des données brutes
 	rawDataSection: {
-		backgroundColor: '#f8f9fa',
 		borderRadius: 12,
 		padding: 16,
 		marginTop: 20,
 		borderWidth: 1,
-		borderColor: '#dee2e6',
 	},
 	rawDataScroll: {
 		maxHeight: 300,
 	},
 	rawDataItem: {
-		backgroundColor: '#ffffff',
 		borderRadius: 6,
 		padding: 10,
 		marginBottom: 8,
 		borderLeftWidth: 3,
-		borderLeftColor: '#6c757d',
 	},
 	rawDataKey: {
 		fontSize: 12,
 		fontWeight: '600',
-		color: '#495057',
 		marginBottom: 4,
 		textTransform: 'capitalize',
 	},
 	rawDataValue: {
 		fontSize: 13,
-		color: '#6c757d',
 		lineHeight: 18,
 		fontFamily: 'monospace',
 	},
 	// Bouton d'import amélioré
 	importButton: {
-		backgroundColor: '#27ae60',
 		paddingVertical: 14,
 		paddingHorizontal: 20,
 		borderRadius: 12,
 		alignItems: 'center',
 		marginVertical: 20,
-		shadowColor: '#000',
 		shadowOffset: {
 			width: 0,
 			height: 2,
@@ -824,21 +794,16 @@ const styles = StyleSheet.create({
 		elevation: 3,
 	},
 	importButtonText: {
-		color: '#fff',
 		fontSize: 16,
 		fontWeight: '600',
 	},
 	importButtonDisabled: {
-		backgroundColor: '#bdc3c7',
 		opacity: 0.7,
 	},
 	importButtonTextDisabled: {
-		color: '#ecf0f1',
 		opacity: 0.8,
 	},
 	dataItemSelected: {
-		backgroundColor: '#e8f5e8',
-		borderColor: '#27ae60',
 		borderWidth: 2,
 	},
 	dataItemHeader: {
@@ -854,7 +819,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 	},
 	selectAllButton: {
-		backgroundColor: '#27ae60',
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		borderRadius: 6,
@@ -862,12 +826,10 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	selectAllButtonText: {
-		color: '#fff',
 		fontSize: 14,
 		fontWeight: '600',
 	},
 	selectNoneButton: {
-		backgroundColor: '#e74c3c',
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		borderRadius: 6,
@@ -875,7 +837,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	selectNoneButtonText: {
-		color: '#fff',
 		fontSize: 14,
 		fontWeight: '600',
 	},
@@ -896,18 +857,9 @@ const styles = StyleSheet.create({
 		marginRight: 6,
 		marginBottom: 4,
 	},
-	entityChipExisting: {
-		backgroundColor: '#e8f5e8',
-		borderColor: '#27ae60',
-	},
-	entityChipNew: {
-		backgroundColor: '#fff3cd',
-		borderColor: '#f39c12',
-	},
 	entityChipText: {
 		fontSize: 12,
 		fontWeight: '500',
 		marginLeft: 4,
-		color: '#2c3e50',
 	},
 });

@@ -3,11 +3,13 @@ import { useEffect } from "react";
 import { useSegments } from "expo-router";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Index() {
   const router = useRouter();
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuth();
+  const theme = useTheme();
 
 
   useEffect(() => {
@@ -27,17 +29,17 @@ export default function Index() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2196F3" />
+      <View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
   }
   // Afficher un texte si le composant est monté et isLoading est faux
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="small" color="#2196F3" />
+    <View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
+      <ActivityIndicator size="small" color={theme.accent} />
       <View style={{ marginTop: 20 }}>
-        <Text>Page Index rendue</Text>
+        <Text style={{ color: theme.textPrimary }}>Page Index rendue</Text>
       </View>
     </View>
   );
@@ -48,6 +50,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
 });

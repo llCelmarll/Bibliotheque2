@@ -1,9 +1,10 @@
 // components/scan/SimilarBooksSection.tsx
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BookRead } from '@/types/scanTypes';
 import { ExistingBookCard } from '@/components/scan/ExistingBookCard';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SimilarBooksSectionProps {
   books: BookRead[];
@@ -11,15 +12,17 @@ interface SimilarBooksSectionProps {
 }
 
 export const SimilarBooksSection: React.FC<SimilarBooksSectionProps> = ({ books, onSelectBook }) => {
+  const theme = useTheme();
+
   if (!books || books.length === 0) return null;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.warningBanner}>
-        <MaterialIcons name="warning" size={24} color="#f39c12" />
+    <View style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
+      <View style={[styles.warningBanner, { backgroundColor: theme.warningBg, borderLeftColor: theme.warning }]}>
+        <MaterialIcons name="warning" size={24} color={theme.warning} />
         <View style={styles.warningTextContainer}>
-          <Text style={styles.warningTitle}>Attention : Livres similaires trouvés</Text>
-          <Text style={styles.warningSubtitle}>
+          <Text style={[styles.warningTitle, { color: theme.warning }]}>Attention : Livres similaires trouvés</Text>
+          <Text style={[styles.warningSubtitle, { color: theme.warning }]}>
             {books.length === 1
               ? "Vous avez déjà un livre avec un titre similaire. Vérifiez qu'il ne s'agit pas d'un doublon avant d'ajouter ce livre."
               : `Vous avez déjà ${books.length} livres avec des titres similaires. Vérifiez qu'il ne s'agit pas de doublons avant d'ajouter ce livre.`
@@ -28,7 +31,7 @@ export const SimilarBooksSection: React.FC<SimilarBooksSectionProps> = ({ books,
         </View>
       </View>
 
-      <Text style={styles.heading}>
+      <Text style={[styles.heading, { color: theme.textPrimary }]}>
         {books.length === 1 ? "1 livre similaire" : `${books.length} livres similaires`}
       </Text>
 
@@ -47,11 +50,9 @@ export const SimilarBooksSection: React.FC<SimilarBooksSectionProps> = ({ books,
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     gap: 12,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -63,9 +64,7 @@ const styles = StyleSheet.create({
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#fff3cd',
     borderLeftWidth: 4,
-    borderLeftColor: '#f39c12',
     padding: 12,
     borderRadius: 8,
     gap: 12,
@@ -77,17 +76,14 @@ const styles = StyleSheet.create({
   warningTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#856404',
   },
   warningSubtitle: {
     fontSize: 14,
-    color: '#856404',
     lineHeight: 20,
   },
   heading: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2c3e50',
     marginTop: 4,
   },
   booksList: {

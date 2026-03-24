@@ -8,16 +8,18 @@ import { useRoute } from "@react-navigation/native";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import {Ionicons} from "@expo/vector-icons";
 import * as WebBrowser from 'expo-web-browser';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export function GoogleBooksTab() {
 	const route = useRoute();
 	const { book } = route.params as { book: BookDetail };
+	const theme = useTheme();
 
 	// Vérification de sécurité
 	if (!book?.google_books) {
 		return (
 			<View style={styles.container}>
-				<Text style={styles.value}>Aucune donnée Google Books disponible</Text>
+				<Text style={[styles.value, { color: theme.textSecondary }]}>Aucune donnée Google Books disponible</Text>
 			</View>
 		);
 	}
@@ -31,7 +33,7 @@ export function GoogleBooksTab() {
 
 	const renderCategories = () => {
 		if (!book.google_books?.categories || book.google_books.categories.length === 0) {
-			return <Text style={styles.value}>Non renseigné</Text>;
+			return <Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>;
 		}
 		return (
 			<View style={styles.categories}>
@@ -47,16 +49,16 @@ export function GoogleBooksTab() {
 
 			{book.google_books?.infoLink && (
 				<Pressable
-					style={styles.linkButton}
+					style={[styles.linkButton, { backgroundColor: theme.bgSecondary }]}
 					onPress={handleOpenGoogleBooks}
 				>
-					<Ionicons name="open-outline" size={20} color="#007AFF" />
-					<Text style={styles.linkText}>Voir sur Google Books</Text>
+					<Ionicons name="open-outline" size={20} color={theme.accent} />
+					<Text style={[styles.linkText, { color: theme.accent }]}>Voir sur Google Books</Text>
 				</Pressable>
 			)}
 
 			<CollapsibleSection title="Description" defaultExpanded={!!book.google_books?.description}>
-				<Text style={styles.description}>
+				<Text style={[styles.description, { color: theme.textPrimary }]}>
 					{book.google_books?.description || 'Non renseigné'}
 				</Text>
 			</CollapsibleSection>
@@ -67,20 +69,20 @@ export function GoogleBooksTab() {
 					value={book.google_books?.authors ? book.google_books.authors.join(", ") : 'Non renseigné'}
 				/>
 				<InfoRow
-					label="Éditeur" 
-					value={book.google_books?.publisher || 'Non renseigné'} 
+					label="Éditeur"
+					value={book.google_books?.publisher || 'Non renseigné'}
 				/>
-				<InfoRow 
-					label="Date de publication" 
-					value={book.google_books?.publishedDate || 'Non renseigné'} 
+				<InfoRow
+					label="Date de publication"
+					value={book.google_books?.publishedDate || 'Non renseigné'}
 				/>
-				<InfoRow 
-					label="Langue" 
-					value={book.google_books?.language || 'Non renseigné'} 
+				<InfoRow
+					label="Langue"
+					value={book.google_books?.language || 'Non renseigné'}
 				/>
-				<InfoRow 
-					label="Pages" 
-					value={book.google_books?.pageCount ? book.google_books.pageCount.toString() : 'Non renseigné'} 
+				<InfoRow
+					label="Pages"
+					value={book.google_books?.pageCount ? book.google_books.pageCount.toString() : 'Non renseigné'}
 				/>
 				<InfoRow
 					label="Sous-titre"
@@ -106,7 +108,6 @@ const styles = StyleSheet.create({
 	description: {
 		fontSize: 14,
 		lineHeight: 20,
-		color: '#333',
 	},
 	categories: {
 		flexDirection: 'row',
@@ -115,19 +116,16 @@ const styles = StyleSheet.create({
 	},
 	value: {
 		fontSize: 14,
-		color: '#666',
 	},
 	linkButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#f8f9fa',
 		padding: 12,
 		borderRadius: 8,
 		marginBottom: 16,
 		gap: 8,
 	},
 	linkText: {
-		color: '#007AFF',
 		fontSize: 16,
 		fontWeight: '500',
 	},

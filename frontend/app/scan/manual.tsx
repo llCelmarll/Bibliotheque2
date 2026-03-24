@@ -9,10 +9,12 @@ import { bookService } from "@/services/bookService";
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ManualBookAddPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { suggestedBook: suggestedBookParam, isbn, forceOwnership } = useLocalSearchParams<{
     suggestedBook?: string;
@@ -131,35 +133,40 @@ export default function ManualBookAddPage() {
 
   return (
     <ProtectedRoute>
-      <View style={[styles.container, { paddingTop: insets.top }]}> 
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bgSecondary }]}>
         {/* En-tête personnalisé */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight, shadowColor: theme.textPrimary }]}>
           <View style={styles.headerLeft}>
-            <MaterialIcons name="menu-book" size={24} color="#3498db" />
-            <Text style={styles.headerTitle}>Ajouter un livre manuellement</Text>
+            <MaterialIcons name="menu-book" size={24} color={theme.accent} />
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Ajouter un livre manuellement</Text>
           </View>
           {/* Bouton retour vers la liste des livres */}
-          <TouchableOpacity 
-            style={styles.headerButton}
+          <TouchableOpacity
+            style={[styles.headerButton, { backgroundColor: theme.bgSecondary }]}
             onPress={() => router.push('/books')}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="list" size={20} color="#3498db" />
+            <MaterialIcons name="list" size={20} color={theme.accent} />
           </TouchableOpacity>
         </View>
-        
-        <ScrollView 
+
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
           {/* Instructions pour l'utilisateur */}
-          <View style={styles.instructionsContainer}>
-            <Text style={styles.instructionsTitle}>
+          <View
+            style={[
+              styles.instructionsContainer,
+              { backgroundColor: theme.bgCard, borderLeftColor: theme.accent, shadowColor: theme.textPrimary },
+            ]}
+          >
+            <Text style={[styles.instructionsTitle, { color: theme.textPrimary }]}>
               📝 Saisie manuelle
             </Text>
-            <Text style={styles.instructionsText}>
-              Remplissez les informations du livre. Seul le titre est obligatoire. 
+            <Text style={[styles.instructionsText, { color: theme.textSecondary }]}>
+              Remplissez les informations du livre. Seul le titre est obligatoire.
               Les auteurs, éditeurs et genres seront créés automatiquement s'ils n'existent pas.
             </Text>
           </View>
@@ -182,7 +189,6 @@ export default function ManualBookAddPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
@@ -190,12 +196,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e8ed',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 2,
@@ -213,12 +216,10 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2c3e50',
     marginLeft: 12,
   },
   scrollView: {
@@ -228,15 +229,12 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // Espace pour le clavier
   },
   instructionsContainer: {
-    backgroundColor: '#fff',
     margin: 16,
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#3498db',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
@@ -249,25 +247,21 @@ const styles = StyleSheet.create({
   instructionsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
     marginBottom: 8,
   },
   instructionsText: {
     fontSize: 14,
-    color: '#5a6c7d',
     lineHeight: 20,
   },
   authContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     padding: 20,
   },
   authText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
   },
 });

@@ -8,10 +8,12 @@ import { useRoute } from "@react-navigation/native";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export function OpenLibraryTab() {
 	const route = useRoute();
 	const { book } = route.params as { book: BookDetail };
+	const theme = useTheme();
 
 	const handleOpenLink = async (url: string) => {
 		await WebBrowser.openBrowserAsync(url);
@@ -31,11 +33,11 @@ export function OpenLibraryTab() {
 			return (
 				<Pressable
 					key={index}
-					style={styles.linkButton}
+					style={[styles.linkButton, { backgroundColor: theme.bgSecondary }]}
 					onPress={() => handleOpenLink(link.url)}
 				>
-					<Ionicons name="open-outline" size={20} color="#007AFF" />
-					<Text style={styles.linkText}>{link.title}</Text>
+					<Ionicons name="open-outline" size={20} color={theme.accent} />
+					<Text style={[styles.linkText, { color: theme.accent }]}>{link.title}</Text>
 				</Pressable>
 			);
 		});
@@ -48,11 +50,11 @@ export function OpenLibraryTab() {
 		const openLibraryUrl = `https://openlibrary.org${book.open_library.key}`;
 		return (
 			<Pressable
-				style={styles.linkButton}
+				style={[styles.linkButton, { backgroundColor: theme.bgSecondary }]}
 				onPress={() => handleOpenLink(openLibraryUrl)}
 			>
-				<Ionicons name="open-outline" size={20} color="#007AFF" />
-				<Text style={styles.linkText}>Voir sur Open Library</Text>
+				<Ionicons name="open-outline" size={20} color={theme.accent} />
+				<Text style={[styles.linkText, { color: theme.accent }]}>Voir sur Open Library</Text>
 			</Pressable>
 		);
 	};
@@ -61,7 +63,7 @@ export function OpenLibraryTab() {
 
 	const renderSubjects = () => {
 		if (!book.open_library.subjects || book.open_library.subjects.length === 0) {
-			return <Text style={styles.value}>Non renseigné</Text>;
+			return <Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>;
 		}
 		return (
 			<View style={styles.tags}>
@@ -75,7 +77,7 @@ export function OpenLibraryTab() {
 	const renderContributors = () => {
 
 		if (!book.open_library.contributors || book.open_library.contributors.length === 0) {
-			return <Text style={styles.value}>Non renseigné</Text>;
+			return <Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>;
 		}
 		return (
 			<View style={styles.tags}>
@@ -129,7 +131,7 @@ const renderPublishPlaces = () => {
 
 			{book.open_library.description && (
 				<CollapsibleSection title="Description">
-					<Text style={styles.description}>
+					<Text style={[styles.description, { color: theme.textPrimary }]}>
 						{typeof book.open_library.description === 'string'
 							? book.open_library.description
 							: book.open_library.description?.value || 'Non renseigné'}
@@ -165,9 +167,9 @@ const renderPublishPlaces = () => {
 
 			<CollapsibleSection title="Autres titres">
 				{!book.open_library.other_titles || book.open_library.other_titles.length === 0 ? (
-					<Text style={styles.value}>Non renseigné</Text>
+					<Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>
 				) : (
-					<Text style={styles.text}>{book.open_library.other_titles.join(", ")}</Text>
+					<Text style={[styles.text, { color: theme.textPrimary }]}>{book.open_library.other_titles.join(", ")}</Text>
 				)}
 			</CollapsibleSection>
 
@@ -190,11 +192,9 @@ const styles = StyleSheet.create({
 	description: {
 		fontSize: 14,
 		lineHeight: 20,
-		color: '#333',
 	},
 	text: {
 		fontSize: 14,
-		color: '#333',
 	},
 	tags: {
 		flexDirection: 'row',
@@ -203,7 +203,6 @@ const styles = StyleSheet.create({
 	},
 	value: {
 		fontSize: 14,
-		color: '#666',
 	},
 	linksContainer: {
 		gap: 8,
@@ -212,13 +211,11 @@ const styles = StyleSheet.create({
 	linkButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#f8f9fa',
 		padding: 12,
 		borderRadius: 8,
 		gap: 8,
 	},
 	linkText: {
-		color: '#007AFF',
 		fontSize: 16,
 		fontWeight: '500',
 		flex: 1,

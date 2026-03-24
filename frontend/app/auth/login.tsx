@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 let SecureStore: any;
 if (Platform.OS !== 'web') {
@@ -42,6 +43,7 @@ export default function LoginScreen() {
 
   const { login, isLoading } = useAuth();
   const router = useRouter();
+  const theme = useTheme();
 
   useEffect(() => {
     const loadError = async () => {
@@ -95,36 +97,37 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <KeyboardAvoidingView 
-        style={styles.container} 
+    <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: theme.bgPrimary }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.header}>
             {Platform.OS === 'web' && (
-              <Image 
-                source={require('@/assets/icon.png')} 
+              <Image
+                source={require('@/assets/icon.png')}
                 style={styles.logo}
               />
             )}
-            <Text style={styles.title}>Bibliothèque</Text>
-            <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
+            <Text style={[styles.title, { color: theme.textPrimary }]}>Bibliothèque</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Connectez-vous à votre compte</Text>
           </View>
 
-          <View style={styles.form}>
+          <View style={[styles.form, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
             {errorMessage ? (
-              <View style={styles.errorContainer}>
-                <MaterialIcons name="error-outline" size={20} color="#f44336" />
-                <Text style={styles.errorText}>{errorMessage}</Text>
+              <View style={[styles.errorContainer, { backgroundColor: theme.dangerBg, borderLeftColor: theme.danger }]}>
+                <MaterialIcons name="error-outline" size={20} color={theme.danger} />
+                <Text style={[styles.errorText, { color: theme.danger }]}>{errorMessage}</Text>
               </View>
             ) : null}
 
-            <View style={styles.inputContainer}>
-              <MaterialIcons name="email" size={24} color="#666" style={styles.inputIcon} />
+            <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
+              <MaterialIcons name="email" size={24} color={theme.textMuted} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.textPrimary }]}
                 placeholder="Email (ex: user@example.com)"
+                placeholderTextColor={theme.textMuted}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -137,11 +140,12 @@ export default function LoginScreen() {
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <MaterialIcons name="lock" size={24} color="#666" style={styles.inputIcon} />
+            <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
+              <MaterialIcons name="lock" size={24} color={theme.textMuted} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.textPrimary }]}
                 placeholder="Mot de passe"
+                placeholderTextColor={theme.textMuted}
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -159,7 +163,7 @@ export default function LoginScreen() {
                 <MaterialIcons
                   name={showPassword ? "visibility-off" : "visibility"}
                   size={24}
-                  color="#666"
+                  color={theme.textMuted}
                 />
               </TouchableOpacity>
             </View>
@@ -168,10 +172,10 @@ export default function LoginScreen() {
               <Checkbox
                 value={rememberMe}
                 onValueChange={setRememberMe}
-                color={rememberMe ? '#2196F3' : undefined}
+                color={rememberMe ? theme.accent : undefined}
                 style={{ marginRight: 8 }}
               />
-              <Text style={{ fontSize: 16, color: '#333' }}>Se souvenir de moi</Text>
+              <Text style={{ fontSize: 16, color: theme.textSecondary }}>Se souvenir de moi</Text>
             </View>
 
             <TouchableOpacity
@@ -179,42 +183,42 @@ export default function LoginScreen() {
               onPress={() => router.push('/auth/forgot-password')}
               disabled={isLoginLoading}
             >
-              <Text style={{ color: '#2196F3', fontSize: 14 }}>Mot de passe oublié ?</Text>
+              <Text style={{ color: theme.accent, fontSize: 14 }}>Mot de passe oublié ?</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.loginButton, isLoginLoading && styles.loginButtonDisabled]}
+              style={[styles.loginButton, { backgroundColor: theme.accent }, isLoginLoading && styles.loginButtonDisabled]}
               onPress={handleLogin}
               disabled={isLoginLoading}
             >
               {isLoginLoading ? (
-                <ActivityIndicator color="#FFF" size="small" />
+                <ActivityIndicator color={theme.textInverse} size="small" />
               ) : (
-                <Text style={styles.loginButtonText}>Se connecter</Text>
+                <Text style={[styles.loginButtonText, { color: theme.textInverse }]}>Se connecter</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Register Link */}
           <View style={styles.registerLink}>
-            <Text style={styles.registerText}>Pas encore de compte ? </Text>
+            <Text style={[styles.registerText, { color: theme.textSecondary }]}>Pas encore de compte ? </Text>
             <TouchableOpacity onPress={() => router.push('/auth/register')}>
-              <Text style={styles.registerLinkText}>S'inscrire</Text>
+              <Text style={[styles.registerLinkText, { color: theme.accent }]}>S'inscrire</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
+            <Text style={[styles.footerText, { color: theme.textMuted }]}>
               Version de développement avec authentification
             </Text>
           </View>
 
           {Platform.OS === 'web' && (
-            <TouchableOpacity 
-              style={styles.downloadButton}
+            <TouchableOpacity
+              style={[styles.downloadButton, { backgroundColor: theme.success }]}
               onPress={() => Linking.openURL('https://mabibliotheque.ovh/bibliotheque.apk')}
             >
-              <Text style={styles.downloadButtonText}>📱 Télécharger l'application Android</Text>
+              <Text style={[styles.downloadButtonText, { color: theme.textInverse }]}>📱 Télécharger l'application Android</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -226,7 +230,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -243,7 +246,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   downloadButton: {
-    backgroundColor: '#4CAF50',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -251,27 +253,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   downloadButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
     marginTop: 20,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
     marginTop: 8,
     textAlign: 'center',
   },
   form: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -283,15 +280,12 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffebee',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
   },
   errorText: {
-    color: '#c62828',
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -300,11 +294,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     marginBottom: 16,
     paddingHorizontal: 12,
-    backgroundColor: '#fafafa',
   },
   inputIcon: {
     marginRight: 12,
@@ -313,13 +305,11 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     fontSize: 16,
-    color: '#333',
   },
   eyeIcon: {
     padding: 4,
   },
   loginButton: {
-    backgroundColor: '#2196F3',
     borderRadius: 8,
     height: 48,
     justifyContent: 'center',
@@ -328,10 +318,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   loginButtonDisabled: {
-    backgroundColor: '#ccc',
+    opacity: 0.5,
   },
   loginButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -344,11 +333,9 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 16,
-    color: '#666',
   },
   registerLinkText: {
     fontSize: 16,
-    color: '#2196F3',
     fontWeight: '600',
   },
   footer: {
@@ -357,7 +344,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#999',
     textAlign: 'center',
   },
 });

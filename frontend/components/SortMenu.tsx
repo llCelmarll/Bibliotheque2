@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SortOption {
 	label: string;
@@ -31,11 +32,12 @@ const sortOptions: SortOption[] = [
 ];
 
 export const SortMenu: React.FC<SortMenuProps> = ({
-													  currentSort,
-													  currentOrder,
-													  onSortChange,
-												  }) => {
+	currentSort,
+	currentOrder,
+	onSortChange,
+}) => {
 	const [modalVisible, setModalVisible] = useState(false);
+	const theme = useTheme();
 
 	const getCurrentSortLabel = () => {
 		const option = sortOptions.find(
@@ -47,11 +49,11 @@ export const SortMenu: React.FC<SortMenuProps> = ({
 	return (
 		<View>
 			<Pressable
-				style={styles.sortButton}
+				style={[styles.sortButton, { backgroundColor: theme.bgMuted }]}
 				onPress={() => setModalVisible(true)}
 			>
-				<Text style={styles.sortButtonText}>{getCurrentSortLabel()}</Text>
-				<MaterialIcons name="sort" size={20} color="#333" />
+				<Text style={[styles.sortButtonText, { color: theme.textPrimary }]}>{getCurrentSortLabel()}</Text>
+				<MaterialIcons name="sort" size={20} color={theme.textPrimary} />
 			</Pressable>
 
 			<Modal
@@ -61,11 +63,11 @@ export const SortMenu: React.FC<SortMenuProps> = ({
 				onRequestClose={() => setModalVisible(false)}
 			>
 				<Pressable
-					style={styles.modalOverlay}
+					style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}
 					onPress={() => setModalVisible(false)}
 				>
-					<View style={styles.modalContent}>
-						<Text style={styles.modalTitle}>Trier par</Text>
+					<View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
+						<Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Trier par</Text>
 						{sortOptions.map((option) => (
 							<Pressable
 								key={`${option.value}-${option.order}`}
@@ -73,16 +75,16 @@ export const SortMenu: React.FC<SortMenuProps> = ({
 									styles.optionButton,
 									currentSort === option.value &&
 									currentOrder === option.order &&
-									styles.selectedOption,
+									{ backgroundColor: theme.bgMuted },
 								]}
 								onPress={() => {
 									onSortChange(option.value, option.order);
 									setModalVisible(false);
 								}}
 							>
-								<Text style={styles.optionText}>{option.label}</Text>
+								<Text style={[styles.optionText, { color: theme.textPrimary }]}>{option.label}</Text>
 								{currentSort === option.value && currentOrder === option.order && (
-									<MaterialIcons name="check" size={20} color="#007AFF" />
+									<MaterialIcons name="check" size={20} color={theme.accent} />
 								)}
 							</Pressable>
 						))}
@@ -97,7 +99,6 @@ const styles = StyleSheet.create({
 	sortButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#f0f0f0',
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		borderRadius: 8,
@@ -105,16 +106,13 @@ const styles = StyleSheet.create({
 	},
 	sortButtonText: {
 		fontSize: 14,
-		color: '#333',
 	},
 	modalOverlay: {
 		flex: 1,
-		backgroundColor: 'rgba(0, 0, 0, 0.5)',
 		justifyContent: 'center',
 		alignItems: 'center',
 	},
 	modalContent: {
-		backgroundColor: 'white',
 		borderRadius: 12,
 		padding: 16,
 		width: '80%',
@@ -134,11 +132,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		borderRadius: 8,
 	},
-	selectedOption: {
-		backgroundColor: '#f0f0f0',
-	},
 	optionText: {
 		fontSize: 16,
-		color: '#333',
 	},
 });

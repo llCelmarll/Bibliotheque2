@@ -9,29 +9,18 @@ import { BookForm } from "@/components/scan/BookForm";
 import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
 import { bookService } from "@/services/bookService";
-
-// Composants utilitaires simples
-const LoadingIndicator: React.FC = () => (
-	<View style={styles.centerContainer}>
-		<ActivityIndicator size="large" color="#3498db" />
-		<Text style={styles.loadingText}>Analyse de l'ISBN en cours...</Text>
-	</View>
-);
-
-const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
-	<View style={styles.centerContainer}>
-		<Text style={styles.errorText}>{message}</Text>
-	</View>
-);
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ScanResultScreenProps {
 	isbn?: string; // ISBN peut être passé directement en prop
 }
 
 export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIsbn }) => {
+	const theme = useTheme();
+
 	// Support pour les deux types de navigation (React Navigation et Expo Router)
 	let isbn = propIsbn;
-	
+
 	// Si pas d'ISBN en prop, essayer de le récupérer des paramètres de route
 	if (!isbn) {
 		try {
@@ -50,26 +39,39 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 	}
 
 	const { isLoading, error, data } = useScanResult(isbn || '');
-	
-	// État pour gérer les données du formulaire 
+
+	// État pour gérer les données du formulaire
 	const [formData, setFormData] = useState<any>(null);
 
 	if (!isbn) {
-		return <ErrorMessage message="Aucun ISBN fourni" />;
+		return (
+			<View style={styles.centerContainer}>
+				<Text style={[styles.errorText, { color: theme.danger }]}>Aucun ISBN fourni</Text>
+			</View>
+		);
 	}
 
-	if (isLoading) return <LoadingIndicator />;
-	if (error) return <ErrorMessage message={error} />;
-	if (!data) return <ErrorMessage message="Aucune donnée trouvée pour cet ISBN" />;
-
-	if (isLoading) return <LoadingIndicator />;
-	if (error) return <ErrorMessage message={error} />;
-	if (!data) return <ErrorMessage message="Aucune donnée trouvée" />;
+	if (isLoading) return (
+		<View style={styles.centerContainer}>
+			<ActivityIndicator size="large" color={theme.accent} />
+			<Text style={[styles.loadingText, { color: theme.accent }]}>Analyse de l'ISBN en cours...</Text>
+		</View>
+	);
+	if (error) return (
+		<View style={styles.centerContainer}>
+			<Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>
+		</View>
+	);
+	if (!data) return (
+		<View style={styles.centerContainer}>
+			<Text style={[styles.errorText, { color: theme.danger }]}>Aucune donnée trouvée pour cet ISBN</Text>
+		</View>
+	);
 
 	const handleFormSubmit = async (values: any) => {
 		try {
 			console.log('🚀 Début soumission du formulaire:', values);
-			
+
 			// Validation côté client
 			const validation = bookService.validateBookData(values);
 			if (!validation.isValid) {
@@ -80,10 +82,10 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 
 			// Appel API pour créer le livre
 			const createdBook = await bookService.createBook(values);
-			
+
 			console.log('✅ Livre créé avec succès! ID:', createdBook.id);
 			// TODO: Navigation vers la fiche du livre créé ou message de succès
-			
+
 		} catch (error) {
 			console.error('❌ Erreur lors de la soumission:', error);
 			// TODO: Afficher un message d'erreur à l'utilisateur
@@ -93,7 +95,7 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 	const handleImportData = (source: 'google' | 'openLibrary', importedData: any) => {
 		try {
 			console.log('Import de données depuis', source, ':', importedData);
-			
+
 			// Fusionner avec les données existantes du formulaire
 			const currentData = formData || data.suggested;
 			const updatedFormData = {
@@ -109,20 +111,20 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 				cover_url: importedData.thumbnail || currentData?.cover_url || '',
 				barcode: currentData?.barcode || '',
 			};
-			
+
 			setFormData(updatedFormData);
-			
+
 		} catch (error) {
 			console.error('Erreur lors de l\'import:', error);
 		}
 	};
 
 	return (
-		<ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+		<ScrollView style={[styles.container, { backgroundColor: theme.bgSecondary }]} contentContainerStyle={styles.contentContainer}>
 			{/* Livre existant trouvé */}
 			{data.base && (
 				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>Livre trouvé dans votre bibliothèque</Text>
+					<Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Livre trouvé dans votre bibliothèque</Text>
 					<ExistingBookCard
 						book={data.base}
 						onPress={() => {
@@ -147,8 +149,8 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 			{/* Livres similaires */}
 			{data.title_match && data.title_match.length > 0 && (
 				<View style={styles.section}>
-					<SimilarBooksSection 
-						books={data.title_match} 
+					<SimilarBooksSection
+						books={data.title_match}
 						onSelectBook={(book) => {
 							console.log('Livre similaire sélectionné:', book.id);
 						}}
@@ -171,7 +173,6 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#f8f9fa',
 	},
 	contentContainer: {
 		padding: 16,
@@ -185,12 +186,10 @@ const styles = StyleSheet.create({
 	loadingText: {
 		marginTop: 12,
 		fontSize: 16,
-		color: '#3498db',
 		fontWeight: '500',
 	},
 	errorText: {
 		fontSize: 16,
-		color: '#e74c3c',
 		textAlign: 'center',
 		fontWeight: '500',
 	},
@@ -200,7 +199,6 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		fontSize: 18,
 		fontWeight: '600',
-		color: '#2c3e50',
 		marginBottom: 12,
 		textAlign: 'center',
 	},
