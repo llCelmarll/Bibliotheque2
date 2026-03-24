@@ -337,8 +337,18 @@ if (-not $SkipWeb) {
     Write-Host ""
 }
 
-# 5. Résumé
-Write-Host "[5/5] Resume du deploiement" -ForegroundColor Yellow
+# 5. Mise à jour de la branche prod
+Write-Host "[5/5] Mise a jour de la branche prod..." -ForegroundColor Yellow
+$currentBranch = git rev-parse --abbrev-ref HEAD
+git checkout prod
+git merge main --no-edit
+git push origin prod
+git checkout $currentBranch
+Write-Host "  Branche prod mise a jour !" -ForegroundColor Green
+Write-Host ""
+
+# 6. Résumé
+Write-Host "[6/6] Resume du deploiement" -ForegroundColor Yellow
 Write-Host ""
 if (-not $SkipBackend) {
     Write-Host "  Backend API: https://mabibliotheque.ovh/api" -ForegroundColor Green
