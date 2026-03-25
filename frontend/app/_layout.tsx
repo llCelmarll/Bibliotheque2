@@ -6,6 +6,16 @@ import { useFonts } from 'expo-font';
 import { Stack , SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import * as Notifications from 'expo-notifications';
+
+// Afficher les notifications même quand l'app est en foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -100,6 +110,21 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
       setShowWhatsNew(true);
     }
   }, [isAuthenticated, changelogLoading, hasNew, latestEntry]);
+
+  // Naviguer vers l'écran pertinent quand l'utilisateur tape une notification
+  useReactEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      if (!isAuthenticated) return;
+      if (data?.screen) {
+        router.push(data.screen);
+      } else {
+        // Par défaut : aller sur l'écran notifications
+        router.push('/(tabs)/loans/(subtabs)/notifications');
+      }
+    });
+    return () => subscription.remove();
+  }, [isAuthenticated, router]);
 
   const handleCloseWhatsNew = () => {
     setShowWhatsNew(false);

@@ -5,8 +5,9 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account
+from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account, push_tokens
 from app.db import init_db
+from app.services.reminder_scheduler import start_scheduler
 from app.config import COVERS_DIR
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -16,6 +17,7 @@ from time import perf_counter
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    start_scheduler()
     yield
 
 tags_metadata = [
@@ -35,6 +37,7 @@ tags_metadata = [
     {"name": "contact-invitations", "description": "Invitations de contact"},
     {"name": "borrowers", "description": "Emprunteurs"},
     {"name": "account", "description": "Gestion du compte (mot de passe, profil, suppression)"},
+    {"name": "push-notifications", "description": "Tokens push Expo"},
 ]
 
 app = FastAPI(
@@ -89,6 +92,7 @@ app.include_router(user_loan_requests.router)
 app.include_router(users.router)
 app.include_router(contact_invitations.router)
 app.include_router(account.router)
+app.include_router(push_tokens.router)
 
 # Servir les images de couverture
 app.mount("/covers", StaticFiles(directory=str(COVERS_DIR)), name="covers")

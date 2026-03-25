@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import HTTPException, status
 from sqlmodel import Session, select, func
 from typing import List
@@ -7,6 +8,17 @@ from app.models.ContactInvitation import ContactInvitation, InvitationStatus
 from app.models.Contact import Contact
 from app.models.User import User
 from app.schemas.ContactInvitation import ContactInvitationRead, ContactInvitationCreate
+from app.services.push_notification_service import push_notification_service
+
+
+def _fire_push(session: Session, user_id: int, title: str, body: str):
+    """Lance un envoi push en fire-and-forget depuis un contexte synchrone."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(push_notification_service.send_to_user(session, user_id, title, body))
+    except Exception:
+        pass
 
 
 def _to_read(inv: ContactInvitation) -> ContactInvitationRead:
@@ -142,6 +154,9 @@ class ContactInvitationService:
         self.session.add(inv)
         self.session.commit()
         self.session.refresh(inv)
+        sender = self.session.exec(select(User).where(User.id == self.current_user_id)).first()
+        sender_name = sender.username if sender else "Quelqu'un"
+        _fire_push(self.session, data.recipient_id, "Nouvelle invitation", f"{sender_name} vous a envoyé une invitation de contact")
         return _to_read(self._load(inv.id))
 
     def accept(self, inv_id: int) -> ContactInvitationRead:
@@ -175,6 +190,8 @@ class ContactInvitationService:
         inv.responded_at = datetime.utcnow()
         self.session.add(inv)
         self.session.commit()
+        acceptor_name = recipient.username if recipient else "Quelqu'un"
+        _fire_push(self.session, inv.sender_id, "Invitation acceptée", f"{acceptor_name} a accepté votre invitation")
         return _to_read(self._load(inv.id))
 
     def decline(self, inv_id: int) -> ContactInvitationRead:

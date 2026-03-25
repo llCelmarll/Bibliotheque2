@@ -9,6 +9,8 @@ import {
     Alert,
     TextInput,
     Modal,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -17,6 +19,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { userLoanRequestService } from '@/services/userLoanRequestService';
 import { Book } from '@/types/book';
 import { SharedBookView } from '@/components/BookDetail/SharedBookView';
+import { DatePickerField } from '@/components/DatePickerField';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { UserLoanRequestStatus } from '@/types/userLoanRequest';
@@ -38,6 +41,8 @@ function SharedBookDetailScreen() {
     const [error, setError] = useState<string | null>(null);
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestMessage, setRequestMessage] = useState('');
+    const [requestDueDate, setRequestDueDate] = useState<Date | null>(null);
+    const [requestDueDateError, setRequestDueDateError] = useState('');
     const [requesting, setRequesting] = useState(false);
 
     useEffect(() => {
@@ -63,15 +68,18 @@ function SharedBookDetailScreen() {
 
     const handleRequest = async () => {
         if (!book) return;
+        setRequestDueDateError('');
         setRequesting(true);
         try {
             await userLoanRequestService.create({
                 book_id: book.id,
                 lender_id: lenderId,
                 message: requestMessage.trim() || undefined,
+                due_date: requestDueDate ? requestDueDate.toISOString() : undefined,
             });
             setShowRequestModal(false);
             setRequestMessage('');
+            setRequestDueDate(null);
             Alert.alert(
                 'Demande envoyée',
                 "Votre demande a été envoyée. Le propriétaire doit l'accepter.",
@@ -146,11 +154,20 @@ function SharedBookDetailScreen() {
                 animationType="slide"
                 onRequestClose={() => setShowRequestModal(false)}
             >
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+                >
                 <View style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}>
+                    <ScrollView
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+                    >
                     <View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
                         <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Demander "{book.title}"</Text>
                         <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                            Ajoutez un message optionnel pour accompagner votre demande.
+                            Ajoutez un message et/ou une date de retour souhaitée.
                         </Text>
                         <TextInput
                             style={[styles.messageInput, { borderColor: theme.borderLight, color: theme.textPrimary }]}
@@ -160,6 +177,13 @@ function SharedBookDetailScreen() {
                             multiline
                             numberOfLines={3}
                             placeholderTextColor={theme.textMuted}
+                        />
+                        <DatePickerField
+                            label="Date de retour souhaitée (optionnel)"
+                            value={requestDueDate}
+                            onChange={setRequestDueDate}
+                            error={requestDueDateError}
+                            minimumDate={new Date()}
                         />
                         <View style={styles.modalActions}>
                             <TouchableOpacity
@@ -184,7 +208,9 @@ function SharedBookDetailScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
+                    </ScrollView>
                 </View>
+                </KeyboardAvoidingView>
             </Modal>
         </SafeAreaView>
     );
@@ -244,7 +270,6 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        justifyContent: 'flex-end',
     },
     modalContent: {
         borderTopLeftRadius: 20,
@@ -267,7 +292,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         minHeight: 80,
         textAlignVertical: 'top',
-        marginBottom: 16,
+        marginBottom: 12,
     },
     modalActions: {
         flexDirection: 'row',

@@ -131,7 +131,17 @@ function NotificationsScreen() {
         );
     };
 
-    const handleCancel = (inv: ContactInvitation) => {
+    const handleCancel = async (inv: ContactInvitation) => {
+        if (Platform.OS === 'web') {
+            if (!window.confirm(`Annuler l'invitation envoyée à ${inv.recipient_username} ?`)) return;
+            try {
+                await contactInvitationService.cancel(inv.id);
+                await refresh();
+            } catch (err: any) {
+                window.alert(err.response?.data?.detail || "Impossible d'annuler");
+            }
+            return;
+        }
         Alert.alert(
             "Annuler l'invitation",
             `Annuler l'invitation envoyée à ${inv.recipient_username} ?`,

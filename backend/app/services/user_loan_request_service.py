@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 from typing import List
@@ -5,9 +6,11 @@ from datetime import datetime
 
 from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
 from app.models.Contact import Contact
+from app.models.User import User
 from app.repositories.user_loan_request_repository import UserLoanRequestRepository
 from app.repositories.book_repository import BookRepository
 from app.repositories.loan_repository import LoanRepository
+from app.services.push_notification_service import push_notification_service
 from app.schemas.UserLoanRequest import (
     UserLoanRequestRead,
     UserLoanRequestCreate,
@@ -15,6 +18,16 @@ from app.schemas.UserLoanRequest import (
     UserLoanRequestDecline,
     UserLoanRequestReturn,
 )
+
+
+def _fire_push(session: Session, user_id: int, title: str, body: str):
+    """Lance un envoi push en fire-and-forget depuis un contexte synchrone."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(push_notification_service.send_to_user(session, user_id, title, body))
+    except Exception:
+        pass
 
 
 def _to_read(req: UserLoanRequest) -> UserLoanRequestRead:
@@ -142,6 +155,10 @@ class UserLoanRequestService:
             created_at=datetime.utcnow(),
         )
         created = self.repo.create(req)
+        requester = self.session.exec(select(User).where(User.id == self.current_user_id)).first()
+        requester_name = requester.username if requester else "Quelqu'un"
+        book_title = book.title if book else "un livre"
+        _fire_push(self.session, lender_id, "Demande de prêt", f"{requester_name} souhaite emprunter « {book_title} »")
         return _to_read(created)
 
     def accept(self, req_id: int, data: UserLoanRequestAccept) -> UserLoanRequestRead:
@@ -168,6 +185,8 @@ class UserLoanRequestService:
             req.due_date = data.due_date
 
         updated = self.repo.update(req)
+        book_title = req.book.title if req.book else "un livre"
+        _fire_push(self.session, req.requester_id, "Demande acceptée", f"Votre demande pour « {book_title} » a été acceptée")
         return _to_read(updated)
 
     def decline(self, req_id: int, data: UserLoanRequestDecline) -> UserLoanRequestRead:
@@ -192,6 +211,8 @@ class UserLoanRequestService:
         req.updated_at = now
 
         updated = self.repo.update(req)
+        book_title = req.book.title if req.book else "un livre"
+        _fire_push(self.session, req.requester_id, "Demande refusée", f"Votre demande pour « {book_title} » n'a pas abouti")
         return _to_read(updated)
 
     def cancel(self, req_id: int) -> UserLoanRequestRead:

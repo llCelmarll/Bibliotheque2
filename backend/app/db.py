@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel
+from app.models.UserPushToken import UserPushToken
 from app.models.Author import Author
 from app.models.Book import Book
 from app.models.Publisher import Publisher

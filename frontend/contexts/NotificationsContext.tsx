@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { contactInvitationService } from '@/services/contactInvitationService';
 import { userLoanRequestService } from '@/services/userLoanRequestService';
 import { ContactInvitation } from '@/types/contactInvitation';
 import { UserLoanRequest } from '@/types/userLoanRequest';
+
+let Notifications: any = null;
+if (Platform.OS !== 'web') {
+  Notifications = require('expo-notifications');
+}
 
 interface NotificationsContextValue {
     invitationPendingCount: number;
@@ -57,6 +63,15 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     useEffect(() => {
         refresh();
     }, [refresh]);
+
+    // Rafraîchir automatiquement quand une notification push est reçue en foreground
+    useEffect(() => {
+        if (!isAuthenticated || !Notifications) return;
+        const subscription = Notifications.addNotificationReceivedListener(() => {
+            refresh();
+        });
+        return () => subscription.remove();
+    }, [isAuthenticated, refresh]);
 
     return (
         <NotificationsContext.Provider value={{
