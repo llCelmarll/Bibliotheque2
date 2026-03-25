@@ -26,6 +26,7 @@ class UserRead(SQLModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    refresh_token: Optional[str] = None
 
 # Schema pour les données du token
 class TokenData(BaseModel):
