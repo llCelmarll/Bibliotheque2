@@ -17,9 +17,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { contactService } from '@/services/contactService';
 import { loanService } from '@/services/loanService';
 import { borrowedBookService } from '@/services/borrowedBookService';
+import { userLoanRequestService } from '@/services/userLoanRequestService';
 import { Contact, ContactUpdate } from '@/types/contact';
 import { Loan, LoanStatus } from '@/types/loan';
 import { BorrowedBook, BorrowStatus } from '@/types/borrowedBook';
+import { UserLoanRequest, UserLoanRequestStatus } from '@/types/userLoanRequest';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -32,6 +34,7 @@ function ContactDetailScreen() {
   const [contact, setContact] = useState<Contact | null>(null);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [borrows, setBorrows] = useState<BorrowedBook[]>([]);
+  const [userLoanRequests, setUserLoanRequests] = useState<UserLoanRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -52,6 +55,11 @@ function ContactDetailScreen() {
       setContact(contactData);
       setLoans(loansData);
       setBorrows(borrowsData);
+      // Charger les demandes inter-membres si le contact est un utilisateur lié
+      if (contactData.linked_user_id) {
+        const ulrData = await userLoanRequestService.getByLinkedUser(contactData.linked_user_id);
+        setUserLoanRequests(ulrData);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement du contact:', error);
       Alert.alert('Erreur', 'Impossible de charger les détails du contact');
@@ -60,36 +68,40 @@ function ContactDetailScreen() {
     }
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      'Supprimer le contact',
-      'Êtes-vous sûr de vouloir supprimer ce contact ? Cette action est irréversible.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            setActionLoading(true);
-            try {
-              await contactService.deleteContact(contactId);
-              Alert.alert(
-                'Succès',
-                'Le contact a été supprimé',
-                [{ text: 'OK', onPress: () => router.back() }]
-              );
-            } catch (error: any) {
-              Alert.alert(
-                'Erreur',
-                error.response?.data?.detail || 'Impossible de supprimer le contact'
-              );
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async () => {
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Êtes-vous sûr de vouloir supprimer ce contact ? Cette action est irréversible.')
+      : await new Promise<boolean>((resolve) =>
+          Alert.alert(
+            'Supprimer le contact',
+            'Êtes-vous sûr de vouloir supprimer ce contact ? Cette action est irréversible.',
+            [
+              { text: 'Annuler', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Supprimer', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          )
+        );
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    try {
+      await contactService.deleteContact(contactId);
+      if (Platform.OS === 'web') {
+        window.alert('Le contact a été supprimé');
+        router.back();
+      } else {
+        Alert.alert('Succès', 'Le contact a été supprimé', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.detail || 'Impossible de supprimer le contact';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Erreur', msg);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const startEditing = () => {
@@ -233,6 +245,18 @@ function ContactDetailScreen() {
     });
   }, [borrows]);
 
+  // ULR où je suis prêteur (le linked_user est le requester)
+  const userLoanRequestsAsLender = useMemo(() =>
+    userLoanRequests.filter(r => r.requester_id === contact?.linked_user_id),
+    [userLoanRequests, contact]
+  );
+
+  // ULR où je suis emprunteur (le linked_user est le lender)
+  const userLoanRequestsAsBorrower = useMemo(() =>
+    userLoanRequests.filter(r => r.lender_id === contact?.linked_user_id),
+    [userLoanRequests, contact]
+  );
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
@@ -266,13 +290,25 @@ function ContactDetailScreen() {
     );
   }
 
-  const activeLoans = loans.filter(l => l.status === 'active');
+  const activeLoans = [
+    ...loans.filter(l => l.status === 'active'),
+    ...userLoanRequestsAsLender.filter(r => r.status === UserLoanRequestStatus.ACCEPTED),
+  ];
   const overdueLoans = loans.filter(l => l.status === 'overdue');
-  const returnedLoans = loans.filter(l => l.status === 'returned');
+  const returnedLoans = [
+    ...loans.filter(l => l.status === 'returned'),
+    ...userLoanRequestsAsLender.filter(r => r.status === UserLoanRequestStatus.RETURNED),
+  ];
 
-  const activeBorrows = borrows.filter(b => b.status === 'active');
+  const activeBorrows = [
+    ...borrows.filter(b => b.status === 'active'),
+    ...userLoanRequestsAsBorrower.filter(r => r.status === UserLoanRequestStatus.ACCEPTED),
+  ];
   const overdueBorrows = borrows.filter(b => b.status === 'overdue');
-  const returnedBorrows = borrows.filter(b => b.status === 'returned');
+  const returnedBorrows = [
+    ...borrows.filter(b => b.status === 'returned'),
+    ...userLoanRequestsAsBorrower.filter(r => r.status === UserLoanRequestStatus.RETURNED),
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
@@ -428,7 +464,7 @@ function ContactDetailScreen() {
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Prêts</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.accent }]}>{loans.length}</Text>
+              <Text style={[styles.statValue, { color: theme.accent }]}>{loans.length + userLoanRequestsAsLender.length}</Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total</Text>
             </View>
             <View style={styles.statItem}>
@@ -451,7 +487,7 @@ function ContactDetailScreen() {
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Emprunts</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.accent }]}>{borrows.length}</Text>
+              <Text style={[styles.statValue, { color: theme.accent }]}>{borrows.length + userLoanRequestsAsBorrower.length}</Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total</Text>
             </View>
             <View style={styles.statItem}>
@@ -473,76 +509,72 @@ function ContactDetailScreen() {
         <View style={[styles.loansCard, { backgroundColor: theme.bgCard }]}>
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Historique des prêts</Text>
-            <TouchableOpacity onPress={handleCreateLoan}>
-              <MaterialIcons name="add-circle" size={24} color={theme.accent} />
-            </TouchableOpacity>
+            {!contact.linked_user_id && (
+              <TouchableOpacity onPress={handleCreateLoan}>
+                <MaterialIcons name="add-circle" size={24} color={theme.accent} />
+              </TouchableOpacity>
+            )}
           </View>
 
-          {loans.length === 0 ? (
+          {loans.length === 0 && userLoanRequestsAsLender.length === 0 ? (
             <View style={styles.emptyLoans}>
               <MaterialIcons name="library-books" size={48} color={theme.borderLight} />
               <Text style={[styles.emptyLoansText, { color: theme.textMuted }]}>Aucun prêt</Text>
-              <TouchableOpacity style={[styles.createLoanButton, { backgroundColor: theme.accent }]} onPress={handleCreateLoan}>
-                <Text style={[styles.createLoanButtonText, { color: theme.textInverse }]}>Créer un prêt</Text>
-              </TouchableOpacity>
+              {!contact.linked_user_id && (
+                <TouchableOpacity style={[styles.createLoanButton, { backgroundColor: theme.accent }]} onPress={handleCreateLoan}>
+                  <Text style={[styles.createLoanButtonText, { color: theme.textInverse }]}>Créer un prêt</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
-            sortedLoans.map((loan) => {
-              const canReturn = loan.status === 'active' || loan.status === 'overdue';
-
-              return (
-                <View key={loan.id} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
-                  <TouchableOpacity
-                    style={styles.loanItem}
-                    onPress={() => handleLoanPress(loan)}
-                  >
+            <>
+              {sortedLoans.map((loan) => {
+                const canReturn = loan.status === 'active' || loan.status === 'overdue';
+                return (
+                  <View key={`loan-${loan.id}`} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
+                    <TouchableOpacity style={styles.loanItem} onPress={() => handleLoanPress(loan)}>
+                      <View style={styles.loanInfo}>
+                        <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>{loan.book.title}</Text>
+                        <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Prêté le {formatDate(loan.loan_date)}</Text>
+                        {loan.due_date && (
+                          <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Retour prévu : {formatDate(loan.due_date)}</Text>
+                        )}
+                      </View>
+                      <View style={styles.loanStatus}>
+                        {loan.status === 'overdue' && <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}><Text style={[styles.statusText, { color: theme.danger }]}>En retard</Text></View>}
+                        {loan.status === 'active' && <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}><Text style={[styles.statusText, { color: theme.success }]}>En cours</Text></View>}
+                        {loan.status === 'returned' && <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}><Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text></View>}
+                        {canReturn ? (
+                          <TouchableOpacity onPress={() => handleReturnLoan(loan.id, loan.book.title)} style={styles.returnIconButton} disabled={actionLoading}>
+                            <MaterialIcons name="assignment-return" size={20} color={actionLoading ? theme.textMuted : theme.success} />
+                          </TouchableOpacity>
+                        ) : (
+                          <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+              {userLoanRequestsAsLender.map((req) => (
+                <View key={`ulr-lender-${req.id}`} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
+                  <TouchableOpacity style={styles.loanItem} onPress={() => router.push(`/(tabs)/loans/user-loan-request/${req.id}` as any)}>
                     <View style={styles.loanInfo}>
-                      <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>{loan.book.title}</Text>
-                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
-                        Prêté le {formatDate(loan.loan_date)}
-                      </Text>
-                      {loan.due_date && (
-                        <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
-                          Retour prévu : {formatDate(loan.due_date)}
-                        </Text>
-                      )}
+                      <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>{req.book?.title || 'Livre inconnu'}</Text>
+                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Prêté le {formatDate(req.request_date)}</Text>
+                      {req.due_date && <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Retour prévu : {formatDate(req.due_date)}</Text>}
                     </View>
                     <View style={styles.loanStatus}>
-                      {loan.status === 'overdue' && (
-                        <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}>
-                          <Text style={[styles.statusText, { color: theme.danger }]}>En retard</Text>
-                        </View>
-                      )}
-                      {loan.status === 'active' && (
-                        <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}>
-                          <Text style={[styles.statusText, { color: theme.success }]}>En cours</Text>
-                        </View>
-                      )}
-                      {loan.status === 'returned' && (
-                        <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}>
-                          <Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text>
-                        </View>
-                      )}
-                      {canReturn ? (
-                        <TouchableOpacity
-                          onPress={() => handleReturnLoan(loan.id, loan.book.title)}
-                          style={styles.returnIconButton}
-                          disabled={actionLoading}
-                        >
-                          <MaterialIcons
-                            name="assignment-return"
-                            size={20}
-                            color={actionLoading ? theme.textMuted : theme.success}
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
-                      )}
+                      {req.status === UserLoanRequestStatus.ACCEPTED && <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}><Text style={[styles.statusText, { color: theme.success }]}>En cours</Text></View>}
+                      {req.status === UserLoanRequestStatus.RETURNED && <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}><Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text></View>}
+                      {req.status === UserLoanRequestStatus.PENDING && <View style={[styles.statusBadge, { backgroundColor: theme.bgMuted }]}><Text style={[styles.statusText, { color: theme.textSecondary }]}>En attente</Text></View>}
+                      {req.status === UserLoanRequestStatus.DECLINED && <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}><Text style={[styles.statusText, { color: theme.danger }]}>Refusé</Text></View>}
+                      <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
                     </View>
                   </TouchableOpacity>
                 </View>
-              );
-            })
+              ))}
+            </>
           )}
         </View>
 
@@ -550,54 +582,52 @@ function ContactDetailScreen() {
         <View style={[styles.loansCard, { backgroundColor: theme.bgCard }]}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Historique des emprunts</Text>
 
-          {borrows.length === 0 ? (
+          {borrows.length === 0 && userLoanRequestsAsBorrower.length === 0 ? (
             <View style={styles.emptyLoans}>
               <MaterialIcons name="menu-book" size={48} color={theme.borderLight} />
               <Text style={[styles.emptyLoansText, { color: theme.textMuted }]}>Aucun emprunt</Text>
             </View>
           ) : (
-            sortedBorrows.map((borrow) => (
-              <View key={`borrow-${borrow.id}`} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
-                <TouchableOpacity
-                  style={styles.loanItem}
-                  onPress={() => router.push(`/(tabs)/borrows/${borrow.id}`)}
-                >
-                  <View style={styles.loanInfo}>
-                    <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>
-                      {borrow.book?.title || 'Livre inconnu'}
-                    </Text>
-                    <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
-                      Emprunté le {formatDate(borrow.borrowed_date)}
-                    </Text>
-                    {borrow.expected_return_date && (
-                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>
-                        Retour prévu : {formatDate(borrow.expected_return_date)}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.loanStatus}>
-                    {borrow.status === 'overdue' && (
-                      <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}>
-                        <Text style={[styles.statusText, { color: theme.danger }]}>En retard</Text>
-                      </View>
-                    )}
-                    {borrow.status === 'active' && (
-                      <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}>
-                        <Text style={[styles.statusText, { color: theme.success }]}>En cours</Text>
-                      </View>
-                    )}
-                    {borrow.status === 'returned' && (
-                      <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}>
-                        <Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text>
-                      </View>
-                    )}
-                    <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
-                  </View>
-                </TouchableOpacity>
-              </View>
-            ))
+            <>
+              {sortedBorrows.map((borrow) => (
+                <View key={`borrow-${borrow.id}`} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
+                  <TouchableOpacity style={styles.loanItem} onPress={() => router.push(`/(tabs)/borrows/${borrow.id}`)}>
+                    <View style={styles.loanInfo}>
+                      <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>{borrow.book?.title || 'Livre inconnu'}</Text>
+                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Emprunté le {formatDate(borrow.borrowed_date)}</Text>
+                      {borrow.expected_return_date && <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Retour prévu : {formatDate(borrow.expected_return_date)}</Text>}
+                    </View>
+                    <View style={styles.loanStatus}>
+                      {borrow.status === 'overdue' && <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}><Text style={[styles.statusText, { color: theme.danger }]}>En retard</Text></View>}
+                      {borrow.status === 'active' && <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}><Text style={[styles.statusText, { color: theme.success }]}>En cours</Text></View>}
+                      {borrow.status === 'returned' && <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}><Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text></View>}
+                      <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {userLoanRequestsAsBorrower.map((req) => (
+                <View key={`ulr-borrower-${req.id}`} style={[styles.loanItemContainer, { borderBottomColor: theme.bgSecondary }]}>
+                  <TouchableOpacity style={styles.loanItem} onPress={() => router.push(`/(tabs)/loans/user-loan-request/${req.id}` as any)}>
+                    <View style={styles.loanInfo}>
+                      <Text style={[styles.loanTitle, { color: theme.textPrimary }]} numberOfLines={1}>{req.book?.title || 'Livre inconnu'}</Text>
+                      <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Demandé le {formatDate(req.request_date)}</Text>
+                      {req.due_date && <Text style={[styles.loanDate, { color: theme.textSecondary }]}>Retour prévu : {formatDate(req.due_date)}</Text>}
+                    </View>
+                    <View style={styles.loanStatus}>
+                      {req.status === UserLoanRequestStatus.ACCEPTED && <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}><Text style={[styles.statusText, { color: theme.success }]}>En cours</Text></View>}
+                      {req.status === UserLoanRequestStatus.RETURNED && <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}><Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text></View>}
+                      {req.status === UserLoanRequestStatus.PENDING && <View style={[styles.statusBadge, { backgroundColor: theme.bgMuted }]}><Text style={[styles.statusText, { color: theme.textSecondary }]}>En attente</Text></View>}
+                      {req.status === UserLoanRequestStatus.DECLINED && <View style={[styles.statusBadge, { backgroundColor: theme.dangerBg }]}><Text style={[styles.statusText, { color: theme.danger }]}>Refusé</Text></View>}
+                      <MaterialIcons name="chevron-right" size={20} color={theme.textMuted} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </>
           )}
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );

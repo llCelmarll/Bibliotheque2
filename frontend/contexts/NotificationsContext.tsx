@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { contactInvitationService } from '@/services/contactInvitationService';
 import { userLoanRequestService } from '@/services/userLoanRequestService';
 import { ContactInvitation } from '@/types/contactInvitation';
 import { UserLoanRequest } from '@/types/userLoanRequest';
+
+const SEEN_DECLINED_KEY = 'seen_declined_loan_request_ids';
 
 let Notifications: any = null;
 if (Platform.OS !== 'web') {
@@ -14,13 +17,16 @@ if (Platform.OS !== 'web') {
 interface NotificationsContextValue {
     invitationPendingCount: number;
     loanRequestPendingCount: number;
+    declinedLoanRequestCount: number;
     totalPendingCount: number;
     receivedInvitations: ContactInvitation[];
     sentInvitations: ContactInvitation[];
     incomingLoanRequests: UserLoanRequest[];
     outgoingLoanRequests: UserLoanRequest[];
+    seenDeclinedIds: Set<number>;
     loading: boolean;
     refresh: () => Promise<void>;
+    markDeclinedAsSeen: (id: number) => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
@@ -29,11 +35,27 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const { isAuthenticated } = useAuth();
     const [invitationPendingCount, setInvitationPendingCount] = useState(0);
     const [loanRequestPendingCount, setLoanRequestPendingCount] = useState(0);
+    const [declinedLoanRequestCount, setDeclinedLoanRequestCount] = useState(0);
     const [receivedInvitations, setReceivedInvitations] = useState<ContactInvitation[]>([]);
     const [sentInvitations, setSentInvitations] = useState<ContactInvitation[]>([]);
     const [incomingLoanRequests, setIncomingLoanRequests] = useState<UserLoanRequest[]>([]);
     const [outgoingLoanRequests, setOutgoingLoanRequests] = useState<UserLoanRequest[]>([]);
     const [loading, setLoading] = useState(false);
+    const [seenDeclinedIds, setSeenDeclinedIds] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        AsyncStorage.getItem(SEEN_DECLINED_KEY).then(raw => {
+            if (raw) setSeenDeclinedIds(new Set(JSON.parse(raw)));
+        });
+    }, []);
+
+    const markDeclinedAsSeen = useCallback(async (id: number) => {
+        if (seenDeclinedIds.has(id)) return;
+        const updated = new Set(seenDeclinedIds).add(id);
+        setSeenDeclinedIds(updated);
+        await AsyncStorage.setItem(SEEN_DECLINED_KEY, JSON.stringify([...updated]));
+        setDeclinedLoanRequestCount(prev => Math.max(0, prev - 1));
+    }, [seenDeclinedIds]);
 
     const refresh = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -53,6 +75,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
             setIncomingLoanRequests(inc);
             setOutgoingLoanRequests(out);
             setLoanRequestPendingCount(loanCount);
+            const seenRaw = await AsyncStorage.getItem(SEEN_DECLINED_KEY);
+            const seen = seenRaw ? new Set<number>(JSON.parse(seenRaw)) : new Set<number>();
+            const unseenDeclined = out.filter(r => r.status === 'declined' && !seen.has(r.id));
+            setDeclinedLoanRequestCount(unseenDeclined.length);
         } catch (err) {
             console.error('Erreur chargement notifications:', err);
         } finally {
@@ -77,13 +103,16 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         <NotificationsContext.Provider value={{
             invitationPendingCount,
             loanRequestPendingCount,
-            totalPendingCount: invitationPendingCount + loanRequestPendingCount,
+            declinedLoanRequestCount,
+            totalPendingCount: invitationPendingCount + loanRequestPendingCount + declinedLoanRequestCount,
             receivedInvitations,
             sentInvitations,
             incomingLoanRequests,
             outgoingLoanRequests,
+            seenDeclinedIds,
             loading,
             refresh,
+            markDeclinedAsSeen,
         }}>
             {children}
         </NotificationsContext.Provider>

@@ -51,6 +51,15 @@ class PushNotificationService:
             return
 
         try:
+            # Vérifier les préférences si un type est fourni
+            if data and data.get("type"):
+                from app.models.User import User
+                user = session.get(User, user_id)
+                if user and user.push_prefs is not None:
+                    if user.push_prefs.get(data["type"]) is False:
+                        print(f"[Push] Type '{data['type']}' désactivé pour user {user_id} — ignoré")
+                        return
+
             tokens = session.exec(
                 select(UserPushToken).where(UserPushToken.user_id == user_id)
             ).all()

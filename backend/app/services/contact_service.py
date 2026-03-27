@@ -1,12 +1,15 @@
+from datetime import datetime
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 from typing import List, Optional
 
 from app.models.Contact import Contact
 from app.models.User import User
+from app.models.UserLoanRequest import UserLoanRequestStatus
 from app.repositories.contact_repository import ContactRepository
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
+from app.repositories.user_loan_request_repository import UserLoanRequestRepository
 from app.schemas.Contact import ContactCreate, ContactRead, ContactUpdate
 
 
@@ -19,6 +22,7 @@ class ContactService:
         self.contact_repository = ContactRepository(session)
         self.loan_repository = LoanRepository(session)
         self.borrowed_book_repository = BorrowedBookRepository(session)
+        self.user_loan_request_repository = UserLoanRequestRepository(session)
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[ContactRead]:
         """Récupère tous les contacts de l'utilisateur avec le nombre de prêts et emprunts actifs"""
@@ -147,7 +151,7 @@ class ContactService:
         if active_loans_count > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Impossible de supprimer un contact avec des prêts actifs"
+                detail="Impossible de supprimer ce contact : un prêt ou emprunt est en cours"
             )
 
         # Vérifier s'il a des emprunts actifs
@@ -159,8 +163,33 @@ class ContactService:
         if active_borrows_count > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Impossible de supprimer un contact avec des emprunts actifs"
+                detail="Impossible de supprimer ce contact : un prêt ou emprunt est en cours"
             )
+
+        if contact.linked_user_id:
+            # Bloquer si une demande de prêt inter-membres est en cours (ACCEPTED)
+            accepted_requests = self.user_loan_request_repository.get_accepted_by_linked_user(
+                self.user_id, contact.linked_user_id
+            )
+            if accepted_requests:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Impossible de supprimer ce contact : un prêt ou emprunt est en cours"
+                )
+
+            # Annuler automatiquement les demandes non acceptées (PENDING)
+            pending_requests = self.user_loan_request_repository.get_pending_by_linked_user(
+                self.user_id, contact.linked_user_id
+            )
+            for req in pending_requests:
+                req.status = UserLoanRequestStatus.CANCELLED
+                req.updated_at = datetime.utcnow()
+                self.session.add(req)
+
+            # Supprimer le contact miroir chez l'autre utilisateur
+            mirror = self.contact_repository.get_mirror(self.user_id, contact.linked_user_id)
+            if mirror:
+                self.contact_repository.delete(mirror)
 
         self.contact_repository.delete(contact)
 
@@ -185,6 +214,14 @@ class ContactService:
         active_borrows_count = sum(
             1 for b in contact_borrows if b.status in ['active', 'overdue']
         )
+
+        # Pour les contacts membres, compter aussi les UserLoanRequest ACCEPTED
+        if contact.linked_user_id:
+            ulr_accepted = self.user_loan_request_repository.get_accepted_by_linked_user(
+                self.user_id, contact.linked_user_id
+            )
+            active_loans_count += sum(1 for r in ulr_accepted if r.lender_id == self.user_id)
+            active_borrows_count += sum(1 for r in ulr_accepted if r.requester_id == self.user_id)
 
         # Résoudre le username de l'utilisateur lié
         linked_user_username = None

@@ -11,12 +11,13 @@ from app.schemas.ContactInvitation import ContactInvitationRead, ContactInvitati
 from app.services.push_notification_service import push_notification_service
 
 
-def _fire_push(session: Session, user_id: int, title: str, body: str):
+def _fire_push(session: Session, user_id: int, title: str, body: str, notification_type: str = None):
     """Lance un envoi push en fire-and-forget depuis un contexte synchrone."""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(push_notification_service.send_to_user(session, user_id, title, body))
+            data = {"type": notification_type} if notification_type else None
+            loop.create_task(push_notification_service.send_to_user(session, user_id, title, body, data=data))
     except Exception:
         pass
 
@@ -156,7 +157,7 @@ class ContactInvitationService:
         self.session.refresh(inv)
         sender = self.session.exec(select(User).where(User.id == self.current_user_id)).first()
         sender_name = sender.username if sender else "Quelqu'un"
-        _fire_push(self.session, data.recipient_id, "Nouvelle invitation", f"{sender_name} vous a envoyé une invitation de contact")
+        _fire_push(self.session, data.recipient_id, "Nouvelle invitation", f"{sender_name} vous a envoyé une invitation de contact", notification_type="contact_invitation")
         return _to_read(self._load(inv.id))
 
     def accept(self, inv_id: int) -> ContactInvitationRead:
@@ -191,7 +192,7 @@ class ContactInvitationService:
         self.session.add(inv)
         self.session.commit()
         acceptor_name = recipient.username if recipient else "Quelqu'un"
-        _fire_push(self.session, inv.sender_id, "Invitation acceptée", f"{acceptor_name} a accepté votre invitation")
+        _fire_push(self.session, inv.sender_id, "Invitation acceptée", f"{acceptor_name} a accepté votre invitation", notification_type="contact_accepted")
         return _to_read(self._load(inv.id))
 
     def decline(self, inv_id: int) -> ContactInvitationRead:

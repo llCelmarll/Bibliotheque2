@@ -45,6 +45,15 @@ async def get_outgoing(
     return service.get_outgoing(skip, limit)
 
 
+@router.get("/by-linked-user/{linked_user_id}", response_model=List[UserLoanRequestRead])
+async def get_by_linked_user(
+    linked_user_id: int,
+    service: UserLoanRequestService = Depends(get_service),
+):
+    """Toutes les demandes inter-membres avec un utilisateur lié (pour page détail contact)"""
+    return service.get_by_linked_user(linked_user_id)
+
+
 @router.get("/incoming/count")
 async def get_pending_count(
     service: UserLoanRequestService = Depends(get_service),

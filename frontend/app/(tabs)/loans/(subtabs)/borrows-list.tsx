@@ -39,6 +39,12 @@ function BorrowedBooksScreen() {
     [outgoingRequests]
   );
 
+  // Demandes de prêt inter-membres RETURNED envoyées (historique)
+  const returnedOutgoing = useMemo(() =>
+    outgoingRequests.filter(r => r.status === UserLoanRequestStatus.RETURNED),
+    [outgoingRequests]
+  );
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([refresh(), refreshRequests()]);
@@ -195,6 +201,7 @@ function BorrowedBooksScreen() {
           data={[
             ...acceptedOutgoing.map(r => ({ type: 'ulr' as const, data: r })),
             ...filteredAndSortedBorrows.map(b => ({ type: 'borrow' as const, data: b })),
+            ...returnedOutgoing.map(r => ({ type: 'ulr' as const, data: r })),
           ]}
           keyExtractor={(item) => `${item.type}-${item.data.id}`}
           renderItem={({ item }) =>
@@ -207,7 +214,7 @@ function BorrowedBooksScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           contentContainerStyle={
-            filteredAndSortedBorrows.length === 0 && acceptedOutgoing.length === 0 ? styles.emptyListContainer : undefined
+            filteredAndSortedBorrows.length === 0 && acceptedOutgoing.length === 0 && returnedOutgoing.length === 0 ? styles.emptyListContainer : undefined
           }
         />
       )}

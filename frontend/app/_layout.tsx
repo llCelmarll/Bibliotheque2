@@ -7,14 +7,26 @@ import { Stack , SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PUSH_ENABLED_KEY, PUSH_PREFS_KEY } from '@/services/pushNotificationService';
 
-// Afficher les notifications même quand l'app est en foreground
+// Afficher les notifications même quand l'app est en foreground, selon les préférences
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    const globalEnabled = await AsyncStorage.getItem(PUSH_ENABLED_KEY);
+    if (globalEnabled === 'false') {
+      return { shouldShowAlert: false, shouldPlaySound: false, shouldSetBadge: false };
+    }
+    const notifType = (notification.request.content.data as any)?.type as string | undefined;
+    if (notifType) {
+      const rawPrefs = await AsyncStorage.getItem(PUSH_PREFS_KEY);
+      const prefs = rawPrefs ? JSON.parse(rawPrefs) : {};
+      if (prefs[notifType] === false) {
+        return { shouldShowAlert: false, shouldPlaySound: false, shouldSetBadge: false };
+      }
+    }
+    return { shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false };
+  },
 });
 
 import { useColorScheme } from '@/components/useColorScheme';

@@ -1,6 +1,6 @@
 from typing import Optional, List, TYPE_CHECKING
 from enum import Enum
-from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship, DateTime
+from sqlmodel import Field, SQLModel, Column, String, UniqueConstraint, Relationship, DateTime, JSON
 from datetime import datetime
 
 
@@ -32,6 +32,9 @@ class User(SQLModel, table=True):
 
     # État du compte
     is_active: bool = Field(default=True)
+
+    # Préférences de notifications push (JSON: {"contact_invitation": true, ...})
+    push_prefs: Optional[dict] = Field(default=None, sa_column=Column(JSON, nullable=True))
 
     # Timestamps
     created_at: datetime = Field(

@@ -29,9 +29,12 @@ function NotificationsScreen() {
 
     const {
         incomingLoanRequests,
+        outgoingLoanRequests,
         receivedInvitations: received,
         sentInvitations: sent,
         invitationPendingCount,
+        declinedLoanRequestCount,
+        seenDeclinedIds,
         loading,
         refresh,
     } = useNotifications();
@@ -39,8 +42,12 @@ function NotificationsScreen() {
     const pendingLoanRequests = incomingLoanRequests.filter(
         r => r.status === UserLoanRequestStatus.PENDING
     );
+    const declinedLoanRequests = outgoingLoanRequests.filter(
+        r => r.status !== UserLoanRequestStatus.DECLINED || !seenDeclinedIds.has(r.id)
+    );
 
     const [refreshing, setRefreshing] = useState(false);
+    const [loansSubTab, setLoansSubTab] = useState<'incoming' | 'declined'>('incoming');
     const [contactsSubTab, setContactsSubTab] = useState<'received' | 'sent'>('received');
     const [showSendModal, setShowSendModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -256,10 +263,10 @@ function NotificationsScreen() {
                     <Text style={[styles.mainTabBtnText, { color: tab === 'loans' ? theme.accent : theme.textMuted }, tab === 'loans' && { fontWeight: '700' }]}>
                         Emprunts
                     </Text>
-                    {pendingLoanRequests.length > 0 && (
+                    {(pendingLoanRequests.length + declinedLoanRequestCount) > 0 && (
                         <View style={[styles.smallBadge, { backgroundColor: theme.danger }]}>
                             <Text style={[styles.smallBadgeText, { color: theme.textInverse }]}>
-                                {pendingLoanRequests.length > 9 ? '9+' : pendingLoanRequests.length}
+                                {(pendingLoanRequests.length + declinedLoanRequestCount) > 9 ? '9+' : pendingLoanRequests.length + declinedLoanRequestCount}
                             </Text>
                         </View>
                     )}
@@ -292,26 +299,48 @@ function NotificationsScreen() {
                 </View>
             ) : tab === 'loans' ? (
                 /* ---- Onglet Emprunts ---- */
-                <FlatList
-                    data={pendingLoanRequests}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <UserLoanRequestListItem
-                            request={item as UserLoanRequest}
-                            onAction={refresh}
-                        />
-                    )}
-                    ListEmptyComponent={
-                        <View style={styles.emptyState}>
-                            <MaterialIcons name="swap-horizontal-circle" size={64} color={theme.borderMedium} />
-                            <Text style={[styles.emptyText, { color: theme.textMuted }]}>Aucune demande d'emprunt en attente</Text>
-                        </View>
-                    }
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-                    }
-                    contentContainerStyle={pendingLoanRequests.length === 0 ? styles.emptyListContainer : undefined}
-                />
+                <>
+                    <View style={[styles.subTabRow, { backgroundColor: theme.bgSecondary, borderBottomColor: theme.borderLight }]}>
+                        <TouchableOpacity
+                            style={[styles.subTabBtn, loansSubTab === 'incoming' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
+                            onPress={() => setLoansSubTab('incoming')}
+                        >
+                            <Text style={[styles.subTabBtnText, { color: loansSubTab === 'incoming' ? theme.accent : theme.textMuted }, loansSubTab === 'incoming' && { fontWeight: '600' }]}>
+                                Reçues {pendingLoanRequests.length > 0 && loansSubTab !== 'incoming' ? `(${pendingLoanRequests.length})` : ''}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.subTabBtn, loansSubTab === 'declined' && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
+                            onPress={() => setLoansSubTab('declined')}
+                        >
+                            <Text style={[styles.subTabBtnText, { color: loansSubTab === 'declined' ? theme.accent : theme.textMuted }, loansSubTab === 'declined' && { fontWeight: '600' }]}>
+                                Envoyées {declinedLoanRequestCount > 0 && loansSubTab !== 'declined' ? `(${declinedLoanRequestCount})` : ''}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <FlatList
+                        data={loansSubTab === 'incoming' ? pendingLoanRequests : declinedLoanRequests}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={({ item }) => (
+                            <UserLoanRequestListItem
+                                request={item as UserLoanRequest}
+                                onAction={refresh}
+                            />
+                        )}
+                        ListEmptyComponent={
+                            <View style={styles.emptyState}>
+                                <MaterialIcons name="swap-horizontal-circle" size={64} color={theme.borderMedium} />
+                                <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                                    {loansSubTab === 'incoming' ? 'Aucune demande d\'emprunt en attente' : 'Aucune demande envoyée'}
+                                </Text>
+                            </View>
+                        }
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                        }
+                        contentContainerStyle={(loansSubTab === 'incoming' ? pendingLoanRequests : declinedLoanRequests).length === 0 ? styles.emptyListContainer : undefined}
+                    />
+                </>
             ) : (
                 /* ---- Onglet Contacts ---- */
                 <>

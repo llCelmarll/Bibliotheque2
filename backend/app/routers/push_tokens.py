@@ -51,6 +51,31 @@ async def register_push_token(
     return {"status": "ok"}
 
 
+class PushPrefsUpdate(BaseModel):
+    prefs: dict  # {"contact_invitation": true, "loan_request": false, ...}
+
+
+@router.get("/prefs", status_code=200)
+async def get_push_prefs(
+    current_user: User = Depends(get_current_user),
+):
+    """Récupère les préférences de notifications push de l'utilisateur."""
+    return {"prefs": current_user.push_prefs or {}}
+
+
+@router.put("/prefs", status_code=200)
+async def update_push_prefs(
+    data: PushPrefsUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Met à jour les préférences de notifications push de l'utilisateur."""
+    current_user.push_prefs = data.prefs
+    session.add(current_user)
+    session.commit()
+    return {"status": "ok"}
+
+
 @router.delete("/{token}", status_code=204)
 async def unregister_push_token(
     token: str,

@@ -29,7 +29,7 @@ function UserLoanRequestDetailScreen() {
     const { id } = useLocalSearchParams();
     const requestId = parseInt(id as string);
     const { user } = useAuth();
-    const { refresh: refreshNotifications } = useNotifications();
+    const { refresh: refreshNotifications, markDeclinedAsSeen } = useNotifications();
 
     const [request, setRequest] = useState<UserLoanRequest | null>(null);
     const [loading, setLoading] = useState(true);
@@ -48,10 +48,12 @@ function UserLoanRequestDetailScreen() {
             const data = await userLoanRequestService.getById(requestId);
             setRequest(data);
             setDueDateInput(data.due_date ? new Date(data.due_date) : null);
+            if (data.status === UserLoanRequestStatus.DECLINED) {
+                markDeclinedAsSeen(requestId);
+            }
         } catch (err: any) {
-            Alert.alert('Erreur', 'Impossible de charger la demande', [
-                { text: 'OK', onPress: () => router.back() }
-            ]);
+            if (Platform.OS === 'web') { window.alert('Erreur\nImpossible de charger la demande'); router.back(); }
+            else Alert.alert('Erreur', 'Impossible de charger la demande', [{ text: 'OK', onPress: () => router.back() }]);
         } finally {
             setLoading(false);
         }
@@ -59,6 +61,22 @@ function UserLoanRequestDetailScreen() {
 
     const isLender = user?.id === request?.lender_id;
     const isRequester = user?.id === request?.requester_id;
+
+    const showAlert = (title: string, message: string) => {
+        if (Platform.OS === 'web') window.alert(`${title}\n${message}`);
+        else Alert.alert(title, message);
+    };
+
+    const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+        if (Platform.OS === 'web') {
+            if (window.confirm(`${title}\n${message}`)) onConfirm();
+        } else {
+            Alert.alert(title, message, [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
+            ]);
+        }
+    };
 
     const handleAccept = async () => {
         setDueDateError('');
@@ -70,88 +88,68 @@ function UserLoanRequestDetailScreen() {
             });
             await loadRequest();
             refreshNotifications();
-            Alert.alert('Demande acceptée', 'Le livre est maintenant considéré comme prêté.');
+            showAlert('Demande acceptée', 'Le livre est maintenant considéré comme prêté.');
         } catch (err: any) {
-            Alert.alert('Erreur', err.response?.data?.detail || 'Impossible d\'accepter la demande');
+            showAlert('Erreur', err.response?.data?.detail || 'Impossible d\'accepter la demande');
         } finally {
             setActionLoading(false);
         }
     };
 
     const handleDecline = () => {
-        Alert.alert(
+        showConfirm(
             'Refuser la demande',
             'Êtes-vous sûr de vouloir refuser cette demande ?',
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Refuser',
-                    style: 'destructive',
-                    onPress: async () => {
-                        setActionLoading(true);
-                        try {
-                            await userLoanRequestService.decline(requestId, {
-                                response_message: responseMessage.trim() || undefined,
-                            });
-                            await loadRequest();
-                            refreshNotifications();
-                        } catch (err: any) {
-                            Alert.alert('Erreur', err.response?.data?.detail || 'Impossible de refuser la demande');
-                        } finally {
-                            setActionLoading(false);
-                        }
-                    },
-                },
-            ]
+            async () => {
+                setActionLoading(true);
+                try {
+                    await userLoanRequestService.decline(requestId, {
+                        response_message: responseMessage.trim() || undefined,
+                    });
+                    await loadRequest();
+                    refreshNotifications();
+                } catch (err: any) {
+                    showAlert('Erreur', err.response?.data?.detail || 'Impossible de refuser la demande');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
         );
     };
 
     const handleCancel = () => {
-        Alert.alert(
+        showConfirm(
             'Annuler la demande',
             'Êtes-vous sûr de vouloir annuler votre demande ?',
-            [
-                { text: 'Non', style: 'cancel' },
-                {
-                    text: 'Oui, annuler',
-                    style: 'destructive',
-                    onPress: async () => {
-                        setActionLoading(true);
-                        try {
-                            await userLoanRequestService.cancel(requestId);
-                            await loadRequest();
-                        } catch (err: any) {
-                            Alert.alert('Erreur', err.response?.data?.detail || 'Impossible d\'annuler la demande');
-                        } finally {
-                            setActionLoading(false);
-                        }
-                    },
-                },
-            ]
+            async () => {
+                setActionLoading(true);
+                try {
+                    await userLoanRequestService.cancel(requestId);
+                    await loadRequest();
+                } catch (err: any) {
+                    showAlert('Erreur', err.response?.data?.detail || 'Impossible d\'annuler la demande');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
         );
     };
 
     const handleReturn = () => {
-        Alert.alert(
+        showConfirm(
             'Retour du livre',
             `Confirmer que "${request?.book.title}" a été retourné ?`,
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Confirmer',
-                    onPress: async () => {
-                        setActionLoading(true);
-                        try {
-                            await userLoanRequestService.returnBook(requestId);
-                            await loadRequest();
-                        } catch (err: any) {
-                            Alert.alert('Erreur', err.response?.data?.detail || 'Impossible de marquer le retour');
-                        } finally {
-                            setActionLoading(false);
-                        }
-                    },
-                },
-            ]
+            async () => {
+                setActionLoading(true);
+                try {
+                    await userLoanRequestService.returnBook(requestId);
+                    await loadRequest();
+                } catch (err: any) {
+                    showAlert('Erreur', err.response?.data?.detail || 'Impossible de marquer le retour');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
         );
     };
 

@@ -24,7 +24,7 @@ async function getItem(key: string) {
   }
 }
 import { authService, LoginRequest, RegisterRequest, User } from '@/services/authService';
-import { registerForPushNotificationsAsync, sendTokenToBackend } from '@/services/pushNotificationService';
+import { registerForPushNotificationsAsync, sendTokenToBackend, PUSH_ENABLED_KEY } from '@/services/pushNotificationService';
 
 interface AuthContextType {
   user: User | null;
@@ -154,9 +154,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(userResponse));
       setToken(loginResponse.access_token);
       setUser(userResponse);
-      // Enregistrement push en fire-and-forget (jamais bloquant)
-      registerForPushNotificationsAsync().then((pushToken) => {
-        if (pushToken) sendTokenToBackend(pushToken);
+      // Enregistrement push en fire-and-forget (jamais bloquant, sauf si désactivé)
+      AsyncStorage.getItem(PUSH_ENABLED_KEY).then((val) => {
+        if (val === 'false') return;
+        return registerForPushNotificationsAsync().then((pushToken) => {
+          if (pushToken) sendTokenToBackend(pushToken);
+        });
       }).catch(() => {});
     } catch (error) {
       console.error('Erreur de connexion:', error);
@@ -179,9 +182,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setToken(registerResponse.token.access_token);
       setUser(registerResponse.user);
-      // Enregistrement push en fire-and-forget (jamais bloquant)
-      registerForPushNotificationsAsync().then((pushToken) => {
-        if (pushToken) sendTokenToBackend(pushToken);
+      // Enregistrement push en fire-and-forget (jamais bloquant, sauf si désactivé)
+      AsyncStorage.getItem(PUSH_ENABLED_KEY).then((val) => {
+        if (val === 'false') return;
+        return registerForPushNotificationsAsync().then((pushToken) => {
+          if (pushToken) sendTokenToBackend(pushToken);
+        });
       }).catch(() => {});
     } catch (error) {
       throw error;
