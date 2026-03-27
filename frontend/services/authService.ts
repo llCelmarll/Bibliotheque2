@@ -115,7 +115,7 @@ class AuthService {
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     // Sur mobile, remember_me est toujours true pour éviter les déconnexions
-    const rememberMe = Platform.OS !== 'web' ? true : (credentials.remember_me ?? false);
+    const rememberMe = credentials.remember_me ?? false;
     const response = await this.makeRequest<LoginResponse>(`/auth/login?remember_me=${rememberMe}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

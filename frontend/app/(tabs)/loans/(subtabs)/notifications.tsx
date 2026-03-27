@@ -22,21 +22,7 @@ import { UserLoanRequestListItem } from '@/components/loans/UserLoanRequestListI
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-
-const showAlert = (title: string, message: string) => {
-    if (Platform.OS === 'web') window.alert(`${title}\n${message}`);
-    else Alert.alert(title, message);
-};
-const showConfirm = (title: string, message: string, onConfirm: () => void) => {
-    if (Platform.OS === 'web') {
-        if (window.confirm(`${title}\n${message}`)) onConfirm();
-    } else {
-        Alert.alert(title, message, [
-            { text: 'Annuler', style: 'cancel' },
-            { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
-        ]);
-    }
-};
+import { showAlert, showConfirm } from '@/utils/notificationHelpers';
 
 function NotificationsScreen() {
     const router = useRouter();

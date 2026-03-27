@@ -51,13 +51,13 @@ describe('AuthService', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/auth/login'),
+        expect.stringContaining('/auth/login?remember_me=false'),
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
             'Content-Type': 'application/x-www-form-urlencoded'
           }),
-          body: 'username=test%40example.com&password=password123&remember_me=false'
+          body: 'username=test%40example.com&password=password123'
         })
       );
       expect(result).toEqual(mockResponseData);
