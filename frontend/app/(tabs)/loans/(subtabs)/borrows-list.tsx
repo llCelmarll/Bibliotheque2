@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -44,6 +45,10 @@ function BorrowedBooksScreen() {
     outgoingRequests.filter(r => r.status === UserLoanRequestStatus.RETURNED),
     [outgoingRequests]
   );
+
+  useFocusEffect(useCallback(() => {
+    refreshRequests();
+  }, [refreshRequests]));
 
   const handleRefresh = async () => {
     setRefreshing(true);

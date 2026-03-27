@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { contactInvitationService } from '@/services/contactInvitationService';
 import { userLoanRequestService } from '@/services/userLoanRequestService';
+import { apiClient } from '@/services/api/client';
 import { ContactInvitation } from '@/types/contactInvitation';
 import { UserLoanRequest } from '@/types/userLoanRequest';
 
@@ -57,9 +58,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         setDeclinedLoanRequestCount(prev => Math.max(0, prev - 1));
     }, [seenDeclinedIds]);
 
-    const refresh = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         if (!isAuthenticated) return;
-        setLoading(true);
         try {
             const [recv, snt, invCount, inc, out, loanCount] = await Promise.all([
                 contactInvitationService.getReceived(),
@@ -81,10 +81,14 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
             setDeclinedLoanRequestCount(unseenDeclined.length);
         } catch (err) {
             console.error('Erreur chargement notifications:', err);
-        } finally {
-            setLoading(false);
         }
     }, [isAuthenticated]);
+
+    const refresh = useCallback(async () => {
+        setLoading(true);
+        await fetchData();
+        setLoading(false);
+    }, [fetchData]);
 
     useEffect(() => {
         refresh();
@@ -94,10 +98,36 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     useEffect(() => {
         if (!isAuthenticated || !Notifications) return;
         const subscription = Notifications.addNotificationReceivedListener(() => {
-            refresh();
+            fetchData();
         });
         return () => subscription.remove();
-    }, [isAuthenticated, refresh]);
+    }, [isAuthenticated, fetchData]);
+
+    // Polling silencieux toutes les 30s sur web : une seule requête légère pour les compteurs
+    const fetchCounts = useCallback(async () => {
+        if (!isAuthenticated) return;
+        try {
+            const counts = await apiClient.get<{
+                invitation_pending: number;
+                loan_pending: number;
+                declined_outgoing_ids: number[];
+            }>('/notifications/counts');
+            setInvitationPendingCount(counts.invitation_pending);
+            setLoanRequestPendingCount(counts.loan_pending);
+            const seenRaw = await AsyncStorage.getItem(SEEN_DECLINED_KEY);
+            const seen = seenRaw ? new Set<number>(JSON.parse(seenRaw)) : new Set<number>();
+            const unseen = counts.declined_outgoing_ids.filter(id => !seen.has(id));
+            setDeclinedLoanRequestCount(unseen.length);
+        } catch (err) {
+            console.error('Erreur polling counts:', err);
+        }
+    }, [isAuthenticated]);
+
+    useEffect(() => {
+        if (!isAuthenticated || Platform.OS !== 'web') return;
+        const interval = setInterval(() => { fetchCounts(); }, 30000);
+        return () => clearInterval(interval);
+    }, [isAuthenticated, fetchCounts]);
 
     return (
         <NotificationsContext.Provider value={{

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
     View,
     Text,
@@ -21,6 +22,21 @@ import { UserLoanRequestListItem } from '@/components/loans/UserLoanRequestListI
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
+
+const showAlert = (title: string, message: string) => {
+    if (Platform.OS === 'web') window.alert(`${title}\n${message}`);
+    else Alert.alert(title, message);
+};
+const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    if (Platform.OS === 'web') {
+        if (window.confirm(`${title}\n${message}`)) onConfirm();
+    } else {
+        Alert.alert(title, message, [
+            { text: 'Annuler', style: 'cancel' },
+            { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
+        ]);
+    }
+};
 
 function NotificationsScreen() {
     const router = useRouter();
@@ -57,6 +73,10 @@ function NotificationsScreen() {
     const [selectedUser, setSelectedUser] = useState<{ id: number; username: string } | null>(null);
     const [sending, setSending] = useState(false);
     const [sendError, setSendError] = useState<string | null>(null);
+
+    useFocusEffect(useCallback(() => {
+        refresh();
+    }, [refresh]));
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -98,7 +118,7 @@ function NotificationsScreen() {
             setSearchResults([]);
             setInviteMessage('');
             setSendError(null);
-            Alert.alert('Invitation envoyée', `Votre invitation a été envoyée à ${selectedUser.username}.`);
+            showAlert('Invitation envoyée', `Votre invitation a été envoyée à ${selectedUser.username}.`);
         } catch (err: any) {
             setSendError(err.response?.data?.detail || "Impossible d'envoyer l'invitation");
         } finally {
@@ -110,31 +130,24 @@ function NotificationsScreen() {
         try {
             await contactInvitationService.accept(inv.id);
             await refresh();
-            Alert.alert('Connecté !', `Vous êtes maintenant connecté avec ${inv.sender_username}.`);
+            showAlert('Connecté !', `Vous êtes maintenant connecté avec ${inv.sender_username}.`);
         } catch (err: any) {
-            Alert.alert('Erreur', err.response?.data?.detail || "Impossible d'accepter");
+            showAlert('Erreur', err.response?.data?.detail || "Impossible d'accepter");
         }
     };
 
     const handleDecline = (inv: ContactInvitation) => {
-        Alert.alert(
+        showConfirm(
             "Refuser l'invitation",
             `Refuser l'invitation de ${inv.sender_username} ?`,
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Refuser',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await contactInvitationService.decline(inv.id);
-                            await refresh();
-                        } catch (err: any) {
-                            Alert.alert('Erreur', err.response?.data?.detail || 'Impossible de refuser');
-                        }
-                    },
-                },
-            ]
+            async () => {
+                try {
+                    await contactInvitationService.decline(inv.id);
+                    await refresh();
+                } catch (err: any) {
+                    showAlert('Erreur', err.response?.data?.detail || 'Impossible de refuser');
+                }
+            }
         );
     };
 

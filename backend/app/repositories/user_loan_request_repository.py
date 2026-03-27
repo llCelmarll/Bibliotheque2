@@ -60,11 +60,12 @@ class UserLoanRequestRepository:
         return list(self.session.exec(statement))
 
     def get_outgoing(self, requester_id: int, skip: int = 0, limit: int = 100) -> List[UserLoanRequest]:
-        """Demandes envoyées (vue demandeur), toutes statuts inclus"""
+        """Demandes envoyées (vue demandeur), toutes sauf CANCELLED"""
         statement = (
             self._base_query()
             .where(
                 UserLoanRequest.requester_id == requester_id,
+                UserLoanRequest.status != UserLoanRequestStatus.CANCELLED,
             )
             .offset(skip)
             .limit(limit)
