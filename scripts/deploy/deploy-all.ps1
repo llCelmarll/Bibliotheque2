@@ -254,13 +254,34 @@ function Get-UserConfirmation {
 }
 
 function Update-ProdBranch {
+    param($Plan)
+
     Write-Host "[Git] Mise a jour de la branche prod..." -ForegroundColor Yellow
     $currentBranch = git rev-parse --abbrev-ref HEAD
+
+    # Construire le message de merge selon ce qui a ete deploye
+    $parts = @()
+    if ($Plan.Backend) { $parts += "backend" }
+    if ($Plan.Web)     { $parts += "web" }
+    if ($Plan.Mobile)  { $parts += "mobile" }
+    if ($Plan.Apk)     { $parts += "apk" }
+    $deployed = $parts -join "+"
+
+    $appConfigPath = Join-Path $PSScriptRoot "..\..\frontend\app.config.js"
+    $appVersion = "?"
+    if (Test-Path $appConfigPath) {
+        $appConfigContent = Get-Content $appConfigPath -Raw
+        $versionMatch = [regex]::Match($appConfigContent, 'version:\s*"([^"]+)"')
+        if ($versionMatch.Success) { $appVersion = $versionMatch.Groups[1].Value }
+    }
+
+    $mergeMsg = "deploy($deployed): v$appVersion"
+
     git checkout prod
-    git merge main --no-edit
+    git merge main --no-ff -m $mergeMsg
     git push origin prod
     git checkout $currentBranch
-    Write-Host "  Branche prod mise a jour !" -ForegroundColor Green
+    Write-Host "  Branche prod mise a jour ! ($mergeMsg)" -ForegroundColor Green
     Write-Host ""
 }
 
@@ -572,7 +593,7 @@ if ($plan.Web) {
 # [5] MISE A JOUR BRANCHE PROD
 # ---------------------------------------------------------------------------
 
-Update-ProdBranch
+Update-ProdBranch -Plan $plan
 
 # ---------------------------------------------------------------------------
 # [6] RESUME
