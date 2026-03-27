@@ -1,36 +1,43 @@
-# Script de deploiement complet
-# Met a jour le backend, le frontend web, l'app mobile ET l'APK Android
+# Script de deploiement complet avec auto-detection des changements
+# Compare avec la branche prod (dernier etat deploye) pour savoir quoi deployer
 
 param(
-    [switch]$SkipBackend,
-    [switch]$SkipWeb,
-    [switch]$SkipMobile,
-    [switch]$SkipApk,
-    [switch]$SkipBuild,
+    # Forcer le deploiement d'un composant meme sans changement detecte
+    [switch]$ForceBackend,
+    [switch]$ForceWeb,
+    [switch]$ForceMobile,
+    [switch]$ForceApk,
+
+    # Message OTA optionnel (defaut = dernier message de commit)
     [string]$UpdateMessage,
+
+    # APK-specific
+    [switch]$SkipBuild,         # Sauter le build EAS, utiliser le dernier artefact
     [ValidateSet("patch", "minor", "major")]
-    [string]$BumpType = "patch"
+    [string]$BumpType = "patch",
+
+    # Mode simulation : affiche le plan sans executer
+    [switch]$DryRun
 )
 
-# Fonction pour vérifier et lancer Docker Desktop si nécessaire
-function Start-DockerIfNeeded {
-    Write-Host "Vérification de Docker Desktop..." -ForegroundColor Gray
+# ---------------------------------------------------------------------------
+# FONCTIONS HELPER
+# ---------------------------------------------------------------------------
 
-    # Vérifier si Docker est en cours d'exécution
+function Start-DockerIfNeeded {
+    Write-Host "Verification de Docker Desktop..." -ForegroundColor Gray
+
     try {
         $null = docker info 2>&1
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "  Docker Desktop est déjà en cours d'exécution" -ForegroundColor Green
+            Write-Host "  Docker Desktop est deja en cours d'execution" -ForegroundColor Green
             return $true
         }
-    } catch {
-        # Docker n'est pas accessible
-    }
+    } catch {}
 
-    Write-Host "  Docker Desktop n'est pas en cours d'exécution" -ForegroundColor Yellow
+    Write-Host "  Docker Desktop n'est pas en cours d'execution" -ForegroundColor Yellow
     Write-Host "  Lancement de Docker Desktop..." -ForegroundColor Yellow
 
-    # Chemins possibles pour Docker Desktop
     $dockerPaths = @(
         "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe",
         "${env:ProgramFiles(x86)}\Docker\Docker\Docker Desktop.exe",
@@ -39,23 +46,18 @@ function Start-DockerIfNeeded {
 
     $dockerExe = $null
     foreach ($path in $dockerPaths) {
-        if (Test-Path $path) {
-            $dockerExe = $path
-            break
-        }
+        if (Test-Path $path) { $dockerExe = $path; break }
     }
 
     if (-not $dockerExe) {
-        Write-Host "  Erreur: Docker Desktop n'a pas été trouvé" -ForegroundColor Red
+        Write-Host "  Erreur: Docker Desktop n'a pas ete trouve" -ForegroundColor Red
         Write-Host "  Veuillez lancer Docker Desktop manuellement" -ForegroundColor Red
         return $false
     }
 
-    # Lancer Docker Desktop
     Start-Process -FilePath $dockerExe
-
-    Write-Host "  Attente du démarrage de Docker Desktop..." -ForegroundColor Yellow
-    $maxAttempts = 60  # 60 secondes max
+    Write-Host "  Attente du demarrage de Docker Desktop..." -ForegroundColor Yellow
+    $maxAttempts = 60
     $attempts = 0
 
     while ($attempts -lt $maxAttempts) {
@@ -63,26 +65,211 @@ function Start-DockerIfNeeded {
         try {
             $null = docker info 2>&1
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "  Docker Desktop est maintenant prêt !" -ForegroundColor Green
+                Write-Host "  Docker Desktop est maintenant pret !" -ForegroundColor Green
                 return $true
             }
-        } catch {
-            # Continuer à attendre
-        }
+        } catch {}
         $attempts++
         Write-Host "  ." -NoNewline -ForegroundColor Gray
     }
 
     Write-Host ""
-    Write-Host "  Timeout: Docker Desktop n'a pas démarré dans les temps" -ForegroundColor Red
+    Write-Host "  Timeout: Docker Desktop n'a pas demarre dans les temps" -ForegroundColor Red
     return $false
 }
 
-# Chargement des variables de deploiement
-$envFile = Join-Path $PSScriptRoot "..\..\.env.deploy"
-if (-not (Test-Path $envFile)) {
-    $envFile = Join-Path $PSScriptRoot ".env.deploy"
+function Get-DefaultUpdateMessage {
+    $msg = git log --format="%s" -1 HEAD 2>$null
+    if ($msg) { return $msg.Trim() }
+    return "Mise a jour"
 }
+
+function Get-DeploymentPlan {
+    param(
+        [switch]$ForceBackend,
+        [switch]$ForceWeb,
+        [switch]$ForceMobile,
+        [switch]$ForceApk
+    )
+
+    $plan = @{
+        Backend      = $false
+        Web          = $false
+        Mobile       = $false
+        Apk          = $false
+        ChangedFiles = @()
+        IsFirstDeploy = $false
+    }
+
+    # Verifier si la branche prod existe
+    $null = git rev-parse --verify prod 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Aucune branche prod detectee — premier deploiement, tout sera deploye" -ForegroundColor Yellow
+        $plan.Backend      = $true
+        $plan.Web          = $true
+        $plan.Mobile       = $true
+        $plan.Apk          = $true
+        $plan.IsFirstDeploy = $true
+        return $plan
+    }
+
+    # Verifier que prod n'est pas en avance sur main (etat anormal)
+    $aheadCount = git rev-list --count main..prod 2>$null
+    if ($aheadCount -and [int]$aheadCount -gt 0) {
+        Write-Host "ATTENTION: la branche prod contient $aheadCount commit(s) absents de main !" -ForegroundColor Red
+        Write-Host "Verifiez l'etat de vos branches avant de deployer." -ForegroundColor Red
+        exit 1
+    }
+
+    # Recuperer les fichiers modifies depuis le dernier deploiement
+    $changedFiles = @(git diff --name-only prod HEAD 2>$null)
+    $plan.ChangedFiles = $changedFiles
+
+    # Regles de detection
+    $backendChanged = $changedFiles | Where-Object { $_ -match '^backend/' }
+    $frontendChanged = $changedFiles | Where-Object { $_ -match '^frontend/' }
+    $nativeChanged = $changedFiles | Where-Object {
+        $_ -match '^frontend/android/' -or
+        $_ -match '^frontend/ios/' -or
+        $_ -eq 'frontend/app.config.js' -or
+        $_ -eq 'frontend/package.json'
+    }
+
+    $plan.Backend = ($backendChanged.Count -gt 0) -or $ForceBackend.IsPresent
+    $plan.Web     = ($frontendChanged.Count -gt 0) -or $ForceWeb.IsPresent
+    $plan.Mobile  = ($frontendChanged.Count -gt 0) -or $ForceMobile.IsPresent
+    $plan.Apk     = ($nativeChanged.Count -gt 0) -or $ForceApk.IsPresent
+
+    return $plan
+}
+
+function Show-DeploymentSummary {
+    param($Plan, $UpdateMessage)
+
+    $changedFiles = $Plan.ChangedFiles
+    $backendFiles = @($changedFiles | Where-Object { $_ -match '^backend/' })
+    $frontendFiles = @($changedFiles | Where-Object { $_ -match '^frontend/' })
+    $nativeFiles = @($changedFiles | Where-Object {
+        $_ -match '^frontend/android/' -or $_ -match '^frontend/ios/' -or
+        $_ -eq 'frontend/app.config.js' -or $_ -eq 'frontend/package.json'
+    })
+
+    Write-Host ""
+    Write-Host "Analyse des changements depuis prod..." -ForegroundColor Cyan
+    Write-Host ""
+
+    $col1 = 14
+    $col2 = 12
+
+    # Backend
+    if ($Plan.Backend) {
+        $label = "[DEPLOYE]".PadRight($col2)
+        $detail = if ($backendFiles.Count -gt 0) { "backend/ ($($backendFiles.Count) fichier(s))" } else { "force (-ForceBackend)" }
+        Write-Host ("  BACKEND".PadRight($col1) + $label + $detail) -ForegroundColor Green
+    } else {
+        Write-Host ("  BACKEND".PadRight($col1) + "[IGNORE] ".PadRight($col2) + "aucun changement detecte") -ForegroundColor DarkGray
+    }
+
+    # Web
+    if ($Plan.Web) {
+        $label = "[DEPLOYE]".PadRight($col2)
+        $detail = if ($frontendFiles.Count -gt 0) { "frontend/ ($($frontendFiles.Count) fichier(s))" } else { "force (-ForceWeb)" }
+        Write-Host ("  WEB".PadRight($col1) + $label + $detail) -ForegroundColor Green
+    } else {
+        Write-Host ("  WEB".PadRight($col1) + "[IGNORE] ".PadRight($col2) + "aucun changement detecte") -ForegroundColor DarkGray
+    }
+
+    # Mobile OTA
+    if ($Plan.Mobile) {
+        $label = "[DEPLOYE]".PadRight($col2)
+        $detail = if ($frontendFiles.Count -gt 0) { "frontend/ ($($frontendFiles.Count) fichier(s))" } else { "force (-ForceMobile)" }
+        Write-Host ("  MOBILE OTA".PadRight($col1) + $label + $detail) -ForegroundColor Green
+    } else {
+        Write-Host ("  MOBILE OTA".PadRight($col1) + "[IGNORE] ".PadRight($col2) + "aucun changement detecte") -ForegroundColor DarkGray
+    }
+
+    # APK
+    if ($Plan.Apk) {
+        $label = "[DEPLOYE]".PadRight($col2)
+        $detail = if ($nativeFiles.Count -gt 0) { "natif: $($nativeFiles -join ', ')" } else { "force (-ForceApk)" }
+        Write-Host ("  APK ANDROID".PadRight($col1) + $label + $detail) -ForegroundColor Yellow
+    } else {
+        Write-Host ("  APK ANDROID".PadRight($col1) + "[IGNORE] ".PadRight($col2) + "aucun fichier natif modifie") -ForegroundColor DarkGray
+    }
+
+    Write-Host ""
+    if ($Plan.Mobile) {
+        Write-Host "  Message OTA : $UpdateMessage" -ForegroundColor Cyan
+        Write-Host ""
+    }
+}
+
+function Get-UserConfirmation {
+    param($Plan, [ref]$UpdateMessage)
+
+    while ($true) {
+        Show-DeploymentSummary -Plan $Plan -UpdateMessage $UpdateMessage.Value
+
+        if (-not ($Plan.Backend -or $Plan.Web -or $Plan.Mobile -or $Plan.Apk)) {
+            Write-Host "Aucune action planifiee." -ForegroundColor Gray
+            return $null
+        }
+
+        $response = Read-Host "Confirmer ? (O=continuer / N=annuler / M=modifier)"
+
+        switch ($response.ToUpper()) {
+            "O" { return $Plan }
+            "N" {
+                Write-Host "Deploiement annule." -ForegroundColor Yellow
+                return $null
+            }
+            "M" {
+                Write-Host ""
+                Write-Host "Modifier le plan :" -ForegroundColor Cyan
+                Write-Host "  [B] Ajouter/retirer Backend  (actuellement: $(if ($Plan.Backend) {'OUI'} else {'NON'}))"
+                Write-Host "  [W] Ajouter/retirer Web       (actuellement: $(if ($Plan.Web) {'OUI'} else {'NON'}))"
+                Write-Host "  [O] Ajouter/retirer OTA       (actuellement: $(if ($Plan.Mobile) {'OUI'} else {'NON'}))"
+                Write-Host "  [A] Ajouter/retirer APK       (actuellement: $(if ($Plan.Apk) {'OUI'} else {'NON'}))"
+                if ($Plan.Mobile) {
+                    Write-Host "  [U] Modifier le message OTA   (actuel: $($UpdateMessage.Value))"
+                }
+                Write-Host "  [Q] Revenir a la confirmation"
+                Write-Host ""
+                $choice = Read-Host "Choix"
+                switch ($choice.ToUpper()) {
+                    "B" { $Plan.Backend = -not $Plan.Backend }
+                    "W" { $Plan.Web = -not $Plan.Web }
+                    "O" { $Plan.Mobile = -not $Plan.Mobile }
+                    "A" { $Plan.Apk = -not $Plan.Apk }
+                    "U" {
+                        $newMsg = Read-Host "Nouveau message OTA"
+                        if ($newMsg.Trim() -ne "") { $UpdateMessage.Value = $newMsg.Trim() }
+                    }
+                    "Q" { }
+                }
+            }
+            default { Write-Host "Reponse non reconnue, entrez O, N ou M." -ForegroundColor Yellow }
+        }
+    }
+}
+
+function Update-ProdBranch {
+    Write-Host "[Git] Mise a jour de la branche prod..." -ForegroundColor Yellow
+    $currentBranch = git rev-parse --abbrev-ref HEAD
+    git checkout prod
+    git merge main --no-edit
+    git push origin prod
+    git checkout $currentBranch
+    Write-Host "  Branche prod mise a jour !" -ForegroundColor Green
+    Write-Host ""
+}
+
+# ---------------------------------------------------------------------------
+# CHARGEMENT DE LA CONFIGURATION
+# ---------------------------------------------------------------------------
+
+$envFile = Join-Path $PSScriptRoot "..\..\.env.deploy"
+if (-not (Test-Path $envFile)) { $envFile = Join-Path $PSScriptRoot ".env.deploy" }
 if (-not (Test-Path $envFile)) {
     Write-Host "Erreur: fichier .env.deploy introuvable" -ForegroundColor Red
     Write-Host "Copiez .env.deploy.example vers .env.deploy et configurez vos valeurs" -ForegroundColor Yellow
@@ -95,50 +282,90 @@ Get-Content $envFile | ForEach-Object {
     }
 }
 
-Write-Host "`nDeploiement complet de l'application" -ForegroundColor Cyan
-Write-Host "=====================================" -ForegroundColor Cyan
+Write-Host "`nDeploiement de l'application" -ForegroundColor Cyan
+Write-Host "=============================" -ForegroundColor Cyan
 
-# Demander le message de déploiement si non fourni
-if (-not $UpdateMessage) {
+# ---------------------------------------------------------------------------
+# VERIFICATION DU WORKING TREE
+# ---------------------------------------------------------------------------
+
+$dirtyFiles = git status --porcelain 2>$null
+if ($dirtyFiles) {
     Write-Host ""
-    Write-Host "Message de deploiement requis !" -ForegroundColor Yellow
-    $UpdateMessage = Read-Host "Entrez le message de deploiement"
-    
-    if (-not $UpdateMessage -or $UpdateMessage.Trim() -eq "") {
-        Write-Host "Erreur: Le message de deploiement ne peut pas etre vide" -ForegroundColor Red
-        exit 1
+    Write-Host "ATTENTION: Des fichiers non commites existent dans le depot :" -ForegroundColor Yellow
+    Write-Host $dirtyFiles -ForegroundColor Gray
+    Write-Host "Ces modifications NE SERONT PAS prises en compte (seuls les commits comptent)." -ForegroundColor Yellow
+    $dirtyResponse = Read-Host "Continuer quand meme ? (o/N)"
+    if ($dirtyResponse -notmatch '^[oO]$') {
+        Write-Host "Deploiement annule. Commitez vos changements d'abord." -ForegroundColor Yellow
+        exit 0
     }
 }
 
-# Collecter les infos du changelog maintenant (avant le bump), mais écrire après
-Write-Host ""
-$addChangelog = Read-Host "Ajouter une entree au changelog ? (O/N)"
+# ---------------------------------------------------------------------------
+# DETECTION AUTOMATIQUE
+# ---------------------------------------------------------------------------
+
+$plan = Get-DeploymentPlan `
+    -ForceBackend:$ForceBackend `
+    -ForceWeb:$ForceWeb `
+    -ForceMobile:$ForceMobile `
+    -ForceApk:$ForceApk
+
+# Message OTA : parametre fourni ou dernier commit
+if (-not $UpdateMessage) {
+    $UpdateMessage = Get-DefaultUpdateMessage
+}
+
+# Cas : rien a deployer
+if (-not ($plan.Backend -or $plan.Web -or $plan.Mobile -or $plan.Apk)) {
+    Show-DeploymentSummary -Plan $plan -UpdateMessage $UpdateMessage
+    Write-Host "Aucun changement detecte depuis le dernier deploiement." -ForegroundColor Green
+    Write-Host "Utilisez -ForceBackend, -ForceWeb, -ForceMobile, -ForceApk pour forcer un deploiement." -ForegroundColor Gray
+    exit 0
+}
+
+# Mode DryRun : afficher et quitter
+if ($DryRun) {
+    Show-DeploymentSummary -Plan $plan -UpdateMessage $UpdateMessage
+    Write-Host "[DryRun] Aucune action executee." -ForegroundColor Cyan
+    exit 0
+}
+
+# ---------------------------------------------------------------------------
+# CONFIRMATION INTERACTIVE
+# ---------------------------------------------------------------------------
+
+$msgRef = [ref]$UpdateMessage
+$plan = Get-UserConfirmation -Plan $plan -UpdateMessage $msgRef
+$UpdateMessage = $msgRef.Value
+
+if (-not $plan) { exit 0 }
+
+# ---------------------------------------------------------------------------
+# CHANGELOG (seulement si OTA deploye)
+# ---------------------------------------------------------------------------
+
 $changelogTitle = $null
 $changelogDesc = $null
 $changelogType = $null
-if ($addChangelog -eq "O" -or $addChangelog -eq "o") {
-    $changelogTitle = Read-Host "Titre de la mise a jour"
-    $changelogDesc = Read-Host "Description (fonctionnalites/corrections)"
-    $changelogType = Read-Host "Type (feature/fix/improvement) [feature par defaut]"
-    if (-not $changelogType -or $changelogType.Trim() -eq "") { $changelogType = "feature" }
+
+if ($plan.Mobile) {
+    Write-Host ""
+    $addChangelog = Read-Host "Ajouter une entree au changelog ? (O/N)"
+    if ($addChangelog -eq "O" -or $addChangelog -eq "o") {
+        $changelogTitle = Read-Host "Titre de la mise a jour"
+        $changelogDesc  = Read-Host "Description (fonctionnalites/corrections)"
+        $changelogType  = Read-Host "Type (feature/fix/improvement) [feature par defaut]"
+        if (-not $changelogType -or $changelogType.Trim() -eq "") { $changelogType = "feature" }
+    }
 }
 
+# ---------------------------------------------------------------------------
+# BUMP VERSION (si APK rebuild)
+# ---------------------------------------------------------------------------
 
-Write-Host "Parametres de deploiement :" -ForegroundColor Cyan
-Write-Host "Update Message pour l'app mobile OTA: $UpdateMessage" -ForegroundColor Cyan
-Write-Host ""
-if ($SkipBackend) { Write-Host "  - Backend: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - Backend: OK" -ForegroundColor Green }
-if ($SkipWeb) { Write-Host "  - Frontend Web: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - Frontend Web: OK" -ForegroundColor Green }
-if ($SkipMobile) { Write-Host "  - App Mobile: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - App Mobile: OK" -ForegroundColor Green }
-if ($SkipApk) { Write-Host "  - APK Android: SAUTE" -ForegroundColor Yellow } else { Write-Host "  - APK Android: OK" -ForegroundColor Green }
-if ($SkipBuild) { Write-Host "  - Build EAS: SAUTE (download APK existant)" -ForegroundColor Yellow }
-Write-Host ""
-
-Write-Host "Note : La runtimeVersion est fixee a '1.0.0' dans app.json. Les mises a jour OTA JS ne necessitent plus d'incrementer la version ou le versionCode." -ForegroundColor Cyan
-Write-Host "Si tu rebuilds l'app native avec une nouvelle runtimeVersion, incremente-la aussi dans app.json." -ForegroundColor Cyan
-
-# Incrementation automatique de version si on rebuild l'APK
-if (-not $SkipApk -and -not $SkipBuild) {
+if ($plan.Apk -and -not $SkipBuild) {
     Write-Host ""
     Write-Host "[Version] Incrementation automatique de la version ($BumpType)..." -ForegroundColor Yellow
     & "$PSScriptRoot\bump-version.ps1" -Part $BumpType
@@ -148,7 +375,10 @@ if (-not $SkipApk -and -not $SkipBuild) {
     }
 }
 
-# Ecriture du changelog APRES le bump (pour avoir la bonne version)
+# ---------------------------------------------------------------------------
+# ECRITURE DU CHANGELOG (apres le bump pour avoir la bonne version)
+# ---------------------------------------------------------------------------
+
 if ($changelogTitle) {
     $repoRoot = Join-Path $PSScriptRoot "..\.."
     $appConfigPath = Join-Path $repoRoot "frontend\app.config.js"
@@ -173,15 +403,22 @@ if ($changelogTitle) {
     Write-Host "Entree ajoutee au changelog (v$currentVersion - $changelogTitle)" -ForegroundColor Green
 }
 
-# Backup PostgreSQL avant deploiement
+# ---------------------------------------------------------------------------
+# BACKUP POSTGRESQL
+# ---------------------------------------------------------------------------
+
+Write-Host ""
 Write-Host "Backup de la base de donnees PostgreSQL..." -ForegroundColor Yellow
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/backups && if sudo /usr/local/bin/docker ps --filter name=mabibliotheque-postgres --format '{{.Names}}' | grep -q mabibliotheque-postgres; then sudo /usr/local/bin/docker exec mabibliotheque-postgres pg_dump -U bibliotheque bibliotheque > ${SYNOLOGY_PATH}/backups/bibliotheque_`$(date +%Y-%m-%d_%H-%M-%S).sql && echo 'Backup PostgreSQL cree'; else echo 'Pas de conteneur PostgreSQL (premier deploiement?)'; fi"
-# 1. Build et push de l'image Docker backend
-if (-not $SkipBackend) {
+
+# ---------------------------------------------------------------------------
+# [1] BACKEND
+# ---------------------------------------------------------------------------
+
+if ($plan.Backend) {
     Write-Host "[1/4] Build et deploiement du backend..." -ForegroundColor Yellow
     Write-Host ""
 
-    # Vérifier que Docker est lancé
     if (-not (Start-DockerIfNeeded)) {
         Write-Host "Impossible de continuer sans Docker Desktop" -ForegroundColor Red
         exit 1
@@ -189,75 +426,73 @@ if (-not $SkipBackend) {
 
     Set-Location backend
 
-    # Copier le changelog dans le contexte de build
     if (-not (Test-Path "docs")) { New-Item -ItemType Directory -Path "docs" | Out-Null }
     Copy-Item -Path "..\docs\CHANGELOG.json" -Destination "docs\CHANGELOG.json" -Force
 
-    # Build multi-architecture
     Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray
     docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile -t llcelmarll/mabibliotheque-backend:latest --push .
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Erreur lors du build Docker du backend" -ForegroundColor Red
         exit 1
     }
-    
+
     Set-Location ..
-    
-    # Redeploy sur le NAS
+
     Write-Host ""
     Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
     & "$PSScriptRoot\redeploy-backend.ps1"
 
-    # Attendre que le conteneur soit prêt
-    Write-Host "  Attente du démarrage du conteneur..." -ForegroundColor Gray
+    Write-Host "  Attente du demarrage du conteneur..." -ForegroundColor Gray
     Start-Sleep -Seconds 10
-    
-    # Vérification que les migrations se sont bien déroulées
+
     Write-Host ""
-    Write-Host "  Vérification des migrations..." -ForegroundColor Gray
-    $migrationCheck = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "docker logs mabibliotheque-backend 2>&1 | grep -E '(Migrations appliquées|alembic_version)'"
-    
+    Write-Host "  Verification des migrations..." -ForegroundColor Gray
+    $migrationCheck = ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "docker logs mabibliotheque-backend 2>&1 | grep -E '(Migrations appliquees|alembic_version)'"
     if ($migrationCheck) {
-        Write-Host "  Migrations détectées dans les logs :" -ForegroundColor Green
+        Write-Host "  Migrations detectees dans les logs :" -ForegroundColor Green
         Write-Host "  $migrationCheck" -ForegroundColor Gray
     } else {
-        Write-Host "  Aucune confirmation de migration trouvée dans les logs" -ForegroundColor Yellow
-        Write-Host "  Vérifiez les logs complets avec: docker logs mabibliotheque-backend" -ForegroundColor Yellow
+        Write-Host "  Aucune confirmation de migration trouvee dans les logs" -ForegroundColor Yellow
+        Write-Host "  Verifiez les logs: docker logs mabibliotheque-backend" -ForegroundColor Yellow
     }
-    
-    
+
     Write-Host ""
     Write-Host "  Backend deploye !" -ForegroundColor Green
     Write-Host "  API URL: https://mabibliotheque.ovh/api" -ForegroundColor Gray
     Write-Host ""
 }
 
-# 2. Publication OTA pour l'app mobile
-if (-not $SkipMobile) {
+# ---------------------------------------------------------------------------
+# [2] MOBILE OTA
+# ---------------------------------------------------------------------------
+
+if ($plan.Mobile) {
     Write-Host "[2/4] Mise a jour OTA de l'app mobile..." -ForegroundColor Yellow
     Write-Host ""
-    
+
     Set-Location frontend
-    
     $env:EXPO_PUBLIC_API_URL = "https://mabibliotheque.ovh/api"
     eas update --branch production --message $UpdateMessage
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Erreur lors de la publication OTA" -ForegroundColor Red
         exit 1
     }
-    
+
     Set-Location ..
-    
+
     Write-Host ""
     Write-Host "  App mobile mise a jour !" -ForegroundColor Green
     Write-Host ""
 }
 
-if (-not $SkipApk) {
+# ---------------------------------------------------------------------------
+# [3] APK ANDROID
+# ---------------------------------------------------------------------------
+
+if ($plan.Apk) {
     if (-not $SkipBuild) {
-        # Build de l'APK via EAS (cloud)
         Write-Host "[APK 1/2] Build de l'APK Android via EAS..." -ForegroundColor Yellow
         Write-Host ""
 
@@ -268,7 +503,6 @@ if (-not $SkipApk) {
         Write-Host ""
 
         $buildStartTime = Get-Date
-
         eas build --platform android --profile preview --non-interactive --wait
 
         if ($LASTEXITCODE -ne 0) {
@@ -281,17 +515,14 @@ if (-not $SkipApk) {
         $buildDuration = (Get-Date) - $buildStartTime
         Write-Host ""
         Write-Host "  Build EAS termine en $([math]::Round($buildDuration.TotalMinutes, 1)) minutes" -ForegroundColor Green
-
         Set-Location ..
     } else {
         Write-Host "[APK 1/2] Build EAS: SAUTE (build deja en cours ou termine)" -ForegroundColor Yellow
     }
 
-    # Téléchargement et hébergement de l'APK
     Write-Host ""
     Write-Host "[APK 2/2] Telechargement et hebergement de l'APK Android..." -ForegroundColor Yellow
     Write-Host ""
-
     & "$PSScriptRoot\update-apk.ps1"
 
     if ($LASTEXITCODE -ne 0) {
@@ -302,12 +533,14 @@ if (-not $SkipApk) {
     Write-Host ""
 }
 
-# 4. Build et push de l'image Docker frontend (Web)
-if (-not $SkipWeb) {
+# ---------------------------------------------------------------------------
+# [4] FRONTEND WEB
+# ---------------------------------------------------------------------------
+
+if ($plan.Web) {
     Write-Host "[4/4] Build et deploiement du frontend Web..." -ForegroundColor Yellow
     Write-Host ""
 
-    # Vérifier que Docker est lancé
     if (-not (Start-DockerIfNeeded)) {
         Write-Host "Impossible de continuer sans Docker Desktop" -ForegroundColor Red
         exit 1
@@ -315,56 +548,40 @@ if (-not $SkipWeb) {
 
     Set-Location frontend
 
-    # Build multi-architecture
     Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray
     docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.prod -t llcelmarll/mabibliotheque-frontend:latest --push .
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Erreur lors du build Docker" -ForegroundColor Red
         exit 1
     }
-    
+
     Set-Location ..
-    
-    # Redeploy sur le NAS
+
     Write-Host ""
     Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
     & "$PSScriptRoot\redeploy-frontend.ps1"
-    
+
     Write-Host ""
     Write-Host "  Frontend Web deploye !" -ForegroundColor Green
     Write-Host "  URL: https://mabibliotheque.ovh" -ForegroundColor Gray
     Write-Host ""
 }
 
-# 5. Mise à jour de la branche prod
-Write-Host "[5/5] Mise a jour de la branche prod..." -ForegroundColor Yellow
-$currentBranch = git rev-parse --abbrev-ref HEAD
-git checkout prod
-git merge main --no-edit
-git push origin prod
-git checkout $currentBranch
-Write-Host "  Branche prod mise a jour !" -ForegroundColor Green
-Write-Host ""
+# ---------------------------------------------------------------------------
+# [5] MISE A JOUR BRANCHE PROD
+# ---------------------------------------------------------------------------
 
-# 6. Résumé
-Write-Host "[6/6] Resume du deploiement" -ForegroundColor Yellow
-Write-Host ""
-if (-not $SkipBackend) {
-    Write-Host "  Backend API: https://mabibliotheque.ovh/api" -ForegroundColor Green
-}
-if (-not $SkipWeb) {
-    Write-Host "  Frontend Web: https://mabibliotheque.ovh" -ForegroundColor Green
-}
-if (-not $SkipMobile) {
-    Write-Host "  App Mobile: Mise a jour OTA publiee (branch: preview)" -ForegroundColor Green
-}
-if (-not $SkipApk) {
-    Write-Host "  APK Android: https://mabibliotheque.ovh/bibliotheque.apk" -ForegroundColor Green
-}
-Write-Host ""
-Write-Host "Deploiement termine !" -ForegroundColor Cyan
-Write-Host ""
+Update-ProdBranch
 
+# ---------------------------------------------------------------------------
+# [6] RESUME
+# ---------------------------------------------------------------------------
 
-
+Write-Host "[Resume] Deploiement termine !" -ForegroundColor Cyan
+Write-Host ""
+if ($plan.Backend) { Write-Host "  Backend API:   https://mabibliotheque.ovh/api" -ForegroundColor Green }
+if ($plan.Web)     { Write-Host "  Frontend Web:  https://mabibliotheque.ovh" -ForegroundColor Green }
+if ($plan.Mobile)  { Write-Host "  App Mobile:    Mise a jour OTA publiee (branch: production)" -ForegroundColor Green }
+if ($plan.Apk)     { Write-Host "  APK Android:   https://mabibliotheque.ovh/bibliotheque.apk" -ForegroundColor Green }
+Write-Host ""

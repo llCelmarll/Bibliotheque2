@@ -38,6 +38,9 @@ backend/data/covers/
 
 # Données de test et migration
 testLivrotheque2.csv
+
+# Copie du changelog dans le contexte Docker (generee au build, ne pas tracker)
+backend/docs/CHANGELOG.json
 deploy/testers-ips.txt
 **/data_export.json
 backups/
