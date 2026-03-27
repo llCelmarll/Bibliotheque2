@@ -24,6 +24,7 @@ async function getItem(key: string) {
   }
 }
 import { authService, LoginRequest, RegisterRequest, User } from '@/services/authService';
+import { registerForPushNotificationsAsync, sendTokenToBackend, PUSH_ENABLED_KEY } from '@/services/pushNotificationService';
 
 interface AuthContextType {
   user: User | null;
@@ -153,22 +154,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(userResponse));
       setToken(loginResponse.access_token);
       setUser(userResponse);
+      // Enregistrement push en fire-and-forget (jamais bloquant, sauf si désactivé)
+      AsyncStorage.getItem(PUSH_ENABLED_KEY).then((val) => {
+        if (val === 'false') return;
+        return registerForPushNotificationsAsync().then((pushToken) => {
+          if (pushToken) sendTokenToBackend(pushToken);
+        });
+      }).catch(() => {});
     } catch (error) {
       console.error('Erreur de connexion:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  // Vérifie l'expiration d'un JWT
-  function isTokenExpired(token: string): boolean {
-    try {
-      const [, payload] = token.split('.');
-      const decoded = JSON.parse(atob(payload));
-      return decoded.exp * 1000 < Date.now();
-    } catch {
-      return true;
-    }
-  }
   };
 
   const register = async (data: RegisterRequest) => {
@@ -184,6 +182,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setToken(registerResponse.token.access_token);
       setUser(registerResponse.user);
+      // Enregistrement push en fire-and-forget (jamais bloquant, sauf si désactivé)
+      AsyncStorage.getItem(PUSH_ENABLED_KEY).then((val) => {
+        if (val === 'false') return;
+        return registerForPushNotificationsAsync().then((pushToken) => {
+          if (pushToken) sendTokenToBackend(pushToken);
+        });
+      }).catch(() => {});
     } catch (error) {
       throw error;
     } finally {

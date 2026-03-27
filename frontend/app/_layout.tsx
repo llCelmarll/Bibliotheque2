@@ -6,6 +6,28 @@ import { useFonts } from 'expo-font';
 import { Stack , SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PUSH_ENABLED_KEY, PUSH_PREFS_KEY } from '@/services/pushNotificationService';
+
+// Afficher les notifications même quand l'app est en foreground, selon les préférences
+Notifications.setNotificationHandler({
+  handleNotification: async (notification) => {
+    const globalEnabled = await AsyncStorage.getItem(PUSH_ENABLED_KEY);
+    if (globalEnabled === 'false') {
+      return { shouldShowAlert: false, shouldPlaySound: false, shouldSetBadge: false };
+    }
+    const notifType = (notification.request.content.data as any)?.type as string | undefined;
+    if (notifType) {
+      const rawPrefs = await AsyncStorage.getItem(PUSH_PREFS_KEY);
+      const prefs = rawPrefs ? JSON.parse(rawPrefs) : {};
+      if (prefs[notifType] === false) {
+        return { shouldShowAlert: false, shouldPlaySound: false, shouldSetBadge: false };
+      }
+    }
+    return { shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false };
+  },
+});
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -100,6 +122,21 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
       setShowWhatsNew(true);
     }
   }, [isAuthenticated, changelogLoading, hasNew, latestEntry]);
+
+  // Naviguer vers l'écran pertinent quand l'utilisateur tape une notification
+  useReactEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      if (!isAuthenticated) return;
+      if (data?.screen) {
+        router.push(data.screen);
+      } else {
+        // Par défaut : aller sur l'écran notifications
+        router.push('/(tabs)/loans/(subtabs)/notifications');
+      }
+    });
+    return () => subscription.remove();
+  }, [isAuthenticated, router]);
 
   const handleCloseWhatsNew = () => {
     setShowWhatsNew(false);

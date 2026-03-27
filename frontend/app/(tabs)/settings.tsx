@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import * as Updates from 'expo-updates';
 import ImportCSV from "@/components/ImportCSV";
 import { CalendarPreferencesSection } from "@/components/settings/CalendarPreferencesSection";
+import { PushNotificationsSection } from "@/components/settings/PushNotificationsSection";
 import { useTheme, useThemeControls } from "@/contexts/ThemeContext";
 import { themes, ThemeName, AppTheme } from '@/constants/Theme';
 
@@ -133,6 +134,9 @@ export default function SettingsScreen() {
 
         {/* Section Rappels calendrier */}
         <CalendarPreferencesSection />
+
+        {/* Section Notifications push */}
+        <PushNotificationsSection />
 
         {/* Section Gestion du compte */}
         <View style={styles.section}>

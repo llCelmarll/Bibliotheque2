@@ -19,19 +19,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
-let SecureStore: any;
-if (Platform.OS !== 'web') {
-  SecureStore = require('expo-secure-store');
-}
-
-async function setItem(key: string, value: string) {
-  if (Platform.OS === 'web') {
-    await AsyncStorage.setItem(key, value);
-  } else {
-    await SecureStore.setItemAsync(key, value);
-  }
-}
-
 export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
@@ -63,26 +50,7 @@ export default function LoginScreen() {
     setIsLoginLoading(true);
     setErrorMessage('');
     try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://mabibliotheque.ovh/api';
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `username=${encodeURIComponent(email.trim())}&password=${encodeURIComponent(password)}&remember_me=${rememberMe}`,
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || 'Erreur de connexion');
-      }
-      if (rememberMe) {
-        await setItem('access_token', data.access_token);
-      } else {
-        await AsyncStorage.setItem('access_token', data.access_token);
-      }
-      if (login) {
-        await login({ email: email.trim(), password });
-      }
+      await login({ email: email.trim(), password, remember_me: rememberMe });
       router.replace('/(tabs)/books');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Une erreur est survenue';

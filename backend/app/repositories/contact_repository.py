@@ -52,6 +52,14 @@ class ContactRepository:
         self.session.refresh(contact)
         return contact
 
+    def get_mirror(self, owner_id: int, linked_user_id: int) -> Optional[Contact]:
+        """Retourne le contact miroir : le contact de linked_user_id qui pointe vers owner_id"""
+        statement = select(Contact).where(
+            Contact.owner_id == linked_user_id,
+            Contact.linked_user_id == owner_id,
+        )
+        return self.session.exec(statement).first()
+
     def delete(self, contact: Contact) -> None:
         """Supprime un contact de la base"""
         self.session.delete(contact)

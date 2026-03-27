@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -44,6 +45,16 @@ function LoansScreen() {
     incomingRequests.filter(r => r.status === UserLoanRequestStatus.ACCEPTED),
     [incomingRequests]
   );
+
+  // Demandes de prêt inter-membres RETURNED reçues (historique)
+  const returnedIncoming = useMemo(() =>
+    incomingRequests.filter(r => r.status === UserLoanRequestStatus.RETURNED),
+    [incomingRequests]
+  );
+
+  useFocusEffect(useCallback(() => {
+    refreshRequests();
+  }, [refreshRequests]));
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -209,6 +220,7 @@ function LoansScreen() {
             ...pendingIncoming.map(r => ({ type: 'ulr' as const, data: r })),
             ...acceptedIncoming.map(r => ({ type: 'ulr' as const, data: r })),
             ...filteredAndSortedLoans.map(l => ({ type: 'loan' as const, data: l })),
+            ...returnedIncoming.map(r => ({ type: 'ulr' as const, data: r })),
           ]}
           keyExtractor={(item) => `${item.type}-${item.data.id}`}
           renderItem={({ item }) =>
@@ -221,7 +233,7 @@ function LoansScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           contentContainerStyle={
-            filteredAndSortedLoans.length === 0 && acceptedIncoming.length === 0 && pendingIncoming.length === 0 ? styles.emptyListContainer : undefined
+            filteredAndSortedLoans.length === 0 && acceptedIncoming.length === 0 && pendingIncoming.length === 0 && returnedIncoming.length === 0 ? styles.emptyListContainer : undefined
           }
         />
       )}

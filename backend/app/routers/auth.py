@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas.User import UserLogin, UserRead, Token
@@ -58,10 +59,13 @@ async def login_for_access_token(
     
     tokens = auth_service.generate_tokens(user_id=str(user.id), remember_me=remember_me)
     return tokens
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 @router.post("/refresh", response_model=Token)
 async def refresh_access_token(
     request: Request,
-    refresh_token: str,
+    body: RefreshTokenRequest,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
@@ -70,7 +74,7 @@ async def refresh_access_token(
     """
     client_ip = get_client_ip(request)
     rate_limiter.check_and_record(client_ip, "refresh", max_attempts=10, window_minutes=15)
-    return auth_service.renew_access_token(refresh_token)
+    return auth_service.renew_access_token(body.refresh_token)
 
 @router.post("/login-json", response_model=Token)
 async def login_with_json(

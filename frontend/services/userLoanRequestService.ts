@@ -110,6 +110,16 @@ class UserLoanRequestService {
         }
     }
 
+    async getByLinkedUser(linkedUserId: number): Promise<UserLoanRequest[]> {
+        try {
+            const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.USER_LOANS}/by-linked-user/${linkedUserId}`);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Erreur getByLinkedUser:', error);
+            throw error;
+        }
+    }
+
     async getUserLibrary(
         userId: number,
         params?: {

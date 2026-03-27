@@ -1,6 +1,7 @@
 // services/authService.ts
 import API_CONFIG from '@/config/api';
 import { Platform } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let SecureStore: any = null;
@@ -27,6 +28,7 @@ async function getItem(key: string) {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember_me?: boolean;
 }
 
 export interface LoginResponse {
@@ -112,11 +114,12 @@ class AuthService {
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    // Ajout du paramètre remember_me et stockage sécurisé
-    const response = await this.makeRequest<LoginResponse>('/auth/login', {
+    // Sur mobile, remember_me est toujours true pour éviter les déconnexions
+    const rememberMe = credentials.remember_me ?? false;
+    const response = await this.makeRequest<LoginResponse>(`/auth/login?remember_me=${rememberMe}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `username=${encodeURIComponent(credentials.email)}&password=${encodeURIComponent(credentials.password)}&remember_me=${(credentials as any).remember_me ? 'true' : 'false'}`,
+      body: `username=${encodeURIComponent(credentials.email)}&password=${encodeURIComponent(credentials.password)}`,
     });
     if (response.access_token) {
       await setItem(ACCESS_TOKEN_KEY, response.access_token);

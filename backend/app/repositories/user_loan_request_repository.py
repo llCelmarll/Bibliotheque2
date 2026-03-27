@@ -60,12 +60,12 @@ class UserLoanRequestRepository:
         return list(self.session.exec(statement))
 
     def get_outgoing(self, requester_id: int, skip: int = 0, limit: int = 100) -> List[UserLoanRequest]:
-        """Demandes envoyées (vue demandeur), toutes sauf DECLINED"""
+        """Demandes envoyées (vue demandeur), toutes sauf CANCELLED"""
         statement = (
             self._base_query()
             .where(
                 UserLoanRequest.requester_id == requester_id,
-                UserLoanRequest.status != UserLoanRequestStatus.DECLINED,
+                UserLoanRequest.status != UserLoanRequestStatus.CANCELLED,
             )
             .offset(skip)
             .limit(limit)
@@ -100,6 +100,43 @@ class UserLoanRequestRepository:
             UserLoanRequest.status == UserLoanRequestStatus.PENDING,
         )
         return self.session.exec(statement).one() > 0
+
+    def get_accepted_by_linked_user(self, owner_id: int, linked_user_id: int) -> List[UserLoanRequest]:
+        """Demandes ACCEPTED impliquant les deux utilisateurs (dans un sens ou l'autre)"""
+        statement = select(UserLoanRequest).where(
+            UserLoanRequest.status == UserLoanRequestStatus.ACCEPTED,
+            or_(
+                (UserLoanRequest.lender_id == owner_id) & (UserLoanRequest.requester_id == linked_user_id),
+                (UserLoanRequest.requester_id == owner_id) & (UserLoanRequest.lender_id == linked_user_id),
+            )
+        )
+        return list(self.session.exec(statement))
+
+    def get_pending_by_linked_user(self, owner_id: int, linked_user_id: int) -> List[UserLoanRequest]:
+        """Demandes PENDING impliquant les deux utilisateurs (dans un sens ou l'autre)"""
+        statement = select(UserLoanRequest).where(
+            UserLoanRequest.status == UserLoanRequestStatus.PENDING,
+            or_(
+                (UserLoanRequest.lender_id == owner_id) & (UserLoanRequest.requester_id == linked_user_id),
+                (UserLoanRequest.requester_id == owner_id) & (UserLoanRequest.lender_id == linked_user_id),
+            )
+        )
+        return list(self.session.exec(statement))
+
+    def get_all_by_linked_user(self, owner_id: int, linked_user_id: int) -> List[UserLoanRequest]:
+        """Toutes les demandes (sauf CANCELLED) impliquant les deux utilisateurs, triées par date desc"""
+        statement = (
+            self._base_query()
+            .where(
+                UserLoanRequest.status != UserLoanRequestStatus.CANCELLED,
+                or_(
+                    (UserLoanRequest.lender_id == owner_id) & (UserLoanRequest.requester_id == linked_user_id),
+                    (UserLoanRequest.requester_id == owner_id) & (UserLoanRequest.lender_id == linked_user_id),
+                )
+            )
+            .order_by(UserLoanRequest.request_date.desc())
+        )
+        return list(self.session.exec(statement))
 
     def update(self, req: UserLoanRequest) -> UserLoanRequest:
         self.session.add(req)

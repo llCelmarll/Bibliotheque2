@@ -139,6 +139,13 @@ class ApiClient {
       body: data ? JSON.stringify(data) : undefined,
     });
   }
+
+  async put<T>(endpoint: string, data?: any): Promise<T> {
+    return this.makeRequest<T>(endpoint, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

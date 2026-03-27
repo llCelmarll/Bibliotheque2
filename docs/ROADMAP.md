@@ -18,15 +18,19 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [ ] **Découverte sociale avancée**
     - [ ] Profil public opt-in (visible sans invitation)
     - [ ] Recherche géographique de livres autour de soi
-- [ ] **Système de Recommandations**
+- [x] **Système de Recommandations**
     - Suggérer éditeurs, genres et auteurs basés sur les autres utilisateurs.
 - [x] **Communication / UX**
     - Trouver un moyen d'informer les utilisateurs des fonctionnalités apportées par les mises à jour.
-- [ ] **Mode Sombre**
-    - Support du thème sombre pour l'application mobile.
+- [x] **Thèmes visuels**
+    - Support de 4 thèmes (Chaleureuse, Sombre & Élégante, Minimaliste, Nature) sélectionnables depuis les paramètres.
+- [ ] **Détection automatique du thème système**
+    - Utiliser `useColorScheme()` pour appliquer automatiquement un thème clair ou sombre selon les préférences système de l'appareil, avec possibilité d'override manuel.
 - [ ] **Import / Export de données**
     - Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
     - Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
+- [ ] **Notifications Android**
+    - Mise en place de notifications push (Expo Notifications) pour les événements importants (demandes d'amis, prêts, etc.).
 
 ## Plateformes
 
