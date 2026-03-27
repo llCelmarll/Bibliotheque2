@@ -1,4 +1,4 @@
-# Script d'incrementation automatique de version
+﻿# Script d'incrementation automatique de version
 # Usage: .\bump-version.ps1 [-Part patch|minor|major]
 
 param(

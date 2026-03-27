@@ -1,4 +1,4 @@
-# Script de deploiement pour Synology NAS (avec PostgreSQL)
+﻿# Script de deploiement pour Synology NAS (avec PostgreSQL)
 
 # Configuration Synology (Hardcoded ou surchargeable)
 if ($env:SYNOLOGY_USER) { $SYNOLOGY_USER = $env:SYNOLOGY_USER } else { $SYNOLOGY_USER = "QuentinDDC" }

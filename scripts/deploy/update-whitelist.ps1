@@ -1,4 +1,4 @@
-# Mise a jour de la whitelist ALLOWED_EMAILS sur le NAS
+﻿# Mise a jour de la whitelist ALLOWED_EMAILS sur le NAS
 # Pousse le .env.synology local et recrée le conteneur backend
 # Usage: .\update-whitelist.ps1
 

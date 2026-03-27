@@ -1,4 +1,4 @@
-# Script pour télécharger et héberger l'APK Android sur le serveur
+﻿# Script pour télécharger et héberger l'APK Android sur le serveur
 # Au lieu de rediriger vers Expo, on héberge l'APK directement
 
 param(

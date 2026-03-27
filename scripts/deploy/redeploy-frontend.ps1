@@ -1,4 +1,4 @@
-# Script de rebuild et redeploy du frontend uniquement
+﻿# Script de rebuild et redeploy du frontend uniquement
 # Utilise pour mettre a jour rapidement le frontend sans toucher au backend
 
 # Chargement des variables de deploiement

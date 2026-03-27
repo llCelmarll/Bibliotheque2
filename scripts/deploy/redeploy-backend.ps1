@@ -1,4 +1,4 @@
-# Script de redeploiement du backend uniquement
+﻿# Script de redeploiement du backend uniquement
 # Redemarre le container backend sur le NAS Synology avec la derniere image
 # Note: Le conteneur PostgreSQL n'est PAS touche (il persiste)
 

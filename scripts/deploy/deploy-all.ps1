@@ -1,4 +1,4 @@
-# Script de deploiement complet avec auto-detection des changements
+﻿# Script de deploiement complet avec auto-detection des changements
 # Compare avec la branche prod (dernier etat deploye) pour savoir quoi deployer
 
 param(

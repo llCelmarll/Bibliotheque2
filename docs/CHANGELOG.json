@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.3.1",
+    "date": "2026-03-27",
+    "title": "Notifications push et compteurs",
+    "description": "Notifications push en temps réel pour les demandes de prêt et les invitations de contact. Compteurs de notifications visibles sur l'onglet Prêts. Indication des demandes refusées. Paramètres de notification personnalisables. ⚠️ Cette mise à jour nécessite de retélécharger l'application.",
+    "type": "feature"
+  },
+  {
     "version": "1.3.0",
     "date": "2026-03-24",
     "title": "Refonte graphique et thèmes",
