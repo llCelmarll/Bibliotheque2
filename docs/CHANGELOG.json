@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.3.2",
+    "date": "2026-03-28",
+    "title": "Correction des notifications push",
+    "description": "Correction d'un bug empêchant les notifications push de fonctionner sur Android : ajout de la permission POST_NOTIFICATIONS et du plugin expo-notifications manquants dans la configuration native. ⚠️ Cette mise à jour nécessite de retélécharger l'application.",
+    "type": "fix"
+  },
+  {
     "version": "1.3.1",
     "date": "2026-03-27",
     "title": "Notifications push et compteurs",

@@ -37,7 +37,8 @@ module.exports = {
         backgroundColor: "#FFFFFF"
       },
       permissions: [
-        "CAMERA"
+        "CAMERA",
+        "POST_NOTIFICATIONS"
       ]
     },
     web: {
@@ -64,7 +65,16 @@ module.exports = {
           "cameraPermission": "Autorisez l'accès à la caméra pour prendre une photo de couverture"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
     ]
   }
 };
