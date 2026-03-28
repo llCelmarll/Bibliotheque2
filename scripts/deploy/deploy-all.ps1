@@ -254,13 +254,34 @@ function Get-UserConfirmation {
 }
 
 function Update-ProdBranch {
+    param($Plan)
+
     Write-Host "[Git] Mise a jour de la branche prod..." -ForegroundColor Yellow
     $currentBranch = git rev-parse --abbrev-ref HEAD
+
+    # Construire le message de merge selon ce qui a ete deploye
+    $parts = @()
+    if ($Plan.Backend) { $parts += "backend" }
+    if ($Plan.Web)     { $parts += "web" }
+    if ($Plan.Mobile)  { $parts += "mobile" }
+    if ($Plan.Apk)     { $parts += "apk" }
+    $deployed = $parts -join "+"
+
+    $appConfigPath = Join-Path $PSScriptRoot "..\..\frontend\app.config.js"
+    $appVersion = "?"
+    if (Test-Path $appConfigPath) {
+        $appConfigContent = Get-Content $appConfigPath -Raw
+        $versionMatch = [regex]::Match($appConfigContent, 'version:\s*"([^"]+)"')
+        if ($versionMatch.Success) { $appVersion = $versionMatch.Groups[1].Value }
+    }
+
+    $mergeMsg = "deploy($deployed): v$appVersion"
+
     git checkout prod
-    git merge main --no-edit
+    git merge main --no-ff -m $mergeMsg
     git push origin prod
     git checkout $currentBranch
-    Write-Host "  Branche prod mise a jour !" -ForegroundColor Green
+    Write-Host "  Branche prod mise a jour ! ($mergeMsg)" -ForegroundColor Green
     Write-Host ""
 }
 
@@ -404,6 +425,54 @@ if ($changelogTitle) {
 }
 
 # ---------------------------------------------------------------------------
+# [1] APK ANDROID — Build EAS en premier (long, bloquant)
+#     Raison : le backend deployé ensuite bumpe MIN_APP_VERSION,
+#     ce qui declenche la popup de mise a jour chez les utilisateurs.
+#     L'APK doit donc etre pret sur le serveur avant que le backend arrive.
+# ---------------------------------------------------------------------------
+
+if ($plan.Apk) {
+    if (-not $SkipBuild) {
+        Write-Host "[1/4] Build de l'APK Android via EAS..." -ForegroundColor Yellow
+        Write-Host ""
+
+        Set-Location frontend
+
+        Write-Host "  Lancement du build EAS (preview profile)..." -ForegroundColor Gray
+        Write-Host "  Cela peut prendre 5 a 20 minutes..." -ForegroundColor Gray
+        Write-Host ""
+
+        $buildStartTime = Get-Date
+        eas build --platform android --profile preview --non-interactive --wait
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  Erreur lors du build EAS de l'APK" -ForegroundColor Red
+            Write-Host "  Consultez https://expo.dev pour les logs du build" -ForegroundColor Yellow
+            Set-Location ..
+            exit 1
+        }
+
+        $buildDuration = (Get-Date) - $buildStartTime
+        Write-Host ""
+        Write-Host "  Build EAS termine en $([math]::Round($buildDuration.TotalMinutes, 1)) minutes" -ForegroundColor Green
+        Set-Location ..
+    } else {
+        Write-Host "[1/4] Build EAS: SAUTE (build deja en cours ou termine)" -ForegroundColor Yellow
+    }
+
+    Write-Host ""
+    Write-Host "  Upload de l'APK sur le serveur..." -ForegroundColor Gray
+    & "$PSScriptRoot\update-apk.ps1"
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Erreur lors de la mise a jour de l'APK" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host ""
+}
+
+# ---------------------------------------------------------------------------
 # BACKUP POSTGRESQL
 # ---------------------------------------------------------------------------
 
@@ -412,11 +481,11 @@ Write-Host "Backup de la base de donnees PostgreSQL..." -ForegroundColor Yellow
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "mkdir -p ${SYNOLOGY_PATH}/backups && if sudo /usr/local/bin/docker ps --filter name=mabibliotheque-postgres --format '{{.Names}}' | grep -q mabibliotheque-postgres; then sudo /usr/local/bin/docker exec mabibliotheque-postgres pg_dump -U bibliotheque bibliotheque > ${SYNOLOGY_PATH}/backups/bibliotheque_`$(date +%Y-%m-%d_%H-%M-%S).sql && echo 'Backup PostgreSQL cree'; else echo 'Pas de conteneur PostgreSQL (premier deploiement?)'; fi"
 
 # ---------------------------------------------------------------------------
-# [1] BACKEND
+# [2] BACKEND
 # ---------------------------------------------------------------------------
 
 if ($plan.Backend) {
-    Write-Host "[1/4] Build et deploiement du backend..." -ForegroundColor Yellow
+    Write-Host "[2/4] Build et deploiement du backend..." -ForegroundColor Yellow
     Write-Host ""
 
     if (-not (Start-DockerIfNeeded)) {
@@ -464,11 +533,11 @@ if ($plan.Backend) {
 }
 
 # ---------------------------------------------------------------------------
-# [2] MOBILE OTA
+# [3] MOBILE OTA
 # ---------------------------------------------------------------------------
 
 if ($plan.Mobile) {
-    Write-Host "[2/4] Mise a jour OTA de l'app mobile..." -ForegroundColor Yellow
+    Write-Host "[3/4] Mise a jour OTA de l'app mobile..." -ForegroundColor Yellow
     Write-Host ""
 
     Set-Location frontend
@@ -484,52 +553,6 @@ if ($plan.Mobile) {
 
     Write-Host ""
     Write-Host "  App mobile mise a jour !" -ForegroundColor Green
-    Write-Host ""
-}
-
-# ---------------------------------------------------------------------------
-# [3] APK ANDROID
-# ---------------------------------------------------------------------------
-
-if ($plan.Apk) {
-    if (-not $SkipBuild) {
-        Write-Host "[APK 1/2] Build de l'APK Android via EAS..." -ForegroundColor Yellow
-        Write-Host ""
-
-        Set-Location frontend
-
-        Write-Host "  Lancement du build EAS (preview profile)..." -ForegroundColor Gray
-        Write-Host "  Cela peut prendre 5 a 20 minutes..." -ForegroundColor Gray
-        Write-Host ""
-
-        $buildStartTime = Get-Date
-        eas build --platform android --profile preview --non-interactive --wait
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "  Erreur lors du build EAS de l'APK" -ForegroundColor Red
-            Write-Host "  Consultez https://expo.dev pour les logs du build" -ForegroundColor Yellow
-            Set-Location ..
-            exit 1
-        }
-
-        $buildDuration = (Get-Date) - $buildStartTime
-        Write-Host ""
-        Write-Host "  Build EAS termine en $([math]::Round($buildDuration.TotalMinutes, 1)) minutes" -ForegroundColor Green
-        Set-Location ..
-    } else {
-        Write-Host "[APK 1/2] Build EAS: SAUTE (build deja en cours ou termine)" -ForegroundColor Yellow
-    }
-
-    Write-Host ""
-    Write-Host "[APK 2/2] Telechargement et hebergement de l'APK Android..." -ForegroundColor Yellow
-    Write-Host ""
-    & "$PSScriptRoot\update-apk.ps1"
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "  Erreur lors de la mise a jour de l'APK" -ForegroundColor Red
-        exit 1
-    }
-
     Write-Host ""
 }
 
@@ -572,7 +595,7 @@ if ($plan.Web) {
 # [5] MISE A JOUR BRANCHE PROD
 # ---------------------------------------------------------------------------
 
-Update-ProdBranch
+Update-ProdBranch -Plan $plan
 
 # ---------------------------------------------------------------------------
 # [6] RESUME

@@ -4,7 +4,7 @@ module.exports = {
   expo: {
     name: "Bibliothèque", // Nom de l'application
     slug: "bibliotheque", // Identifiant unique pour Expo
-    version: "1.0.3", // Version de l'application
+    version: "1.0.6", // Version de l'application
     orientation: "portrait", // Orientation par défaut
     icon: "./assets/icon.png", // Icône de l'application (à ajouter)
     splash: {
@@ -37,7 +37,8 @@ module.exports = {
         backgroundColor: "#FFFFFF"
       },
       permissions: [
-        "CAMERA"
+        "CAMERA",
+        "POST_NOTIFICATIONS"
       ]
     },
     web: {
@@ -64,7 +65,16 @@ module.exports = {
           "cameraPermission": "Autorisez l'accès à la caméra pour prendre une photo de couverture"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
     ]
   }
 };
