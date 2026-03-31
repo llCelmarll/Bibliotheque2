@@ -22,10 +22,12 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
+    console.log('[Push] Permission existante :', existingStatus);
 
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
+      console.log('[Push] Permission après demande :', finalStatus);
     }
 
     if (finalStatus !== 'granted') {
@@ -33,12 +35,24 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       return null;
     }
 
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId ??
+      'b94a31f7-30e7-4781-8a4d-c32e75cb7e82';
+    console.log('[Push] projectId :', projectId);
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
     console.log('[Push] Token obtenu :', tokenData.data.substring(0, 40) + '...');
     await AsyncStorage.setItem(PUSH_TOKEN_KEY, tokenData.data);
     return tokenData.data;
-  } catch (error) {
-    console.log('[Push] Erreur lors de l\'enregistrement :', error);
+  } catch (error: any) {
+    console.error('[Push] Erreur lors de l\'enregistrement :', error);
+    // Envoyer l'erreur au backend pour diagnostic
+    try {
+      await apiClient.post('/push-tokens/debug', {
+        error: error?.message ?? String(error),
+        platform: Platform.OS,
+      });
+    } catch {}
     return null;
   }
 }

@@ -76,6 +76,21 @@ async def update_push_prefs(
     return {"status": "ok"}
 
 
+class PushDebug(BaseModel):
+    error: str
+    platform: Optional[str] = None
+
+
+@router.post("/debug", status_code=200)
+async def debug_push_error(
+    data: PushDebug,
+    current_user: User = Depends(get_current_user),
+):
+    """Endpoint de diagnostic — reçoit les erreurs push du client."""
+    print(f"[Push DEBUG] user={current_user.id} platform={data.platform} error={data.error}")
+    return {"status": "ok"}
+
+
 @router.delete("/{token}", status_code=204)
 async def unregister_push_token(
     token: str,

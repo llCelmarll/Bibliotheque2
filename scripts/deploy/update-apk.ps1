@@ -5,6 +5,16 @@ param(
     [string]$ApkUrl
 )
 
+# Chargement des variables de déploiement depuis .env.deploy
+$envFile = Join-Path $PSScriptRoot "..\..\\.env.deploy"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+            [Environment]::SetEnvironmentVariable($Matches[1].Trim(), $Matches[2].Trim(), "Process")
+        }
+    }
+}
+
 Write-Host "Mise à jour de l'APK Android..." -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
@@ -14,18 +24,23 @@ if (-not $ApkUrl) {
     Write-Host "Récupération du lien du dernier build APK..." -ForegroundColor Yellow
     Set-Location "$PSScriptRoot\..\..\frontend"
 
-    $apkJson = eas build:list --platform android --profile preview --limit 1 --json --non-interactive 2>$null
+    $apkJson = eas build:list --platform android --profile preview --limit 5 --json --non-interactive 2>$null
     if ($LASTEXITCODE -ne 0 -or !$apkJson) {
         Write-Host "Erreur lors de la récupération du build APK" -ForegroundColor Red
         exit 1
     }
 
     $buildInfo = $apkJson | ConvertFrom-Json
-    if ($buildInfo -is [array]) {
-        $ApkUrl = $buildInfo[0].artifacts.buildUrl
-    } else {
-        $ApkUrl = $buildInfo.artifacts.buildUrl
+    if ($buildInfo -isnot [array]) { $buildInfo = @($buildInfo) }
+
+    # Prendre le premier build FINISHED avec une URL valide (ignorer CANCELLED, IN_PROGRESS, etc.)
+    $finishedBuild = $buildInfo | Where-Object { $_.status -eq "FINISHED" -and $_.artifacts.buildUrl } | Select-Object -First 1
+    if (-not $finishedBuild) {
+        Write-Host "Aucun build FINISHED trouvé (annulé ou en cours ?)" -ForegroundColor Red
+        exit 1
     }
+    $ApkUrl = $finishedBuild.artifacts.buildUrl
+    Write-Host "  Build utilisé: $($finishedBuild.appVersion) ($($finishedBuild.id.Substring(0,8))...)" -ForegroundColor Gray
 
     Set-Location "$PSScriptRoot\..\.."
 }
