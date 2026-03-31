@@ -9,6 +9,10 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - Ajout de notes personnelles (texte libre) sur une fiche livre.
 - [x] **Recherche avancée**
     - Recherche multicritère (titre, auteur, catégorie, etc.).
+- [ ] **Stabilisation Google Books / OpenLibrary (saisie + quota)**
+    - Corriger l'ecran blanc qui annule la saisie lors d'une recherche ou d'un ajout via Google Books / OpenLibrary.
+    - Utiliser une clé API Google Books dédiée pour réduire les erreurs de quota (`rateLimitExceeded`).
+    - Ajouter une gestion explicite des erreurs `429 RESOURCE_EXHAUSTED` avec message utilisateur non bloquant.
 - [x] **Prêt / Emprunt entre utilisateurs** *(en cours)*
     - [x] Modèle `UserLoanRequest` (demande de prêt inter-membres)
     - [x] Invitations bidirectionnelles entre utilisateurs (`ContactInvitation`)
@@ -29,7 +33,7 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [ ] **Import / Export de données**
     - Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
     - Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
-- [ ] **Notifications Android**
+- [x] **Notifications Android**
     - Mise en place de notifications push (Expo Notifications) pour les événements importants (demandes d'amis, prêts, etc.).
 
 ## Plateformes
