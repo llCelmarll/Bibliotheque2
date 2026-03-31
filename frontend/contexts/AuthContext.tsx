@@ -101,6 +101,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
               setUser(currentUser);
               await AsyncStorage.setItem(USER_KEY, JSON.stringify(currentUser));
               storedUser = JSON.stringify(currentUser);
+              // Enregistrement push en fire-and-forget après refresh token
+              AsyncStorage.getItem(PUSH_ENABLED_KEY).then((val) => {
+                if (val === 'false') return;
+                return registerForPushNotificationsAsync().then((pushToken) => {
+                  if (pushToken) sendTokenToBackend(pushToken);
+                });
+              }).catch(() => {});
             } catch (error) {
               await logout();
               setIsLoading(false);
@@ -122,6 +129,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const currentUser = await authService.getCurrentUser(storedToken);
           setToken(storedToken);
           setUser(currentUser);
+          // Enregistrement push en fire-and-forget après restauration de session
+          AsyncStorage.getItem(PUSH_ENABLED_KEY).then((val) => {
+            if (val === 'false') return;
+            return registerForPushNotificationsAsync().then((pushToken) => {
+              if (pushToken) sendTokenToBackend(pushToken);
+            });
+          }).catch(() => {});
         } catch (error: any) {
           if (error && typeof error === 'object' && 'response' in error) {
             // Axios-like error
