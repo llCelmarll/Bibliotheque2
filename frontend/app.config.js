@@ -32,6 +32,7 @@ module.exports = {
     },
     android: {
       package: "com.lcelmarl.bibliotheque.frontend",
+      googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png", // Icône adaptative pour Android (à ajouter)
         backgroundColor: "#FFFFFF"
