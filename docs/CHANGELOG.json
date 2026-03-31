@@ -1,79 +1,72 @@
 [
     {
-        "version":  "1.0.7",
-        "date":  "2026-03-31",
-        "title":  "Notifications push Android",
-        "description":  "Les notifications push fonctionnent maintenant sur Android - invitation de contact et demande d\u0027emprunt déclenchent une notification en temps réel.",
-        "type":  "fix"
+        "version": "1.3.2",
+        "date": "2026-03-28",
+        "title": "Correction des notifications push",
+        "description": "Correction d'un bug empêchant les notifications push de fonctionner sur Android : ajout de la permission POST_NOTIFICATIONS et du plugin expo-notifications manquants dans la configuration native. Cette mise à jour nécessite de retélécharger l'application.",
+        "type": "fix"
     },
     {
-        "version":  "1.3.2",
-        "date":  "2026-03-28",
-        "title":  "Correction des notifications push",
-        "description":  "Correction d\u0027un bug empÃªchant les notifications push de fonctionner sur Android : ajout de la permission POST_NOTIFICATIONS et du plugin expo-notifications manquants dans la configuration native. âš ï¸ Cette mise Ã  jour nÃ©cessite de retÃ©lÃ©charger l\u0027application.",
-        "type":  "fix"
+        "version": "1.3.1",
+        "date": "2026-03-27",
+        "title": "Notifications push et compteurs",
+        "description": "Notifications push en temps réel pour les demandes de prêt et les invitations de contact. Compteurs de notifications visibles sur l'onglet Prêts. Indication des demandes refusées. Paramètres de notification personnalisables. Cette mise à jour nécessite de retélécharger l'application.",
+        "type": "feature"
     },
     {
-        "version":  "1.3.1",
-        "date":  "2026-03-27",
-        "title":  "Notifications push et compteurs",
-        "description":  "Notifications push en temps rÃ©el pour les demandes de prÃªt et les invitations de contact. Compteurs de notifications visibles sur l\u0027onglet PrÃªts. Indication des demandes refusÃ©es. ParamÃ¨tres de notification personnalisables. âš ï¸ Cette mise Ã  jour nÃ©cessite de retÃ©lÃ©charger l\u0027application.",
-        "type":  "feature"
+        "version": "1.3.0",
+        "date": "2026-03-24",
+        "title": "Refonte graphique et thèmes",
+        "description": "Quatre thèmes visuels au choix (Chaleureuse, Sombre & Élégante, Minimaliste, Nature) sélectionnables depuis les paramètres. Toute l'interface adapte ses couleurs dynamiquement. Correction de l'affichage des données Google Books et Open Library dans le détail d'un livre.",
+        "type": "feature"
     },
     {
-        "version":  "1.3.0",
-        "date":  "2026-03-24",
-        "title":  "Refonte graphique et thÃ¨mes",
-        "description":  "Quatre thÃ¨mes visuels au choix (Chaleureuse, Sombre \u0026 Ã‰lÃ©gante, Minimaliste, Nature) sÃ©lectionnables depuis les paramÃ¨tres. Toute l\u0027interface adapte ses couleurs dynamiquement. Correction de l\u0027affichage des donnÃ©es Google Books et Open Library dans le dÃ©tail d\u0027un livre.",
-        "type":  "feature"
+        "version": "1.2.1",
+        "date": "2026-03-13",
+        "title": "Bibliothèque partagée et historique des versions",
+        "description": "Auteurs, genres, éditeurs et séries sont désormais partagés entre tous les utilisateurs. Les données dupliquées sont automatiquement fusionnées. Ajout d'un historique des mises à jour dans l'application.",
+        "type": "feature"
     },
     {
-        "version":  "1.2.1",
-        "date":  "2026-03-13",
-        "title":  "BibliothÃ¨que partagÃ©e et historique des versions",
-        "description":  "Auteurs, genres, Ã©diteurs et sÃ©ries sont dÃ©sormais partagÃ©s entre tous les utilisateurs. Les donnÃ©es dupliquÃ©es sont automatiquement fusionnÃ©es. Ajout d\u0027un historique des mises Ã  jour dans l\u0027application.",
-        "type":  "feature"
+        "version": "1.2.0",
+        "date": "2026-03-02",
+        "title": "Gestion des comptes",
+        "description": "Mot de passe oublié, changement d'email, modification du nom d'utilisateur, changement de mot de passe et suppression de compte.",
+        "type": "feature"
     },
     {
-        "version":  "1.2.0",
-        "date":  "2026-03-02",
-        "title":  "Gestion des comptes",
-        "description":  "Mot de passe oubliÃ©, changement d\u0027email, modification du nom d\u0027utilisateur, changement de mot de passe et suppression de compte.",
-        "type":  "feature"
+        "version": "1.1.0",
+        "date": "2026-02-20",
+        "title": "Prêts entre utilisateurs",
+        "description": "Demandes de prêt entre contacts, bibliothèque partagée en lecture seule, système de contacts avec invitations, affichage des livres empruntés dans l'onglet livres.",
+        "type": "feature"
     },
     {
-        "version":  "1.1.0",
-        "date":  "2026-02-20",
-        "title":  "PrÃªts entre utilisateurs",
-        "description":  "Demandes de prÃªt entre contacts, bibliothÃ¨que partagÃ©e en lecture seule, systÃ¨me de contacts avec invitations, affichage des livres empruntÃ©s dans l\u0027onglet livres.",
-        "type":  "feature"
+        "version": "1.0.3",
+        "date": "2026-02-16",
+        "title": "Recherches avancées et notation",
+        "description": "Filtres multi-critères avancés, système de notation par étoiles, notes personnelles sur les livres.",
+        "type": "feature"
     },
     {
-        "version":  "1.0.3",
-        "date":  "2026-02-16",
-        "title":  "Recherches avancÃ©es et notation",
-        "description":  "Filtres multi-critÃ¨res avancÃ©s, systÃ¨me de notation par Ã©toiles, notes personnelles sur les livres.",
-        "type":  "feature"
+        "version": "1.0.2",
+        "date": "2026-02-13",
+        "title": "Photo de couverture",
+        "description": "Prise de photo de couverture directement depuis l'app ou depuis la galerie, recadrage intégré.",
+        "type": "feature"
     },
     {
-        "version":  "1.0.2",
-        "date":  "2026-02-13",
-        "title":  "Photo de couverture",
-        "description":  "Prise de photo de couverture directement depuis l\u0027app ou depuis la galerie, recadrage intÃ©grÃ©.",
-        "type":  "feature"
+        "version": "1.0.1",
+        "date": "2026-01-18",
+        "title": "Rappels de calendrier et Séries",
+        "description": "Rappels automatiques dans le calendrier pour les retours de prêts, gestion des séries de livres.",
+        "type": "feature"
     },
     {
-        "version":  "1.0.1",
-        "date":  "2026-01-18",
-        "title":  "Rappels de calendrier et SÃ©ries",
-        "description":  "Rappels automatiques dans le calendrier pour les retours de prÃªts, gestion des sÃ©ries de livres.",
-        "type":  "feature"
-    },
-    {
-        "version":  "1.0.0",
-        "date":  "2025-12-17",
-        "title":  "Version initiale",
-        "description":  "Catalogue personnel de livres, scan ISBN, gestion des emprunts et emprunteurs, import CSV, mises Ã  jour automatiques OTA.",
-        "type":  "feature"
+        "version": "1.0.0",
+        "date": "2025-12-17",
+        "title": "Version initiale",
+        "description": "Catalogue personnel de livres, scan ISBN, gestion des emprunts et emprunteurs, import CSV, mises à jour automatiques OTA.",
+        "type": "feature"
     }
 ]
