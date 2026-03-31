@@ -52,3 +52,5 @@ tmpclaude-*/
 CLAUDE.md
 
 docs/Style proposé par chatgpt/
+frontend/google-services.json
+frontend/*firebase-adminsdk*.json

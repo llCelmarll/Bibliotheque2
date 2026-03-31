@@ -13,7 +13,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   if (Platform.OS === 'web') return null;
 
   // Les push distants ne fonctionnent pas dans Expo Go (SDK 53+), uniquement en development build
-  const isExpoGo = Constants.appOwnership === 'expo';
+  const isExpoGo = Constants.executionEnvironment === 'storeClient';
   if (isExpoGo) {
     console.log('[Push] Expo Go détecté — push notifications désactivées, utiliser un development build');
     return null;
@@ -22,12 +22,9 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    console.log('[Push] Permission existante :', existingStatus);
-
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
-      console.log('[Push] Permission après demande :', finalStatus);
     }
 
     if (finalStatus !== 'granted') {
@@ -39,20 +36,12 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       Constants.expoConfig?.extra?.eas?.projectId ??
       Constants.easConfig?.projectId ??
       'b94a31f7-30e7-4781-8a4d-c32e75cb7e82';
-    console.log('[Push] projectId :', projectId);
     const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
     console.log('[Push] Token obtenu :', tokenData.data.substring(0, 40) + '...');
     await AsyncStorage.setItem(PUSH_TOKEN_KEY, tokenData.data);
     return tokenData.data;
   } catch (error: any) {
     console.error('[Push] Erreur lors de l\'enregistrement :', error);
-    // Envoyer l'erreur au backend pour diagnostic
-    try {
-      await apiClient.post('/push-tokens/debug', {
-        error: error?.message ?? String(error),
-        platform: Platform.OS,
-      });
-    } catch {}
     return null;
   }
 }
@@ -89,8 +78,6 @@ export async function syncPrefsToBackend(prefs: Record<string, boolean>): Promis
 
 export async function unregisterPushToken(token: string): Promise<void> {
   try {
-    // Appel DELETE direct car apiClient n'a pas de méthode delete générique
-    const { apiClient: client } = await import('@/services/api/client');
     // On utilise fetch direct avec le token stocké
     const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     let SecureStore: any = null;

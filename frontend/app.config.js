@@ -4,7 +4,7 @@ module.exports = {
   expo: {
     name: "Bibliothèque", // Nom de l'application
     slug: "bibliotheque", // Identifiant unique pour Expo
-    version: "1.0.6", // Version de l'application
+    version: "1.0.7", // Version de l'application
     orientation: "portrait", // Orientation par défaut
     icon: "./assets/icon.png", // Icône de l'application (à ajouter)
     splash: {
@@ -32,6 +32,7 @@ module.exports = {
     },
     android: {
       package: "com.lcelmarl.bibliotheque.frontend",
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png", // Icône adaptative pour Android (à ajouter)
         backgroundColor: "#FFFFFF"
