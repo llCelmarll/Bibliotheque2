@@ -113,12 +113,21 @@ function Get-DeploymentPlan {
         return $plan
     }
 
-    # Verifier que prod n'est pas en avance sur main (etat anormal)
+    # Si prod est en avance sur main, c'est un commit de deploiement precedent.
+    # On merge prod dans main automatiquement (fast-forward) pour repartir propre.
     $aheadCount = git rev-list --count main..prod 2>$null
     if ($aheadCount -and [int]$aheadCount -gt 0) {
-        Write-Host "ATTENTION: la branche prod contient $aheadCount commit(s) absents de main !" -ForegroundColor Red
-        Write-Host "Verifiez l'etat de vos branches avant de deployer." -ForegroundColor Red
-        exit 1
+        Write-Host "  prod contient $aheadCount commit(s) de deploiement — merge dans main..." -ForegroundColor Yellow
+        $currentBranch = git rev-parse --abbrev-ref HEAD
+        git checkout main 2>&1 | Out-Null
+        git merge prod --ff-only 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "ATTENTION: impossible de merger prod dans main automatiquement (divergence reelle)." -ForegroundColor Red
+            Write-Host "Verifiez l'etat de vos branches avant de deployer." -ForegroundColor Red
+            exit 1
+        }
+        if ($currentBranch -ne "main") { git checkout $currentBranch 2>&1 | Out-Null }
+        Write-Host "  prod mergee dans main avec succes." -ForegroundColor Green
     }
 
     # Recuperer les fichiers modifies depuis le dernier deploiement
