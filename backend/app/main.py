@@ -46,7 +46,6 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_version="3.1.0",
     openapi_tags=tags_metadata,
-    root_path="/api",
 )
 
 # Logging de base (provisoire)

@@ -6,7 +6,7 @@ jest.mock('../../config/api', () => ({
   __esModule: true,
   default: {
     BASE_URL: 'http://localhost:8000',
-    STATIC_URL: 'http://localhost:8000/api',
+    STATIC_URL: 'http://localhost:8000',
     ENDPOINTS: { BOOKS: '/books' }
   }
 }));
@@ -42,13 +42,13 @@ describe('resolveCoverUrl', () => {
 
   it('resolves /covers/ path with STATIC_URL and cache-buster', () => {
     expect(resolveCoverUrl('/covers/42.jpg')).toBe(
-      'http://localhost:8000/api/covers/42.jpg?t=1234567890'
+      'http://localhost:8000/covers/42.jpg?t=1234567890'
     );
   });
 
   it('resolves different book IDs in /covers/ path', () => {
     expect(resolveCoverUrl('/covers/123.jpg')).toBe(
-      'http://localhost:8000/api/covers/123.jpg?t=1234567890'
+      'http://localhost:8000/covers/123.jpg?t=1234567890'
     );
   });
 
@@ -56,10 +56,8 @@ describe('resolveCoverUrl', () => {
     expect(resolveCoverUrl('/other/path.jpg')).toBe('/other/path.jpg');
   });
 
-  it('uses STATIC_URL not BASE_URL for /covers/ paths', () => {
-    // STATIC_URL inclut /api, BASE_URL non — vérifier que le bon est utilisé
+  it('uses STATIC_URL for /covers/ paths', () => {
     const result = resolveCoverUrl('/covers/1.jpg');
-    expect(result).toContain('/api/covers/');
-    expect(result).not.toBe('http://localhost:8000/covers/1.jpg?t=1234567890');
+    expect(result).toBe('http://localhost:8000/covers/1.jpg?t=1234567890');
   });
 });
