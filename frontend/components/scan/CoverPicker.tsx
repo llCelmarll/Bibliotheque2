@@ -104,11 +104,16 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [ASPECT_W, ASPECT_H],
-            quality: 0.8,
+            quality: 1,
         });
         if (!result.canceled && result.assets[0]) {
+            // Convertir en JPEG + compresser via ImageManipulator (gère HEIC, WebP, content:// URIs Android)
+            const imageRef = await ImageManipulator
+                .manipulate(result.assets[0].uri)
+                .renderAsync();
+            const compressed = await imageRef.saveAsync({ compress: 0.8, format: SaveFormat.JPEG });
             setImageLoadError(false);
-            onLocalImagePicked(result.assets[0].uri);
+            onLocalImagePicked(compressed.uri);
             setShowUrlInput(false);
         }
     };

@@ -152,6 +152,34 @@ class TestCoverServiceProcessAndSave:
         assert "Impossible de traiter" in exc_info.value.detail
 
 
+    @pytest.mark.asyncio
+    async def test_large_image_compressed_under_limit(self, covers_dir):
+        """Photo haute résolution (tablette Android) redimensionnée sous MAX_FILE_SIZE."""
+        contents = make_image_bytes(4000, 6000, "JPEG")
+        file = make_upload_file("image/jpeg", contents)
+
+        await CoverService.process_and_save(99, file)
+
+        output = covers_dir / "99.jpg"
+        assert output.stat().st_size < MAX_FILE_SIZE
+        img = Image.open(output)
+        assert img.width <= 600
+        assert img.height <= 900
+
+    @pytest.mark.asyncio
+    async def test_gallery_formats_converted_to_jpeg(self, covers_dir):
+        """PNG et WebP (formats galerie Android) convertis en JPEG."""
+        for fmt, content_type in [("PNG", "image/png"), ("WEBP", "image/webp")]:
+            contents = make_image_bytes(800, 1200, fmt)
+            file = make_upload_file(content_type, contents)
+
+            result = await CoverService.process_and_save(100, file)
+
+            assert result == "/covers/100.jpg"
+            img = Image.open(covers_dir / "100.jpg")
+            assert img.format == "JPEG"
+
+
 @pytest.mark.unit
 class TestCoverServiceDeleteFile:
 
