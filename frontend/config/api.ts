@@ -16,19 +16,9 @@ const getBaseUrl = () => {
   return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 };
 
-// URL de base pour les fichiers statiques (covers) — inclut root_path /api en dev direct
-const getStaticUrl = () => {
-  const base = getBaseUrl();
-  // En dev natif/web direct sur le backend, les statics sont sous /api/covers
-  // En prod (via nginx), BASE_URL est déjà https://mabibliotheque.ovh/api
-  if (base.endsWith('/api')) return base;
-  // Base sans /api : c'est le dev local direct (http://host:8000)
-  return `${base}/api`;
-};
-
 const API_CONFIG = {
   BASE_URL: getBaseUrl(),
-  STATIC_URL: getStaticUrl(),
+  STATIC_URL: getBaseUrl(),
   ENDPOINTS: {
     SCAN: '/scan',
     BOOKS: '/books',

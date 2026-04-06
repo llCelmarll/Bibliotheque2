@@ -21,18 +21,31 @@ def make_image_bytes(width: int, height: int, fmt: str = "JPEG") -> bytes:
 
 @pytest.fixture
 def covers_dir(tmp_path):
-    """Patche COVERS_DIR vers un dossier temporaire pour les tests d'intégration."""
+    """Patche COVERS_DIR vers un dossier temporaire pour les tests d'intégration.
+    Patche aussi le StaticFiles mount de l'app pour servir depuis ce dossier."""
     import app.services.cover_service as mod
     import app.config as cfg
+    from app.main import app
+    from fastapi.staticfiles import StaticFiles
+
     original_mod = mod.COVERS_DIR
     original_cfg = cfg.COVERS_DIR
     test_dir = tmp_path / "covers"
     test_dir.mkdir()
     mod.COVERS_DIR = test_dir
     cfg.COVERS_DIR = test_dir
+
+    # Remplacer le StaticFiles mount pour pointer vers le dossier temporaire
+    router = app.router
+    original_routes = list(router.routes)
+    router.routes = [r for r in router.routes if not (hasattr(r, 'name') and r.name == 'covers')]
+    app.mount("/covers", StaticFiles(directory=str(test_dir)), name="covers")
+
     yield test_dir
+
     mod.COVERS_DIR = original_mod
     cfg.COVERS_DIR = original_cfg
+    router.routes = original_routes
 
 
 @pytest.mark.integration
@@ -114,6 +127,51 @@ class TestCoverUploadEndpoint:
 
         assert response.status_code == 400
         assert "trop volumineux" in response.json()["detail"]
+
+
+@pytest.mark.integration
+@pytest.mark.books
+class TestCoverServing:
+    """Vérifie que GET /covers/{id}.jpg sert bien le fichier après upload.
+    Régression : root_path="/api" dans FastAPI montait StaticFiles sur /api/covers
+    au lieu de /covers, rendant les covers inaccessibles en production (nginx rewrite
+    strip le préfixe /api/ avant de proxifier vers le backend).
+    """
+
+    def test_cover_served_at_covers_path(
+        self, authenticated_client: TestClient, session: Session, test_user, covers_dir
+    ):
+        """Après upload, GET /covers/{id}.jpg doit retourner 200, pas 404."""
+        book = create_test_book(session, test_user.id, title="Serve Test")
+        img_bytes = make_image_bytes(300, 450, "JPEG")
+
+        upload = authenticated_client.post(
+            f"/books/{book.id}/cover",
+            files={"file": ("cover.jpg", img_bytes, "image/jpeg")}
+        )
+        assert upload.status_code == 200
+
+        cover_url = upload.json()["cover_url"]  # ex: /covers/42.jpg
+        response = authenticated_client.get(cover_url)
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("image/")
+
+    def test_cover_not_served_under_api_prefix(
+        self, authenticated_client: TestClient, session: Session, test_user, covers_dir
+    ):
+        """GET /api/covers/{id}.jpg doit retourner 404 : StaticFiles est sur /covers,
+        pas /api/covers. En production nginx strip /api/ avant de proxifier."""
+        book = create_test_book(session, test_user.id, title="Prefix Test")
+        img_bytes = make_image_bytes(300, 450, "JPEG")
+
+        upload = authenticated_client.post(
+            f"/books/{book.id}/cover",
+            files={"file": ("cover.jpg", img_bytes, "image/jpeg")}
+        )
+        assert upload.status_code == 200
+
+        response = authenticated_client.get(f"/api/covers/{book.id}.jpg")
+        assert response.status_code == 404
 
 
 @pytest.mark.integration

@@ -33,6 +33,9 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [ ] **Import / Export de données**
     - Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
     - Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
+- [ ] **Version de test avant production (préproduction/staging)**
+    - Créer une version de test dans les conditions réelles de déploiement.
+    - Valider les éventuels problèmes (techniques, configuration, performance) avant déploiement sur la version de production.
 - [x] **Notifications Android**
     - Mise en place de notifications push (Expo Notifications) pour les événements importants (demandes d'amis, prêts, etc.).
 
