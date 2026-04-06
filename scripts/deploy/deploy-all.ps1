@@ -113,21 +113,13 @@ function Get-DeploymentPlan {
         return $plan
     }
 
-    # Si prod est en avance sur main, c'est un commit de deploiement precedent.
-    # On merge prod dans main automatiquement (fast-forward) pour repartir propre.
+    # Verifier que prod n'est pas en avance sur main (ne devrait plus arriver
+    # depuis que Update-ProdBranch commite sur main puis fast-forward prod)
     $aheadCount = git rev-list --count main..prod 2>$null
     if ($aheadCount -and [int]$aheadCount -gt 0) {
-        Write-Host "  prod contient $aheadCount commit(s) de deploiement — merge dans main..." -ForegroundColor Yellow
-        $currentBranch = git rev-parse --abbrev-ref HEAD
-        git checkout main 2>&1 | Out-Null
-        git merge prod --ff-only 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "ATTENTION: impossible de merger prod dans main automatiquement (divergence reelle)." -ForegroundColor Red
-            Write-Host "Verifiez l'etat de vos branches avant de deployer." -ForegroundColor Red
-            exit 1
-        }
-        if ($currentBranch -ne "main") { git checkout $currentBranch 2>&1 | Out-Null }
-        Write-Host "  prod mergee dans main avec succes." -ForegroundColor Green
+        Write-Host "ATTENTION: prod contient $aheadCount commit(s) absents de main." -ForegroundColor Yellow
+        Write-Host "Mergeez prod dans main manuellement avant de continuer." -ForegroundColor Yellow
+        exit 1
     }
 
     # Recuperer les fichiers modifies depuis le dernier deploiement
@@ -286,8 +278,13 @@ function Update-ProdBranch {
 
     $mergeMsg = "deploy($deployed): v$appVersion"
 
+    # Commiter le tag de deploiement directement sur main
+    git commit --allow-empty -m $mergeMsg
+    git push origin main
+
+    # prod avance en fast-forward sur main (pas de commit supplementaire)
     git checkout prod
-    git merge main --no-ff -m $mergeMsg
+    git merge main --ff-only
     git push origin prod
     git checkout $currentBranch
     Write-Host "  Branche prod mise a jour ! ($mergeMsg)" -ForegroundColor Green
