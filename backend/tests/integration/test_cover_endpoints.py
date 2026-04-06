@@ -7,8 +7,32 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlmodel import Session
+from PIL import Image
 
 from tests.conftest import create_test_user, create_test_book
+
+
+def make_image_bytes(width: int, height: int, fmt: str = "JPEG") -> bytes:
+    img = Image.new("RGB", (width, height), color="blue")
+    buf = io.BytesIO()
+    img.save(buf, fmt)
+    return buf.getvalue()
+
+
+@pytest.fixture
+def covers_dir(tmp_path):
+    """Patche COVERS_DIR vers un dossier temporaire pour les tests d'intégration."""
+    import app.services.cover_service as mod
+    import app.config as cfg
+    original_mod = mod.COVERS_DIR
+    original_cfg = cfg.COVERS_DIR
+    test_dir = tmp_path / "covers"
+    test_dir.mkdir()
+    mod.COVERS_DIR = test_dir
+    cfg.COVERS_DIR = test_dir
+    yield test_dir
+    mod.COVERS_DIR = original_mod
+    cfg.COVERS_DIR = original_cfg
 
 
 @pytest.mark.integration
@@ -57,6 +81,39 @@ class TestCoverUploadEndpoint:
         )
 
         assert response.status_code == 404
+
+    def test_upload_real_jpeg_updates_cover_url_and_creates_file(
+        self, authenticated_client: TestClient, session: Session, test_user, covers_dir
+    ):
+        """Upload réel sans mock : cover_url mis à jour en base et fichier physique créé."""
+        book = create_test_book(session, test_user.id, title="Real Upload")
+        img_bytes = make_image_bytes(300, 450, "JPEG")
+
+        response = authenticated_client.post(
+            f"/books/{book.id}/cover",
+            files={"file": ("cover.jpg", img_bytes, "image/jpeg")}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["cover_url"] == f"/covers/{book.id}.jpg"
+        session.refresh(book)
+        assert book.cover_url == f"/covers/{book.id}.jpg"
+        assert (covers_dir / f"{book.id}.jpg").exists()
+
+    def test_upload_oversized_file_rejected(
+        self, authenticated_client: TestClient, session: Session, test_user
+    ):
+        """Fichier > 15 MB rejeté avec 400 avant traitement PIL."""
+        book = create_test_book(session, test_user.id, title="Oversized")
+        huge = b"x" * (15 * 1024 * 1024 + 1)
+
+        response = authenticated_client.post(
+            f"/books/{book.id}/cover",
+            files={"file": ("cover.jpg", huge, "image/jpeg")}
+        )
+
+        assert response.status_code == 400
+        assert "trop volumineux" in response.json()["detail"]
 
 
 @pytest.mark.integration
