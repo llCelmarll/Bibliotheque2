@@ -1,7 +1,7 @@
 import { Platform, Alert, Linking } from 'react-native';
 import API_CONFIG from '@/config/api';
 
-const DOWNLOAD_URL = 'https://mabibliotheque.ovh/bibliotheque.apk';
+const DOWNLOAD_URL = API_CONFIG.APK_URL;
 
 /**
  * Compare deux versions semver (ex: "1.0.0" < "1.1.0")

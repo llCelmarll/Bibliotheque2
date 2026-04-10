@@ -1,12 +1,14 @@
 const { version } = require("react");
 
+const isStaging = process.env.APP_VARIANT === "staging";
+
 module.exports = {
   expo: {
-    name: "Bibliothèque", // Nom de l'application
+    name: isStaging ? "Bibliothèque STAGING" : "Bibliothèque",
     slug: "bibliotheque", // Identifiant unique pour Expo
     version: "1.0.7", // Version de l'application
     orientation: "portrait", // Orientation par défaut
-    icon: "./assets/icon.png", // Icône de l'application (à ajouter)
+    icon: isStaging ? "./assets/icon-staging.png" : "./assets/icon.png",
     splash: {
       image: "./assets/splash.png", // Image de démarrage (à ajouter)
       resizeMode: "contain",
@@ -31,10 +33,10 @@ module.exports = {
       bundleIdentifier: "com.lcelmarl.bibliotheque.frontend"
     },
     android: {
-      package: "com.lcelmarl.bibliotheque.frontend",
+      package: isStaging ? "com.lcelmarl.bibliotheque.frontend.staging" : "com.lcelmarl.bibliotheque.frontend",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png", // Icône adaptative pour Android (à ajouter)
+        foregroundImage: isStaging ? "./assets/adaptive-icon-staging.png" : "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"
       },
       permissions: [
