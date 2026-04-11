@@ -1,0 +1,55 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.db
+*.db.*
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Variables d'environnement - CRITIQUE DE SÉCURITÉ
+.env
+.env.*
+!.env.example
+.env.local
+.env.development
+.env.production
+.env.staging
+
+# Fichiers sensibles
+*.key
+*.pem
+*.p12
+secrets/
+config/secrets/
+
+# Couvertures uploadées (dev local)
+backend/data/covers/
+
+# Données de test et migration
+testLivrotheque2.csv
+
+# Copie du changelog dans le contexte Docker (generee au build, ne pas tracker)
+backend/docs/CHANGELOG.json
+deploy/testers-ips.txt
+**/data_export.json
+backups/
+
+# Claude
+.claude/
+tmpclaude-*/
+**/tmpclaude-*
+CLAUDE.md
+
+docs/Style proposé par chatgpt/
+# frontend/google-services.json est intentionnellement ABSENT = inclus dans l'archive EAS
+frontend/*firebase-adminsdk*.json

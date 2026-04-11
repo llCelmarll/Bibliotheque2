@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import API_CONFIG from '@/config/api';
 
 export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
@@ -180,7 +181,7 @@ export default function LoginScreen() {
           {Platform.OS === 'web' && (
             <TouchableOpacity
               style={[styles.downloadButton, { backgroundColor: theme.success }]}
-              onPress={() => Linking.openURL('https://mabibliotheque.ovh/bibliotheque.apk')}
+              onPress={() => Linking.openURL(API_CONFIG.APK_URL)}
             >
               <Text style={[styles.downloadButtonText, { color: theme.textInverse }]}>📱 Télécharger l'application Android</Text>
             </TouchableOpacity>

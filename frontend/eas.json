@@ -11,6 +11,19 @@
         "buildType": "apk"
       }
     },
+    "staging": {
+      "distribution": "internal",
+      "channel": "staging",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.124:8090/api",
+        "APP_VARIANT": "staging",
+        "EXPO_PUBLIC_APK_URL": "http://192.168.1.124:8090/bibliotheque-staging.apk",
+        "EXPO_PUBLIC_APK_FILENAME": "bibliotheque-staging.apk"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "channel": "production",
