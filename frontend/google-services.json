@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "842995345251",
+    "project_id": "mabibliotheque-ceb90",
+    "storage_bucket": "mabibliotheque-ceb90.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:842995345251:android:c94aca49da8e0630bd1556",
+        "android_client_info": {
+          "package_name": "com.lcelmarl.bibliotheque.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKcDD7oys5rnjMtLwLMG1YYSWpQiWg9Tc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:842995345251:android:d00bad7e29242473bd1556",
+        "android_client_info": {
+          "package_name": "com.lcelmarl.bibliotheque.frontend.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKcDD7oys5rnjMtLwLMG1YYSWpQiWg9Tc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

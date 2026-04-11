@@ -70,12 +70,12 @@ try {
 # Upload sur le NAS
 Write-Host ""
 Write-Host "Upload de l'APK staging sur le serveur..." -ForegroundColor Yellow
-ssh "$env:SYNOLOGY_USER@$env:SYNOLOGY_IP" "mkdir -p ${STAGING_PATH}/apk"
-& cmd /c "ssh `"$env:SYNOLOGY_USER@$env:SYNOLOGY_IP`" `"cat > ${STAGING_PATH}/apk/bibliotheque-staging.apk`" < `"$tempApk`""
+ssh "$SYNOLOGY_USER@$SYNOLOGY_IP" "mkdir -p ${STAGING_PATH}/apk"
+& cmd /c "ssh `"$SYNOLOGY_USER@$SYNOLOGY_IP`" `"cat > ${STAGING_PATH}/apk/bibliotheque-staging.apk`" < `"$tempApk`""
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "  APK staging uploade !" -ForegroundColor Green
-    $remoteSize = ssh "$env:SYNOLOGY_USER@$env:SYNOLOGY_IP" "ls -lh ${STAGING_PATH}/apk/bibliotheque-staging.apk | awk '{print `$5}'"
+    $remoteSize = ssh "$SYNOLOGY_USER@$SYNOLOGY_IP" "ls -lh ${STAGING_PATH}/apk/bibliotheque-staging.apk | awk '{print `$5}'"
     Write-Host "  Taille sur le serveur: $remoteSize" -ForegroundColor Gray
 } else {
     Write-Host "  Erreur lors de l'upload" -ForegroundColor Red
