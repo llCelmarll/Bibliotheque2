@@ -13,9 +13,14 @@ COPY . .
 # Définir NODE_ENV pour utiliser .env.production
 ARG EXPO_PUBLIC_API_URL
 ARG EXPO_PUBLIC_APK_FILENAME=bibliotheque.apk
+ARG APP_VARIANT=production
 ENV NODE_ENV=production
 ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
 ENV EXPO_PUBLIC_APK_FILENAME=${EXPO_PUBLIC_APK_FILENAME}
+ENV APP_VARIANT=${APP_VARIANT}
+
+# Supprimer les fichiers .env copiés (priorité sur les ENV ci-dessus dans Expo)
+RUN rm -f .env .env.local .env.production .env.staging
 
 # Build de l'application web avec les variables d'environnement de production
 RUN npx expo export --platform web

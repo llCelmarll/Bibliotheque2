@@ -22,7 +22,8 @@ module.exports = {
     },
     updates: {
       url: "https://u.expo.dev/b94a31f7-30e7-4781-8a4d-c32e75cb7e82",
-      fallbackToCacheTimeout: 0
+      fallbackToCacheTimeout: 0,
+      enabled: true,
     },
     runtimeVersion: "stable",
     assetBundlePatterns: [

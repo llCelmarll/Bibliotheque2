@@ -181,6 +181,7 @@ if ($deployFrontend) {
         --build-arg NGINX_CONF=nginx-frontend-staging.conf `
         --build-arg EXPO_PUBLIC_API_URL=$STAGING_API_URL `
         --build-arg EXPO_PUBLIC_APK_FILENAME=bibliotheque-staging.apk `
+        --build-arg APP_VARIANT=staging `
         -t llcelmarll/mabibliotheque-frontend:staging `
         --push .
 
@@ -211,14 +212,41 @@ if ($deployOta) {
     Write-Host "`n[3/3] Mise a jour OTA mobile STAGING..." -ForegroundColor Yellow
     Write-Host ""
 
-    Set-Location (Join-Path $repoRoot "frontend")
-    $env:EXPO_PUBLIC_API_URL = $STAGING_API_URL
-    eas update --branch staging --message $UpdateMessage
+    $frontendDir = Join-Path $repoRoot "frontend"
+    Set-Location $frontendDir
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "  Erreur lors de la publication OTA staging" -ForegroundColor Red
-        Set-Location $repoRoot
-        exit 1
+    # Expo 54 charge les fichiers .env par ordre de priorite decroissante :
+    #   .env.production > .env.local > .env
+    # Les variables d'environnement Process sont ignorees.
+    # On masque .env.production (priorite superieure) et on ecrit les vars
+    # staging dans .env.local (priorite superieure a .env, sans toucher a .env).
+    $dotEnvLocalPath   = Join-Path $frontendDir ".env.local"
+    $dotEnvProdPath    = Join-Path $frontendDir ".env.production"
+    $dotEnvProdBakPath = Join-Path $frontendDir ".env.production.bak"
+
+    # Masquer .env.production et ecrire les vars staging dans .env.local
+    if (Test-Path $dotEnvProdPath) {
+        Rename-Item -Path $dotEnvProdPath -NewName ".env.production.bak" -Force
+    }
+    $stagingEnvContent = "EXPO_PUBLIC_API_URL=$STAGING_API_URL`nAPP_VARIANT=staging`nEXPO_PUBLIC_APK_URL=http://${SYNOLOGY_IP}:8090/bibliotheque-staging.apk`nEXPO_PUBLIC_APK_FILENAME=bibliotheque-staging.apk"
+    Set-Content -Path $dotEnvLocalPath -Value $stagingEnvContent -NoNewline
+
+    Write-Host "  API URL pour OTA: $STAGING_API_URL" -ForegroundColor Gray
+
+    try {
+        eas update --branch staging --message $UpdateMessage
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  Erreur lors de la publication OTA staging" -ForegroundColor Red
+            Remove-Item -Path $dotEnvLocalPath -Force -ErrorAction SilentlyContinue
+            if (Test-Path $dotEnvProdBakPath) { Rename-Item -Path $dotEnvProdBakPath -NewName ".env.production" -Force }
+            Set-Location $repoRoot
+            exit 1
+        }
+    } finally {
+        # Nettoyer .env.local et restaurer .env.production dans tous les cas
+        Remove-Item -Path $dotEnvLocalPath -Force -ErrorAction SilentlyContinue
+        if (Test-Path $dotEnvProdBakPath) { Rename-Item -Path $dotEnvProdBakPath -NewName ".env.production" -Force }
     }
 
     Set-Location $repoRoot

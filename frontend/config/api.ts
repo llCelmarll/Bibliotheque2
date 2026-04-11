@@ -12,18 +12,14 @@ const getApkUrl = () => {
 };
 
 const getBaseUrl = () => {
-  // App native (iOS/Android) : toujours utiliser l'URL complète du backend
-  if (Platform.OS === 'ios' || Platform.OS === 'android') {
-    return process.env.EXPO_PUBLIC_API_URL || 'https://mabibliotheque.ovh/api';
-  }
-
   // Web production : utiliser /api (proxifié par Nginx)
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
     return '/api';
   }
 
-  // Développement local (web) : utiliser localhost
-  return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+  // App native (iOS/Android) ou dev local : utiliser l'URL complète
+  // EXPO_PUBLIC_API_URL doit toujours être défini pour le natif staging/prod
+  return process.env.EXPO_PUBLIC_API_URL || 'https://mabibliotheque.ovh/api';
 };
 
 const API_CONFIG = {
