@@ -182,6 +182,7 @@ if ($deployFrontend) {
         --build-arg EXPO_PUBLIC_API_URL=$STAGING_API_URL `
         --build-arg EXPO_PUBLIC_APK_FILENAME=bibliotheque-staging.apk `
         --build-arg APP_VARIANT=staging `
+        --build-arg EXPO_PUBLIC_APP_VARIANT=staging `
         -t llcelmarll/mabibliotheque-frontend:staging `
         --push .
 

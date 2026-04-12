@@ -6,7 +6,7 @@ import { checkForUpdate } from "@/utils/versionCheck";
 import { NotificationsProvider, useNotifications } from "@/contexts/NotificationsContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const isStaging = process.env.APP_VARIANT === 'staging';
+const isStaging = process.env.EXPO_PUBLIC_APP_VARIANT === 'staging';
 
 function TabLayoutInner() {
   const router = useRouter();

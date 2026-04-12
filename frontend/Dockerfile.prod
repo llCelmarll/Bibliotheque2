@@ -14,10 +14,12 @@ COPY . .
 ARG EXPO_PUBLIC_API_URL
 ARG EXPO_PUBLIC_APK_FILENAME=bibliotheque.apk
 ARG APP_VARIANT=production
+ARG EXPO_PUBLIC_APP_VARIANT=production
 ENV NODE_ENV=production
 ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
 ENV EXPO_PUBLIC_APK_FILENAME=${EXPO_PUBLIC_APK_FILENAME}
 ENV APP_VARIANT=${APP_VARIANT}
+ENV EXPO_PUBLIC_APP_VARIANT=${EXPO_PUBLIC_APP_VARIANT}
 
 # Supprimer les fichiers .env copiés (priorité sur les ENV ci-dessus dans Expo)
 RUN rm -f .env .env.local .env.production .env.staging

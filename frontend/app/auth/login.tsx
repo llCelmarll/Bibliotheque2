@@ -64,7 +64,7 @@ export default function LoginScreen() {
     }
   };
 
-  const isStaging = process.env.APP_VARIANT === 'staging';
+  const isStaging = process.env.EXPO_PUBLIC_APP_VARIANT === 'staging';
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
