@@ -18,9 +18,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.124:8090/api",
+        "EXPO_PUBLIC_API_URL": "https://staging.mabibliotheque.ovh/api",
         "APP_VARIANT": "staging",
-        "EXPO_PUBLIC_APK_URL": "http://192.168.1.124:8090/bibliotheque-staging.apk",
+        "EXPO_PUBLIC_APK_URL": "https://staging.mabibliotheque.ovh/bibliotheque-staging.apk",
         "EXPO_PUBLIC_APK_FILENAME": "bibliotheque-staging.apk"
       }
     },

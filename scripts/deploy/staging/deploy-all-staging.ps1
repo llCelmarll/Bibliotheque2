@@ -87,7 +87,7 @@ $deployBackend  = -not $FrontendOnly -and -not $OtaOnly
 $deployFrontend = -not $BackendOnly -and -not $OtaOnly
 $deployOta      = -not $BackendOnly
 $repoRoot       = Join-Path $PSScriptRoot "..\..\..\"
-$STAGING_API_URL = "http://${SYNOLOGY_IP}:8090/api"
+$STAGING_API_URL = "https://staging.mabibliotheque.ovh/api"
 
 if (-not $UpdateMessage) {
     $UpdateMessage = (git log --format='%s' -1 2>$null) -replace '"', "'"

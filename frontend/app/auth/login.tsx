@@ -64,8 +64,16 @@ export default function LoginScreen() {
     }
   };
 
+  const isStaging = process.env.APP_VARIANT === 'staging';
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+      {isStaging && (
+        <View style={styles.stagingBanner}>
+          <MaterialIcons name="science" size={16} color="#fff" />
+          <Text style={styles.stagingBannerText}>PRÉPRODUCTION — staging.mabibliotheque.ovh</Text>
+        </View>
+      )}
       <KeyboardAvoidingView
         style={[styles.container, { backgroundColor: theme.bgPrimary }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -313,5 +321,20 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     textAlign: 'center',
+  },
+  stagingBanner: {
+    backgroundColor: '#e67e00',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    gap: 6,
+  },
+  stagingBannerText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

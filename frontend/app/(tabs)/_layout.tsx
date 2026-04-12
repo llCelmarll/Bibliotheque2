@@ -6,6 +6,8 @@ import { checkForUpdate } from "@/utils/versionCheck";
 import { NotificationsProvider, useNotifications } from "@/contexts/NotificationsContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
+const isStaging = process.env.APP_VARIANT === 'staging';
+
 function TabLayoutInner() {
   const router = useRouter();
   const { totalPendingCount: totalNotifications } = useNotifications();
@@ -106,7 +108,14 @@ function TabLayoutInner() {
 export default function TabLayout() {
   return (
     <NotificationsProvider>
-      <TabLayoutInner />
+      <View style={{ flex: 1 }}>
+        {isStaging && (
+          <View style={styles.stagingBanner}>
+            <Text style={styles.stagingBannerText}>⚗ PRÉPRODUCTION</Text>
+          </View>
+        )}
+        <TabLayoutInner />
+      </View>
     </NotificationsProvider>
   );
 }
@@ -126,5 +135,16 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 9,
     fontWeight: '700',
+  },
+  stagingBanner: {
+    backgroundColor: '#e67e00',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  stagingBannerText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
