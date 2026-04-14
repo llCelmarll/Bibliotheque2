@@ -4,9 +4,9 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 
 ## Corrections
 
-- [ ] **Boutons Lu/Non-Lu pas homogenes**
-- [ ] **Bouton (+) dans la liste de livre devrait renvoyer vers le scanner**
-- [ ] **Bouton d'ajout manuel sur le scanner web**
+- [x] **Boutons Lu/Non-Lu pas homogenes**
+- [x] **Bouton (+) dans la liste de livre devrait renvoyer vers le scanner**
+- [x] **Bouton d'ajout manuel sur le scanner web**
 
 
 ## Fonctionnalités

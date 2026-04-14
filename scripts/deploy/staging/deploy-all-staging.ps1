@@ -216,37 +216,41 @@ if ($deployOta) {
     $frontendDir = Join-Path $repoRoot "frontend"
     Set-Location $frontendDir
 
-    # Expo 54 charge les fichiers .env par ordre de priorite decroissante :
-    #   .env.production > .env.local > .env
-    # Les variables d'environnement Process sont ignorees.
-    # On masque .env.production (priorite superieure) et on ecrit les vars
-    # staging dans .env.local (priorite superieure a .env, sans toucher a .env).
+    # Metro (bundler) lit les fichiers .env avant les variables Process.
+    # Pour eviter que .env (IP locale de dev) et .env.production (prod URL) ne polluent
+    # le bundle OTA staging, on les masque le temps du build et on ecrit les vars
+    # staging dans .env.local (priorite maximale pour Metro).
+    $dotEnvPath        = Join-Path $frontendDir ".env"
+    $dotEnvBakPath     = Join-Path $frontendDir ".env.bak"
     $dotEnvLocalPath   = Join-Path $frontendDir ".env.local"
     $dotEnvProdPath    = Join-Path $frontendDir ".env.production"
     $dotEnvProdBakPath = Join-Path $frontendDir ".env.production.bak"
 
-    # Masquer .env.production et ecrire les vars staging dans .env.local
-    if (Test-Path $dotEnvProdPath) {
-        Rename-Item -Path $dotEnvProdPath -NewName ".env.production.bak" -Force
-    }
-    $stagingEnvContent = "EXPO_PUBLIC_API_URL=$STAGING_API_URL`nAPP_VARIANT=staging`nEXPO_PUBLIC_APK_URL=http://${SYNOLOGY_IP}:8090/bibliotheque-staging.apk`nEXPO_PUBLIC_APK_FILENAME=bibliotheque-staging.apk"
+    if (Test-Path $dotEnvPath)     { Rename-Item -Path $dotEnvPath     -NewName ".env.bak"            -Force }
+    if (Test-Path $dotEnvProdPath) { Rename-Item -Path $dotEnvProdPath -NewName ".env.production.bak" -Force }
+
+    $stagingEnvContent = @"
+EXPO_PUBLIC_API_URL=$STAGING_API_URL
+APP_VARIANT=staging
+EXPO_PUBLIC_APP_VARIANT=staging
+EXPO_PUBLIC_APK_URL=https://staging.mabibliotheque.ovh/bibliotheque-staging.apk
+EXPO_PUBLIC_APK_FILENAME=bibliotheque-staging.apk
+"@
     Set-Content -Path $dotEnvLocalPath -Value $stagingEnvContent -NoNewline
 
     Write-Host "  API URL pour OTA: $STAGING_API_URL" -ForegroundColor Gray
 
     try {
-        eas update --branch staging --message $UpdateMessage
+        eas update --branch staging --clear-cache --message $UpdateMessage
 
         if ($LASTEXITCODE -ne 0) {
             Write-Host "  Erreur lors de la publication OTA staging" -ForegroundColor Red
-            Remove-Item -Path $dotEnvLocalPath -Force -ErrorAction SilentlyContinue
-            if (Test-Path $dotEnvProdBakPath) { Rename-Item -Path $dotEnvProdBakPath -NewName ".env.production" -Force }
-            Set-Location $repoRoot
             exit 1
         }
     } finally {
-        # Nettoyer .env.local et restaurer .env.production dans tous les cas
+        # Restaurer les fichiers .env dans tous les cas
         Remove-Item -Path $dotEnvLocalPath -Force -ErrorAction SilentlyContinue
+        if (Test-Path $dotEnvBakPath)     { Rename-Item -Path $dotEnvBakPath     -NewName ".env"            -Force }
         if (Test-Path $dotEnvProdBakPath) { Rename-Item -Path $dotEnvProdBakPath -NewName ".env.production" -Force }
     }
 
