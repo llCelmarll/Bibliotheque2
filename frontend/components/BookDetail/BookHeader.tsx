@@ -217,23 +217,25 @@ const styles = StyleSheet.create({
   readBadge: {
     marginTop: 8,
     marginBottom: 8,
-    padding: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
   },
   readBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   unreadBadge: {
     marginTop: 8,
     marginBottom: 8,
-    padding: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
   },
   unreadBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   ratingContainer: {

@@ -52,7 +52,7 @@ export default function Scanner({ onScanned, torchEnabled, onModeChange, onManua
           onManualAdd={onManualAdd}
         />
       ) : (
-        <ManualInput onScanned={onScanned} />
+        <ManualInput onScanned={onScanned} onManualAdd={onManualAdd} />
       )}
     </View>
   );
@@ -188,7 +188,7 @@ function WebScanner({ onScanned, onModeChange }: ScannerProps) {
 }
 
 /* ----------------------- MANUAL INPUT ----------------------- */
-function ManualInput({ onScanned }: ScannerProps) {
+function ManualInput({ onScanned, onManualAdd }: ScannerProps) {
 	const [isbn, setIsbn] = useState("");
 	const inputRef = React.useRef<TextInput>(null);
 	const theme = useTheme();
@@ -239,6 +239,15 @@ function ManualInput({ onScanned }: ScannerProps) {
 			>
 				<Text style={[styles.submitButtonText, { color: theme.textInverse }]}>Valider</Text>
 			</TouchableOpacity>
+			{onManualAdd && (
+				<TouchableOpacity
+					style={styles.manualAddLink}
+					onPress={onManualAdd}
+				>
+					<MaterialCommunityIcons name="book-plus" size={14} color={theme.textMuted} />
+					<Text style={[styles.manualAddLinkText, { color: theme.textMuted }]}>Ajout manuel sans ISBN</Text>
+				</TouchableOpacity>
+			)}
 		</View>
 	);
 }
@@ -594,6 +603,16 @@ const styles = StyleSheet.create({
   manualAddButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  manualAddLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  manualAddLinkText: {
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
   backButton: {
     flexDirection: 'row',

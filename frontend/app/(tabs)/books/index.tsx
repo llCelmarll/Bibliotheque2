@@ -257,7 +257,7 @@ export default function Index() {
 						}),
 					},
 				]}
-				onPress={() => router.push('/scan/manual')}
+				onPress={() => router.push('/(tabs)/scanner')}
 				activeOpacity={0.8}
 			>
 				<MaterialIcons name="add" size={24} color={theme.textInverse} />

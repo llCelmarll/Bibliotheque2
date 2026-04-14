@@ -51,12 +51,12 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 						<Text style={[styles.title, { color: theme.textPrimary }]}>{book.title}</Text>
 					</TouchableOpacity>
 					{book.is_read === true && (
-						<View style={[styles.readBadge, { backgroundColor: theme.successBg }]}>
+						<View style={[styles.readBadge, { backgroundColor: theme.successBg, borderColor: theme.success }]}>
 							<Text style={[styles.readBadgeText, { color: theme.success }]}>Lu</Text>
 						</View>
 					)}
 					{book.is_read === false && (
-						<View style={[styles.unreadBadge, { backgroundColor: theme.bgMuted }]}>
+						<View style={[styles.unreadBadge, { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium }]}>
 							<Text style={[styles.unreadBadgeText, { color: theme.textMuted }]}>Non lu</Text>
 						</View>
 					)}
@@ -207,21 +207,23 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	readBadge: {
-		borderRadius: 20,
+		borderRadius: 8,
 		paddingHorizontal: 8,
-		paddingVertical: 2,
+		paddingVertical: 4,
+		borderWidth: 1,
 	},
 	readBadgeText: {
-		fontSize: 10,
+		fontSize: 12,
 		fontWeight: '600',
 	},
 	unreadBadge: {
-		borderRadius: 20,
+		borderRadius: 8,
 		paddingHorizontal: 8,
-		paddingVertical: 2,
+		paddingVertical: 4,
+		borderWidth: 1,
 	},
 	unreadBadgeText: {
-		fontSize: 10,
+		fontSize: 12,
 		fontWeight: '600',
 	},
 	author: {

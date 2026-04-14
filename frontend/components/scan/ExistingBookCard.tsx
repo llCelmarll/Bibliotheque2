@@ -81,7 +81,7 @@ export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPres
 					</View>
 				)}
 				{book.is_read === false && (
-					<View style={[styles.unreadBadge, { backgroundColor: theme.bgSecondary, borderColor: theme.borderMedium }]}>
+					<View style={[styles.unreadBadge, { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium }]}>
 						<Text style={[styles.unreadBadgeText, { color: theme.textSecondary }]}>Non lu</Text>
 					</View>
 				)}
@@ -169,8 +169,9 @@ const styles = StyleSheet.create({
 	},
 	readBadge: {
 		marginTop: 8,
-		padding: 8,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 8,
 		borderWidth: 1,
 	},
 	readBadgeText: {
@@ -179,8 +180,9 @@ const styles = StyleSheet.create({
 	},
 	unreadBadge: {
 		marginTop: 8,
-		padding: 8,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 8,
 		borderWidth: 1,
 	},
 	unreadBadgeText: {

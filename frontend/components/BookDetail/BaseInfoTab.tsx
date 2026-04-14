@@ -259,7 +259,7 @@ export function BaseInfoTab() {
                     readStatus === option.key && styles.segmentedButtonActive,
                     readStatus === option.key && { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium },
                     readStatus === option.key && option.key === 'read' && { backgroundColor: theme.successBg, borderColor: theme.success },
-                    readStatus === option.key && option.key === 'unread' && { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium },
+                    readStatus === option.key && option.key === 'unread' && { backgroundColor: theme.warningBg, borderColor: theme.warning },
                   ]}
                   onPress={() => handleReadStatusChange(option.key)}
                 >
@@ -267,6 +267,8 @@ export function BaseInfoTab() {
                     styles.segmentedButtonText,
                     { color: theme.textSecondary },
                     readStatus === option.key && { color: theme.textPrimary, fontWeight: '600' },
+                    readStatus === option.key && option.key === 'read' && { color: theme.success },
+                    readStatus === option.key && option.key === 'unread' && { color: theme.warning },
                   ]}>
                     {option.label}
                   </Text>

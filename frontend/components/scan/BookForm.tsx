@@ -361,7 +361,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 											styles.readStatusButton,
 											formik.values.is_read === option.key && styles.readStatusButtonActive,
 											formik.values.is_read === option.key && option.key === true && { backgroundColor: theme.successBg, borderColor: theme.success },
-											formik.values.is_read === option.key && option.key === false && { backgroundColor: theme.bgSecondary, borderColor: theme.borderMedium },
+											formik.values.is_read === option.key && option.key === false && { backgroundColor: theme.warningBg, borderColor: theme.warning },
 										]}
 										onPress={() => {
 											formik.setFieldValue('is_read', option.key);
@@ -376,6 +376,8 @@ export const BookForm: React.FC<BookFormProps> = ({
 											styles.readStatusButtonText,
 											{ color: theme.textSecondary },
 											formik.values.is_read === option.key && { color: theme.textPrimary, fontWeight: '600' as const },
+											formik.values.is_read === option.key && option.key === true && { color: theme.success },
+											formik.values.is_read === option.key && option.key === false && { color: theme.warning },
 										]}>
 											{option.label}
 										</Text>
