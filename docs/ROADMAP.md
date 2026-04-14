@@ -2,6 +2,12 @@
 
 Cette liste recense les futures évolutions envisagées pour l'application.
 
+## Corrections
+
+- [ ] **Boutons Lu/Non-Lu pas homogenes**
+- [ ] **Bouton (+) dans la liste de livre devrait renvoyer vers le scanner**
+
+
 ## Fonctionnalités
 
 - [x] **Notes et Notation**
@@ -33,7 +39,7 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [ ] **Import / Export de données**
     - Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
     - Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
-- [ ] **Version de test avant production (préproduction/staging)**
+- [x] **Version de test avant production (préproduction/staging)**
     - Créer une version de test dans les conditions réelles de déploiement.
     - Valider les éventuels problèmes (techniques, configuration, performance) avant déploiement sur la version de production.
 - [x] **Notifications Android**

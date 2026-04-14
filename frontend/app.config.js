@@ -36,7 +36,7 @@ module.exports = {
     android: {
       package: isStaging ? "com.lcelmarl.bibliotheque.frontend.staging" : "com.lcelmarl.bibliotheque.frontend",
       googleServicesFile: "./google-services.json",
-      usesCleartextTraffic: isStaging ? true : undefined,
+      usesCleartextTraffic: false,
       adaptiveIcon: {
         foregroundImage: isStaging ? "./assets/adaptive-icon-staging.png" : "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"
