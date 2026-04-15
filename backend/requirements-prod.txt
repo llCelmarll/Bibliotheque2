@@ -22,4 +22,6 @@ resend==2.7.0
 pytest==8.4.2
 pytest-asyncio==0.25.0
 pytest-mock==3.15.1
+pytest-cov==6.0.0
 factory-boy==3.3.1
+python-dotenv==1.1.1

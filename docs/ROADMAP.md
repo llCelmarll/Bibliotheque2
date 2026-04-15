@@ -16,6 +16,9 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - Ajout de notes personnelles (texte libre) sur une fiche livre.
 - [x] **Recherche avancée**
     - Recherche multicritère (titre, auteur, catégorie, etc.).
+- [ ] **Ajout d'un champ sous-titre pour les livres**
+    - Ajouter un champ `sous_titre` aux livres.
+    - L'afficher dans les formulaires, les fiches livre et les imports/exports concernés.
 - [ ] **Stabilisation Google Books / OpenLibrary (saisie + quota)**
     - Corriger l'ecran blanc qui annule la saisie lors d'une recherche ou d'un ajout via Google Books / OpenLibrary.
     - Utiliser une clé API Google Books dédiée pour réduire les erreurs de quota (`rateLimitExceeded`).

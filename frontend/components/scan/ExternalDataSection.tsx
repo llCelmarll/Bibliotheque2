@@ -572,10 +572,10 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		);
 	};
 
-	const hasGoogleTab = googleData || googleError;
-	const hasOpenLibraryTab = openLibraryData || openLibraryError;
+	const hasGoogleData = !!googleData;
+	const hasOpenLibraryData = !!openLibraryData;
 
-	if (!hasGoogleTab && !hasOpenLibraryTab) {
+	if (!hasGoogleData && !hasOpenLibraryData && !googleError && !openLibraryError) {
 		return (
 			<View style={styles.container}>
 				<Text style={styles.sectionTitle}>Données externes</Text>
@@ -603,36 +603,39 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			{googleError && renderErrorBanner(googleError)}
 			{openLibraryError && renderErrorBanner(openLibraryError)}
 
-			{/* Tabs */}
-			<View style={[styles.tabContainer, { backgroundColor: theme.bgMuted }]}>
-				{hasGoogleTab && (
-					<TouchableOpacity
-						style={[styles.tab, activeTab === 'google' && { backgroundColor: theme.accent }]}
-						onPress={() => setActiveTab('google')}
-					>
-						<Text style={[styles.tabText, { color: theme.textMuted }, activeTab === 'google' && { color: theme.textInverse }]}>
-							Google Books
-						</Text>
-					</TouchableOpacity>
-				)}
+			{/* Tabs + Content — uniquement si au moins une source a des données */}
+			{(hasGoogleData || hasOpenLibraryData) && (
+				<>
+					<View style={[styles.tabContainer, { backgroundColor: theme.bgMuted }]}>
+						{hasGoogleData && (
+							<TouchableOpacity
+								style={[styles.tab, activeTab === 'google' && { backgroundColor: theme.accent }]}
+								onPress={() => setActiveTab('google')}
+							>
+								<Text style={[styles.tabText, { color: theme.textMuted }, activeTab === 'google' && { color: theme.textInverse }]}>
+									Google Books
+								</Text>
+							</TouchableOpacity>
+						)}
 
-				{hasOpenLibraryTab && (
-					<TouchableOpacity
-						style={[styles.tab, activeTab === 'openLibrary' && { backgroundColor: theme.accent }]}
-						onPress={() => setActiveTab('openLibrary')}
-					>
-						<Text style={[styles.tabText, { color: theme.textMuted }, activeTab === 'openLibrary' && { color: theme.textInverse }]}>
-							OpenLibrary
-						</Text>
-					</TouchableOpacity>
-				)}
-			</View>
+						{hasOpenLibraryData && (
+							<TouchableOpacity
+								style={[styles.tab, activeTab === 'openLibrary' && { backgroundColor: theme.accent }]}
+								onPress={() => setActiveTab('openLibrary')}
+							>
+								<Text style={[styles.tabText, { color: theme.textMuted }, activeTab === 'openLibrary' && { color: theme.textInverse }]}>
+									OpenLibrary
+								</Text>
+							</TouchableOpacity>
+						)}
+					</View>
 
-			{/* Content */}
-			<View style={styles.contentContainer}>
-				{activeTab === 'google' && renderBookInfo(googleData, 'google')}
-				{activeTab === 'openLibrary' && renderBookInfo(openLibraryData, 'openLibrary')}
-			</View>
+					<View style={styles.contentContainer}>
+						{activeTab === 'google' && renderBookInfo(googleData, 'google')}
+						{activeTab === 'openLibrary' && renderBookInfo(openLibraryData, 'openLibrary')}
+					</View>
+				</>
+			)}
 		</View>
 	);
 };

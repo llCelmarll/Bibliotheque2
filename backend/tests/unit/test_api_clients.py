@@ -2,6 +2,7 @@
 Tests unitaires pour les clients d'APIs externes.
 Mock des requêtes HTTP pour tester la logique de parsing.
 """
+import os
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 import httpx
@@ -233,3 +234,27 @@ class TestOpenLibraryClient:
         assert error is None
         assert data["title"] == "Minimal Book"
         # Les autres champs peuvent être absents, c'est OK
+
+
+@pytest.mark.live
+class TestGoogleBooksApiKey:
+    """Test réel de la clé API Google Books (nécessite réseau + GOOGLE_BOOKS_API_KEY)."""
+
+    @pytest.mark.asyncio
+    async def test_api_key_is_valid(self):
+        """Vérifie que la clé API configurée est acceptée par Google Books."""
+        api_key = os.environ.get("GOOGLE_BOOKS_API_KEY")
+        if not api_key:
+            pytest.skip("GOOGLE_BOOKS_API_KEY non définie, test ignoré")
+
+        # ISBN connu : "L'Étranger" de Camus — toujours présent dans Google Books
+        # Le client gère déjà 3 tentatives en interne — un seul appel suffit ici
+        data, error = await fetch_google_books("9782070360024")
+
+        # Si l'API est toujours indispo après les retries du client, on skippe
+        if error and "indisponible" in error:
+            pytest.skip(f"Google Books indisponible après retries : {error}")
+
+        assert error is None, f"Clé API rejetée ou erreur : {error}"
+        assert data is not None, "Aucune donnée retournée malgré une clé valide"
+        assert "title" in data, f"Réponse inattendue de Google Books : {data}"

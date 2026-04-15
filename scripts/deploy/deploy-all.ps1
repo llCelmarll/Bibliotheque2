@@ -546,16 +546,45 @@ if ($plan.Mobile) {
     Write-Host "[3/4] Mise a jour OTA de l'app mobile..." -ForegroundColor Yellow
     Write-Host ""
 
-    Set-Location frontend
-    $env:EXPO_PUBLIC_API_URL = "https://mabibliotheque.ovh/api"
-    eas update --branch production --message $UpdateMessage
+    $frontendDir       = Join-Path $PSScriptRoot "..\..\frontend"
+    $dotEnvPath        = Join-Path $frontendDir ".env"
+    $dotEnvBakPath     = Join-Path $frontendDir ".env.bak"
+    $dotEnvLocalPath   = Join-Path $frontendDir ".env.local"
+    $dotEnvLocalBakPath= Join-Path $frontendDir ".env.local.bak"
+    $dotEnvProdPath    = Join-Path $frontendDir ".env.production"
+    $dotEnvProdBakPath = Join-Path $frontendDir ".env.production.bak"
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "  Erreur lors de la publication OTA" -ForegroundColor Red
-        exit 1
+    Set-Location $frontendDir
+
+    # Masquer tous les .env locaux pour que Metro ne lise que les vars injectees
+    if (Test-Path $dotEnvPath)      { Rename-Item -Path $dotEnvPath      -NewName ".env.bak"            -Force }
+    if (Test-Path $dotEnvLocalPath) { Rename-Item -Path $dotEnvLocalPath -NewName ".env.local.bak"      -Force }
+    if (Test-Path $dotEnvProdPath)  { Rename-Item -Path $dotEnvProdPath  -NewName ".env.production.bak" -Force }
+
+    $prodEnvContent = @"
+EXPO_PUBLIC_API_URL=https://mabibliotheque.ovh/api
+APP_VARIANT=production
+EXPO_PUBLIC_APP_VARIANT=production
+EXPO_PUBLIC_APK_URL=https://mabibliotheque.ovh/bibliotheque.apk
+EXPO_PUBLIC_APK_FILENAME=bibliotheque.apk
+"@
+    Set-Content -Path $dotEnvLocalPath -Value $prodEnvContent -NoNewline
+
+    try {
+        eas update --branch production --clear-cache --message $UpdateMessage
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  Erreur lors de la publication OTA" -ForegroundColor Red
+            exit 1
+        }
+    } finally {
+        Remove-Item -Path $dotEnvLocalPath -Force -ErrorAction SilentlyContinue
+        if (Test-Path $dotEnvBakPath)      { Rename-Item -Path $dotEnvBakPath      -NewName ".env"            -Force }
+        if (Test-Path $dotEnvLocalBakPath) { Rename-Item -Path $dotEnvLocalBakPath -NewName ".env.local"      -Force }
+        if (Test-Path $dotEnvProdBakPath)  { Rename-Item -Path $dotEnvProdBakPath  -NewName ".env.production" -Force }
     }
 
-    Set-Location ..
+    Set-Location $PSScriptRoot\..\..
 
     Write-Host ""
     Write-Host "  App mobile mise a jour !" -ForegroundColor Green

@@ -11,6 +11,10 @@ from httpx import AsyncClient
 import tempfile
 import os
 
+# Charger le .env local si présent (utile pour les tests live nécessitant des clés API)
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'), override=False)
+
 # Doit être défini AVANT l'import de app.main (auth_service le lit au niveau module)
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 

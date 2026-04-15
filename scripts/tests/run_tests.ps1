@@ -5,6 +5,7 @@ param(
     [switch]$Backend,
     [switch]$Frontend,
     [switch]$All,
+    [switch]$Live,
     [switch]$Verbose
 )
 
@@ -26,11 +27,13 @@ Usage:
   .\run_tests.ps1 -All           Lancer tous les tests (frontend + backend)
   .\run_tests.ps1 -Backend       Lancer les tests backend uniquement
   .\run_tests.ps1 -Frontend      Lancer les tests frontend uniquement
+  .\run_tests.ps1 -Live          Exclure les tests live (appels reseau reels, ex: cle API)
   .\run_tests.ps1 -Verbose       Mode verbeux avec plus de details
 
 Exemples:
   .\run_tests.ps1 -All -Verbose  # Tous les tests avec details
   .\run_tests.ps1 -Backend       # Tests backend uniquement
+  .\run_tests.ps1 -Backend -Live # Tests backend sans les tests live (appels reseau)
 
 "@
     exit 0
@@ -91,7 +94,8 @@ if ($Backend -or $All) {
         $env:DATABASE_URL = "sqlite:///test.db"
 
         # Options pytest
-        $pytestArgs = @("tests/", "--ignore=tests/performance/", "-v")
+        $markerFilter = if ($Live) { "not slow and not live" } else { "not slow" }
+        $pytestArgs = @("tests/", "--ignore=tests/performance/", "-v", "-m", $markerFilter)
 
         if ($Verbose) {
             $pytestArgs += @("--tb=short", "-s")
