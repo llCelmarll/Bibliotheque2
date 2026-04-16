@@ -53,6 +53,18 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [x] **Notifications Android**
     - Mise en place de notifications push (Expo Notifications) pour les événements importants (demandes d'amis, prêts, etc.).
 
+## Qualité & Tests
+
+- [x] **Tests de non-régression — champ sous-titre**
+    - 10 tests unitaires backend couvrant `book_repository.create()`, `update_book()`, `_apply_global_search()`, `SuggestedBook` et `scan_isbn()`.
+- [ ] **Amélioration de la couverture de tests backend**
+    - Couverture globale actuelle : 79% (923 lignes non couvertes sur 4354).
+    - Priorités identifiées :
+        - `book_service.py` : 55% — cœur du projet, à couvrir en priorité
+        - `contact_invitation_service.py` : 19% — quasi non testé
+        - `auth_service.py` : 63%
+        - `push_notification_service.py` : 46%
+
 ## Plateformes
 
 - [annulé] **Support iOS** (pas pour tout de suite)
