@@ -24,6 +24,7 @@ class Book(SQLModel, table=True):
 
     # Informations bibliographiques
     title: str = Field(index=True)
+    subtitle: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
     isbn: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True, index=True))
 
     published_date: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))

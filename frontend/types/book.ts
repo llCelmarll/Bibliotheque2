@@ -83,6 +83,7 @@ export interface BookSeries {
 export interface Book {
     id: number;
     title: string;
+    subtitle?: string;
     isbn?: string;
     published_date?: string;
     page_count?: number;
@@ -104,6 +105,7 @@ export interface Book {
 export interface BookBase {
     id: number;
     title: string;
+    subtitle?: string;
     isbn: string;
     publisher?: Publisher;
     authors?: Author[];
@@ -180,6 +182,7 @@ export interface BookDetail {
  */
 export interface BookUpdate {
     title?: string;
+    subtitle?: string;
     isbn?: string;
     published_date?: string;
     page_count?: number;

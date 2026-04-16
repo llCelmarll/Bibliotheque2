@@ -69,6 +69,9 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
         />
         <View style={styles.info}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>{book.base?.title || "Titre inconnu"}</Text>
+          {book.base?.subtitle && (
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{book.base.subtitle}</Text>
+          )}
           {renderAuthors()}
           <Text style={[styles.isbn, { color: theme.textMuted }]}>ISBN: {book.base?.isbn || "N/A"}</Text>
 
@@ -174,7 +177,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    marginBottom: 6,
   },
   author: {
     fontSize: 16,

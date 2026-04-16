@@ -65,6 +65,11 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 					)}
 				</View>
 
+				{/* Sous-titre */}
+				{book.subtitle && (
+					<Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>{book.subtitle}</Text>
+				)}
+
 				{/* Auteurs */}
 				{book.authors && book.authors.length > 0 && (
 					<View style={styles.author}>
@@ -205,6 +210,11 @@ const styles = StyleSheet.create({
 	title: {
 		fontWeight: "bold",
 		fontSize: 16,
+	},
+	subtitle: {
+		fontSize: 13,
+		fontStyle: 'italic',
+		marginBottom: 2,
 	},
 	readBadge: {
 		borderRadius: 8,

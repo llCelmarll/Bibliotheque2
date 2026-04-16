@@ -11,7 +11,6 @@ from app.models.Author import Author
 from app.models.Genre import Genre
 from app.models.Publisher import Publisher
 from app.models.User import User
-from app.models.Borrower import Borrower
 from app.models.Loan import Loan
 from app.models.Series import Series
 from app.models.BookSeriesLink import BookSeriesLink

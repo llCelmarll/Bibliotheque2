@@ -1,6 +1,7 @@
 // components/scan/ExternalDataSection.tsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { MaterialIcons } from '@expo/vector-icons';
 import { entityService } from '@/services/entityService';
 import { Author, Publisher, Genre } from '@/types/entityTypes';
@@ -25,6 +26,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 	const [activeTab, setActiveTab] = useState<'google' | 'openLibrary'>('google');
 	const [selectedData, setSelectedData] = useState<{[key: string]: boolean}>({
 		title: false,
+		subtitle: false,
 		authors: false,
 		publisher: false,
 		publishedDate: false,
@@ -49,6 +51,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 				// Données exploitables pour la base
 				exploitable: {
 					title: data.title,
+					subtitle: data.subtitle,
 					authors: data.authors || [],
 					publisher: data.publisher,
 					publishedDate: data.publishedDate,
@@ -101,6 +104,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		console.log('🔄 Reset de la sélection lors du changement d\'onglet');
 		setSelectedData({
 			title: false,
+			subtitle: false,
 			authors: false,
 			publisher: false,
 			publishedDate: false,
@@ -440,6 +444,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 				
 				<View style={styles.exploitableGrid}>
 					{renderCheckableDataItem('title', 'Titre', bookInfo.title, selectedData.title)}
+					{renderCheckableDataItem('subtitle', 'Sous-titre', bookInfo.subtitle, selectedData.subtitle)}
 					{renderCheckableDataItem('authors', 'Auteur(s)', bookInfo.authors, selectedData.authors)}
 					{renderCheckableDataItem('publisher', 'Éditeur', bookInfo.publisher, selectedData.publisher)}
 					{renderCheckableDataItem('publishedDate', 'Date de publication', bookInfo.publishedDate, selectedData.publishedDate)}
@@ -454,6 +459,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 						style={[styles.selectAllButton, { backgroundColor: theme.success }]}
 						onPress={() => setSelectedData({
 							title: true,
+							subtitle: true,
 							authors: true,
 							publisher: true,
 							publishedDate: true,
@@ -470,6 +476,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 						style={[styles.selectNoneButton, { backgroundColor: theme.danger }]}
 						onPress={() => setSelectedData({
 							title: false,
+							subtitle: false,
 							authors: false,
 							publisher: false,
 							publishedDate: false,
@@ -489,6 +496,9 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 	const renderRawData = (data: any, source: 'google' | 'openLibrary') => {
 		if (!data) return null;
 
+		const isUrl = (val: any): val is string =>
+			typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'));
+
 		const renderValue = (value: any, depth = 0): string => {
 			if (value === null || value === undefined) return 'N/A';
 			if (typeof value === 'string') return value;
@@ -503,17 +513,47 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			return String(value);
 		};
 
+		const renderRawValue = (key: string, value: any) => {
+			// Valeur unique qui est une URL
+			if (isUrl(value)) {
+				return (
+					<TouchableOpacity onPress={() => WebBrowser.openBrowserAsync(value)}>
+						<Text style={[styles.rawDataValue, styles.rawDataLink, { color: theme.accent }]} numberOfLines={2}>
+							{value}
+						</Text>
+					</TouchableOpacity>
+				);
+			}
+			// Tableau contenant des URLs (ex: links dans OpenLibrary)
+			if (Array.isArray(value) && value.length > 0 && value.every((v: any) => typeof v === 'object' && v.url)) {
+				return (
+					<View>
+						{value.map((item: any, i: number) => (
+							<TouchableOpacity key={i} onPress={() => WebBrowser.openBrowserAsync(item.url)}>
+								<Text style={[styles.rawDataValue, styles.rawDataLink, { color: theme.accent }]} numberOfLines={1}>
+									{item.title || item.url}
+								</Text>
+							</TouchableOpacity>
+						))}
+					</View>
+				);
+			}
+			return (
+				<Text style={[styles.rawDataValue, { color: theme.textSecondary }]} numberOfLines={3}>
+					{renderValue(value)}
+				</Text>
+			);
+		};
+
 		return (
 			<View style={[styles.rawDataSection, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }]}>
 				<Text style={[styles.subsectionTitle, { color: theme.textPrimary }]}>🔍 Toutes les informations détaillées</Text>
-				
+
 				<ScrollView style={styles.rawDataScroll} nestedScrollEnabled>
 					{Object.entries(data).map(([key, value]) => (
 						<View key={key} style={[styles.rawDataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.borderMedium }]}>
 							<Text style={[styles.rawDataKey, { color: theme.textSecondary }]}>{key}</Text>
-							<Text style={[styles.rawDataValue, { color: theme.textSecondary }]} numberOfLines={3}>
-								{renderValue(value)}
-							</Text>
+							{renderRawValue(key, value)}
 						</View>
 					))}
 				</ScrollView>
@@ -780,6 +820,10 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		lineHeight: 18,
 		fontFamily: 'monospace',
+	},
+	rawDataLink: {
+		textDecorationLine: 'underline',
+		fontFamily: undefined,
 	},
 	// Bouton d'import amélioré
 	importButton: {

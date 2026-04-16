@@ -30,6 +30,9 @@ export function SharedBookView({ book, onRequestPress, isUnavailable, isAlreadyB
                 />
                 <View style={styles.info}>
                     <Text style={[styles.title, { color: theme.textPrimary }]}>{book.title}</Text>
+                    {book.subtitle && (
+                        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{book.subtitle}</Text>
+                    )}
 
                     {book.authors && book.authors.length > 0 && (
                         <Text style={[styles.author, { color: theme.textSecondary }]}>
@@ -138,7 +141,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: 'bold',
-        marginBottom: 8,
+        marginBottom: 4,
+    },
+    subtitle: {
+        fontSize: 15,
+        fontStyle: 'italic',
+        marginBottom: 6,
     },
     author: {
         fontSize: 16,

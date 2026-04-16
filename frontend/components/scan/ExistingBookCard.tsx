@@ -39,6 +39,9 @@ export const ExistingBookCard: React.FC<ExistingBookCardProps> = ({ book, onPres
 			</View>
 			<View style={styles.info}>
 				<Text style={[styles.title, { color: theme.textPrimary }]} numberOfLines={2}>{book.title}</Text>
+				{book.subtitle && (
+					<Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>{book.subtitle}</Text>
+				)}
 				{book.authors && book.authors.length > 0 && (
 					<Text style={[styles.author, { color: theme.textSecondary }]} numberOfLines={1}>
 						{book.authors.map((author) => author.name).join(', ')}
@@ -132,8 +135,13 @@ const styles = StyleSheet.create({
 	title: {
 		fontSize: 16,
 		fontWeight: '600',
-		marginBottom: 6,
+		marginBottom: 2,
 		lineHeight: 20,
+	},
+	subtitle: {
+		fontSize: 13,
+		fontStyle: 'italic',
+		marginBottom: 4,
 	},
 	author: {
 		fontSize: 14,

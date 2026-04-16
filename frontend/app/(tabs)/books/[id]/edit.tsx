@@ -31,6 +31,7 @@ export default function EditBookScreen() {
 
     const converted = {
       title: book.base.title || '',
+      subtitle: book.base.subtitle || '',
       isbn: book.base.isbn || '',
       published_date: book.base.published_date || '',
       page_count: book.base.page_count || undefined,
@@ -84,6 +85,7 @@ export default function EditBookScreen() {
 
       const updateData: BookUpdate = {
         title: values.title,
+        subtitle: values.subtitle || null,
         isbn: values.isbn,
         published_date: values.published_date,
         page_count: values.page_count,

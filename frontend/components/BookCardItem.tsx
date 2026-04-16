@@ -36,6 +36,12 @@ export const BookCardItem: React.FC<BookCardItemProps> = ({ book }) => {
 					{book.title}
 				</Text>
 
+				{!!book.subtitle && (
+					<Text numberOfLines={1} style={[styles.subtitle, { color: theme.textSecondary }]}>
+						{book.subtitle}
+					</Text>
+				)}
+
 				{!!book.authors?.length && (
 					<Text numberOfLines={1} style={[styles.author, { color: theme.textSecondary }]}>
 						{book.authors.map(a => a.name).join(", ")}
@@ -85,6 +91,10 @@ const styles = StyleSheet.create({
 	title: {
 		fontWeight: "600",
 		fontSize: Platform.OS === "web" ? 15 : 16,
+	},
+	subtitle: {
+		fontSize: 13,
+		fontStyle: 'italic',
 	},
 	author: {
 		fontSize: 13,

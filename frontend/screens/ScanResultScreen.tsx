@@ -102,6 +102,7 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 				...currentData,
 				// Mapper les données importées vers la structure SuggestedBook
 				title: importedData.title || currentData?.title || '',
+				subtitle: importedData.subtitle ?? currentData?.subtitle ?? '',
 				authors: importedData.authors || currentData?.authors || [],
 				publisher: importedData.publisher || currentData?.publisher || '',
 				published_date: importedData.publishedDate || currentData?.published_date || '',

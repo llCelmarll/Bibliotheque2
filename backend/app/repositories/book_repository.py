@@ -55,6 +55,7 @@ class BookRepository:
 		"""Crée un nouveau livre (sans commit pour permettre transactions)"""
 		book = Book(
 			title=book_data.title,
+			subtitle=book_data.subtitle,
 			isbn=book_data.isbn,
 			published_date=book_data.published_date,
 			page_count=book_data.page_count,
@@ -302,13 +303,14 @@ class BookRepository:
 	def _apply_global_search(self, stmt, search_term: str) -> select:
 		"""
 		Applique la recherche globale sur les champs:
-		- titre, ISBN, notes
+		- titre, sous-titre, ISBN, notes
 		- nom de l'auteur, nom de l'éditeur, nom du genre, nom de la série
 		"""
 		search_pattern = f"%{search_term.lower()}%"
 		return stmt.where(
 			or_(
 				func.lower(Book.title).like(search_pattern),
+				func.lower(Book.subtitle).like(search_pattern),
 				func.lower(Book.isbn).like(search_pattern),
 				func.lower(Author.name).like(search_pattern),
 				func.lower(Publisher.name).like(search_pattern),

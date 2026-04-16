@@ -23,6 +23,7 @@ export interface LoanRead {
 export interface BookRead {
 	id: string;
 	title: string;
+	subtitle?: string;
 	isbn?: string;
 	published_date?: string;  // Aligné avec le backend
 	page_count?: number;      // Aligné avec le backend
@@ -44,6 +45,7 @@ export interface BookRead {
 
 export interface BookCreate {
 	title: string;
+	subtitle?: string;
 	isbn?: string;
 	published_date?: string;  // Aligné avec le backend
 	page_count?: number;      // Aligné avec le backend
@@ -101,6 +103,7 @@ export interface SuggestedSeries {
 export interface SuggestedBook {
 	isbn?: string;
 	title?: string;
+	subtitle?: string;
 	published_date?: string;
 	page_count?: number;
 	barcode?: string;

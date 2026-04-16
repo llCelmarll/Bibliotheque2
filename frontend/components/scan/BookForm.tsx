@@ -69,6 +69,7 @@ interface BookFormProps {
 // Fonction pour convertir SuggestedBook vers BookFormData (maintenant synchrone car enrichie par le backend)
 const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 	title: suggested.title || '',
+	subtitle: suggested.subtitle || '',
 	isbn: suggested.isbn || '',
 	published_date: suggested.published_date || '',
 	page_count: suggested.page_count || undefined,
@@ -119,6 +120,7 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = false): BookCreate => {
 	const bookCreate: BookCreate = {
 		title: formData.title,
+		subtitle: formData.subtitle || undefined,
 		isbn: formData.isbn || undefined,
 		published_date: formData.published_date || undefined,  // Aligné avec le backend
 		page_count: formData.page_count,                       // Aligné avec le backend
@@ -231,6 +233,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 					onChangeText={formik.handleChange(fieldName)}
 					onBlur={formik.handleBlur(fieldName)}
 					placeholder={placeholder}
+					placeholderTextColor={theme.textMuted}
 					multiline={multiline}
 					keyboardType={keyboardType}
 				/>
@@ -283,7 +286,9 @@ export const BookForm: React.FC<BookFormProps> = ({
 					return (
 					<FormContainer style={styles.form}>
 						{renderFormField('Titre *', 'title', formik, 'Titre du livre')}
-						
+
+						{renderFormField('Sous-titre', 'subtitle', formik, 'Sous-titre (optionnel)')}
+
 						{renderFormField('ISBN', 'isbn', formik, '978XXXXXXXXX')}
 						
 						{renderFormField('Date de publication', 'published_date', formik, 'Ex: 2023, Janvier 2023...')}

@@ -35,6 +35,7 @@ class SuggestedBook(SQLModel):
     """Modèle pour le livre suggéré dans le scan - avec entités enrichies"""
     isbn: str | None = None
     title: str | None = None
+    subtitle: str | None = None
     published_date: str | None = None
     page_count: int | None = None
     barcode: str | None = None
@@ -126,6 +127,7 @@ class ScanService:
             result.suggested = SuggestedBook(
                 isbn=base_book.isbn,
                 title=base_book.title,
+                subtitle=base_book.subtitle,
                 published_date=base_book.published_date,
                 page_count=base_book.page_count,
                 barcode=base_book.barcode,
@@ -147,6 +149,7 @@ class ScanService:
         else:
             # Récupération des données à suggerer
             google_title = result.google_book.get("title") if result.google_book else None
+            google_subtitle = result.google_book.get("subtitle") if result.google_book else None
             google_date = result.google_book.get("publishedDate") if result.google_book else None
             google_pages = result.google_book.get("pageCount") if result.google_book else None
             google_cover = result.google_book.get("imageLinks", {}).get("thumbnail") if result.google_book else None
@@ -212,6 +215,7 @@ class ScanService:
             result.suggested = SuggestedBook(
                 isbn=isbn,
                 title=google_title or openlibrary_title,
+                subtitle=google_subtitle,
                 published_date=google_date or openlibrary_date,
                 page_count=google_pages or openlibrary_pages,
                 barcode=isbn,
