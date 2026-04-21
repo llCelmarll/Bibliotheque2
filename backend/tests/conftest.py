@@ -255,6 +255,16 @@ def create_test_borrowed_book(
     return borrowed_book
 
 
+@pytest.fixture(scope="function")
+def second_user(session: Session) -> User:
+    """Second utilisateur de test (utile pour les tests nécessitant deux users distincts)."""
+    return create_test_user(
+        session,
+        email="second@example.com",
+        username="seconduser",
+    )
+
+
 def create_test_contact(
     session: Session,
     user_id: int,
