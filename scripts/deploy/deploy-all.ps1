@@ -391,46 +391,6 @@ if ($plan.Mobile) {
 # ---------------------------------------------------------------------------
 # BUMP VERSION (si APK rebuild)
 # ---------------------------------------------------------------------------
-
-if ($plan.Apk -and -not $SkipBuild) {
-    Write-Host ""
-    Write-Host "[Version] Incrementation automatique de la version ($BumpType)..." -ForegroundColor Yellow
-    & "$PSScriptRoot\bump-version.ps1" -Part $BumpType
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Erreur lors de l'incrementation de version" -ForegroundColor Red
-        exit 1
-    }
-}
-
-# ---------------------------------------------------------------------------
-# ECRITURE DU CHANGELOG (apres le bump pour avoir la bonne version)
-# ---------------------------------------------------------------------------
-
-if ($changelogTitle) {
-    $repoRoot = Join-Path $PSScriptRoot "..\.."
-    $appConfigPath = Join-Path $repoRoot "frontend\app.config.js"
-    $appConfigContent = Get-Content $appConfigPath -Raw
-    $versionMatch = [regex]::Match($appConfigContent, 'version:\s*"([^"]+)"')
-    $currentVersion = if ($versionMatch.Success) { $versionMatch.Groups[1].Value } else { "0.0.0" }
-
-    $today = Get-Date -Format "yyyy-MM-dd"
-    $newEntry = [ordered]@{
-        version     = $currentVersion
-        date        = $today
-        title       = $changelogTitle
-        description = $changelogDesc
-        type        = $changelogType
-    }
-
-    $changelogPath = Join-Path $repoRoot "docs\CHANGELOG.json"
-    $changelog = Get-Content $changelogPath -Raw | ConvertFrom-Json
-    if ($changelog -isnot [System.Array]) { $changelog = @($changelog) }
-    $updated = @($newEntry) + $changelog
-    $updated | ConvertTo-Json -Depth 5 | Set-Content $changelogPath -Encoding UTF8
-    Write-Host "Entree ajoutee au changelog (v$currentVersion - $changelogTitle)" -ForegroundColor Green
-}
-
-# ---------------------------------------------------------------------------
 # [1] APK ANDROID — Build EAS en premier (long, bloquant)
 #     Raison : le backend deployé ensuite bumpe MIN_APP_VERSION,
 #     ce qui declenche la popup de mise a jour chez les utilisateurs.
@@ -462,6 +422,16 @@ if ($plan.Apk) {
         Write-Host ""
         Write-Host "  Build EAS termine en $([math]::Round($buildDuration.TotalMinutes, 1)) minutes" -ForegroundColor Green
         Set-Location ..
+
+        # Bump version APRES le succes du build (evite d'incrementer MIN_APP_VERSION
+        # si le build echoue, ce qui declencherait la popup de mise a jour sans APK disponible)
+        Write-Host ""
+        Write-Host "  Incrementation de la version ($BumpType)..." -ForegroundColor Yellow
+        & "$PSScriptRoot\bump-version.ps1" -Part $BumpType
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Erreur lors de l'incrementation de version" -ForegroundColor Red
+            exit 1
+        }
     } else {
         Write-Host "[1/4] Build EAS: SAUTE (build deja en cours ou termine)" -ForegroundColor Yellow
     }
@@ -476,6 +446,34 @@ if ($plan.Apk) {
     }
 
     Write-Host ""
+}
+
+# ---------------------------------------------------------------------------
+# ECRITURE DU CHANGELOG (apres le bump pour avoir la bonne version)
+# ---------------------------------------------------------------------------
+
+if ($changelogTitle) {
+    $repoRoot = Join-Path $PSScriptRoot "..\.."
+    $appConfigPath = Join-Path $repoRoot "frontend\app.config.js"
+    $appConfigContent = Get-Content $appConfigPath -Raw
+    $versionMatch = [regex]::Match($appConfigContent, 'version:\s*"([^"]+)"')
+    $currentVersion = if ($versionMatch.Success) { $versionMatch.Groups[1].Value } else { "0.0.0" }
+
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $newEntry = [ordered]@{
+        version     = $currentVersion
+        date        = $today
+        title       = $changelogTitle
+        description = $changelogDesc
+        type        = $changelogType
+    }
+
+    $changelogPath = Join-Path $repoRoot "docs\CHANGELOG.json"
+    $changelog = Get-Content $changelogPath -Raw | ConvertFrom-Json
+    if ($changelog -isnot [System.Array]) { $changelog = @($changelog) }
+    $updated = @($newEntry) + $changelog
+    $updated | ConvertTo-Json -Depth 5 | Set-Content $changelogPath -Encoding UTF8
+    Write-Host "Entree ajoutee au changelog (v$currentVersion - $changelogTitle)" -ForegroundColor Green
 }
 
 # ---------------------------------------------------------------------------
