@@ -70,6 +70,8 @@ module.exports = {
           "cameraPermission": "Autorisez l'accès à la caméra pour prendre une photo de couverture"
         }
       ],
+      "expo-router",
+      "expo-web-browser",
       "expo-secure-store",
       [
         "expo-notifications",
