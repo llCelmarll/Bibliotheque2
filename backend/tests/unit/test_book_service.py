@@ -481,3 +481,470 @@ class TestBookServiceExternalData:
 
         assert result["google_books"] is None
         assert result["open_library"] is None
+
+
+# ---------------------------------------------------------------------------
+# _validate_book_data
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+@pytest.mark.books
+class TestBookServiceValidateBookData:
+
+    @pytest.fixture
+    def svc(self):
+        from unittest.mock import Mock
+        from sqlmodel import Session
+        return BookService(Mock(spec=Session), user_id=1)
+
+    def _book_create(self, **kwargs):
+        from app.schemas.Book import BookCreate
+        defaults = {"title": "Valid Title"}
+        defaults.update(kwargs)
+        return BookCreate(**defaults)
+
+    def test_empty_title_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_book_data(self._book_create(title="   "))
+        assert exc.value.status_code == 400
+
+    def test_isbn_wrong_length_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_book_data(self._book_create(isbn="12345"))
+        assert exc.value.status_code == 400
+
+    def test_isbn_10_valid(self, svc):
+        svc._validate_book_data(self._book_create(isbn="1234567890"))
+
+    def test_isbn_13_valid(self, svc):
+        svc._validate_book_data(self._book_create(isbn="1234567890123"))
+
+    def test_isbn_with_dashes_valid(self, svc):
+        svc._validate_book_data(self._book_create(isbn="978-3-16-148410-0"))  # 13 digits
+
+    def test_published_date_empty_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_book_data(self._book_create(published_date="   "))
+        assert exc.value.status_code == 400
+
+    def test_published_date_free_text_valid(self, svc):
+        svc._validate_book_data(self._book_create(published_date="circa 1850"))
+
+    def test_page_count_negative_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_book_data(self._book_create(page_count=-1))
+        assert exc.value.status_code == 400
+
+    def test_rating_above_5_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_book_data(self._book_create(rating=6))
+        assert exc.value.status_code == 400
+
+    def test_rating_zero_valid(self, svc):
+        svc._validate_book_data(self._book_create(rating=0))
+
+    def test_rating_5_valid(self, svc):
+        svc._validate_book_data(self._book_create(rating=5))
+
+
+# ---------------------------------------------------------------------------
+# _validate_pagination / _validate_date_range / _validate_page_range
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+@pytest.mark.books
+class TestBookServiceValidatePaginationAndRanges:
+
+    @pytest.fixture
+    def svc(self):
+        from unittest.mock import Mock
+        from sqlmodel import Session
+        return BookService(Mock(spec=Session), user_id=1)
+
+    def test_validate_pagination_negative_skip_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_pagination(-1, 10)
+        assert exc.value.status_code == 400
+
+    def test_validate_pagination_zero_limit_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_pagination(0, 0)
+        assert exc.value.status_code == 400
+
+    def test_validate_pagination_limit_too_high_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_pagination(0, 1001)
+        assert exc.value.status_code == 400
+
+    def test_validate_pagination_valid(self, svc):
+        svc._validate_pagination(0, 100)
+
+    def test_validate_date_range_min_greater_than_max_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_date_range(2020, 2010)
+        assert exc.value.status_code == 400
+
+    def test_validate_date_range_equal_years_valid(self, svc):
+        svc._validate_date_range(2020, 2020)
+
+    def test_validate_date_range_none_values_valid(self, svc):
+        svc._validate_date_range(None, None)
+
+    def test_validate_page_range_min_greater_than_max_raises_400(self, svc):
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_page_range(200, 100)
+        assert exc.value.status_code == 400
+
+    def test_validate_page_range_valid(self, svc):
+        svc._validate_page_range(10, 500)
+
+
+# ---------------------------------------------------------------------------
+# _validate_filters
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+@pytest.mark.books
+class TestBookServiceValidateFilters:
+
+    def _svc(self, session):
+        return BookService(session, user_id=1)
+
+    def test_validate_filters_none_is_valid(self, session):
+        svc = self._svc(session)
+        svc._validate_filters(None)
+
+    def test_validate_filters_empty_list_is_valid(self, session):
+        svc = self._svc(session)
+        svc._validate_filters([])
+
+    def test_validate_filters_duplicate_type_raises_400(self, session):
+        from fastapi import HTTPException
+        from app.schemas.Other import Filter, FilterType
+        from app.models.Author import Author
+        author = Author(name="Dup Author")
+        session.add(author)
+        session.commit()
+        svc = self._svc(session)
+        filters = [
+            Filter(type=FilterType.AUTHOR, id=author.id),
+            Filter(type=FilterType.AUTHOR, id=author.id),
+        ]
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_filters(filters)
+        assert exc.value.status_code == 400
+
+    def test_validate_filters_invalid_id_zero_raises_400(self, session):
+        from fastapi import HTTPException
+        from app.schemas.Other import Filter, FilterType
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_filters([Filter(type=FilterType.AUTHOR, id=0)])
+        assert exc.value.status_code == 400
+
+    def test_validate_filters_author_not_found_raises_400(self, session):
+        from fastapi import HTTPException
+        from app.schemas.Other import Filter, FilterType
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_filters([Filter(type=FilterType.AUTHOR, id=99999)])
+        assert exc.value.status_code == 400
+
+    def test_validate_filters_publisher_not_found_raises_400(self, session):
+        from fastapi import HTTPException
+        from app.schemas.Other import Filter, FilterType
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_filters([Filter(type=FilterType.PUBLISHER, id=99999)])
+        assert exc.value.status_code == 400
+
+    def test_validate_filters_genre_not_found_raises_400(self, session):
+        from fastapi import HTTPException
+        from app.schemas.Other import Filter, FilterType
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._validate_filters([Filter(type=FilterType.GENRE, id=99999)])
+        assert exc.value.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# _process_authors_for_book / _process_publisher_for_book / _process_series_for_book
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+@pytest.mark.books
+class TestBookServiceProcessEntities:
+
+    def _svc(self, session):
+        return BookService(session, user_id=1)
+
+    def _new_book(self, session, owner_id=1):
+        from tests.conftest import create_test_user
+        from app.models.Book import Book
+        book = Book(title="Test Book", owner_id=owner_id)
+        session.add(book)
+        session.commit()
+        session.refresh(book)
+        return book
+
+    # --- Authors ---
+
+    def test_process_authors_by_int_id_existing(self, session, test_user):
+        from app.models.Author import Author
+        author = Author(name="Existing Author")
+        session.add(author)
+        session.commit()
+        session.refresh(author)
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_authors_for_book(book, [author.id])
+        assert any(a.id == author.id for a in book.authors)
+
+    def test_process_authors_by_int_id_not_found_raises_400(self, session, test_user):
+        from fastapi import HTTPException
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._process_authors_for_book(book, [99999])
+        assert exc.value.status_code == 400
+
+    def test_process_authors_by_str_creates_new(self, session, test_user):
+        from app.models.Author import Author
+        from sqlmodel import select
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_authors_for_book(book, ["Brand New Author"])
+        found = session.exec(select(Author).where(Author.name == "Brand New Author")).first()
+        assert found is not None
+
+    def test_process_authors_by_str_reuses_existing(self, session, test_user):
+        from app.models.Author import Author
+        from sqlmodel import select
+        author = Author(name="Reuse Author")
+        session.add(author)
+        session.commit()
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_authors_for_book(book, ["Reuse Author"])
+        count = len(session.exec(select(Author).where(Author.name == "Reuse Author")).all())
+        assert count == 1
+
+    def test_process_authors_by_dict_with_id(self, session, test_user):
+        from app.models.Author import Author
+        author = Author(name="Dict Author")
+        session.add(author)
+        session.commit()
+        session.refresh(author)
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_authors_for_book(book, [{"id": author.id, "name": "Dict Author"}])
+        assert any(a.id == author.id for a in book.authors)
+
+    def test_process_authors_by_dict_exists_true_no_id_raises_400(self, session, test_user):
+        from fastapi import HTTPException
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._process_authors_for_book(book, [{"exists": True, "name": "Ghost"}])
+        assert exc.value.status_code == 400
+
+    # --- Publisher ---
+
+    def test_process_publisher_by_int_id(self, session):
+        from app.models.Publisher import Publisher
+        pub = Publisher(name="Test Pub")
+        session.add(pub)
+        session.commit()
+        session.refresh(pub)
+        svc = self._svc(session)
+        result = svc._process_publisher_for_book(pub.id)
+        assert result == pub.id
+
+    def test_process_publisher_by_int_id_not_found_raises_400(self, session):
+        from fastapi import HTTPException
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._process_publisher_for_book(99999)
+        assert exc.value.status_code == 400
+
+    def test_process_publisher_by_str_creates_new(self, session):
+        from app.models.Publisher import Publisher
+        from sqlmodel import select
+        svc = self._svc(session)
+        result = svc._process_publisher_for_book("New Publisher")
+        found = session.exec(select(Publisher).where(Publisher.name == "New Publisher")).first()
+        assert found is not None
+        assert result == found.id
+
+    def test_process_publisher_by_str_reuses_existing(self, session):
+        from app.models.Publisher import Publisher
+        from sqlmodel import select
+        pub = Publisher(name="Existing Pub")
+        session.add(pub)
+        session.commit()
+        svc = self._svc(session)
+        svc._process_publisher_for_book("Existing Pub")
+        count = len(session.exec(select(Publisher).where(Publisher.name == "Existing Pub")).all())
+        assert count == 1
+
+    def test_process_publisher_by_dict_with_id(self, session):
+        from app.models.Publisher import Publisher
+        pub = Publisher(name="Dict Pub")
+        session.add(pub)
+        session.commit()
+        session.refresh(pub)
+        svc = self._svc(session)
+        result = svc._process_publisher_for_book({"id": pub.id, "name": "Dict Pub"})
+        assert result == pub.id
+
+    def test_process_publisher_by_dict_exists_true_no_id_raises_400(self, session):
+        from fastapi import HTTPException
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._process_publisher_for_book({"exists": True, "name": "Ghost Pub"})
+        assert exc.value.status_code == 400
+
+    # --- Series ---
+
+    def test_process_series_by_int_id(self, session, test_user):
+        from app.models.Series import Series
+        series = Series(name="Existing Series")
+        session.add(series)
+        session.commit()
+        session.refresh(series)
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_series_for_book(book, [series.id])
+        from app.models.BookSeriesLink import BookSeriesLink
+        from sqlmodel import select
+        link = session.exec(select(BookSeriesLink).where(BookSeriesLink.book_id == book.id)).first()
+        assert link is not None
+
+    def test_process_series_by_int_id_not_found_raises_400(self, session, test_user):
+        from fastapi import HTTPException
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._process_series_for_book(book, [99999])
+        assert exc.value.status_code == 400
+
+    def test_process_series_by_str_creates_link(self, session, test_user):
+        from app.models.Series import Series
+        from app.models.BookSeriesLink import BookSeriesLink
+        from sqlmodel import select
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_series_for_book(book, ["New Series Name"])
+        series = session.exec(select(Series).where(Series.name == "New Series Name")).first()
+        assert series is not None
+        link = session.exec(
+            select(BookSeriesLink).where(BookSeriesLink.book_id == book.id, BookSeriesLink.series_id == series.id)
+        ).first()
+        assert link is not None
+
+    def test_process_series_by_dict_with_id_and_volume(self, session, test_user):
+        from app.models.Series import Series
+        from app.models.BookSeriesLink import BookSeriesLink
+        from sqlmodel import select
+        series = Series(name="Volume Series")
+        session.add(series)
+        session.commit()
+        session.refresh(series)
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_series_for_book(book, [{"id": series.id, "volume_number": 3}])
+        link = session.exec(
+            select(BookSeriesLink).where(BookSeriesLink.book_id == book.id)
+        ).first()
+        assert link is not None
+        assert link.volume_number == 3
+
+    def test_process_series_by_dict_exists_no_id_raises_400(self, session, test_user):
+        from fastapi import HTTPException
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        with pytest.raises(HTTPException) as exc:
+            svc._process_series_for_book(book, [{"exists": True, "name": "Ghost Series"}])
+        assert exc.value.status_code == 400
+
+    def test_process_series_by_dict_name_creates_link(self, session, test_user):
+        from app.models.Series import Series
+        from sqlmodel import select
+        book = self._new_book(session, owner_id=test_user.id)
+        svc = self._svc(session)
+        svc._process_series_for_book(book, [{"name": "Dict Named Series"}])
+        series = session.exec(select(Series).where(Series.name == "Dict Named Series")).first()
+        assert series is not None
+
+
+# ---------------------------------------------------------------------------
+# get_books_by_author / publisher / genre
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+@pytest.mark.books
+class TestBookServiceGetByCategory:
+
+    @pytest.fixture
+    def mock_session(self):
+        return Mock(spec=Session)
+
+    @pytest.fixture
+    def svc(self, mock_session, test_user):
+        return BookService(mock_session, user_id=test_user.id)
+
+    def test_get_books_by_author_not_found_raises_404(self, svc, mock_session):
+        from fastapi import HTTPException
+        mock_session.get.return_value = None
+        with pytest.raises(HTTPException) as exc:
+            svc.get_books_by_author(99999)
+        assert exc.value.status_code == 404
+
+    def test_get_books_by_author_returns_empty_list(self, svc, mock_session):
+        from app.models.Author import Author
+        author = Author(id=1, name="Test Author")
+        author.books = []
+        mock_session.get.return_value = author
+        result = svc.get_books_by_author(1)
+        assert result == []
+
+    def test_get_books_by_publisher_not_found_raises_404(self, svc, mock_session):
+        from fastapi import HTTPException
+        mock_session.get.return_value = None
+        with pytest.raises(HTTPException) as exc:
+            svc.get_books_by_publisher(99999)
+        assert exc.value.status_code == 404
+
+    def test_get_books_by_publisher_returns_books(self, svc, mock_session, test_user):
+        from unittest.mock import MagicMock
+        from app.models.Publisher import Publisher
+        publisher = Publisher(id=1, name="Test Pub")
+        publisher.books = []
+        mock_session.get.return_value = publisher
+        result = svc.get_books_by_publisher(1)
+        assert isinstance(result, list)
+
+    def test_get_books_by_genre_not_found_raises_404(self, svc, mock_session):
+        from fastapi import HTTPException
+        mock_session.get.return_value = None
+        with pytest.raises(HTTPException) as exc:
+            svc.get_books_by_genre(99999)
+        assert exc.value.status_code == 404
+
+    def test_get_books_by_genre_returns_books(self, svc, mock_session, test_user):
+        from app.models.Genre import Genre
+        genre = Genre(id=1, name="Test Genre")
+        genre.books = []
+        mock_session.get.return_value = genre
+        result = svc.get_books_by_genre(1)
+        assert isinstance(result, list)

@@ -45,8 +45,8 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [ ] **Détection automatique du thème système**
     - Utiliser `useColorScheme()` pour appliquer automatiquement un thème clair ou sombre selon les préférences système de l'appareil, avec possibilité d'override manuel.
 - [ ] **Import / Export de données**
-    - Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
-    - Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
+    - [ ] Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
+    - [ ] Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
 - [x] **Version de test avant production (préproduction/staging)**
     - Créer une version de test dans les conditions réelles de déploiement.
     - Valider les éventuels problèmes (techniques, configuration, performance) avant déploiement sur la version de production.
