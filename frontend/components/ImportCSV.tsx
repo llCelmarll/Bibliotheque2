@@ -9,12 +9,19 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 interface ParsedBook {
   title: string;
+  subtitle?: string;
   isbn?: string;
   authors?: string;
   publisher?: string;
   genres?: string;
   published_date?: string;
   page_count?: string;
+  series?: string;
+  volume?: string;
+  is_read?: string;
+  rating?: string;
+  notes?: string;
+  cover_url?: string;
 }
 
 interface ImportResult {
@@ -45,18 +52,26 @@ export default function ImportCSV() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [detectedColumns, setDetectedColumns] = useState<{ key: string; label: string; detected: boolean }[]>([]);
   const [populateCovers, setPopulateCovers] = useState<boolean>(false);
   const [encoding, setEncoding] = useState<'auto' | 'utf-8' | 'windows-1252' | 'iso-8859-1' | 'utf-16le' | 'utf-16be'>('auto');
   const progressAnim = React.useRef(new Animated.Value(0)).current;
 
   const columnMapping: Record<string, string[]> = {
     title: ['titre', 'title', 'Titre', 'Title', 'nom', 'Nom'],
+    subtitle: ['subtitle', 'sous_titre', 'sous-titre', 'Subtitle', 'Sous-titre', 'Sous_titre'],
     isbn: ['isbn', 'ISBN', 'isbn13', 'ISBN13', 'code'],
     authors: ['auteur', 'auteurs', 'author', 'authors', 'Auteur', 'Auteurs'],
     publisher: ['editeur', 'éditeur', 'publisher', 'Editeur', 'Éditeur'],
     genres: ['genre', 'genres', 'Genre', 'Genres', 'categorie', 'catégorie', 'categories', 'catégories'],
     published_date: ['date_publication', 'published_date', 'annee', 'année', 'year', 'Date de publication', 'Année'],
-    page_count: ['pages', 'page_count', 'nombre_pages', 'Pages', 'Nombre de pages']
+    page_count: ['pages', 'page_count', 'nombre_pages', 'Pages', 'Nombre de pages'],
+    series: ['serie', 'série', 'series', 'Series', 'Série', 'collection', 'Collection'],
+    volume: ['tome', 'volume', 'Tome', 'Volume', 'numero', 'numéro', 'vol'],
+    is_read: ['lu', 'is_read', 'Lu', 'Is_Read', 'read', 'Read'],
+    rating: ['note', 'rating', 'Note', 'Rating', 'notation', 'Notation'],
+    notes: ['notes', 'Notes', 'commentaire', 'Commentaire', 'commentaires', 'description'],
+    cover_url: ['cover_url', 'couverture', 'image', 'cover', 'Cover', 'Couverture', 'image_url', 'photo'],
   };
 
   const detectColumnName = (header: string): string | null => {
@@ -195,6 +210,22 @@ export default function ImportCSV() {
             return mappedRow;
           });
 
+          // Calculer quelles colonnes ont été détectées
+          const csvHeaders = results.data.length > 0 ? Object.keys(results.data[0] as any) : [];
+          const detectedKeys = new Set(csvHeaders.map(h => detectColumnName(h)).filter(Boolean));
+          const columnLabels: Record<string, string> = {
+            title: 'titre *', subtitle: 'sous-titre', isbn: 'isbn', authors: 'auteurs',
+            publisher: 'éditeur', genres: 'genres', published_date: 'date', page_count: 'pages',
+            series: 'série', volume: 'tome', is_read: 'lu', rating: 'note', notes: 'notes', cover_url: 'couverture',
+          };
+          setDetectedColumns(
+            Object.keys(columnLabels).map(key => ({
+              key,
+              label: columnLabels[key],
+              detected: detectedKeys.has(key),
+            }))
+          );
+
           // Afficher preview (5 premières lignes)
           setPreviewData(mappedData.slice(0, 5) as ParsedBook[]);
           Alert.alert(
@@ -240,15 +271,16 @@ export default function ImportCSV() {
         // Transformer en format BookCreate
         const book: any = {
           title: mappedRow.title || 'Sans titre',
+          subtitle: mappedRow.subtitle || undefined,
           isbn: mappedRow.isbn || undefined,
           published_date: mappedRow.published_date || undefined,
-          page_count: mappedRow.page_count ? parseInt(mappedRow.page_count) : undefined
+          page_count: mappedRow.page_count ? parseInt(mappedRow.page_count) : undefined,
         };
 
         // Gérer les auteurs (séparés par virgule)
         if (mappedRow.authors) {
           book.authors = mappedRow.authors
-            .split(/[,;]/)
+            .split(',')
             .map((a: string) => a.trim())
             .filter((a: string) => a.length > 0);
         }
@@ -261,9 +293,38 @@ export default function ImportCSV() {
         // Gérer les genres (séparés par virgule)
         if (mappedRow.genres) {
           book.genres = mappedRow.genres
-            .split(/[,;]/)
+            .split(',')
             .map((g: string) => g.trim())
             .filter((g: string) => g.length > 0);
+        }
+
+        // Gérer l'URL de couverture
+        if (mappedRow.cover_url) {
+          book.cover_url = mappedRow.cover_url;
+        }
+
+        // Gérer la série + tome
+        if (mappedRow.series) {
+          const volumeNumber = mappedRow.volume ? parseInt(mappedRow.volume) : undefined;
+          book.series = [{ name: mappedRow.series, volume_number: isNaN(volumeNumber as any) ? undefined : volumeNumber }];
+        }
+
+        // Gérer le statut lu/non lu
+        if (mappedRow.is_read !== undefined && mappedRow.is_read !== '') {
+          const val = mappedRow.is_read.toLowerCase().trim();
+          if (['true', 'oui', '1', 'yes', 'lu'].includes(val)) book.is_read = true;
+          else if (['false', 'non', '0', 'no'].includes(val)) book.is_read = false;
+        }
+
+        // Gérer la note (rating 0-5)
+        if (mappedRow.rating) {
+          const r = parseInt(mappedRow.rating);
+          if (!isNaN(r) && r >= 0 && r <= 5) book.rating = r;
+        }
+
+        // Gérer les notes personnelles
+        if (mappedRow.notes) {
+          book.notes = mappedRow.notes;
         }
 
         return book;
@@ -353,6 +414,7 @@ export default function ImportCSV() {
     setSelectedFile(null);
     setCsvData([]);
     setPreviewData([]);
+    setDetectedColumns([]);
     setImportResult(null);
     setImportProgress(null);
     setStatusMessage('');
@@ -453,15 +515,31 @@ export default function ImportCSV() {
       <View style={[styles.instructions, { backgroundColor: theme.bgMuted }]}>
         <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>Format du fichier CSV</Text>
         <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
-          Le fichier doit contenir des colonnes avec ces noms (pas d'ordre spécifique) :
+          Toutes les colonnes sont optionnelles sauf le titre. L'ordre n'a pas d'importance.
         </Text>
-        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>titre</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>title</Text> (obligatoire)</Text>
-        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>isbn</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>ISBN</Text></Text>
-        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>auteur(s)</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>authors</Text> (séparés par virgules)</Text>
-        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>editeur</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>publisher</Text></Text>
-        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>genre(s)</Text> (séparés par virgules)</Text>
-        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>date_publication</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>année</Text></Text>
-        <Text style={[styles.instructionItem, { color: theme.textSecondary }]}>• <Text style={[styles.bold, { color: theme.textPrimary }]}>pages</Text> ou <Text style={[styles.bold, { color: theme.textPrimary }]}>page_count</Text></Text>
+        {[
+          { label: 'titre *', values: 'titre, title, nom', note: '(obligatoire)' },
+          { label: 'sous-titre', values: 'subtitle, sous_titre, sous-titre' },
+          { label: 'isbn', values: 'isbn, ISBN, isbn13, code' },
+          { label: 'auteurs', values: 'auteur, auteurs, author, authors', note: '(séparés par virgules)' },
+          { label: 'éditeur', values: 'editeur, éditeur, publisher' },
+          { label: 'genres', values: 'genre, genres, categorie, catégorie', note: '(séparés par virgules)' },
+          { label: 'date', values: 'date_publication, annee, année, year' },
+          { label: 'pages', values: 'pages, page_count, nombre_pages' },
+          { label: 'série', values: 'serie, série, collection' },
+          { label: 'tome', values: 'tome, volume, numéro, vol' },
+          { label: 'lu', values: 'lu, is_read, read', note: '(oui/non ou true/false)' },
+          { label: 'note', values: 'note, rating, notation', note: '(0 à 5)' },
+          { label: 'notes', values: 'notes, commentaire, description', note: '(texte libre)' },
+          { label: 'couverture', values: 'couverture, cover_url, image, cover', note: '(URL)' },
+        ].map(({ label, values, note }) => (
+          <View key={label} style={styles.instructionRow}>
+            <Text style={[styles.instructionLabel, { color: theme.textPrimary }]}>{label}</Text>
+            <Text style={[styles.instructionValues, { color: theme.textSecondary }]}>
+              {values}{note ? <Text style={[styles.instructionNote, { color: theme.textMuted }]}> {note}</Text> : null}
+            </Text>
+          </View>
+        ))}
       </View>
 
       <View style={styles.actions}>
@@ -515,13 +593,37 @@ export default function ImportCSV() {
         {previewData.length > 0 && (
           <>
             <View style={styles.preview}>
-              <Text style={[styles.previewTitle, { color: theme.textPrimary }]}>Aperçu (5 premières lignes)</Text>
+              {/* Résumé des colonnes détectées */}
+              <Text style={[styles.previewTitle, { color: theme.textPrimary }]}>Colonnes détectées</Text>
+              <View style={styles.columnBadges}>
+                {detectedColumns.map(({ key, label, detected }) => (
+                  <View
+                    key={key}
+                    style={[
+                      styles.columnBadge,
+                      { backgroundColor: detected ? theme.successBg : theme.bgMuted, borderColor: detected ? theme.success : theme.borderLight },
+                    ]}
+                  >
+                    <Text style={[styles.columnBadgeText, { color: detected ? theme.success : theme.textMuted }]}>
+                      {detected ? '✓' : '–'} {label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Aperçu des lignes */}
+              <Text style={[styles.previewTitle, { color: theme.textPrimary, marginTop: 12 }]}>Aperçu (5 premières lignes)</Text>
               <ScrollView horizontal style={styles.previewScroll}>
                 {previewData.map((book, idx) => (
                   <View key={idx} style={[styles.previewCard, { backgroundColor: theme.bgMuted }]}>
                     <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
                       <Text style={[styles.bold, { color: theme.textPrimary }]}>Titre:</Text> {book.title}
                     </Text>
+                    {book.subtitle && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Sous-titre:</Text> {book.subtitle}
+                      </Text>
+                    )}
                     {book.isbn && (
                       <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
                         <Text style={[styles.bold, { color: theme.textPrimary }]}>ISBN:</Text> {book.isbn}
@@ -530,6 +632,36 @@ export default function ImportCSV() {
                     {book.authors && (
                       <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
                         <Text style={[styles.bold, { color: theme.textPrimary }]}>Auteur(s):</Text> {book.authors}
+                      </Text>
+                    )}
+                    {book.publisher && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Éditeur:</Text> {book.publisher}
+                      </Text>
+                    )}
+                    {book.genres && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Genre(s):</Text> {book.genres}
+                      </Text>
+                    )}
+                    {book.series && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Série:</Text> {book.series}{book.volume ? ` (t. ${book.volume})` : ''}
+                      </Text>
+                    )}
+                    {book.is_read !== undefined && book.is_read !== '' && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Lu:</Text> {book.is_read}
+                      </Text>
+                    )}
+                    {book.rating && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Note:</Text> {book.rating}/5
+                      </Text>
+                    )}
+                    {book.notes && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={2}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Notes:</Text> {book.notes}
                       </Text>
                     )}
                   </View>
@@ -906,5 +1038,39 @@ const styles = StyleSheet.create({
   exportButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  instructionRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+    marginLeft: 8,
+  },
+  instructionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    width: 80,
+  },
+  instructionValues: {
+    fontSize: 13,
+    flex: 1,
+  },
+  instructionNote: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  columnBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6 as any,
+    marginTop: 8,
+  },
+  columnBadge: {
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  columnBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
