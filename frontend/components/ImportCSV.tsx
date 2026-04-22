@@ -303,10 +303,27 @@ export default function ImportCSV() {
           book.cover_url = mappedRow.cover_url;
         }
 
-        // Gérer la série + tome
+        // Gérer la série — formats supportés :
+        // "Dune" | "Dune:1" | "Dune:1, Fondation:3" (format export)
+        // La colonne "tome" reste supportée comme fallback pour rétro-compatibilité
         if (mappedRow.series) {
-          const volumeNumber = mappedRow.volume ? parseInt(mappedRow.volume) : undefined;
-          book.series = [{ name: mappedRow.series, volume_number: isNaN(volumeNumber as any) ? undefined : volumeNumber }];
+          const seriesEntries = mappedRow.series.split(';').map((s: string) => s.trim()).filter(Boolean);
+          if (seriesEntries.length === 1 && !seriesEntries[0].includes(':') && mappedRow.volume) {
+            // Ancien format : colonne serie + colonne tome séparées
+            const vol = parseInt(mappedRow.volume);
+            book.series = [{ name: seriesEntries[0], volume_number: isNaN(vol) ? undefined : vol }];
+          } else {
+            // Nouveau format : "NomSerie:tome" ou "NomSerie" (sans tome)
+            book.series = seriesEntries.map((entry: string) => {
+              const colonIdx = entry.lastIndexOf(':');
+              if (colonIdx > 0) {
+                const name = entry.slice(0, colonIdx).trim();
+                const vol = parseInt(entry.slice(colonIdx + 1).trim());
+                return { name, volume_number: isNaN(vol) ? undefined : vol };
+              }
+              return { name: entry, volume_number: undefined };
+            });
+          }
         }
 
         // Gérer le statut lu/non lu
@@ -526,8 +543,8 @@ export default function ImportCSV() {
           { label: 'genres', values: 'genre, genres, categorie, catégorie', note: '(séparés par virgules)' },
           { label: 'date', values: 'date_publication, annee, année, year' },
           { label: 'pages', values: 'pages, page_count, nombre_pages' },
-          { label: 'série', values: 'serie, série, collection' },
-          { label: 'tome', values: 'tome, volume, numéro, vol' },
+          { label: 'série', values: 'serie, série, collection', note: '("Dune:1" ou "Dune:1 ; Fondation:3" pour plusieurs)' },
+          { label: 'tome', values: 'tome, volume, numéro, vol', note: '(alternatif si série sans ":")' },
           { label: 'lu', values: 'lu, is_read, read', note: '(oui/non ou true/false)' },
           { label: 'note', values: 'note, rating, notation', note: '(0 à 5)' },
           { label: 'notes', values: 'notes, commentaire, description', note: '(texte libre)' },

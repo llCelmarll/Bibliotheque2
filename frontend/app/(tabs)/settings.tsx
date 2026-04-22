@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import * as Updates from 'expo-updates';
 import ImportCSV from "@/components/ImportCSV";
+import ExportCSV from "@/components/ExportCSV";
 import { CalendarPreferencesSection } from "@/components/settings/CalendarPreferencesSection";
 import { PushNotificationsSection } from "@/components/settings/PushNotificationsSection";
 import { useTheme, useThemeControls } from "@/contexts/ThemeContext";
@@ -209,13 +210,12 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Section Import CSV (Web uniquement) */}
-        {Platform.OS === 'web' && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Import de données</Text>
-            <ImportCSV />
-          </View>
-        )}
+        {/* Section Import / Export CSV */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Import / Export de données</Text>
+          <ExportCSV />
+          {Platform.OS === 'web' && <ImportCSV />}
+        </View>
 
         {/* Section Informations */}
         <View style={styles.section}>

@@ -57,3 +57,5 @@ frontend/*firebase-adminsdk*.json
 # Documentation infrastructure sensible
 docs/STAGING_SETUP.md
 docs/PRODUCTION_SETUP.md
+
+docs/exports/*

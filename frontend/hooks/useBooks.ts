@@ -1,4 +1,4 @@
-import {useState, useCallback} from "react";
+import {useState, useCallback, useRef} from "react";
 import {Book} from "@/types/book";
 import {BookFilter} from "@/types/filter";
 import {fetchBooks, fetchBooksAdvanced, FetchBooksAdvancedParams} from "@/services/booksService";
@@ -22,6 +22,7 @@ export function useBooks({
 	const [books, setBooks] = useState<Book[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [loadingMore, setLoadingMore] = useState(false);
+	const isLoadingMoreRef = useRef(false);
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -112,7 +113,8 @@ export function useBooks({
 	}, [addFilter]);
 
 	const handleLoadMore = useCallback(async () => {
-		if (!loadingMore && hasMore) {
+		if (!isLoadingMoreRef.current && hasMore) {
+			isLoadingMoreRef.current = true;
 			try {
 				const nextPage = page + 1;
 				setPage(nextPage);
@@ -125,9 +127,11 @@ export function useBooks({
 			} catch (error) {
 				console.error("Erreur de chargement de plus de livres :", error);
 				setLoadError(true);
+			} finally {
+				isLoadingMoreRef.current = false;
 			}
 		}
-	}, [hasMore, page, loadBooks, loadBooksAdvanced, isAdvancedMode, advancedParams, loadingMore]);
+	}, [hasMore, page, loadBooks, loadBooksAdvanced, isAdvancedMode, advancedParams]);
 
 	const handleSortChange = useCallback(async (newSortBy: string, newOrder: 'asc' | 'desc') => {
 		setSortBy(newSortBy);

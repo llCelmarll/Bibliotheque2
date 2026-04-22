@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlmodel import Session
 from datetime import datetime
@@ -172,6 +173,21 @@ def get_books_statistics(
     - **newest_publication_year**: Année de publication la plus récente
     """
     return service.get_statistics()
+
+@router.get("/export")
+def export_books_csv(
+    service: BookService = Depends(get_book_service)
+):
+    """Exporte tous les livres de l'utilisateur en fichier CSV."""
+    csv_content = service.export_books_csv()
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="bibliotheque_export.csv"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
 
 # ================================
 # RELATED ENTITIES ENDPOINTS

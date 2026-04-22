@@ -16,3 +16,9 @@ else:
 
 # S'assurer que le répertoire existe
 COVERS_DIR.mkdir(parents=True, exist_ok=True)
+
+# URL de base de l'application (pour les liens absolus dans l'export CSV)
+# DOMAIN_NAME peut être "mabibliotheque.ovh", "staging.mabibliotheque.ovh" ou "localhost:8000"
+_domain = os.getenv("DOMAIN_NAME", "localhost:8000")
+_scheme = "http" if _domain.startswith("localhost") else "https"
+APP_BASE_URL = os.getenv("APP_BASE_URL", f"{_scheme}://{_domain}")

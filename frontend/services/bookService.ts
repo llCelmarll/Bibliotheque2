@@ -221,6 +221,34 @@ class BookService {
   }
 
   /**
+   * Exporte tous les livres de l'utilisateur en CSV
+   * - Web : déclenche un téléchargement direct
+   * - Mobile : ouvre le dialogue de partage natif
+   */
+  async exportBooks(): Promise<void> {
+    if (Platform.OS === 'web') {
+      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKS}/export`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(response.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bibliotheque_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const { Share } = await import('react-native');
+      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKS}/export`, {
+        responseType: 'text',
+      });
+      await Share.share({
+        message: response.data,
+        title: 'bibliotheque_export.csv',
+      });
+    }
+  }
+
+  /**
    * Valide les données du livre avant envoi
    */
   validateBookData(bookData: BookCreate): { isValid: boolean; errors: string[] } {

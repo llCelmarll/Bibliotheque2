@@ -350,6 +350,58 @@ class BookService:
         """Récupère les statistiques des livres de l'utilisateur actuel"""
         return self.book_repository.get_statistics(self.user_id)
 
+    def export_books_csv(self) -> str:
+        """Exporte tous les livres de l'utilisateur en CSV (séparateur ';', BOM UTF-8)"""
+        import csv
+        import io
+        from app.config import APP_BASE_URL
+
+        raw_books = self.book_repository.search_books(
+            BookSearchParams(limit=100000), self.user_id
+        )
+        books = [self._enrich_book_read(b) for b in raw_books]
+
+        output = io.StringIO()
+        output.write('﻿')  # BOM UTF-8 pour compatibilité Excel
+
+        writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow([
+            'titre', 'sous-titre', 'isbn', 'auteurs', 'editeur', 'genres',
+            'date_publication', 'pages', 'serie', 'lu', 'note', 'notes', 'couverture'
+        ])
+
+        for book in books:
+            # Format séries : "NomSerie:tome, NomSerie2:tome2" — omis si pas de série
+            series_parts = []
+            for s in book.series:
+                if s.volume_number is not None:
+                    series_parts.append(f"{s.name}:{s.volume_number}")
+                else:
+                    series_parts.append(s.name)
+            series_str = ' ; '.join(series_parts)
+
+            cover = book.cover_url or ''
+            if cover.startswith('/'):
+                cover = f"{APP_BASE_URL}{cover}"
+
+            writer.writerow([
+                book.title,
+                book.subtitle or '',
+                book.isbn or '',
+                ', '.join(a.name for a in book.authors),
+                book.publisher.name if book.publisher else '',
+                ', '.join(g.name for g in book.genres),
+                book.published_date or '',
+                str(book.page_count) if book.page_count else '',
+                series_str,
+                'oui' if book.is_read is True else ('non' if book.is_read is False else ''),
+                str(book.rating) if book.rating else '',
+                book.notes or '',
+                cover,
+            ])
+
+        return output.getvalue()
+
     def get_books_by_author(self, author_id: int) -> List[BookRead]:
         """Récupère tous les livres d'un auteur"""
         # Vérification que l'auteur existe

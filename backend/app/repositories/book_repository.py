@@ -414,7 +414,7 @@ class BookRepository:
 			else:
 				order_clause = asc(order_field)
 
-		return stmt.order_by(order_clause)
+		return stmt.order_by(order_clause, asc(Book.id))
 
 	def _apply_sorting(self, stmt, sort_by: SortBy, sort_order: SortOrder):
 		"""Applique le tri (sans déduplication)"""
