@@ -157,36 +157,33 @@ class BookService:
 
     async def get_book_by_id(self, book_id: int) -> Dict[str, Any]:
         """Récupère un livre par son ID (seulement si l'utilisateur en est propriétaire)"""
-        book_data = {}
-
         base_book = self.book_repository.get_by_id(book_id, self.user_id)
-        #print("Livre renvoyé par le repository" , base_book)
         if not base_book:
-           raise HTTPException(status_code=404, detail="Livre introuvable")
+            raise HTTPException(status_code=404, detail="Livre introuvable")
 
         from app.schemas.Book import BookRead
         book_read = BookRead.from_orm(base_book)
         book_read.series = BookRead._build_series_with_volumes(base_book)
 
-        # Récupérer le prêt actif pour ce livre
         active_loan = self.loan_repository.get_active_loan_for_book(base_book.id, self.user_id)
         if active_loan:
             book_read.current_loan = CurrentLoanRead.model_validate(active_loan)
 
-        # Récupérer l'emprunt actif pour ce livre (seulement ACTIF ou OVERDUE, pas RETURNED)
         active_borrow = self.borrowed_book_repository.get_active_borrow_for_book(base_book.id, self.user_id)
         if active_borrow:
             book_read.borrowed_book = CurrentBorrowRead.model_validate(active_borrow)
 
-        # Vérifier si le livre a un historique d'emprunts (même retournés)
         all_borrows = self.borrowed_book_repository.get_by_book(base_book.id, self.user_id)
         book_read.has_borrow_history = len(all_borrows) > 0
 
-        book_data['base'] = book_read.model_dump()
-        google_data, _ = await fetch_google_books(base_book.isbn)
-        book_data['google_books'] = google_data
-        openlibrary_data, _ = await fetch_openlibrary(base_book.isbn)
-        book_data['open_library'] = openlibrary_data
+        book_data: Dict[str, Any] = {"base": book_read.model_dump()}
+
+        if base_book.isbn:
+            google_data, _ = await fetch_google_books(base_book.isbn)
+            openlibrary_data, _ = await fetch_openlibrary(base_book.isbn)
+            book_data['google_books'] = google_data
+            book_data['open_library'] = openlibrary_data
+
         return book_data
 
     def update_book(self, book_id: int, book_data: BookUpdate) -> Book:
@@ -395,7 +392,7 @@ class BookService:
                 str(book.page_count) if book.page_count else '',
                 series_str,
                 'oui' if book.is_read is True else ('non' if book.is_read is False else ''),
-                str(book.rating) if book.rating else '',
+                str(book.rating) if book.rating is not None else '',
                 book.notes or '',
                 cover,
             ])
@@ -455,6 +452,7 @@ class BookService:
 
         # Optionnel: enrichir les URLs de couvertures à partir de l'ISBN
         if populate_covers:
+            import time
             enrich_start = perf_counter()
             for bd in books_data:
                 try:
@@ -466,6 +464,7 @@ class BookService:
                     cover = self._find_cover_url_sync(isbn)
                     if cover:
                         bd.cover_url = cover
+                    time.sleep(0.5)  # évite les 429 Google Books (quota req/s)
                 except Exception:
                     # Ne pas bloquer l'import sur l'enrichissement de couverture
                     continue
@@ -528,14 +527,28 @@ class BookService:
                 "errors": errors
             }
 
+    def patch_missing_fields(self, book_id: int, fields: dict) -> None:
+        """Applique uniquement les champs fournis sur un livre existant."""
+        allowed = set(BookUpdate.model_fields.keys())
+        filtered = {k: v for k, v in fields.items() if k in allowed}
+        if not filtered:
+            return
+        update = BookUpdate(**filtered)
+        self.update_book(book_id, update)
+
     def _find_cover_url_sync(self, isbn: str) -> Optional[str]:
         """Tente de trouver une URL de couverture via Google Books puis OpenLibrary (synchrone, court timeout)."""
+        import os
         # Google Books
         try:
+            params: dict = {"q": f"isbn:{isbn}"}
+            api_key = os.getenv("GOOGLE_BOOKS_API_KEY")
+            if api_key:
+                params["key"] = api_key
             with httpx.Client(timeout=5.0) as client:
                 resp = client.get(
                     "https://www.googleapis.com/books/v1/volumes",
-                    params={"q": f"isbn:{isbn}"}
+                    params=params,
                 )
                 if resp.status_code == 200:
                     data = resp.json()
@@ -554,12 +567,11 @@ class BookService:
 
         # OpenLibrary
         try:
-            with httpx.Client(timeout=5.0, follow_redirects=True) as client:
-                resp = client.get(f"https://openlibrary.org/isbn/{isbn}.json")
-                if resp.status_code == 200:
-                    # Si le livre existe, utiliser le service de covers
-                    return f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
-        except httpx.HTTPError:
+            from app.clients.openlibrary import get_openlibrary_cover_url
+            cover = get_openlibrary_cover_url(isbn)
+            if cover:
+                return cover
+        except Exception:
             pass
 
         return None

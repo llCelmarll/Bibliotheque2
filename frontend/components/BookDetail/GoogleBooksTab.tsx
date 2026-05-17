@@ -15,8 +15,9 @@ export function GoogleBooksTab() {
 	const { book } = route.params as { book: BookDetail };
 	const theme = useTheme();
 
-	// Vérification de sécurité
-	if (!book?.google_books) {
+	const googleBooks = book.google_books;
+
+	if (!googleBooks) {
 		return (
 			<View style={styles.container}>
 				<Text style={[styles.value, { color: theme.textSecondary }]}>Aucune donnée Google Books disponible</Text>
@@ -25,19 +26,18 @@ export function GoogleBooksTab() {
 	}
 
 	const handleOpenGoogleBooks = async () => {
-		if (book.google_books?.infoLink) {
-			await WebBrowser.openBrowserAsync(book.google_books.infoLink);
+		if (googleBooks?.infoLink) {
+			await WebBrowser.openBrowserAsync(googleBooks.infoLink);
 		}
 	};
 
-
 	const renderCategories = () => {
-		if (!book.google_books?.categories || book.google_books.categories.length === 0) {
+		if (!googleBooks?.categories || googleBooks.categories.length === 0) {
 			return <Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>;
 		}
 		return (
 			<View style={styles.categories}>
-				{book.google_books.categories.map((category, index) => (
+				{googleBooks.categories.map((category: string, index: number) => (
 					<Tag key={index} text={category} />
 				))}
 			</View>
@@ -47,7 +47,7 @@ export function GoogleBooksTab() {
 	return (
 		<ScrollView style={styles.container}>
 
-			{book.google_books?.infoLink && (
+			{googleBooks?.infoLink && (
 				<Pressable
 					style={[styles.linkButton, { backgroundColor: theme.bgSecondary }]}
 					onPress={handleOpenGoogleBooks}
@@ -57,40 +57,40 @@ export function GoogleBooksTab() {
 				</Pressable>
 			)}
 
-			<CollapsibleSection title="Description" defaultExpanded={!!book.google_books?.description}>
+			<CollapsibleSection title="Description" defaultExpanded={!!googleBooks?.description}>
 				<Text style={[styles.description, { color: theme.textPrimary }]}>
-					{book.google_books?.description || 'Non renseigné'}
+					{googleBooks?.description || 'Non renseigné'}
 				</Text>
 			</CollapsibleSection>
 
 			<CollapsibleSection title="Details">
 				<InfoRow
-					label={book.google_books?.authors && book.google_books.authors.length > 1 ? "Auteurs" : "Auteur"}
-					value={book.google_books?.authors ? book.google_books.authors.join(", ") : 'Non renseigné'}
+					label={googleBooks?.authors && googleBooks.authors.length > 1 ? "Auteurs" : "Auteur"}
+					value={googleBooks?.authors ? googleBooks.authors.join(", ") : 'Non renseigné'}
 				/>
 				<InfoRow
 					label="Éditeur"
-					value={book.google_books?.publisher || 'Non renseigné'}
+					value={googleBooks?.publisher || 'Non renseigné'}
 				/>
 				<InfoRow
 					label="Date de publication"
-					value={book.google_books?.publishedDate || 'Non renseigné'}
+					value={googleBooks?.publishedDate || 'Non renseigné'}
 				/>
 				<InfoRow
 					label="Langue"
-					value={book.google_books?.language || 'Non renseigné'}
+					value={googleBooks?.language || 'Non renseigné'}
 				/>
 				<InfoRow
 					label="Pages"
-					value={book.google_books?.pageCount ? book.google_books.pageCount.toString() : 'Non renseigné'}
+					value={googleBooks?.pageCount ? googleBooks.pageCount.toString() : 'Non renseigné'}
 				/>
 				<InfoRow
 					label="Sous-titre"
-					value={book.google_books?.subtitle || 'Non renseigné'}
+					value={googleBooks?.subtitle || 'Non renseigné'}
 				/>
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Categories" defaultExpanded={!!book.google_books?.categories?.length}>
+			<CollapsibleSection title="Categories" defaultExpanded={!!googleBooks?.categories?.length}>
 				{renderCategories()}
 			</CollapsibleSection>
 

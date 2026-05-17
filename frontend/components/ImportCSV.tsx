@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Animated, Platform, Share } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedSwitch } from '@/components/ThemedSwitch';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import Papa from 'papaparse';
-import { bookService } from '@/services/bookService';
 import { useTheme } from '@/contexts/ThemeContext';
+import { parseCSVRow } from '@/utils/csvParser';
+import { importJobService, ImportJobEvent, ImportJobResult, ConflictEntry, ConflictResolutionItem } from '@/services/importJobService';
+
+const ACTIVE_JOB_KEY = 'import_active_job_id';
 
 interface ParsedBook {
   title: string;
@@ -24,17 +28,7 @@ interface ParsedBook {
   cover_url?: string;
 }
 
-interface ImportResult {
-  success: number;
-  failed: number;
-  total: number;
-  errors: Array<{
-    line: number;
-    title: string;
-    isbn: string;
-    error: string;
-  }>;
-}
+type ImportResult = ImportJobResult;
 
 interface ImportProgress {
   current: number;
@@ -55,7 +49,36 @@ export default function ImportCSV() {
   const [detectedColumns, setDetectedColumns] = useState<{ key: string; label: string; detected: boolean }[]>([]);
   const [populateCovers, setPopulateCovers] = useState<boolean>(false);
   const [encoding, setEncoding] = useState<'auto' | 'utf-8' | 'windows-1252' | 'iso-8859-1' | 'utf-16le' | 'utf-16be'>('auto');
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<'idle' | 'running' | 'paused' | 'cancelled' | 'done' | 'error'>('idle');
+  const abortControllerRef = useRef<AbortController | null>(null);
   const progressAnim = React.useRef(new Animated.Value(0)).current;
+  const [conflicts, setConflicts] = useState<ConflictEntry[]>([]);
+  const [showConflicts, setShowConflicts] = useState(false);
+  const [conflictSelections, setConflictSelections] = useState<Record<number, Record<string, boolean>>>({});
+  const [isResolvingConflicts, setIsResolvingConflicts] = useState(false);
+  const [conflictResult, setConflictResult] = useState<{ applied: number; skipped: number } | null>(null);
+
+
+  const FIELD_LABELS: Record<string, string> = {
+    cover_url: 'Couverture',
+    rating: 'Note',
+    notes: 'Notes personnelles',
+    subtitle: 'Sous-titre',
+    published_date: 'Date de publication',
+    page_count: 'Nombre de pages',
+    publisher: 'Éditeur',
+    genres: 'Genres',
+    authors: 'Auteurs',
+    series: 'Séries',
+  };
+
+  const formatFieldValue = (field: string, value: any): string => {
+    if (field === 'rating') return `${value}/5`;
+    if (field === 'cover_url') return 'URL';
+    if (Array.isArray(value)) return value.join(', ');
+    return String(value);
+  };
 
   const columnMapping: Record<string, string[]> = {
     title: ['titre', 'title', 'Titre', 'Title', 'nom', 'Nom'],
@@ -65,7 +88,7 @@ export default function ImportCSV() {
     publisher: ['editeur', 'éditeur', 'publisher', 'Editeur', 'Éditeur'],
     genres: ['genre', 'genres', 'Genre', 'Genres', 'categorie', 'catégorie', 'categories', 'catégories'],
     published_date: ['date_publication', 'published_date', 'annee', 'année', 'year', 'Date de publication', 'Année'],
-    page_count: ['pages', 'page_count', 'nombre_pages', 'Pages', 'Nombre de pages'],
+    page_count: ['pages', 'page_count', 'nb_pages', 'nombre_pages', 'Pages', 'Nombre de pages'],
     series: ['serie', 'série', 'series', 'Series', 'Série', 'collection', 'Collection'],
     volume: ['tome', 'volume', 'Tome', 'Volume', 'numero', 'numéro', 'vol'],
     is_read: ['lu', 'is_read', 'Lu', 'Is_Read', 'read', 'Read'],
@@ -244,6 +267,95 @@ export default function ImportCSV() {
     }
   };
 
+  const updateProgress = (event: ImportJobEvent) => {
+    const pct = Math.round(((event.current ?? 0) / (event.total ?? 1)) * 100);
+    setJobStatus((event.status as any) ?? 'running');
+    setImportProgress({
+      current: event.current ?? 0,
+      total: event.total ?? csvData.length,
+      percentage: pct,
+      currentBook: event.current_book ?? '',
+    });
+    Animated.timing(progressAnim, {
+      toValue: pct,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const _handleJobFinished = (
+    result: ImportJobResult,
+    conflictList?: ConflictEntry[],
+  ) => {
+    setImportProgress(prev => prev ? { ...prev, percentage: 100, currentBook: result.cancelled ? 'Annulé' : 'Terminé' } : null);
+    Animated.timing(progressAnim, { toValue: 100, duration: 300, useNativeDriver: false }).start();
+    setImportResult(result);
+    setJobStatus(result.cancelled ? 'cancelled' : 'done');
+    setStatusMessage(
+      result.cancelled
+        ? `Import annulé — ${result.success} importé(s), ${result.failed} échec(s)`
+        : `Import terminé — ${result.success} importé(s), ${result.failed} échec(s)`
+    );
+    if (conflictList && conflictList.length > 0) {
+      setConflicts(conflictList);
+      const defaultSel: Record<number, Record<string, boolean>> = {};
+      for (const c of conflictList) {
+        defaultSel[c.existing_book_id] = Object.fromEntries(
+          Object.keys(c.missing_fields).map(f => [f, true])
+        );
+      }
+      setConflictSelections(defaultSel);
+      setShowConflicts(true);
+    }
+    setIsProcessing(false);
+  };
+
+  const startStream = async (id: string) => {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    let lastConflicts: ConflictEntry[] = [];
+    try {
+      const result = await importJobService.streamJob(id, (event) => {
+        if (!event.heartbeat) {
+          updateProgress(event);
+          if (event.conflicts) lastConflicts = event.conflicts;
+        }
+      }, controller.signal);
+      _handleJobFinished(result, lastConflicts);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+      // Déconnexion réseau — le job continue côté serveur
+      setStatusMessage('Connexion perdue. Reconnexion dans 3s...');
+      setTimeout(async () => {
+        try {
+          const status = await importJobService.getStatus(id);
+          if (status.done) {
+            _handleJobFinished(
+              {
+                success: status.success ?? 0,
+                failed: status.failed ?? 0,
+                total: status.total ?? 0,
+                skipped: status.skipped ?? 0,
+                auto_completed: status.auto_completed ?? 0,
+                errors: status.errors ?? [],
+                cancelled: status.status === 'cancelled',
+              },
+              status.conflicts,
+            );
+            setJobStatus((status.status as any) ?? 'done');
+          } else {
+            setStatusMessage('Reconnexion au job...');
+            await startStream(id);
+          }
+        } catch {
+          setStatusMessage('Impossible de se reconnecter. Vérifiez votre connexion.');
+          setJobStatus('error');
+          setIsProcessing(false);
+        }
+      }, 3000);
+    }
+  };
+
   const importBooks = async () => {
     if (csvData.length === 0) {
       Alert.alert('Erreur', 'Veuillez d\'abord sélectionner un fichier CSV');
@@ -252,182 +364,126 @@ export default function ImportCSV() {
 
     setIsProcessing(true);
     setImportResult(null);
+    setConflictResult(null);
+    setConflicts([]);
+    setShowConflicts(false);
+    setConflictSelections({});
+    setJobStatus('running');
     setImportProgress({ current: 0, total: csvData.length, percentage: 0, currentBook: '' });
-    setStatusMessage(`Import de ${csvData.length} livre(s) en cours...`);
+    const estimatedSeconds = populateCovers ? Math.round(csvData.length * 0.5) : null;
+    setStatusMessage(
+      populateCovers
+        ? `Import de ${csvData.length} livre(s) avec couvertures (~${estimatedSeconds}s)...`
+        : `Import de ${csvData.length} livre(s) en cours...`
+    );
     progressAnim.setValue(0);
 
     try {
-      // Mapper et transformer les données stockées
       const booksToImport = csvData.map((row: any) => {
-        const mappedRow: any = {};
-        
+        const mappedRow: Record<string, string> = {};
         Object.keys(row).forEach((header) => {
           const standardName = detectColumnName(header);
           if (standardName && row[header]) {
             mappedRow[standardName] = row[header].trim();
           }
         });
-        
-        // Transformer en format BookCreate
-        const book: any = {
-          title: mappedRow.title || 'Sans titre',
-          subtitle: mappedRow.subtitle || undefined,
-          isbn: mappedRow.isbn || undefined,
-          published_date: mappedRow.published_date || undefined,
-          page_count: mappedRow.page_count ? parseInt(mappedRow.page_count) : undefined,
-        };
-
-        // Gérer les auteurs (séparés par virgule)
-        if (mappedRow.authors) {
-          book.authors = mappedRow.authors
-            .split(',')
-            .map((a: string) => a.trim())
-            .filter((a: string) => a.length > 0);
-        }
-
-        // Gérer l'éditeur
-        if (mappedRow.publisher) {
-          book.publisher = mappedRow.publisher;
-        }
-
-        // Gérer les genres (séparés par virgule)
-        if (mappedRow.genres) {
-          book.genres = mappedRow.genres
-            .split(',')
-            .map((g: string) => g.trim())
-            .filter((g: string) => g.length > 0);
-        }
-
-        // Gérer l'URL de couverture
-        if (mappedRow.cover_url) {
-          book.cover_url = mappedRow.cover_url;
-        }
-
-        // Gérer la série — formats supportés :
-        // "Dune" | "Dune:1" | "Dune:1, Fondation:3" (format export)
-        // La colonne "tome" reste supportée comme fallback pour rétro-compatibilité
-        if (mappedRow.series) {
-          const seriesEntries = mappedRow.series.split(';').map((s: string) => s.trim()).filter(Boolean);
-          if (seriesEntries.length === 1 && !seriesEntries[0].includes(':') && mappedRow.volume) {
-            // Ancien format : colonne serie + colonne tome séparées
-            const vol = parseInt(mappedRow.volume);
-            book.series = [{ name: seriesEntries[0], volume_number: isNaN(vol) ? undefined : vol }];
-          } else {
-            // Nouveau format : "NomSerie:tome" ou "NomSerie" (sans tome)
-            book.series = seriesEntries.map((entry: string) => {
-              const colonIdx = entry.lastIndexOf(':');
-              if (colonIdx > 0) {
-                const name = entry.slice(0, colonIdx).trim();
-                const vol = parseInt(entry.slice(colonIdx + 1).trim());
-                return { name, volume_number: isNaN(vol) ? undefined : vol };
-              }
-              return { name: entry, volume_number: undefined };
-            });
-          }
-        }
-
-        // Gérer le statut lu/non lu
-        if (mappedRow.is_read !== undefined && mappedRow.is_read !== '') {
-          const val = mappedRow.is_read.toLowerCase().trim();
-          if (['true', 'oui', '1', 'yes', 'lu'].includes(val)) book.is_read = true;
-          else if (['false', 'non', '0', 'no'].includes(val)) book.is_read = false;
-        }
-
-        // Gérer la note (rating 0-5)
-        if (mappedRow.rating) {
-          const r = parseInt(mappedRow.rating);
-          if (!isNaN(r) && r >= 0 && r <= 5) book.rating = r;
-        }
-
-        // Gérer les notes personnelles
-        if (mappedRow.notes) {
-          book.notes = mappedRow.notes;
-        }
-
-        return book;
+        return parseCSVRow(mappedRow);
       });
 
-      // Simuler la progression pendant l'import
-      const simulateProgress = () => {
-        const interval = setInterval(() => {
-          setImportProgress(prev => {
-            if (!prev || prev.percentage >= 90) {
-              clearInterval(interval);
-              return prev;
-            }
-            const newPercentage = Math.min(prev.percentage + Math.random() * 15, 90);
-            const newCurrent = Math.floor((newPercentage / 100) * prev.total);
-            const randomBook = booksToImport[Math.floor(Math.random() * booksToImport.length)];
-            
-            Animated.timing(progressAnim, {
-              toValue: newPercentage,
-              duration: 300,
-              useNativeDriver: false,
-            }).start();
-            
-            return {
-              ...prev,
-              current: newCurrent,
-              percentage: newPercentage,
-              currentBook: randomBook?.title || '',
-            };
-          });
-        }, 500);
-        
-        return interval;
-      };
-
-      const progressInterval = simulateProgress();
-
-      // Appel API avec skip_errors=true
-      console.log('🚀 Déclenchement import CSV', {
-        total: booksToImport.length,
-        populateCovers,
-        sample: booksToImport[0]
-      });
-      const result = await bookService.bulkCreateBooks(booksToImport, true, populateCovers);
-      
-      clearInterval(progressInterval);
-      
-      // Finaliser la progression à 100%
-      setImportProgress({
-        current: result.total,
-        total: result.total,
-        percentage: 100,
-        currentBook: 'Terminé!',
-      });
-      
-      Animated.timing(progressAnim, {
-        toValue: 100,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-      
-      setImportResult(result);
-      setStatusMessage(`Import terminé: ${result.success} succès, ${result.failed} échec(s)`);
-      
-      if (result.failed === 0) {
-        Alert.alert(
-          '✅ Import réussi',
-          `${result.success} livre(s) importé(s) avec succès !`
-        );
-      } else {
-        Alert.alert(
-          '⚠️ Import partiel',
-          `${result.success} livre(s) importé(s)\n${result.failed} échec(s)\n\nConsultez le rapport pour plus de détails.`
-        );
-      }
-    } catch (error) {
+      const { job_id } = await importJobService.startImport(booksToImport, true, populateCovers);
+      setJobId(job_id);
+      await startStream(job_id);
+    } catch (error: any) {
       console.error('Erreur import:', error);
-      Alert.alert('Erreur', 'Échec de l\'import. Vérifiez votre connexion.');
+      const msg = error?.message || 'Échec de l\'import. Vérifiez votre connexion.';
+      Alert.alert('Erreur', msg);
       setStatusMessage('Erreur lors de l\'import. Réessayez ou vérifiez le fichier.');
       setImportProgress(null);
-    } finally {
+      setJobStatus('error');
       setIsProcessing(false);
     }
   };
 
+  // Au montage : vérifier si un job actif existe côté serveur et reprendre le stream
+  useEffect(() => {
+    let cancelled = false;
+    const checkActive = async () => {
+      try {
+        const active = await importJobService.getActiveJob();
+        if (cancelled || !active || !active.job_id) return;
+        const id = active.job_id;
+        setJobId(id);
+        setJobStatus((active.status as any) ?? 'running');
+        setIsProcessing(true);
+        setImportProgress({
+          current: active.current ?? 0,
+          total: active.total ?? 0,
+          percentage: active.total ? Math.round(((active.current ?? 0) / active.total) * 100) : 0,
+          currentBook: active.current_book ?? '',
+        });
+        setStatusMessage('Import en cours — reconnexion...');
+        if (!active.done) {
+          await startStream(id);
+        } else {
+          setIsProcessing(false);
+        }
+      } catch {
+        // Aucun job actif ou erreur réseau — on ignore
+      }
+    };
+    checkActive();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handlePause = async () => {
+    if (!jobId) return;
+    try {
+      await importJobService.pause(jobId);
+      setJobStatus('paused');
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Impossible de mettre en pause');
+    }
+  };
+
+  const handleResume = async () => {
+    if (!jobId) return;
+    try {
+      await importJobService.resume(jobId);
+      setJobStatus('running');
+      // Si le stream s'est coupé entre temps, on se reconnecte
+      if (abortControllerRef.current?.signal.aborted) {
+        await startStream(jobId);
+      }
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Impossible de reprendre');
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!jobId) return;
+    Alert.alert(
+      'Annuler l\'import',
+      'Les livres déjà importés resteront dans votre bibliothèque. Continuer ?',
+      [
+        { text: 'Non', style: 'cancel' },
+        {
+          text: 'Oui, annuler',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await importJobService.cancel(jobId);
+              abortControllerRef.current?.abort();
+            } catch (e: any) {
+              Alert.alert('Erreur', e?.message || 'Impossible d\'annuler');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const reset = () => {
+    abortControllerRef.current?.abort();
     setSelectedFile(null);
     setCsvData([]);
     setPreviewData([]);
@@ -435,7 +491,61 @@ export default function ImportCSV() {
     setImportResult(null);
     setImportProgress(null);
     setStatusMessage('');
+    setJobId(null);
+    setJobStatus('idle');
+    setConflicts([]);
+    setShowConflicts(false);
+    setConflictSelections({});
+    setConflictResult(null);
     progressAnim.setValue(0);
+  };
+
+  const toggleConflictField = (bookId: number, field: string) => {
+    setConflictSelections(prev => ({
+      ...prev,
+      [bookId]: { ...prev[bookId], [field]: !prev[bookId]?.[field] },
+    }));
+  };
+
+  const selectAllConflicts = () => {
+    const all: Record<number, Record<string, boolean>> = {};
+    for (const c of conflicts) {
+      all[c.existing_book_id] = Object.fromEntries(Object.keys(c.missing_fields).map(f => [f, true]));
+    }
+    setConflictSelections(all);
+  };
+
+  const deselectAllConflicts = () => {
+    const none: Record<number, Record<string, boolean>> = {};
+    for (const c of conflicts) {
+      none[c.existing_book_id] = Object.fromEntries(Object.keys(c.missing_fields).map(f => [f, false]));
+    }
+    setConflictSelections(none);
+  };
+
+  const handleApplyConflicts = async () => {
+    if (!jobId) return;
+    setIsResolvingConflicts(true);
+    try {
+      const resolutions: ConflictResolutionItem[] = conflicts.map(c => {
+        const sel = conflictSelections[c.existing_book_id] ?? {};
+        const selectedFields: Record<string, any> = {};
+        for (const [field, checked] of Object.entries(sel)) {
+          if (checked) selectedFields[field] = c.missing_fields[field];
+        }
+        return {
+          existing_book_id: c.existing_book_id,
+          fields: Object.keys(selectedFields).length > 0 ? selectedFields : null,
+        };
+      });
+      const result = await importJobService.resolveConflicts(jobId, resolutions);
+      setConflictResult(result);
+      setShowConflicts(false);
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Impossible d\'appliquer les modifications');
+    } finally {
+      setIsResolvingConflicts(false);
+    }
   };
 
   const exportErrorsAsCSV = async () => {
@@ -599,7 +709,14 @@ export default function ImportCSV() {
         </View>
 
         <View style={[styles.switchRow, { backgroundColor: theme.bgMuted }]}>
-          <Text style={[styles.switchLabel, { color: theme.textSecondary }]}>Peupler les couvertures (Google/OpenLibrary)</Text>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={[styles.switchLabel, { color: theme.textSecondary }]}>Peupler les couvertures (Google/OpenLibrary)</Text>
+            {populateCovers && (
+              <Text style={[styles.instructionNote, { color: theme.textMuted, marginTop: 2 }]}>
+                ⚠️ Ralentit l'import (~0,5s par livre avec ISBN)
+              </Text>
+            )}
+          </View>
           <ThemedSwitch
             value={populateCovers}
             onValueChange={setPopulateCovers}
@@ -720,7 +837,9 @@ export default function ImportCSV() {
       {importProgress && (
         <View style={[styles.progressContainer, { backgroundColor: theme.bgMuted }]}>
           <View style={styles.progressHeader}>
-            <Text style={[styles.progressTitle, { color: theme.textPrimary }]}>Import en cours...</Text>
+            <Text style={[styles.progressTitle, { color: theme.textPrimary }]}>
+              {jobStatus === 'paused' ? 'Import en pause' : jobStatus === 'cancelled' ? 'Import annulé' : 'Import en cours...'}
+            </Text>
             <Text style={[styles.progressPercentage, { color: theme.accent }]}>{Math.round(importProgress.percentage)}%</Text>
           </View>
 
@@ -728,7 +847,7 @@ export default function ImportCSV() {
             <Animated.View
               style={[
                 styles.progressBarFill,
-                { backgroundColor: theme.success },
+                { backgroundColor: jobStatus === 'paused' ? theme.textMuted : jobStatus === 'cancelled' ? theme.danger : theme.success },
                 {
                   width: progressAnim.interpolate({
                     inputRange: [0, 100],
@@ -745,21 +864,161 @@ export default function ImportCSV() {
             </Text>
             {importProgress.currentBook && (
               <Text style={[styles.progressCurrentBook, { color: theme.accent }]} numberOfLines={1}>
-                📖 {importProgress.currentBook}
+                {jobStatus === 'paused' ? '⏸' : '📖'} {importProgress.currentBook}
               </Text>
             )}
           </View>
+
+          {/* Boutons de contrôle */}
+          {(jobStatus === 'running' || jobStatus === 'paused') && (
+            <View style={styles.controlButtons}>
+              {jobStatus === 'running' ? (
+                <TouchableOpacity
+                  style={[styles.controlButton, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}
+                  onPress={handlePause}
+                >
+                  <MaterialIcons name="pause" size={18} color={theme.textPrimary} />
+                  <Text style={[styles.controlButtonText, { color: theme.textPrimary }]}>Pause</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.controlButton, { backgroundColor: theme.successBg, borderColor: theme.success }]}
+                  onPress={handleResume}
+                >
+                  <MaterialIcons name="play-arrow" size={18} color={theme.success} />
+                  <Text style={[styles.controlButtonText, { color: theme.success }]}>Reprendre</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.controlButton, { backgroundColor: theme.bgCard, borderColor: theme.danger }]}
+                onPress={handleCancel}
+              >
+                <MaterialIcons name="close" size={18} color={theme.danger} />
+                <Text style={[styles.controlButtonText, { color: theme.danger }]}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
+
+      {showConflicts && conflicts.length > 0 && (
+        <View style={[styles.conflictContainer, { backgroundColor: theme.bgMuted }]}>
+          <Text style={[styles.conflictTitle, { color: theme.textPrimary }]}>
+            ⚠️ {conflicts.length} livre(s) déjà présent(s) avec des champs manquants
+          </Text>
+          <Text style={[styles.conflictSubtitle, { color: theme.textSecondary }]}>
+            Sélectionnez les champs à compléter pour chaque livre.
+          </Text>
+
+          <View style={styles.conflictBulkActions}>
+            <TouchableOpacity
+              style={[styles.bulkButton, { backgroundColor: theme.successBg, borderColor: theme.success }]}
+              onPress={selectAllConflicts}
+            >
+              <MaterialIcons name="check-box" size={16} color={theme.success} />
+              <Text style={[styles.bulkButtonText, { color: theme.success }]}>Tout accepter</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.bulkButton, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}
+              onPress={deselectAllConflicts}
+            >
+              <MaterialIcons name="check-box-outline-blank" size={16} color={theme.textMuted} />
+              <Text style={[styles.bulkButtonText, { color: theme.textMuted }]}>Tout ignorer</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.conflictList}>
+            {conflicts.map((c) => (
+              <View key={c.existing_book_id} style={[styles.conflictItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }]}>
+                <Text style={[styles.conflictBookTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+                  {c.title}
+                  <Text style={[styles.conflictBookLine, { color: theme.textMuted }]}> · ligne {c.line}</Text>
+                </Text>
+                <View style={styles.conflictFields}>
+                  {Object.entries(c.missing_fields).map(([field, value]) => {
+                    const checked = conflictSelections[c.existing_book_id]?.[field] ?? true;
+                    return (
+                      <TouchableOpacity
+                        key={field}
+                        style={[
+                          styles.conflictFieldChip,
+                          {
+                            backgroundColor: checked ? theme.accentLight : theme.bgMuted,
+                            borderColor: checked ? theme.accent : theme.borderLight,
+                          },
+                        ]}
+                        onPress={() => toggleConflictField(c.existing_book_id, field)}
+                      >
+                        <MaterialIcons
+                          name={checked ? 'check-box' : 'check-box-outline-blank'}
+                          size={14}
+                          color={checked ? theme.accent : theme.textMuted}
+                        />
+                        <Text style={[styles.conflictFieldLabel, { color: checked ? theme.accent : theme.textMuted }]}>
+                          {FIELD_LABELS[field] ?? field}
+                        </Text>
+                        <Text style={[styles.conflictFieldValue, { color: theme.textMuted }]} numberOfLines={1}>
+                          {formatFieldValue(field, value)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: theme.accent, marginTop: 16 }]}
+            onPress={handleApplyConflicts}
+            disabled={isResolvingConflicts}
+          >
+            {isResolvingConflicts ? (
+              <>
+                <ActivityIndicator size="small" color={theme.textInverse} />
+                <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textInverse }]}>Application...</Text>
+              </>
+            ) : (
+              <>
+                <MaterialIcons name="save" size={20} color={theme.textInverse} />
+                <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textInverse }]}>Appliquer la sélection</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {conflictResult && (
+        <View style={[styles.conflictResultBox, { backgroundColor: theme.successBg, borderColor: theme.success }]}>
+          <Text style={[styles.conflictResultText, { color: theme.success }]}>
+            ✓ {conflictResult.applied} livre(s) complété(s)
+            {conflictResult.skipped > 0 ? `, ${conflictResult.skipped} ignoré(s)` : ''}
+          </Text>
         </View>
       )}
 
       {importResult && (
         <View style={[styles.result, { backgroundColor: theme.bgMuted }]}>
           <Text style={[styles.resultTitle, { color: theme.textPrimary }]}>
-            {importResult.failed === 0 ? '✅ Import réussi' : '⚠️ Import partiel'}
+            {importResult.cancelled
+              ? '🛑 Import annulé'
+              : importResult.failed === 0
+                ? '✅ Import réussi'
+                : '⚠️ Import partiel'}
           </Text>
           <Text style={[styles.resultText, { color: theme.success }]}>
             ✓ {importResult.success} livre(s) importé(s)
           </Text>
+          {importResult.auto_completed > 0 && (
+            <Text style={[styles.resultText, { color: theme.accent }]}>
+              🖼 {importResult.auto_completed} couverture(s) ajoutée(s) automatiquement
+            </Text>
+          )}
+          {importResult.skipped > 0 && (
+            <Text style={[styles.resultText, { color: theme.textSecondary }]}>
+              ↩ {importResult.skipped} déjà dans la bibliothèque (ignoré(s))
+            </Text>
+          )}
           {importResult.failed > 0 && (
             <>
               <Text style={[styles.resultText, { color: theme.danger }]}>
@@ -888,13 +1147,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   previewScroll: {
-    maxHeight: 150,
+    maxHeight: 320,
   },
   previewCard: {
     borderRadius: 8,
     padding: 12,
     marginRight: 12,
-    minWidth: 200,
+    width: 240,
   },
   previewText: {
     fontSize: 13,
@@ -1018,6 +1277,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: 'italic',
   },
+  controlButtons: {
+    flexDirection: 'row',
+    gap: 10 as any,
+    marginTop: 12,
+  },
+  controlButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    gap: 6 as any,
+  },
+  controlButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   errorHelp: {
     borderRadius: 8,
     padding: 12,
@@ -1089,5 +1367,87 @@ const styles = StyleSheet.create({
   columnBadgeText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  conflictContainer: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 8,
+  },
+  conflictTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  conflictSubtitle: {
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  conflictBulkActions: {
+    flexDirection: 'row',
+    gap: 10 as any,
+    marginBottom: 12,
+  },
+  bulkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6 as any,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  bulkButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  conflictList: {
+    maxHeight: 350,
+  },
+  conflictItem: {
+    borderLeftWidth: 3,
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 8,
+  },
+  conflictBookTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  conflictBookLine: {
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  conflictFields: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6 as any,
+  },
+  conflictFieldChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4 as any,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  conflictFieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  conflictFieldValue: {
+    fontSize: 11,
+    maxWidth: 80,
+  },
+  conflictResultBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  conflictResultText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

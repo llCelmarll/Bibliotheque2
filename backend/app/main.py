@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account, push_tokens, notifications
+from app.routers.import_jobs import router as import_jobs_router
 from app.db import init_db
 from app.services.reminder_scheduler import start_scheduler
 from app.config import COVERS_DIR
@@ -94,6 +95,7 @@ app.include_router(contact_invitations.router)
 app.include_router(account.router)
 app.include_router(push_tokens.router)
 app.include_router(notifications.router)
+app.include_router(import_jobs_router)
 
 # Servir les images de couverture
 app.mount("/covers", StaticFiles(directory=str(COVERS_DIR)), name="covers")

@@ -25,14 +25,6 @@ export  default function BookDetailScreen() {
 		}
 	}, [refresh, refetch, router, id]);
 
-	useEffect(() => {
-		if (!book) return;
-		console.log("[BookDetail] Data used by UI", {
-			bookId: id,
-			google_books: book.google_books,
-			open_library: book.open_library,
-		});
-	}, [book, id]);
 
 	// Si pas authentifié, ne rien afficher (redirection en cours)
 	if (!authLoading && !isAuthenticated) {

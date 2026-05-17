@@ -2,6 +2,22 @@ import httpx
 
 BASE_URL = "https://openlibrary.org"
 
+def get_openlibrary_cover_url(isbn: str) -> str | None:
+    """Retourne l'URL de couverture OpenLibrary si elle pointe vers une vraie image (>1×1).
+    Utilise httpx synchrone — à appeler depuis du code non-async."""
+    url = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
+    try:
+        with httpx.Client(timeout=5.0, follow_redirects=True) as client:
+            resp = client.get(url)
+            if resp.status_code != 200:
+                return None
+            # Un GIF 1×1 (pixel de remplacement) fait exactement 35 octets
+            if len(resp.content) <= 100:
+                return None
+            return url
+    except httpx.HTTPError:
+        return None
+
 async def fetch_openlibrary(isbn: str) -> tuple[dict | None, str | None]:
     """Récupère les infos d'un livre via OpenLibrary.
 

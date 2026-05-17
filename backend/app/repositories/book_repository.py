@@ -43,12 +43,20 @@ class BookRepository:
 		return self.session.exec(stmt).first()
 
 	def get_by_title_isbn_owner(self, title: str, isbn: str, owner_id: int) -> Optional[Book]:
-		"""Récupère un livre par sa combinaison unique title+isbn+owner_id"""
-		stmt = select(Book).where(
-			Book.title == title,
-			Book.isbn == isbn,
-			Book.owner_id == owner_id
-		)
+		"""Récupère un livre par sa combinaison unique title+isbn+owner_id.
+		Si isbn est vide, détecte les doublons par titre seul (NULL != NULL en SQL)."""
+		if isbn:
+			stmt = select(Book).where(
+				Book.title == title,
+				Book.isbn == isbn,
+				Book.owner_id == owner_id
+			)
+		else:
+			stmt = select(Book).where(
+				Book.title == title,
+				(Book.isbn == None) | (Book.isbn == ""),
+				Book.owner_id == owner_id
+			)
 		return self.session.exec(stmt).first()
 
 	def create(self, book_data: BookCreate, owner_id: int, publisher_id: Optional[int] = None) -> Book:

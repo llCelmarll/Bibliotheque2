@@ -44,9 +44,9 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - Support de 4 thèmes (Chaleureuse, Sombre & Élégante, Minimaliste, Nature) sélectionnables depuis les paramètres.
 - [ ] **Détection automatique du thème système**
     - Utiliser `useColorScheme()` pour appliquer automatiquement un thème clair ou sombre selon les préférences système de l'appareil, avec possibilité d'override manuel.
-- [ ] **Import / Export de données**
-    - [ ] Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
-    - [ ] Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
+- [-] **Import / Export de données**
+    - [-] Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
+    - [-] Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
 - [x] **Version de test avant production (préproduction/staging)**
     - Créer une version de test dans les conditions réelles de déploiement.
     - Valider les éventuels problèmes (techniques, configuration, performance) avant déploiement sur la version de production.
@@ -64,6 +64,10 @@ Cette liste recense les futures évolutions envisagées pour l'application.
         - `contact_invitation_service.py` : 19% — quasi non testé
         - `auth_service.py` : 63%
         - `push_notification_service.py` : 46%
+- [ ] **Audit des performances**
+    - Identifier les pages, endpoints et requêtes les plus coûteux.
+    - Mesurer les temps de réponse, les chargements et les éventuels goulots d'étranglement.
+    - Prioriser les optimisations à fort impact avant les prochaines évolutions.
 
 ## Plateformes
 

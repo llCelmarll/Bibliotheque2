@@ -12,26 +12,34 @@ interface BookCoverProps {
 
 const BookCover = ({ url, style, containerStyle, resizeMode }: BookCoverProps) => {
     const [loading, setLoading] = useState(true);
+    const [useFallback, setUseFallback] = useState(false);
     const theme = useTheme();
+
+    const resolvedUrl = url ? resolveCoverUrl(url) : undefined;
+    const source = (!resolvedUrl || useFallback)
+        ? require('../assets/images/default-book-cover.jpg')
+        : { uri: resolvedUrl };
 
     return (
         <View style={[styles.coverContainer, { backgroundColor: theme.bgMuted }, containerStyle]} testID="book-cover-container">
             {loading && <ActivityIndicator style={styles.imageLoader} testID="book-cover-loading" />}
             <Image
                 testID="book-cover-image"
-                source={
-                    url ? {uri: resolveCoverUrl(url)} : require('../assets/images/default-book-cover.jpg')
-                }
+                source={source}
                 style={[styles.coverImage, style]}
                 resizeMode={resizeMode || 'cover'}
-                // onLoadStart={() => {                                                   ATTENTION CAUSE RE-RENDER EN BOUCLE
-                //     if (!loading) setLoading(true); // évite le setState inutile
-                // }}
+                onLoad={(e) => {
+                    const source = e.nativeEvent.source;
+                    if (source && source.width <= 1 && source.height <= 1) {
+                        setUseFallback(true);
+                    }
+                    if (loading) setLoading(false);
+                }}
                 onLoadEnd={() => {
-                    if (loading) setLoading(false); // évite boucle
+                    if (loading) setLoading(false);
                 }}
                 onError={() => {
-                    if (loading) setLoading(false); // idem
+                    if (loading) setLoading(false);
                 }}
             />
         </View>

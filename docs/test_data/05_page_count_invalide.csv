@@ -1,0 +1,5 @@
+titre;isbn;auteurs;editeur;genres;date_publication;pages;serie;lu;note;notes;couverture
+Livre pages zéro;9782070612895;Auteur Test;Editeur Test;Test;2020;0;;;3;;
+Livre pages texte;9782253004226;Auteur Test;Editeur Test;Test;2020;beaucoup;;;3;;
+Livre pages vide;9782070541270;Auteur Test;Editeur Test;Test;2020;;;;;;
+Livre pages valide;9782072762338;Auteur Test;Editeur Test;Test;2020;312;;;3;;

@@ -34,9 +34,10 @@ async def update_covers():
 			else: 
 				print(f"Pas de cover_url trouvé sur Google Books pour {book.title}")
 				#Essai OpenLibrary
-				data = await fetch_openlibrary(book.isbn)
-				if data:
-					book.cover_url = f"https://covers.openlibrary.org/b/isbn/{book.isbn}-M.jpg"
+				from app.clients.openlibrary import get_openlibrary_cover_url
+				cover = get_openlibrary_cover_url(book.isbn)
+				if cover:
+					book.cover_url = cover
 					print(f"[OpenLibrary] Couverture trouvée : {book.title}")
 				else:
 					print(f"Pas de couverture trouvée sur OpenLibrary pour {book.title}")

@@ -15,21 +15,24 @@ export function OpenLibraryTab() {
 	const { book } = route.params as { book: BookDetail };
 	const theme = useTheme();
 
+	const ol = book.open_library;
+
+	if (!ol) {
+		return (
+			<View style={styles.container}>
+				<Text style={[styles.value, { color: theme.textSecondary }]}>Aucune donnée Open Library disponible</Text>
+			</View>
+		);
+	}
+
 	const handleOpenLink = async (url: string) => {
 		await WebBrowser.openBrowserAsync(url);
 	};
 
 	const renderLinks = () => {
-		if (!book.open_library.links || book.open_library.links.length === 0) {
-			return null;
-		}
-
-		return book.open_library.links.map((link, index) => {
-			// Vérifier que le lien a une URL et un titre valides
-			if (typeof link.url !== 'string' || typeof link.title !== 'string') {
-				return null;
-			}
-
+		if (!ol.links || ol.links.length === 0) return null;
+		return ol.links.map((link: any, index: number) => {
+			if (typeof link.url !== 'string' || typeof link.title !== 'string') return null;
 			return (
 				<Pressable
 					key={index}
@@ -43,15 +46,13 @@ export function OpenLibraryTab() {
 		});
 	};
 
-	// Ajout d'un lien vers Open Library basé sur la clé du livre
 	const renderOpenLibraryLink = () => {
-		if (!book.open_library.key) return null;
-
-		const openLibraryUrl = `https://openlibrary.org${book.open_library.key}`;
+		if (!ol.key) return null;
+		const url = `https://openlibrary.org${ol.key}`;
 		return (
 			<Pressable
 				style={[styles.linkButton, { backgroundColor: theme.bgSecondary }]}
-				onPress={() => handleOpenLink(openLibraryUrl)}
+				onPress={() => handleOpenLink(url)}
 			>
 				<Ionicons name="open-outline" size={20} color={theme.accent} />
 				<Text style={[styles.linkText, { color: theme.accent }]}>Voir sur Open Library</Text>
@@ -59,68 +60,35 @@ export function OpenLibraryTab() {
 		);
 	};
 
-
-
 	const renderSubjects = () => {
-		if (!book.open_library.subjects || book.open_library.subjects.length === 0) {
+		if (!ol.subjects || ol.subjects.length === 0) {
 			return <Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>;
 		}
 		return (
 			<View style={styles.tags}>
-				{book.open_library.subjects.map((subject, index) => (
-					<Tag key={index} text={subject} />
-				))}
+				{ol.subjects.map((subject: string, index: number) => <Tag key={index} text={subject} />)}
 			</View>
 		);
 	};
 
 	const renderContributors = () => {
-
-		if (!book.open_library.contributors || book.open_library.contributors.length === 0) {
+		if (!ol.contributors || ol.contributors.length === 0) {
 			return <Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>;
 		}
 		return (
 			<View style={styles.tags}>
-				{book.open_library.contributors.map((contributor, index) => {
-					// Si c'est un objet avec role et name
-					if (typeof contributor === 'object' && contributor.role && contributor.name) {
-						return (
-							<Tag
-								key={index}
-								text={`${contributor.name} (${contributor.role})`}
-							/>
-						);
-					}
-					// Si c'est une chaîne
-					if (typeof contributor === 'string') {
-						return (
-							<Tag
-								key={index}
-								text={contributor}
-							/>
-						);
-					}
-					return null;
+				{ol.contributors.map((c: any, index: number) => {
+					const label = typeof c === 'object' && c.name
+						? (c.role ? `${c.name} (${c.role})` : c.name)
+						: String(c);
+					return <Tag key={index} text={label} />;
 				})}
 			</View>
 		);
 	};
 
-
-
-	const renderPublishers = () => {
-    if (!book.open_library.publishers || book.open_library.publishers.length === 0) {
-        return 'Non renseigné';
-    }
-    return book.open_library.publishers.join(", ");
-};
-
-const renderPublishPlaces = () => {
-    if (!book.open_library.publish_places || book.open_library.publish_places.length === 0) {
-        return 'Non renseigné';
-    }
-    return book.open_library.publish_places.join(", ");
-};
+	const publishersStr = ol.publishers?.length ? ol.publishers.join(', ') : 'Non renseigné';
+	const publishPlacesStr = ol.publish_places?.length ? ol.publish_places.join(', ') : 'Non renseigné';
 
 	return (
 		<ScrollView style={styles.container}>
@@ -129,96 +97,42 @@ const renderPublishPlaces = () => {
 				{renderLinks()}
 			</View>
 
-			{book.open_library.description && (
+			{ol.description && (
 				<CollapsibleSection title="Description">
 					<Text style={[styles.description, { color: theme.textPrimary }]}>
-						{typeof book.open_library.description === 'string'
-							? book.open_library.description
-							: book.open_library.description?.value || 'Non renseigné'}
+						{typeof ol.description === 'string' ? ol.description : ol.description?.value || 'Non renseigné'}
 					</Text>
 				</CollapsibleSection>
 			)}
 
-
 			<CollapsibleSection title="Détails de publication">
-				<InfoRow
-					label="Éditeurs"
-					value={renderPublishers()}
-				/>
-				<InfoRow
-					label="Lieux de publication"
-					value={renderPublishPlaces()}
-				/>
-				<InfoRow
-					label="Date de publication"
-					value={book.open_library.publish_date || 'Non renseigné'}
-				/>
-				<InfoRow
-					label="Nombre de pages"
-					value={book.open_library.number_of_pages ? book.open_library.number_of_pages.toString() : 'Non renseigné'}
-				/>
-				{book.open_library.by_statement &&(
-					<InfoRow
-						label="Mention de responsabilité"
-						value={book.open_library.by_statement || 'Non renseigné'}
-					/>
-				)}
+				<InfoRow label="Éditeurs" value={publishersStr} />
+				<InfoRow label="Lieux de publication" value={publishPlacesStr} />
+				<InfoRow label="Date de publication" value={ol.publish_date || 'Non renseigné'} />
+				<InfoRow label="Nombre de pages" value={ol.number_of_pages ? ol.number_of_pages.toString() : 'Non renseigné'} />
+				{ol.by_statement && <InfoRow label="Mention de responsabilité" value={ol.by_statement} />}
 			</CollapsibleSection>
 
 			<CollapsibleSection title="Autres titres">
-				{!book.open_library.other_titles || book.open_library.other_titles.length === 0 ? (
-					<Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>
-				) : (
-					<Text style={[styles.text, { color: theme.textPrimary }]}>{book.open_library.other_titles.join(", ")}</Text>
-				)}
+				{!ol.other_titles || ol.other_titles.length === 0
+					? <Text style={[styles.value, { color: theme.textSecondary }]}>Non renseigné</Text>
+					: <Text style={[styles.text, { color: theme.textPrimary }]}>{ol.other_titles.join(', ')}</Text>
+				}
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Sujets">
-				{renderSubjects()}
-			</CollapsibleSection>
-
-			<CollapsibleSection title="Contributeurs">
-				{renderContributors()}
-			</CollapsibleSection>
+			<CollapsibleSection title="Sujets">{renderSubjects()}</CollapsibleSection>
+			<CollapsibleSection title="Contributeurs">{renderContributors()}</CollapsibleSection>
 		</ScrollView>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		padding: 16,
-	},
-	description: {
-		fontSize: 14,
-		lineHeight: 20,
-	},
-	text: {
-		fontSize: 14,
-	},
-	tags: {
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 8,
-	},
-	value: {
-		fontSize: 14,
-	},
-	linksContainer: {
-		gap: 8,
-		marginBottom: 16,
-	},
-	linkButton: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		padding: 12,
-		borderRadius: 8,
-		gap: 8,
-	},
-	linkText: {
-		fontSize: 16,
-		fontWeight: '500',
-		flex: 1,
-	},
-
+	container: { flex: 1, padding: 16 },
+	description: { fontSize: 14, lineHeight: 20 },
+	text: { fontSize: 14 },
+	tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+	value: { fontSize: 14 },
+	linksContainer: { gap: 8, marginBottom: 16 },
+	linkButton: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, gap: 8 },
+	linkText: { fontSize: 16, fontWeight: '500', flex: 1 },
 });

@@ -332,7 +332,7 @@ async def get_book(
         service: BookService = Depends(get_book_service)
 ):
     """
-    Récupère un livre par son ID.
+    Récupère un livre par son ID avec les données externes (Google Books, Open Library).
     """
     return await service.get_book_by_id(book_id)
 

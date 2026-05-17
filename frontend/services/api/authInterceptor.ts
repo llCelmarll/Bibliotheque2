@@ -19,6 +19,10 @@ async function getSecureItem(key: string): Promise<string | null> {
   return SecureStore.getItemAsync(key);
 }
 
+export async function getAccessToken(): Promise<string | null> {
+  return getSecureItem(TOKEN_KEY);
+}
+
 async function setSecureItem(key: string, value: string): Promise<void> {
   if (Platform.OS === 'web') return AsyncStorage.setItem(key, value);
   return SecureStore.setItemAsync(key, value);
