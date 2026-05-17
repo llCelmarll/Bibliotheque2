@@ -12,7 +12,11 @@ from sqlmodel import Session
 
 from app.services.import_job_service import (
     _extract_id,
+    _normalize_name,
+    _names_are_similar,
+    _lists_are_equivalent,
     _compute_missing_fields,
+    _compute_divergent_fields,
     ImportJob,
     ImportJobManager,
     JobStatus,
@@ -56,6 +60,110 @@ def _make_existing_book(title, isbn=None, cover_url=None, notes=None, rating=Non
         rating=rating,
         owner_id=1,
     )
+
+
+# ── _normalize_name / _names_are_similar / _lists_are_equivalent ─────────────
+
+@pytest.mark.unit
+class TestNameSimilarity:
+    def test_meme_nom(self):
+        assert _names_are_similar("Frank Herbert", "Frank Herbert")
+
+    def test_casse_differente(self):
+        assert _names_are_similar("frank herbert", "Frank Herbert")
+
+    def test_ordre_inverse(self):
+        assert _names_are_similar("Herbert, Frank", "Frank Herbert")
+
+    def test_noms_differents(self):
+        assert not _names_are_similar("Isaac Asimov", "Frank Herbert")
+
+    def test_listes_equivalentes_meme_ordre(self):
+        a = MagicMock()
+        a.name = "Frank Herbert"
+        b = ["Frank Herbert"]
+        assert _lists_are_equivalent([a], b)
+
+    def test_listes_equivalentes_casse(self):
+        assert _lists_are_equivalent(["frank herbert"], ["Frank Herbert"])
+
+    def test_listes_differentes(self):
+        assert not _lists_are_equivalent(["Isaac Asimov"], ["Frank Herbert"])
+
+    def test_listes_meme_elements_ordre_different(self):
+        assert _lists_are_equivalent(["A", "B"], ["B", "A"])
+
+
+# ── _compute_divergent_fields ─────────────────────────────────────────────────
+
+@pytest.mark.unit
+class TestComputeDivergentFields:
+    def test_editeur_different(self):
+        existing = _make_existing_book("Dune")
+        existing.publisher = MagicMock()
+        existing.publisher.name = "Pocket"
+        csv = _make_book_create("Dune")
+        csv.publisher = "Gallimard"
+        result = _compute_divergent_fields(existing, csv)
+        assert "publisher" in result
+        assert result["publisher"]["existing"] == "Pocket"
+        assert result["publisher"]["csv"] == "Gallimard"
+
+    def test_editeur_similaire_ignore(self):
+        existing = _make_existing_book("Dune")
+        existing.publisher = MagicMock()
+        existing.publisher.name = "pocket"
+        csv = _make_book_create("Dune")
+        csv.publisher = "Pocket"
+        result = _compute_divergent_fields(existing, csv)
+        assert "publisher" not in result
+
+    def test_rating_different(self):
+        existing = _make_existing_book("Dune", rating=4)
+        csv = _make_book_create("Dune", rating=5)
+        result = _compute_divergent_fields(existing, csv)
+        assert result["rating"] == {"existing": 4, "csv": 5}
+
+    def test_rating_identique_ignore(self):
+        existing = _make_existing_book("Dune", rating=4)
+        csv = _make_book_create("Dune", rating=4)
+        result = _compute_divergent_fields(existing, csv)
+        assert "rating" not in result
+
+    def test_champ_manquant_pas_dans_divergent(self):
+        # Si l'existant n'a pas de notes, c'est un champ manquant, pas divergent
+        existing = _make_existing_book("Dune")
+        csv = _make_book_create("Dune", notes="Super livre")
+        result = _compute_divergent_fields(existing, csv)
+        assert "notes" not in result
+
+    def test_auteurs_differents(self):
+        existing = _make_existing_book("Dune")
+        author = MagicMock()
+        author.name = "Isaac Asimov"
+        existing.authors = [author]
+        csv = _make_book_create("Dune")
+        csv.authors = ["Frank Herbert"]
+        result = _compute_divergent_fields(existing, csv)
+        assert "authors" in result
+        assert result["authors"]["existing"] == ["Isaac Asimov"]
+        assert result["authors"]["csv"] == ["Frank Herbert"]
+
+    def test_auteurs_similaires_ignores(self):
+        existing = _make_existing_book("Dune")
+        author = MagicMock()
+        author.name = "frank herbert"
+        existing.authors = [author]
+        csv = _make_book_create("Dune")
+        csv.authors = ["Frank Herbert"]
+        result = _compute_divergent_fields(existing, csv)
+        assert "authors" not in result
+
+    def test_aucune_divergence(self):
+        existing = _make_existing_book("Dune", rating=5)
+        csv = _make_book_create("Dune", rating=5)
+        result = _compute_divergent_fields(existing, csv)
+        assert result == {}
 
 
 # ── _extract_id ───────────────────────────────────────────────────────────────

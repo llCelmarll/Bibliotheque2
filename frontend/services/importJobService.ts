@@ -2,11 +2,17 @@ import API_CONFIG from '@/config/api';
 import { getAccessToken } from '@/services/api/authInterceptor';
 import { BookCreate } from '@/types/scanTypes';
 
+export interface DivergentField {
+  existing: any;
+  csv: any;
+}
+
 export interface ConflictEntry {
   line: number;
   existing_book_id: number;
   title: string;
   missing_fields: Record<string, any>;
+  divergent_fields: Record<string, DivergentField>;
 }
 
 export interface ConflictResolutionItem {

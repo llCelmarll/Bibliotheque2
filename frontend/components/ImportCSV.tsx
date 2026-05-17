@@ -8,8 +8,10 @@ import Papa from 'papaparse';
 import { useTheme } from '@/contexts/ThemeContext';
 import { parseCSVRow } from '@/utils/csvParser';
 import { importJobService, ImportJobEvent, ImportJobResult, ConflictEntry, ConflictResolutionItem } from '@/services/importJobService';
+import { ConflictResolverModal } from '@/components/ConflictResolverModal';
 
 const ACTIVE_JOB_KEY = 'import_active_job_id';
+const PENDING_CONFLICTS_KEY = 'import_pending_conflicts';
 
 interface ParsedBook {
   title: string;
@@ -52,6 +54,7 @@ export default function ImportCSV() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<'idle' | 'running' | 'paused' | 'cancelled' | 'done' | 'error'>('idle');
   const abortControllerRef = useRef<AbortController | null>(null);
+  const jobIdRef = useRef<string | null>(null);
   const progressAnim = React.useRef(new Animated.Value(0)).current;
   const [conflicts, setConflicts] = useState<ConflictEntry[]>([]);
   const [showConflicts, setShowConflicts] = useState(false);
@@ -60,25 +63,6 @@ export default function ImportCSV() {
   const [conflictResult, setConflictResult] = useState<{ applied: number; skipped: number } | null>(null);
 
 
-  const FIELD_LABELS: Record<string, string> = {
-    cover_url: 'Couverture',
-    rating: 'Note',
-    notes: 'Notes personnelles',
-    subtitle: 'Sous-titre',
-    published_date: 'Date de publication',
-    page_count: 'Nombre de pages',
-    publisher: 'Éditeur',
-    genres: 'Genres',
-    authors: 'Auteurs',
-    series: 'Séries',
-  };
-
-  const formatFieldValue = (field: string, value: any): string => {
-    if (field === 'rating') return `${value}/5`;
-    if (field === 'cover_url') return 'URL';
-    if (Array.isArray(value)) return value.join(', ');
-    return String(value);
-  };
 
   const columnMapping: Record<string, string[]> = {
     title: ['titre', 'title', 'Titre', 'Title', 'nom', 'Nom'],
@@ -300,12 +284,15 @@ export default function ImportCSV() {
       setConflicts(conflictList);
       const defaultSel: Record<number, Record<string, boolean>> = {};
       for (const c of conflictList) {
-        defaultSel[c.existing_book_id] = Object.fromEntries(
-          Object.keys(c.missing_fields).map(f => [f, true])
-        );
+        defaultSel[c.existing_book_id] = {
+          ...Object.fromEntries(Object.keys(c.missing_fields).map(f => [f, true])),
+          ...Object.fromEntries(Object.keys(c.divergent_fields ?? {}).map(f => [f, false])),
+        };
       }
       setConflictSelections(defaultSel);
       setShowConflicts(true);
+      // Persister pour survie à la navigation
+      AsyncStorage.setItem(PENDING_CONFLICTS_KEY, JSON.stringify({ jobId: jobIdRef.current, conflicts: conflictList })).catch(() => {});
     }
     setIsProcessing(false);
   };
@@ -392,6 +379,7 @@ export default function ImportCSV() {
 
       const { job_id } = await importJobService.startImport(booksToImport, true, populateCovers);
       setJobId(job_id);
+      jobIdRef.current = job_id;
       await startStream(job_id);
     } catch (error: any) {
       console.error('Erreur import:', error);
@@ -405,14 +393,43 @@ export default function ImportCSV() {
   };
 
   // Au montage : vérifier si un job actif existe côté serveur et reprendre le stream
+  // ou restaurer des conflits en attente de résolution
   useEffect(() => {
     let cancelled = false;
     const checkActive = async () => {
       try {
         const active = await importJobService.getActiveJob();
-        if (cancelled || !active || !active.job_id) return;
+        if (cancelled || !active || !active.job_id) {
+          // Pas de job actif — vérifier conflits persistés
+          const raw = await AsyncStorage.getItem(PENDING_CONFLICTS_KEY);
+          if (raw && !cancelled) {
+            const { jobId: savedJobId, conflicts: savedConflicts } = JSON.parse(raw);
+            // Vérifier que le job existe encore sur le serveur
+            try {
+              await importJobService.getStatus(savedJobId);
+              setJobId(savedJobId);
+              jobIdRef.current = savedJobId;
+              setConflicts(savedConflicts);
+              const defaultSel: Record<number, Record<string, boolean>> = {};
+              for (const c of savedConflicts) {
+                defaultSel[c.existing_book_id] = {
+                  ...Object.fromEntries(Object.keys(c.missing_fields).map((f: string) => [f, true])),
+                  ...Object.fromEntries(Object.keys(c.divergent_fields ?? {}).map((f: string) => [f, false])),
+                };
+              }
+              setConflictSelections(defaultSel);
+              setShowConflicts(true);
+              setJobStatus('done');
+            } catch {
+              // Job expiré — on efface
+              AsyncStorage.removeItem(PENDING_CONFLICTS_KEY).catch(() => {});
+            }
+          }
+          return;
+        }
         const id = active.job_id;
         setJobId(id);
+        jobIdRef.current = id;
         setJobStatus((active.status as any) ?? 'running');
         setIsProcessing(true);
         setImportProgress({
@@ -484,6 +501,7 @@ export default function ImportCSV() {
 
   const reset = () => {
     abortControllerRef.current?.abort();
+    AsyncStorage.removeItem(PENDING_CONFLICTS_KEY).catch(() => {});
     setSelectedFile(null);
     setCsvData([]);
     setPreviewData([]);
@@ -510,7 +528,10 @@ export default function ImportCSV() {
   const selectAllConflicts = () => {
     const all: Record<number, Record<string, boolean>> = {};
     for (const c of conflicts) {
-      all[c.existing_book_id] = Object.fromEntries(Object.keys(c.missing_fields).map(f => [f, true]));
+      all[c.existing_book_id] = {
+        ...Object.fromEntries(Object.keys(c.missing_fields).map(f => [f, true])),
+        ...Object.fromEntries(Object.keys(c.divergent_fields ?? {}).map(f => [f, true])),
+      };
     }
     setConflictSelections(all);
   };
@@ -518,7 +539,10 @@ export default function ImportCSV() {
   const deselectAllConflicts = () => {
     const none: Record<number, Record<string, boolean>> = {};
     for (const c of conflicts) {
-      none[c.existing_book_id] = Object.fromEntries(Object.keys(c.missing_fields).map(f => [f, false]));
+      none[c.existing_book_id] = {
+        ...Object.fromEntries(Object.keys(c.missing_fields).map(f => [f, false])),
+        ...Object.fromEntries(Object.keys(c.divergent_fields ?? {}).map(f => [f, false])),
+      };
     }
     setConflictSelections(none);
   };
@@ -531,7 +555,12 @@ export default function ImportCSV() {
         const sel = conflictSelections[c.existing_book_id] ?? {};
         const selectedFields: Record<string, any> = {};
         for (const [field, checked] of Object.entries(sel)) {
-          if (checked) selectedFields[field] = c.missing_fields[field];
+          if (!checked) continue;
+          if (field in c.missing_fields) {
+            selectedFields[field] = c.missing_fields[field];
+          } else if (c.divergent_fields?.[field]) {
+            selectedFields[field] = c.divergent_fields[field].csv;
+          }
         }
         return {
           existing_book_id: c.existing_book_id,
@@ -541,6 +570,7 @@ export default function ImportCSV() {
       const result = await importJobService.resolveConflicts(jobId, resolutions);
       setConflictResult(result);
       setShowConflicts(false);
+      AsyncStorage.removeItem(PENDING_CONFLICTS_KEY).catch(() => {});
     } catch (e: any) {
       Alert.alert('Erreur', e?.message || 'Impossible d\'appliquer les modifications');
     } finally {
@@ -901,92 +931,17 @@ export default function ImportCSV() {
         </View>
       )}
 
-      {showConflicts && conflicts.length > 0 && (
-        <View style={[styles.conflictContainer, { backgroundColor: theme.bgMuted }]}>
-          <Text style={[styles.conflictTitle, { color: theme.textPrimary }]}>
-            ⚠️ {conflicts.length} livre(s) déjà présent(s) avec des champs manquants
-          </Text>
-          <Text style={[styles.conflictSubtitle, { color: theme.textSecondary }]}>
-            Sélectionnez les champs à compléter pour chaque livre.
-          </Text>
-
-          <View style={styles.conflictBulkActions}>
-            <TouchableOpacity
-              style={[styles.bulkButton, { backgroundColor: theme.successBg, borderColor: theme.success }]}
-              onPress={selectAllConflicts}
-            >
-              <MaterialIcons name="check-box" size={16} color={theme.success} />
-              <Text style={[styles.bulkButtonText, { color: theme.success }]}>Tout accepter</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.bulkButton, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}
-              onPress={deselectAllConflicts}
-            >
-              <MaterialIcons name="check-box-outline-blank" size={16} color={theme.textMuted} />
-              <Text style={[styles.bulkButtonText, { color: theme.textMuted }]}>Tout ignorer</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.conflictList}>
-            {conflicts.map((c) => (
-              <View key={c.existing_book_id} style={[styles.conflictItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }]}>
-                <Text style={[styles.conflictBookTitle, { color: theme.textPrimary }]} numberOfLines={1}>
-                  {c.title}
-                  <Text style={[styles.conflictBookLine, { color: theme.textMuted }]}> · ligne {c.line}</Text>
-                </Text>
-                <View style={styles.conflictFields}>
-                  {Object.entries(c.missing_fields).map(([field, value]) => {
-                    const checked = conflictSelections[c.existing_book_id]?.[field] ?? true;
-                    return (
-                      <TouchableOpacity
-                        key={field}
-                        style={[
-                          styles.conflictFieldChip,
-                          {
-                            backgroundColor: checked ? theme.accentLight : theme.bgMuted,
-                            borderColor: checked ? theme.accent : theme.borderLight,
-                          },
-                        ]}
-                        onPress={() => toggleConflictField(c.existing_book_id, field)}
-                      >
-                        <MaterialIcons
-                          name={checked ? 'check-box' : 'check-box-outline-blank'}
-                          size={14}
-                          color={checked ? theme.accent : theme.textMuted}
-                        />
-                        <Text style={[styles.conflictFieldLabel, { color: checked ? theme.accent : theme.textMuted }]}>
-                          {FIELD_LABELS[field] ?? field}
-                        </Text>
-                        <Text style={[styles.conflictFieldValue, { color: theme.textMuted }]} numberOfLines={1}>
-                          {formatFieldValue(field, value)}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.accent, marginTop: 16 }]}
-            onPress={handleApplyConflicts}
-            disabled={isResolvingConflicts}
-          >
-            {isResolvingConflicts ? (
-              <>
-                <ActivityIndicator size="small" color={theme.textInverse} />
-                <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textInverse }]}>Application...</Text>
-              </>
-            ) : (
-              <>
-                <MaterialIcons name="save" size={20} color={theme.textInverse} />
-                <Text style={[styles.buttonText, styles.buttonTextWithIcon, { color: theme.textInverse }]}>Appliquer la sélection</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+      <ConflictResolverModal
+        visible={showConflicts && conflicts.length > 0}
+        conflicts={conflicts}
+        selections={conflictSelections}
+        isResolving={isResolvingConflicts}
+        onToggleField={toggleConflictField}
+        onSelectAll={selectAllConflicts}
+        onDeselectAll={deselectAllConflicts}
+        onApply={handleApplyConflicts}
+        onClose={() => setShowConflicts(false)}
+      />
 
       {conflictResult && (
         <View style={[styles.conflictResultBox, { backgroundColor: theme.successBg, borderColor: theme.success }]}>
@@ -995,6 +950,19 @@ export default function ImportCSV() {
             {conflictResult.skipped > 0 ? `, ${conflictResult.skipped} ignoré(s)` : ''}
           </Text>
         </View>
+      )}
+
+      {!showConflicts && conflicts.length > 0 && !conflictResult && (
+        <TouchableOpacity
+          style={[styles.conflictReopenButton, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}
+          onPress={() => setShowConflicts(true)}
+        >
+          <MaterialIcons name="warning" size={18} color={theme.warning} />
+          <Text style={[styles.conflictReopenText, { color: theme.warning }]}>
+            {conflicts.length} conflit{conflicts.length > 1 ? 's' : ''} en attente — Gérer
+          </Text>
+          <MaterialIcons name="chevron-right" size={18} color={theme.warning} />
+        </TouchableOpacity>
       )}
 
       {importResult && (
@@ -1368,77 +1336,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  conflictContainer: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 8,
-  },
-  conflictTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  conflictSubtitle: {
-    fontSize: 13,
-    marginBottom: 12,
-  },
-  conflictBulkActions: {
-    flexDirection: 'row',
-    gap: 10 as any,
-    marginBottom: 12,
-  },
-  bulkButton: {
+  conflictReopenButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6 as any,
+    gap: 8 as any,
     borderWidth: 1,
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    padding: 14,
+    marginTop: 12,
   },
-  bulkButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  conflictList: {
-    maxHeight: 350,
-  },
-  conflictItem: {
-    borderLeftWidth: 3,
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 8,
-  },
-  conflictBookTitle: {
+  conflictReopenText: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 8,
-  },
-  conflictBookLine: {
-    fontSize: 12,
-    fontWeight: '400',
-  },
-  conflictFields: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6 as any,
-  },
-  conflictFieldChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4 as any,
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  conflictFieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  conflictFieldValue: {
-    fontSize: 11,
-    maxWidth: 80,
+    flex: 1,
   },
   conflictResultBox: {
     marginTop: 12,

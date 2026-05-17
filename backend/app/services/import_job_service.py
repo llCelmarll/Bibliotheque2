@@ -24,6 +24,63 @@ def _get_book_for_conflict(session, book_id: int, user_id: int):
     return BookRepository(session).get_by_id(book_id, user_id)
 
 
+def _normalize_name(name: str) -> str:
+    parts = name.lower().replace(',', '').split()
+    return ' '.join(sorted(parts))
+
+def _names_are_similar(a: str, b: str) -> bool:
+    return _normalize_name(a) == _normalize_name(b)
+
+def _lists_are_equivalent(existing_items, csv_items) -> bool:
+    def to_names(items):
+        return {_normalize_name(
+            i if isinstance(i, str) else getattr(i, 'name', str(i))
+        ) for i in items}
+    return to_names(existing_items) == to_names(csv_items)
+
+
+def _compute_divergent_fields(existing, csv_book) -> dict:
+    """Retourne {field: {"existing": val, "csv": val}} pour les champs où les deux ont une valeur mais elles diffèrent."""
+    result = {}
+
+    for f in ('subtitle', 'published_date', 'page_count', 'cover_url'):
+        csv_val = getattr(csv_book, f, None)
+        ex_val  = getattr(existing, f, None)
+        if csv_val and ex_val and str(csv_val).strip() != str(ex_val).strip():
+            result[f] = {"existing": ex_val, "csv": csv_val}
+
+    csv_rating = getattr(csv_book, 'rating', None)
+    ex_rating  = getattr(existing, 'rating', None)
+    if csv_rating and ex_rating and csv_rating != ex_rating:
+        result['rating'] = {"existing": ex_rating, "csv": csv_rating}
+
+    csv_pub = getattr(csv_book, 'publisher', None)
+    ex_pub  = getattr(existing, 'publisher', None)
+    if csv_pub and ex_pub:
+        csv_name = csv_pub if isinstance(csv_pub, str) else getattr(csv_pub, 'name', str(csv_pub))
+        ex_name  = ex_pub.name if hasattr(ex_pub, 'name') else str(ex_pub)
+        if not _names_are_similar(csv_name, ex_name):
+            result['publisher'] = {"existing": ex_name, "csv": csv_name}
+
+    ex_authors  = getattr(existing, 'authors', [])
+    csv_authors = getattr(csv_book, 'authors', [])
+    if ex_authors and csv_authors and not _lists_are_equivalent(ex_authors, csv_authors):
+        result['authors'] = {
+            "existing": [getattr(a, 'name', str(a)) for a in ex_authors],
+            "csv": [a if isinstance(a, str) else getattr(a, 'name', str(a)) for a in csv_authors],
+        }
+
+    ex_genres  = getattr(existing, 'genres', [])
+    csv_genres = getattr(csv_book, 'genres', [])
+    if ex_genres and csv_genres and not _lists_are_equivalent(ex_genres, csv_genres):
+        result['genres'] = {
+            "existing": [getattr(g, 'name', str(g)) for g in ex_genres],
+            "csv": [g if isinstance(g, str) else getattr(g, 'name', str(g)) for g in csv_genres],
+        }
+
+    return result
+
+
 def _compute_missing_fields(existing, csv_book) -> dict:
     result = {}
     for f in ('cover_url', 'subtitle', 'published_date', 'page_count', 'notes', 'rating'):
@@ -314,8 +371,9 @@ class ImportJobManager:
                                         logger.warning("Auto-cover patch failed for book %d: %s", existing_id, patch_err)
                                         job.skipped += 1
                                 else:
-                                    missing = _compute_missing_fields(existing, book_data)
-                                    if not missing:
+                                    missing   = _compute_missing_fields(existing, book_data)
+                                    divergent = _compute_divergent_fields(existing, book_data)
+                                    if not missing and not divergent:
                                         job.skipped += 1
                                     else:
                                         job.conflicts.append({
@@ -323,6 +381,7 @@ class ImportJobManager:
                                             "existing_book_id": existing_id,
                                             "title": book_data.title,
                                             "missing_fields": missing,
+                                            "divergent_fields": divergent,
                                         })
                         else:
                             job.failed += 1
