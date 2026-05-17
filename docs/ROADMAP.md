@@ -22,7 +22,7 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - L'afficher dans les formulaires, les fiches livre, les listes et les cartes.
     - Inclure dans la recherche simple (titre + sous-titre).
     - [ ] *(itération future)* Recherche avancée par sous-titre
-    - [ ] *(itération future)* Import/export CSV avec colonne sous-titre
+    - [-] *(itération future)* Import/export CSV avec colonne sous-titre
 - [x] **Stabilisation Google Books / OpenLibrary (saisie + quota)**
     - Corriger l'ecran blanc qui annule la saisie lors d'une recherche ou d'un ajout via Google Books / OpenLibrary.
     - Utiliser une clé API Google Books dédiée pour réduire les erreurs de quota (`rateLimitExceeded`).
@@ -45,8 +45,17 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [ ] **Détection automatique du thème système**
     - Utiliser `useColorScheme()` pour appliquer automatiquement un thème clair ou sombre selon les préférences système de l'appareil, avec possibilité d'override manuel.
 - [-] **Import / Export de données**
-    - [-] Mise à jour de l'import CSV pour supporter les nouvelles données (champs manquants, nouveaux modèles).
-    - [-] Ajout d'une fonctionnalité d'export de la bibliothèque au format CSV.
+    - [x] Export CSV de la bibliothèque complète.
+    - [x] Import CSV avec gestion des doublons (avec et sans ISBN), résolution des conflits en batch, auto-couverture.
+    - [ ] *(itération future)* Import avec complétion des champs manquants via écran de modification.
+
+## Optimisations API externes (Google Books / OpenLibrary)
+
+- [ ] **Suppression des appels API sur la page détail**
+    - Actuellement `GET /books/{id}` appelle Google Books + OpenLibrary à chaque ouverture de fiche → provoque des 429.
+    - Solution : supprimer ces appels de `get_book_by_id()` et les déplacer dans l'écran de **modification du livre**.
+    - L'écran de modification proposera les données Google Books / OpenLibrary comme suggestions (couverture, auteurs, éditeur, etc.) que l'utilisateur peut accepter ou ignorer.
+    - La couverture sera notamment suggérée depuis Google Books et OpenLibrary si aucune n'est enregistrée en base.
 - [x] **Version de test avant production (préproduction/staging)**
     - Créer une version de test dans les conditions réelles de déploiement.
     - Valider les éventuels problèmes (techniques, configuration, performance) avant déploiement sur la version de production.

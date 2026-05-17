@@ -195,6 +195,18 @@ describe('parseCSVRow', () => {
     expect(parseCSVRow({ title: 'T' }).page_count).toBeUndefined();
   });
 
+  it('page_count "0" → undefined (valeur invalide)', () => {
+    expect(parseCSVRow({ title: 'T', page_count: '0' }).page_count).toBeUndefined();
+  });
+
+  it('page_count "beaucoup" (non numérique) → undefined', () => {
+    expect(parseCSVRow({ title: 'T', page_count: 'beaucoup' }).page_count).toBeUndefined();
+  });
+
+  it('page_count "" (vide) → undefined', () => {
+    expect(parseCSVRow({ title: 'T', page_count: '' }).page_count).toBeUndefined();
+  });
+
   it('notes transmises', () => {
     expect(parseCSVRow({ title: 'T', notes: 'Chef-d\'œuvre.' }).notes).toBe('Chef-d\'œuvre.');
   });
