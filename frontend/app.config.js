@@ -23,7 +23,7 @@ module.exports = {
     updates: {
       url: "https://u.expo.dev/b94a31f7-30e7-4781-8a4d-c32e75cb7e82",
       fallbackToCacheTimeout: 0,
-      enabled: true,
+      enabled: false,
     },
     runtimeVersion: "stable",
     assetBundlePatterns: [
@@ -36,7 +36,7 @@ module.exports = {
     android: {
       package: isStaging ? "com.lcelmarl.bibliotheque.frontend.staging" : "com.lcelmarl.bibliotheque.frontend",
       googleServicesFile: "./google-services.json",
-      usesCleartextTraffic: false,
+      usesCleartextTraffic: true,
       adaptiveIcon: {
         foregroundImage: isStaging ? "./assets/adaptive-icon-staging.png" : "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"

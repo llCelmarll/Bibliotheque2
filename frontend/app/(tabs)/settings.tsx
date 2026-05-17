@@ -28,6 +28,7 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     async function fetchUpdateInfo() {
+      if (__DEV__) return;
       try {
         setUpdateInfo({
           updateId: Updates.updateId || undefined,
@@ -51,8 +52,8 @@ export default function SettingsScreen() {
   }, [isAuthenticated, isLoading, router]);
 
   const checkForUpdates = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('Non disponible', 'Les mises à jour automatiques ne sont pas disponibles sur le web.');
+    if (Platform.OS === 'web' || __DEV__) {
+      Alert.alert('Non disponible', 'Les mises à jour automatiques ne sont pas disponibles dans cet environnement.');
       return;
     }
 

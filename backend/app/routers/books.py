@@ -326,15 +326,30 @@ def list_books(
 # CRUD ENDPOINTS
 # ================================
 
-@router.get("/{book_id}" , response_model=Dict[str, Any])
-async def get_book(
+@router.get("/{book_id}", response_model=Dict[str, Any])
+def get_book(
         book_id: int,
         service: BookService = Depends(get_book_service)
 ):
-    """
-    Récupère un livre par son ID avec les données externes (Google Books, Open Library).
-    """
-    return await service.get_book_by_id(book_id)
+    """Récupère un livre par son ID (données locales uniquement)."""
+    return service.get_book_by_id(book_id)
+
+
+@router.get("/{book_id}/external", response_model=Dict[str, Any])
+async def get_book_external_data(
+        book_id: int,
+        service: BookService = Depends(get_book_service)
+):
+    """Appelle Google Books et OpenLibrary à la demande (depuis l'écran d'édition)."""
+    from app.clients.google_books import fetch_google_books
+    from app.clients.openlibrary import fetch_openlibrary
+    book_data = service.get_book_by_id(book_id)
+    isbn = book_data["base"].get("isbn")
+    if not isbn:
+        return {"google_books": None, "open_library": None}
+    google_data, _ = await fetch_google_books(isbn)
+    openlibrary_data, _ = await fetch_openlibrary(isbn)
+    return {"google_books": google_data, "open_library": openlibrary_data}
 
 
 class ReadStatusUpdate(BaseModel):

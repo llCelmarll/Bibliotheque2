@@ -155,7 +155,7 @@ class BookService:
 
         return book
 
-    async def get_book_by_id(self, book_id: int) -> Dict[str, Any]:
+    def get_book_by_id(self, book_id: int) -> Dict[str, Any]:
         """Récupère un livre par son ID (seulement si l'utilisateur en est propriétaire)"""
         base_book = self.book_repository.get_by_id(book_id, self.user_id)
         if not base_book:
@@ -176,15 +176,7 @@ class BookService:
         all_borrows = self.borrowed_book_repository.get_by_book(base_book.id, self.user_id)
         book_read.has_borrow_history = len(all_borrows) > 0
 
-        book_data: Dict[str, Any] = {"base": book_read.model_dump()}
-
-        if base_book.isbn:
-            google_data, _ = await fetch_google_books(base_book.isbn)
-            openlibrary_data, _ = await fetch_openlibrary(base_book.isbn)
-            book_data['google_books'] = google_data
-            book_data['open_library'] = openlibrary_data
-
-        return book_data
+        return {"base": book_read.model_dump()}
 
     def update_book(self, book_id: int, book_data: BookUpdate) -> Book:
         """Met à jour un livre (seulement si l'utilisateur en est propriétaire)"""

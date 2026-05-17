@@ -1,7 +1,6 @@
 // components/scan/ExternalDataSection.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { entityService } from '@/services/entityService';
 import { Author, Publisher, Genre } from '@/types/entityTypes';
@@ -13,42 +12,60 @@ interface ExternalDataSectionProps {
 	googleError?: string;
 	openLibraryError?: string;
 	onImportData: (source: 'google' | 'openLibrary', selectedData: any) => void;
+	baseBook?: any;
 }
 
+type FieldStatus = 'new' | 'different' | 'identical';
+
+const SORT_ORDER: Record<FieldStatus, number> = { new: 0, different: 1, identical: 2 };
+
 export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
-																			googleData,
-																			openLibraryData,
-																			googleError,
-																			openLibraryError,
-																			onImportData
-																		}) => {
+	googleData,
+	openLibraryData,
+	googleError,
+	openLibraryError,
+	onImportData,
+	baseBook,
+}) => {
 	const theme = useTheme();
+	const { width } = useWindowDimensions();
+	const twoColumns = width >= 600;
+
 	const [activeTab, setActiveTab] = useState<'google' | 'openLibrary'>('google');
-	const [selectedData, setSelectedData] = useState<{[key: string]: boolean}>({
+	const emptySelection = {
 		title: false,
 		subtitle: false,
 		authors: false,
 		publisher: false,
 		publishedDate: false,
 		pageCount: false,
-		isbn: false,
 		categories: false,
 		thumbnail: false,
+	};
+
+	const [selectedData, setSelectedData] = useState<Record<'google' | 'openLibrary', Record<string, boolean>>>({
+		google: { ...emptySelection },
+		openLibrary: { ...emptySelection },
 	});
-	
-	// États pour les entités enrichies
-	const [enrichedAuthors, setEnrichedAuthors] = useState<Author[]>([]);
-	const [enrichedPublisher, setEnrichedPublisher] = useState<Publisher | null>(null);
-	const [enrichedGenres, setEnrichedGenres] = useState<Genre[]>([]);
+
+	const [enrichedEntities, setEnrichedEntities] = useState<Record<'google' | 'openLibrary', {
+		authors: Author[];
+		publisher: Publisher | null;
+		genres: Genre[];
+	}>>({
+		google: { authors: [], publisher: null, genres: [] },
+		openLibrary: { authors: [], publisher: null, genres: [] },
+	});
 	const [isEnriching, setIsEnriching] = useState(false);
 
-	// Extraction et normalisation des données selon la source
+	const enrichedAuthors = enrichedEntities[activeTab].authors;
+	const enrichedPublisher = enrichedEntities[activeTab].publisher;
+	const enrichedGenres = enrichedEntities[activeTab].genres;
+
 	const extractBookInfo = (data: any, source: 'google' | 'openLibrary') => {
 		if (!data) return null;
-
 		if (source === 'google') {
 			return {
-				// Données exploitables pour la base
 				exploitable: {
 					title: data.title,
 					subtitle: data.subtitle,
@@ -56,16 +73,14 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 					publisher: data.publisher,
 					publishedDate: data.publishedDate,
 					pageCount: data.pageCount,
-					isbn: data.industryIdentifiers?.find((id: any) => 
+					isbn: data.industryIdentifiers?.find((id: any) =>
 						id.type === 'ISBN_13' || id.type === 'ISBN_10'
 					)?.identifier,
 					thumbnail: data.imageLinks?.thumbnail,
 					categories: data.categories || [],
 				},
-				// Toutes les données brutes pour les détails
-				raw: data
 			};
-		} else if (source === 'openLibrary') {
+		} else {
 			return {
 				exploitable: {
 					title: data.title,
@@ -77,538 +92,521 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 					thumbnail: data.covers?.[0] ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-M.jpg` : null,
 					categories: data.subjects || [],
 				},
-				raw: data
 			};
 		}
-		return null;
 	};
 
-	// Effet pour enrichir les entités quand les données changent
 	useEffect(() => {
 		const currentData = activeTab === 'google' ? googleData : openLibraryData;
 		if (currentData) {
 			const bookInfo = extractBookInfo(currentData, activeTab);
-			if (bookInfo) {
-				enrichEntities(bookInfo.exploitable);
-			}
+			if (bookInfo) enrichEntities(bookInfo.exploitable, activeTab);
 		} else {
-			// Reset si pas de données
-			setEnrichedAuthors([]);
-			setEnrichedPublisher(null);
-			setEnrichedGenres([]);
+			setEnrichedEntities(prev => ({
+				...prev,
+				[activeTab]: { authors: [], publisher: null, genres: [] },
+			}));
 		}
 	}, [activeTab, googleData, openLibraryData]);
 
-	// Effet pour réinitialiser la sélection quand on change d'onglet
-	useEffect(() => {
-		console.log('🔄 Reset de la sélection lors du changement d\'onglet');
-		setSelectedData({
-			title: false,
-			subtitle: false,
-			authors: false,
-			publisher: false,
-			publishedDate: false,
-			pageCount: false,
-			isbn: false,
-			categories: false,
-			thumbnail: false,
-		});
-	}, [activeTab]);
+	// Pas de reset au changement d'onglet — la sélection est maintenue par source
 
-	// Fonction pour enrichir les entités avec vérification d'existence
-	const enrichEntities = async (bookInfo: any) => {
+	const enrichEntities = async (bookInfo: any, source: 'google' | 'openLibrary') => {
 		if (!bookInfo || isEnriching) return;
-		
 		setIsEnriching(true);
-		console.log('🔍 Enrichissement des entités...');
-		
 		try {
-			// Enrichir les auteurs
+			const result: { authors: Author[]; publisher: Publisher | null; genres: Genre[] } = {
+				authors: [], publisher: null, genres: [],
+			};
 			if (bookInfo.authors && Array.isArray(bookInfo.authors)) {
-				const enrichedAuthorsList: Author[] = [];
-				for (const authorName of bookInfo.authors) {
-					if (typeof authorName === 'string' && authorName.trim()) {
-						// Chercher si l'auteur existe déjà
-						const existingAuthors = await entityService.searchAuthors(authorName, 1);
-						const exactMatch = existingAuthors.find(a => 
-							a.name.toLowerCase() === authorName.toLowerCase()
-						);
-						
-						if (exactMatch) {
-							enrichedAuthorsList.push({
-								id: exactMatch.id,
-								name: exactMatch.name,
-								exists: true
-							});
-							console.log(`✅ Auteur existant: ${exactMatch.name}`);
-						} else {
-							enrichedAuthorsList.push({
-								id: null,
-								name: authorName.trim(),
-								exists: false
-							});
-							console.log(`🆕 Nouvel auteur: ${authorName}`);
-						}
+				for (const name of bookInfo.authors) {
+					if (typeof name === 'string' && name.trim()) {
+						const existing = await entityService.searchAuthors(name, 1);
+						const match = existing.find(a => a.name.toLowerCase() === name.toLowerCase());
+						result.authors.push(match ? { id: match.id, name: match.name, exists: true } : { id: null, name: name.trim(), exists: false });
 					}
 				}
-				setEnrichedAuthors(enrichedAuthorsList);
 			}
-			
-			// Enrichir l'éditeur
 			if (bookInfo.publisher && typeof bookInfo.publisher === 'string') {
-				const existingPublishers = await entityService.searchPublishers(bookInfo.publisher, 1);
-				const exactMatch = existingPublishers.find(p => 
-					p.name.toLowerCase() === bookInfo.publisher.toLowerCase()
-				);
-				
-				if (exactMatch) {
-					setEnrichedPublisher({
-						id: exactMatch.id,
-						name: exactMatch.name,
-						exists: true
-					});
-					console.log(`✅ Éditeur existant: ${exactMatch.name}`);
-				} else {
-					setEnrichedPublisher({
-						id: null,
-						name: bookInfo.publisher.trim(),
-						exists: false
-					});
-					console.log(`🆕 Nouvel éditeur: ${bookInfo.publisher}`);
-				}
+				const existing = await entityService.searchPublishers(bookInfo.publisher, 1);
+				const match = existing.find(p => p.name.toLowerCase() === bookInfo.publisher.toLowerCase());
+				result.publisher = match
+					? { id: match.id, name: match.name, exists: true }
+					: { id: null, name: bookInfo.publisher.trim(), exists: false };
 			}
-			
-			// Enrichir les genres/catégories
 			if (bookInfo.categories && Array.isArray(bookInfo.categories)) {
-				const enrichedGenresList: Genre[] = [];
-				for (const categoryName of bookInfo.categories.slice(0, 5)) { // Limiter à 5 catégories
-					if (typeof categoryName === 'string' && categoryName.trim()) {
-						const existingGenres = await entityService.searchGenres(categoryName, 1);
-						const exactMatch = existingGenres.find(g => 
-							g.name.toLowerCase() === categoryName.toLowerCase()
-						);
-						
-						if (exactMatch) {
-							enrichedGenresList.push({
-								id: exactMatch.id,
-								name: exactMatch.name,
-								exists: true
-							});
-							console.log(`✅ Genre existant: ${exactMatch.name}`);
-						} else {
-							enrichedGenresList.push({
-								id: null,
-								name: categoryName.trim(),
-								exists: false
-							});
-							console.log(`🆕 Nouveau genre: ${categoryName}`);
-						}
+				for (const name of bookInfo.categories.slice(0, 5)) {
+					if (typeof name === 'string' && name.trim()) {
+						const existing = await entityService.searchGenres(name, 1);
+						const match = existing.find(g => g.name.toLowerCase() === name.toLowerCase());
+						result.genres.push(match ? { id: match.id, name: match.name, exists: true } : { id: null, name: name.trim(), exists: false });
 					}
 				}
-				setEnrichedGenres(enrichedGenresList);
 			}
-			
-		} catch (error) {
-			console.error('Erreur lors de l\'enrichissement des entités:', error);
+			setEnrichedEntities(prev => ({ ...prev, [source]: result }));
+		} catch (e) {
+			console.error('Erreur enrichissement entités:', e);
 		} finally {
 			setIsEnriching(false);
 		}
 	};
 
-	// Fonctions utilitaires pour la sélection
-	const hasSelectedData = () => Object.values(selectedData).some(Boolean);
-	
-	const getSelectedCount = () => Object.values(selectedData).filter(Boolean).length;
+	// ─── Comparaison base vs en ligne ──────────────────────────────────────────
 
-	const handleImport = (bookInfo: any, source: 'google' | 'openLibrary') => {
-		console.log('🔍 DEBUG - État de sélection:', selectedData);
-		console.log('🔍 DEBUG - Entités enrichies:', { 
-			authors: enrichedAuthors, 
-			publisher: enrichedPublisher, 
-			genres: enrichedGenres 
+	const getBaseValue = (field: string): any => {
+		if (!baseBook) return undefined;
+		switch (field) {
+			case 'title': return baseBook.title;
+			case 'subtitle': return baseBook.subtitle;
+			case 'isbn': return baseBook.isbn;
+			case 'pageCount': return baseBook.page_count;
+			case 'publishedDate': return baseBook.published_date;
+			case 'authors': return baseBook.authors?.map((a: any) => a.name) ?? [];
+			case 'publisher': return baseBook.publisher?.name ?? null;
+			case 'categories': return baseBook.genres?.map((g: any) => g.name) ?? [];
+			case 'thumbnail': return baseBook.cover_url;
+			default: return undefined;
+		}
+	};
+
+	const normalizeStr = (v: any): string =>
+		v == null ? '' : String(v).trim().toLowerCase();
+
+	const extractYear = (v: any): string => {
+		if (!v) return '';
+		const s = String(v).trim();
+		// ISO : 2013-03-20 ou 2013
+		const isoMatch = s.match(/^(\d{4})/);
+		if (isoMatch) return isoMatch[1];
+		// DD/MM/YYYY ou DD-MM-YYYY
+		const dmyMatch = s.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-](\d{4})/);
+		if (dmyMatch) return dmyMatch[1];
+		return '';
+	};
+
+	const getFieldStatus = (field: string, onlineVal: any): FieldStatus => {
+		const baseVal = getBaseValue(field);
+
+		// Valeur absente en base
+		const isEmpty = (v: any) =>
+			v == null || v === '' || (Array.isArray(v) && v.length === 0) || (field === 'pageCount' && v === 0);
+
+		if (isEmpty(baseVal)) return 'new';
+
+		// Comparaison spécifique par type de champ
+		if (field === 'authors') {
+			const onlineNames: string[] = Array.isArray(onlineVal)
+				? onlineVal.map((n: any) => normalizeStr(typeof n === 'string' ? n : n?.name))
+				: [];
+			const baseNames: string[] = (baseVal as string[]).map(normalizeStr);
+			const sortedOnline = [...onlineNames].sort().join('|');
+			const sortedBase = [...baseNames].sort().join('|');
+			return sortedOnline === sortedBase ? 'identical' : 'different';
+		}
+
+		if (field === 'categories') {
+			const onlineNames: string[] = Array.isArray(onlineVal)
+				? onlineVal.map((n: any) => normalizeStr(n))
+				: [];
+			const baseNames: string[] = (baseVal as string[]).map(normalizeStr);
+			const sortedOnline = [...onlineNames].sort().join('|');
+			const sortedBase = [...baseNames].sort().join('|');
+			return sortedOnline === sortedBase ? 'identical' : 'different';
+		}
+
+		if (field === 'publishedDate') {
+			const onlineYear = extractYear(onlineVal);
+			const baseYear = extractYear(baseVal);
+			if (!onlineYear || !baseYear) return 'different';
+			return onlineYear === baseYear ? 'identical' : 'different';
+		}
+
+		if (field === 'thumbnail') {
+			// Couverture : on considère toujours comme "nouveau" si en ligne il y en a une
+			// car l'URL sera différente
+			return baseVal ? 'different' : 'new';
+		}
+
+		return normalizeStr(onlineVal) === normalizeStr(baseVal) ? 'identical' : 'different';
+	};
+
+	// ─── Sélection ─────────────────────────────────────────────────────────────
+
+	const currentSelection = selectedData[activeTab];
+	const totalSelected = () => {
+		const keys = new Set([...Object.keys(selectedData.google), ...Object.keys(selectedData.openLibrary)]);
+		let count = 0;
+		keys.forEach(k => { if (selectedData.google[k] || selectedData.openLibrary[k]) count++; });
+		return count;
+	};
+	const hasSelectedData = () => totalSelected() > 0;
+	const getSelectedCount = () => totalSelected();
+
+	const toggleSelection = (key: string) => {
+		setSelectedData(prev => {
+			const otherTab = activeTab === 'google' ? 'openLibrary' : 'google';
+			const nowSelected = !prev[activeTab][key];
+			return {
+				...prev,
+				[activeTab]: { ...prev[activeTab], [key]: nowSelected },
+				// Si on sélectionne ce champ, le désélectionner dans l'autre source
+				...(nowSelected && { [otherTab]: { ...prev[otherTab], [key]: false } }),
+			};
 		});
-		console.log('🔍 DEBUG - Données brutes reçues:', bookInfo);
-		
-		// Créer un objet avec seulement les données sélectionnées
+	};
+
+	const handleImport = (currentBookInfo: any, source: 'google' | 'openLibrary') => {
+		const otherSource = source === 'google' ? 'openLibrary' : 'google';
+		const otherBookInfo = otherSource === 'google'
+			? extractBookInfo(googleData, 'google')?.exploitable
+			: extractBookInfo(openLibraryData, 'openLibrary')?.exploitable;
+
 		const selectedBookData: any = {};
-		
-		// Parcourir chaque clé de sélection
-		Object.keys(selectedData).forEach(key => {
-			const isSelected = selectedData[key];
-			console.log(`🔍 DEBUG - Clé "${key}": sélectionnée=${isSelected}`);
-			
-			if (isSelected) {
-				switch (key) {
-					case 'authors':
-						// Utiliser les entités enrichies si disponibles, sinon les données brutes
-						if (enrichedAuthors.length > 0) {
-							selectedBookData[key] = enrichedAuthors;
-							console.log('✅ Auteurs ajoutés (enrichis):', enrichedAuthors);
-						} else if (bookInfo.authors && bookInfo.authors.length > 0) {
-							// Fallback vers données brutes si enrichissement a échoué
-							selectedBookData[key] = bookInfo.authors.map((name: string) => ({
-								id: null,
-								name: name,
-								exists: false
-							}));
-							console.log('⚠️ Auteurs ajoutés (données brutes):', bookInfo.authors);
-						}
-						break;
-					case 'publisher':
-						// Utiliser l'entité enrichie si disponible, sinon les données brutes
-						if (enrichedPublisher) {
-							selectedBookData[key] = enrichedPublisher;
-							console.log('✅ Éditeur ajouté (enrichi):', enrichedPublisher);
-						} else if (bookInfo.publisher) {
-							// Fallback vers données brutes
-							selectedBookData[key] = {
-								id: null,
-								name: bookInfo.publisher,
-								exists: false
-							};
-							console.log('⚠️ Éditeur ajouté (données brutes):', bookInfo.publisher);
-						}
-						break;
-					case 'categories':
-						// Utiliser les genres enrichis si disponibles, sinon les données brutes
-						if (enrichedGenres.length > 0) {
-							selectedBookData['genres'] = enrichedGenres; // Mapper vers 'genres'
-							console.log('✅ Genres ajoutés (enrichis, categories → genres):', enrichedGenres);
-						} else if (bookInfo.categories && bookInfo.categories.length > 0) {
-							// Fallback vers données brutes
-							selectedBookData['genres'] = bookInfo.categories.map((name: string) => ({
-								id: null,
-								name: name,
-								exists: false
-							}));
-							console.log('⚠️ Genres ajoutés (données brutes, categories → genres):', bookInfo.categories);
-						}
-						break;
-					default:
-						// Pour les autres champs (title, isbn, etc.), utiliser directement les données brutes
-						if (bookInfo[key] !== undefined && bookInfo[key] !== null) {
-							selectedBookData[key] = bookInfo[key];
-							console.log(`✅ Champ standard "${key}" ajouté:`, bookInfo[key]);
-						} else {
-							console.log(`⚠️ Champ "${key}" sélectionné mais absent des données brutes`);
-						}
-						break;
-				}
+
+		// Parcourir tous les champs des deux sources
+		const allKeys = new Set([
+			...Object.keys(selectedData[source]),
+			...Object.keys(selectedData[otherSource]),
+		]);
+
+		allKeys.forEach(key => {
+			// Déterminer depuis quelle source ce champ est sélectionné (mutex garantit au plus une)
+			const fromCurrent = selectedData[source][key];
+			const fromOther = selectedData[otherSource][key];
+			if (!fromCurrent && !fromOther) return;
+
+			const bookInfo = fromCurrent ? currentBookInfo : otherBookInfo;
+			const srcKey = fromCurrent ? source : otherSource;
+			const entities = enrichedEntities[srcKey];
+
+			if (!bookInfo) return;
+
+			switch (key) {
+				case 'authors':
+					selectedBookData[key] = entities.authors.length > 0
+						? entities.authors
+						: bookInfo.authors?.map((n: string) => ({ id: null, name: n, exists: false }));
+					break;
+				case 'publisher':
+					selectedBookData[key] = entities.publisher
+						?? (bookInfo.publisher ? { id: null, name: bookInfo.publisher, exists: false } : undefined);
+					break;
+				case 'categories':
+					selectedBookData['genres'] = entities.genres.length > 0
+						? entities.genres
+						: bookInfo.categories?.map((n: string) => ({ id: null, name: n, exists: false }));
+					break;
+				default:
+					if (bookInfo[key] !== undefined && bookInfo[key] !== null)
+						selectedBookData[key] = bookInfo[key];
 			}
 		});
 
-		console.log('📤 Données finales sélectionnées pour import:', selectedBookData);
 		onImportData(source, selectedBookData);
 	};
 
-	const toggleSelection = (key: string) => {
-		console.log(`🔄 Toggle sélection "${key}": ${selectedData[key]} → ${!selectedData[key]}`);
-		setSelectedData(prev => {
-			const newState = {
-				...prev,
-				[key]: !prev[key]
-			};
-			console.log('📊 Nouvel état de sélection:', newState);
-			return newState;
-		});
-	};
+	// ─── Rendu des entités ─────────────────────────────────────────────────────
 
-	// Composant pour afficher une entité avec son statut
-	const renderEntityChip = (entity: Author | Publisher | Genre, type: 'author' | 'publisher' | 'genre') => {
-		const iconName = entity.exists ? 'check-circle' : 'add-circle';
-		const iconColor = entity.exists ? theme.success : theme.warning;
-		const chipBg = entity.exists ? theme.successBg : theme.warningBg;
-		const chipBorder = entity.exists ? theme.success : theme.warning;
-
-		return (
-			<View key={`${type}-${entity.id || entity.name}`} style={[styles.entityChip, { backgroundColor: chipBg, borderColor: chipBorder }]}>
-				<MaterialIcons name={iconName} size={14} color={iconColor} />
-				<Text style={[styles.entityChipText, { color: theme.textPrimary }]}>{entity.name}</Text>
-			</View>
-		);
-	};
-
-	const renderCheckableDataItem = (key: string, label: string, value: any, isSelected: boolean) => {
-		if (!value) return null;
-		
-		// Rendu spécial pour les entités enrichies
-		if (key === 'authors' && enrichedAuthors.length > 0) {
-			return (
-				<TouchableOpacity 
-					key={key}
-					style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
-					onPress={() => toggleSelection(key)}
+	const renderEntityChips = (entities: Array<{ id: any; name: string; exists: boolean }>) => (
+		<View style={styles.entitiesContainer}>
+			{entities.map(e => (
+				<View
+					key={`${e.id ?? ''}-${e.name}`}
+					style={[styles.entityChip, {
+						backgroundColor: e.exists ? theme.successBg : theme.warningBg,
+						borderColor: e.exists ? theme.success : theme.warning,
+					}]}
 				>
-					<View style={styles.dataItemHeader}>
-						<Text style={[styles.dataLabel, { color: theme.textMuted }]}>{label}</Text>
-						{isEnriching ? (
-							<MaterialIcons name="hourglass-empty" size={20} color={theme.warning} />
-						) : (
-							<MaterialIcons
-								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
-								size={20}
-								color={isSelected ? theme.success : theme.borderMedium}
-							/>
-						)}
-					</View>
-					<View style={styles.entitiesContainer}>
-						{enrichedAuthors.map(author => renderEntityChip(author, 'author'))}
-					</View>
-				</TouchableOpacity>
-			);
-		}
-		
-		if (key === 'publisher' && enrichedPublisher) {
-			return (
-				<TouchableOpacity 
-					key={key}
-					style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
-					onPress={() => toggleSelection(key)}
-				>
-					<View style={styles.dataItemHeader}>
-						<Text style={[styles.dataLabel, { color: theme.textMuted }]}>{label}</Text>
-						{isEnriching ? (
-							<MaterialIcons name="hourglass-empty" size={20} color={theme.warning} />
-						) : (
-							<MaterialIcons
-								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
-								size={20}
-								color={isSelected ? theme.success : theme.borderMedium}
-							/>
-						)}
-					</View>
-					<View style={styles.entitiesContainer}>
-						{renderEntityChip(enrichedPublisher, 'publisher')}
-					</View>
-				</TouchableOpacity>
-			);
-		}
-		
-		if (key === 'categories' && enrichedGenres.length > 0) {
-			return (
-				<TouchableOpacity 
-					key={key}
-					style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
-					onPress={() => toggleSelection(key)}
-				>
-					<View style={styles.dataItemHeader}>
-						<Text style={[styles.dataLabel, { color: theme.textMuted }]}>Genres</Text>
-						{isEnriching ? (
-							<MaterialIcons name="hourglass-empty" size={20} color={theme.warning} />
-						) : (
-							<MaterialIcons
-								name={isSelected ? 'check-box' : 'check-box-outline-blank'}
-								size={20}
-								color={isSelected ? theme.success : theme.borderMedium}
-							/>
-						)}
-					</View>
-					<View style={styles.entitiesContainer}>
-						{enrichedGenres.map(genre => renderEntityChip(genre, 'genre'))}
-					</View>
-				</TouchableOpacity>
-			);
-		}
-		
-		// Rendu standard pour les autres champs
-		const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
-		
-		return (
-			<TouchableOpacity 
-				key={key}
-				style={[styles.dataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.accent }, isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 2 }]}
-				onPress={() => toggleSelection(key)}
-			>
-				<View style={styles.dataItemHeader}>
-					<Text style={[styles.dataLabel, { color: theme.textMuted }]}>{label}</Text>
 					<MaterialIcons
-						name={isSelected ? 'check-box' : 'check-box-outline-blank'}
-						size={20}
-						color={isSelected ? theme.success : theme.borderMedium}
+						name={e.exists ? 'check-circle' : 'add-circle'}
+						size={12}
+						color={e.exists ? theme.success : theme.warning}
 					/>
+					<Text style={[styles.entityChipText, { color: theme.textPrimary }]}>{e.name}</Text>
 				</View>
-				<Text style={[styles.dataValue, { color: theme.textPrimary }, key === 'isbn' && { backgroundColor: theme.bgSecondary }]}>
-					{displayValue}
-				</Text>
-			</TouchableOpacity>
-		);
+			))}
+		</View>
+	);
+
+	// ─── Formatage des valeurs pour affichage ──────────────────────────────────
+
+	const formatBaseValue = (field: string): React.ReactNode => {
+		const val = getBaseValue(field);
+		if (!baseBook) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+
+		if (field === 'authors') {
+			const names: string[] = val ?? [];
+			if (names.length === 0) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return (
+				<View style={styles.entitiesContainer}>
+					{names.map(n => (
+						<View key={n} style={[styles.entityChip, { backgroundColor: theme.bgSecondary, borderColor: theme.borderMedium }]}>
+							<Text style={[styles.entityChipText, { color: theme.textPrimary }]}>{n}</Text>
+						</View>
+					))}
+				</View>
+			);
+		}
+		if (field === 'categories') {
+			const names: string[] = val ?? [];
+			if (names.length === 0) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return (
+				<View style={styles.entitiesContainer}>
+					{names.map(n => (
+						<View key={n} style={[styles.entityChip, { backgroundColor: theme.bgSecondary, borderColor: theme.borderMedium }]}>
+							<Text style={[styles.entityChipText, { color: theme.textPrimary }]}>{n}</Text>
+						</View>
+					))}
+				</View>
+			);
+		}
+		if (field === 'thumbnail') {
+			if (!val) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			const uri = val.startsWith('/') ? undefined : val;
+			if (!uri) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>Couverture locale</Text>;
+			return <Image source={{ uri }} style={styles.thumbnailInline} resizeMode="contain" />;
+		}
+		if (field === 'publishedDate') {
+			if (!val) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return <Text style={[styles.valueText, { color: theme.textPrimary }]}>{String(val)}</Text>;
+		}
+		if (!val && val !== 0 || (field === 'pageCount' && val === 0)) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+		return <Text style={[styles.valueText, { color: theme.textPrimary }]}>{String(val)}</Text>;
 	};
 
-	const renderExploitableData = (bookInfo: any) => {
-		if (!bookInfo) return null;
-
-		return (
-			<View style={[styles.exploitableSection, { backgroundColor: theme.accentLight, borderColor: theme.accent }]}>
-				<Text style={[styles.subsectionTitle, { color: theme.textPrimary }]}>📋 Sélectionnez les données à importer</Text>
-				<Text style={[styles.subsectionSubtitle, { color: theme.textMuted }]}>Cliquez sur les éléments pour les sélectionner/désélectionner</Text>
-				
-				<View style={styles.exploitableGrid}>
-					{renderCheckableDataItem('title', 'Titre', bookInfo.title, selectedData.title)}
-					{renderCheckableDataItem('subtitle', 'Sous-titre', bookInfo.subtitle, selectedData.subtitle)}
-					{renderCheckableDataItem('authors', 'Auteur(s)', bookInfo.authors, selectedData.authors)}
-					{renderCheckableDataItem('publisher', 'Éditeur', bookInfo.publisher, selectedData.publisher)}
-					{renderCheckableDataItem('publishedDate', 'Date de publication', bookInfo.publishedDate, selectedData.publishedDate)}
-					{renderCheckableDataItem('pageCount', 'Nombre de pages', bookInfo.pageCount, selectedData.pageCount)}
-					{renderCheckableDataItem('isbn', 'ISBN', bookInfo.isbn, selectedData.isbn)}
-					{renderCheckableDataItem('categories', 'Catégories', bookInfo.categories?.slice(0, 3), selectedData.categories)}
-				</View>
-				
-				{/* Boutons de sélection rapide */}
-				<View style={styles.selectionButtons}>
-					<TouchableOpacity
-						style={[styles.selectAllButton, { backgroundColor: theme.success }]}
-						onPress={() => setSelectedData({
-							title: true,
-							subtitle: true,
-							authors: true,
-							publisher: true,
-							publishedDate: true,
-							pageCount: true,
-							isbn: true,
-							categories: true,
-							thumbnail: true,
-						})}
-					>
-						<Text style={[styles.selectAllButtonText, { color: theme.textInverse }]}>✓ Tout sélectionner</Text>
-					</TouchableOpacity>
-					
-					<TouchableOpacity
-						style={[styles.selectNoneButton, { backgroundColor: theme.danger }]}
-						onPress={() => setSelectedData({
-							title: false,
-							subtitle: false,
-							authors: false,
-							publisher: false,
-							publishedDate: false,
-							pageCount: false,
-							isbn: false,
-							categories: false,
-							thumbnail: false,
-						})}
-					>
-						<Text style={[styles.selectNoneButtonText, { color: theme.textInverse }]}>✗ Tout désélectionner</Text>
-					</TouchableOpacity>
-				</View>
-			</View>
-		);
-	};
-
-	const renderRawData = (data: any, source: 'google' | 'openLibrary') => {
-		if (!data) return null;
-
-		const isUrl = (val: any): val is string =>
-			typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'));
-
-		const renderValue = (value: any, depth = 0): string => {
-			if (value === null || value === undefined) return 'N/A';
-			if (typeof value === 'string') return value;
-			if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-			if (Array.isArray(value)) {
-				return value.length > 0 ? value.slice(0, 3).map(v => renderValue(v, depth + 1)).join(', ') + (value.length > 3 ? '...' : '') : 'Vide';
-			}
-			if (typeof value === 'object') {
-				const keys = Object.keys(value).slice(0, 3);
-				return keys.map(key => `${key}: ${renderValue(value[key], depth + 1)}`).join(', ');
-			}
-			return String(value);
-		};
-
-		const renderRawValue = (key: string, value: any) => {
-			// Valeur unique qui est une URL
-			if (isUrl(value)) {
+	const formatOnlineValue = (field: string, onlineVal: any, enriched?: { authors?: Author[]; publisher?: Publisher | null; genres?: Genre[] }): React.ReactNode => {
+		if (field === 'authors') {
+			const list = enriched?.authors ?? [];
+			if (list.length === 0) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return renderEntityChips(list);
+		}
+		if (field === 'publisher') {
+			const p = enriched?.publisher;
+			if (!p) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return renderEntityChips([p]);
+		}
+		if (field === 'categories') {
+			const list = enriched?.genres ?? [];
+			if (list.length === 0) {
+				if (!onlineVal || onlineVal.length === 0) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
 				return (
-					<TouchableOpacity onPress={() => WebBrowser.openBrowserAsync(value)}>
-						<Text style={[styles.rawDataValue, styles.rawDataLink, { color: theme.accent }]} numberOfLines={2}>
-							{value}
-						</Text>
-					</TouchableOpacity>
-				);
-			}
-			// Tableau contenant des URLs (ex: links dans OpenLibrary)
-			if (Array.isArray(value) && value.length > 0 && value.every((v: any) => typeof v === 'object' && v.url)) {
-				return (
-					<View>
-						{value.map((item: any, i: number) => (
-							<TouchableOpacity key={i} onPress={() => WebBrowser.openBrowserAsync(item.url)}>
-								<Text style={[styles.rawDataValue, styles.rawDataLink, { color: theme.accent }]} numberOfLines={1}>
-									{item.title || item.url}
-								</Text>
-							</TouchableOpacity>
+					<View style={styles.entitiesContainer}>
+						{(onlineVal as string[]).slice(0, 3).map((n: string) => (
+							<View key={n} style={[styles.entityChip, { backgroundColor: theme.bgSecondary, borderColor: theme.borderMedium }]}>
+								<Text style={[styles.entityChipText, { color: theme.textPrimary }]}>{n}</Text>
+							</View>
 						))}
 					</View>
 				);
 			}
-			return (
-				<Text style={[styles.rawDataValue, { color: theme.textSecondary }]} numberOfLines={3}>
-					{renderValue(value)}
-				</Text>
-			);
-		};
+			return renderEntityChips(list);
+		}
+		if (field === 'thumbnail') {
+			if (!onlineVal) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return <Image source={{ uri: onlineVal }} style={styles.thumbnailInline} resizeMode="contain" />;
+		}
+		if (field === 'publishedDate') {
+			const year = extractYear(onlineVal);
+			if (!year) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return <Text style={[styles.valueText, { color: theme.textPrimary }]}>{year}</Text>;
+		}
+		if (!onlineVal && onlineVal !== 0) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+		if (Array.isArray(onlineVal)) {
+			return <Text style={[styles.valueText, { color: theme.textPrimary }]}>{onlineVal.join(', ')}</Text>;
+		}
+		return <Text style={[styles.valueText, { color: theme.textPrimary }]}>{String(onlineVal)}</Text>;
+	};
+
+	// ─── Carte de comparaison ──────────────────────────────────────────────────
+
+	const renderComparisonCard = (
+		key: string,
+		label: string,
+		onlineVal: any,
+		isSelected: boolean,
+		enriched?: { authors?: Author[]; publisher?: Publisher | null; genres?: Genre[] },
+	) => {
+		if (onlineVal == null || onlineVal === '' || (Array.isArray(onlineVal) && onlineVal.length === 0)) return null;
+
+		const status = baseBook ? getFieldStatus(key, onlineVal) : 'new';
+		const isIdentical = status === 'identical';
+		const canSelect = !isIdentical;
+
+		const borderColor = isIdentical ? theme.borderLight : status === 'new' ? theme.success : theme.warning;
+		const statusIcon = isIdentical ? 'check-circle' : status === 'new' ? 'add-circle' : 'swap-horiz';
+		const statusColor = isIdentical ? theme.textMuted : status === 'new' ? theme.success : theme.warning;
+
+		const cardStyle = [
+			styles.card,
+			{ borderLeftColor: borderColor, backgroundColor: theme.bgCard },
+			isIdentical && { opacity: 0.6 },
+			isSelected && { backgroundColor: theme.successBg, borderColor: theme.success, borderWidth: 1.5 },
+		];
 
 		return (
-			<View style={[styles.rawDataSection, { backgroundColor: theme.bgSecondary, borderColor: theme.borderLight }]}>
-				<Text style={[styles.subsectionTitle, { color: theme.textPrimary }]}>🔍 Toutes les informations détaillées</Text>
+			<TouchableOpacity
+				key={key}
+				style={cardStyle}
+				onPress={() => canSelect && toggleSelection(key)}
+				activeOpacity={canSelect ? 0.7 : 1}
+			>
+				{/* Header */}
+				<View style={styles.cardHeader}>
+					<MaterialIcons name={statusIcon as any} size={16} color={statusColor} />
+					<Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
+					{isEnriching && (key === 'authors' || key === 'publisher' || key === 'categories') ? (
+						<MaterialIcons name="hourglass-empty" size={20} color={theme.warning} style={styles.checkbox} />
+					) : (
+						<MaterialIcons
+							name={isIdentical ? 'remove' : isSelected ? 'check-box' : 'check-box-outline-blank'}
+							size={20}
+							color={isIdentical ? theme.textMuted : isSelected ? theme.success : theme.borderMedium}
+							style={styles.checkbox}
+						/>
+					)}
+				</View>
 
-				<ScrollView style={styles.rawDataScroll} nestedScrollEnabled>
-					{Object.entries(data).map(([key, value]) => (
-						<View key={key} style={[styles.rawDataItem, { backgroundColor: theme.bgCard, borderLeftColor: theme.borderMedium }]}>
-							<Text style={[styles.rawDataKey, { color: theme.textSecondary }]}>{key}</Text>
-							{renderRawValue(key, value)}
+				{/* Colonnes */}
+				<View style={[styles.columns, twoColumns ? styles.columnsRow : styles.columnsStack]}>
+					{/* Colonne Base */}
+					<View style={[styles.column, twoColumns && styles.columnHalf, { borderColor: theme.borderLight }]}>
+						<View style={[styles.columnBadge, { backgroundColor: theme.bgSecondary }]}>
+							<Text style={[styles.columnBadgeText, { color: theme.textMuted }]}>Actuel</Text>
 						</View>
-					))}
-				</ScrollView>
+						{formatBaseValue(key)}
+					</View>
+
+					{/* Colonne En ligne */}
+					<View style={[styles.column, twoColumns && styles.columnHalf, { borderColor: theme.accent + '44' }]}>
+						<View style={[styles.columnBadge, { backgroundColor: theme.accentLight }]}>
+							<Text style={[styles.columnBadgeText, { color: theme.accent }]}>En ligne</Text>
+						</View>
+						{formatOnlineValue(key, onlineVal, enriched)}
+					</View>
+				</View>
+
+				{isIdentical && (
+					<Text style={[styles.identicalLabel, { color: theme.textMuted }]}>Identique — aucune modification nécessaire</Text>
+				)}
+			</TouchableOpacity>
+		);
+	};
+
+	// ─── Section exploitable ───────────────────────────────────────────────────
+
+	const renderExploitableData = (bookInfo: any) => {
+		if (!bookInfo) return null;
+
+		const fields: Array<{ key: string; label: string; val: any; enriched?: any }> = [
+			{ key: 'thumbnail', label: 'Couverture', val: bookInfo.thumbnail },
+			{ key: 'title', label: 'Titre', val: bookInfo.title },
+			{ key: 'subtitle', label: 'Sous-titre', val: bookInfo.subtitle },
+			{ key: 'authors', label: 'Auteur(s)', val: bookInfo.authors, enriched: { authors: enrichedAuthors } },
+			{ key: 'publisher', label: 'Éditeur', val: bookInfo.publisher, enriched: { publisher: enrichedPublisher } },
+			{ key: 'publishedDate', label: 'Année de publication', val: bookInfo.publishedDate },
+			{ key: 'pageCount', label: 'Nombre de pages', val: bookInfo.pageCount },
+				{ key: 'categories', label: 'Genres', val: bookInfo.categories?.slice(0, 5), enriched: { genres: enrichedGenres } },
+		];
+
+		// Tri : new → different → identical
+		const sorted = [...fields].sort((a, b) => {
+			const sA = baseBook ? SORT_ORDER[getFieldStatus(a.key, a.val)] : 0;
+			const sB = baseBook ? SORT_ORDER[getFieldStatus(b.key, b.val)] : 0;
+			return sA - sB;
+		});
+
+		const selectableKeys = fields
+			.filter(f => f.val != null && f.val !== '' && !(Array.isArray(f.val) && f.val.length === 0))
+			.filter(f => !baseBook || getFieldStatus(f.key, f.val) !== 'identical')
+			.map(f => f.key);
+
+		const allSelected = selectableKeys.every(k => selectedData[k]);
+
+		return (
+			<View style={[styles.section, { borderColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}>
+				{baseBook && (
+					<View style={[styles.legend, { borderBottomColor: theme.borderLight }]}>
+						<View style={styles.legendItem}>
+							<MaterialIcons name="add-circle" size={14} color={theme.success} />
+							<Text style={[styles.legendText, { color: theme.textMuted }]}>Nouveau</Text>
+						</View>
+						<View style={styles.legendItem}>
+							<MaterialIcons name="swap-horiz" size={14} color={theme.warning} />
+							<Text style={[styles.legendText, { color: theme.textMuted }]}>Différent</Text>
+						</View>
+						<View style={styles.legendItem}>
+							<MaterialIcons name="check-circle" size={14} color={theme.textMuted} />
+							<Text style={[styles.legendText, { color: theme.textMuted }]}>Identique</Text>
+						</View>
+					</View>
+				)}
+
+				<View style={styles.cardsContainer}>
+					{sorted.map(f =>
+						renderComparisonCard(f.key, f.label, f.val, currentSelection[f.key], f.enriched)
+					)}
+				</View>
+
+				{/* Liens de sélection rapide */}
+				<View style={styles.selectionLinks}>
+					<TouchableOpacity
+						onPress={() => {
+							const otherTab = activeTab === 'google' ? 'openLibrary' : 'google';
+							setSelectedData(prev => {
+								const next = { ...prev[activeTab] };
+								const otherNext = { ...prev[otherTab] };
+								selectableKeys.forEach(k => { next[k] = true; otherNext[k] = false; });
+								return { ...prev, [activeTab]: next, [otherTab]: otherNext };
+							});
+						}}
+					>
+						<Text style={[styles.selectionLinkText, { color: theme.accent }]}>Tout sélectionner</Text>
+					</TouchableOpacity>
+					<Text style={[styles.selectionLinkSep, { color: theme.borderMedium }]}>·</Text>
+					<TouchableOpacity
+						onPress={() => setSelectedData(prev => ({ ...prev, [activeTab]: { ...emptySelection } }))}
+					>
+						<Text style={[styles.selectionLinkText, { color: theme.textMuted }]}>Tout désélectionner</Text>
+					</TouchableOpacity>
+				</View>
 			</View>
 		);
 	};
+
+	// ─── Rendu principal ───────────────────────────────────────────────────────
 
 	const renderBookInfo = (data: any, source: 'google' | 'openLibrary') => {
 		const hasError = source === 'google' ? googleError : openLibraryError;
 		const sourceName = source === 'google' ? 'Google Books' : 'OpenLibrary';
 		if (!data) {
-			// Si erreur service, le bandeau est déjà affiché au-dessus — pas besoin de "aucune donnée"
 			if (hasError) return null;
 			return (
 				<View style={styles.noDataContainer}>
-					<Text style={[styles.noDataText, { color: theme.textMuted }]}>
-						Livre non trouvé sur {sourceName}
-					</Text>
+					<Text style={[styles.noDataText, { color: theme.textMuted }]}>Livre non trouvé sur {sourceName}</Text>
 				</View>
 			);
 		}
-
 		const bookInfo = extractBookInfo(data, source);
 		if (!bookInfo) return null;
 
 		return (
-			<ScrollView style={styles.bookInfoContainer} nestedScrollEnabled>
-				{/* Couverture si disponible */}
-				{bookInfo.exploitable.thumbnail && (
-					<View style={styles.thumbnailContainer}>
-						<Image 
-							source={{ uri: bookInfo.exploitable.thumbnail }} 
-							style={[styles.thumbnail, { borderColor: theme.borderLight }]}
-							resizeMode="cover"
-						/>
-					</View>
-				)}
-
-				{/* Section des données exploitables */}
+			<View>
 				{renderExploitableData(bookInfo.exploitable)}
 
-				{/* Bouton d'import */}
 				<TouchableOpacity
-					style={[styles.importButton, { backgroundColor: theme.success }, !hasSelectedData() && { backgroundColor: theme.borderMedium, opacity: 0.7 }]}
+					style={[
+						styles.importButton,
+						{ backgroundColor: hasSelectedData() ? theme.success : theme.borderMedium },
+					]}
 					onPress={() => handleImport(bookInfo.exploitable, source)}
 					disabled={!hasSelectedData()}
 				>
-					<Text style={[styles.importButtonText, { color: theme.textInverse }, !hasSelectedData() && { opacity: 0.8 }]}>
-						✅ Importer les données sélectionnées ({getSelectedCount()})
+					<MaterialIcons name="download" size={18} color={theme.textInverse} />
+					<Text style={[styles.importButtonText, { color: theme.textInverse }]}>
+						Appliquer les données sélectionnées ({getSelectedCount()})
 					</Text>
 				</TouchableOpacity>
-
-				{/* Section des données brutes détaillées */}
-				{renderRawData(bookInfo.raw, source)}
-			</ScrollView>
+			</View>
 		);
 	};
 
@@ -617,13 +615,8 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 
 	if (!hasGoogleData && !hasOpenLibraryData && !googleError && !openLibraryError) {
 		return (
-			<View style={styles.container}>
-				<Text style={styles.sectionTitle}>Données externes</Text>
-				<View style={styles.noDataContainer}>
-					<Text style={[styles.noDataText, { color: theme.textMuted }]}>
-						Aucune donnée externe disponible
-					</Text>
-				</View>
+			<View style={styles.noDataContainer}>
+				<Text style={[styles.noDataText, { color: theme.textMuted }]}>Aucune donnée externe disponible</Text>
 			</View>
 		);
 	}
@@ -639,11 +632,9 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		<View style={[styles.container, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}>
 			<Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Données externes</Text>
 
-			{/* Bandeaux d'erreur en haut, toujours visibles */}
 			{googleError && renderErrorBanner(googleError)}
 			{openLibraryError && renderErrorBanner(openLibraryError)}
 
-			{/* Tabs + Content — uniquement si au moins une source a des données */}
 			{(hasGoogleData || hasOpenLibraryData) && (
 				<>
 					<View style={[styles.tabContainer, { backgroundColor: theme.bgMuted }]}>
@@ -657,7 +648,6 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 								</Text>
 							</TouchableOpacity>
 						)}
-
 						{hasOpenLibraryData && (
 							<TouchableOpacity
 								style={[styles.tab, activeTab === 'openLibrary' && { backgroundColor: theme.accent }]}
@@ -710,9 +700,7 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		fontWeight: '500',
 	},
-	contentContainer: {
-		minHeight: 300,
-	},
+	contentContainer: {},
 	errorBanner: {
 		borderWidth: 1,
 		borderRadius: 8,
@@ -730,183 +718,152 @@ const styles = StyleSheet.create({
 	noDataContainer: {
 		padding: 20,
 		alignItems: 'center',
-		justifyContent: 'center',
 	},
 	noDataText: {
 		fontSize: 16,
 		textAlign: 'center',
 		fontStyle: 'italic',
 	},
-	bookInfoContainer: {
-		flex: 1,
-		maxHeight: 600,
-	},
-	thumbnailContainer: {
-		alignItems: 'center',
-		marginBottom: 20,
-	},
-	thumbnail: {
-		width: 100,
-		height: 150,
-		borderRadius: 8,
+	section: {
+		borderRadius: 10,
 		borderWidth: 1,
+		marginBottom: 12,
+		overflow: 'hidden',
 	},
-	// Section des données exploitables
-	exploitableSection: {
-		borderRadius: 12,
-		padding: 16,
-		marginBottom: 20,
-		borderWidth: 2,
+	legend: {
+		flexDirection: 'row',
+		justifyContent: 'center',
+		gap: 16 as any,
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+		borderBottomWidth: 1,
 	},
-	subsectionTitle: {
-		fontSize: 16,
-		fontWeight: '600',
-		marginBottom: 8,
-		textAlign: 'center',
+	legendItem: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 4 as any,
 	},
-	subsectionSubtitle: {
-		fontSize: 12,
-		textAlign: 'center',
-		marginBottom: 16,
-		fontStyle: 'italic',
+	legendText: {
+		fontSize: 11,
 	},
-	exploitableGrid: {
-		gap: 12,
+	cardsContainer: {
+		padding: 10,
+		gap: 10 as any,
 	},
-	dataItem: {
+	card: {
 		borderRadius: 8,
 		padding: 12,
 		borderLeftWidth: 4,
 	},
-	dataLabel: {
-		fontSize: 12,
-		fontWeight: '600',
+	cardHeader: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 8,
+		gap: 6 as any,
+	},
+	cardLabel: {
+		fontSize: 11,
+		fontWeight: '700',
 		textTransform: 'uppercase',
-		marginBottom: 4,
+		flex: 1,
+		letterSpacing: 0.5,
 	},
-	dataValue: {
-		fontSize: 14,
-		lineHeight: 20,
+	checkbox: {
+		marginLeft: 'auto' as any,
 	},
-	isbnValue: {
-		fontFamily: 'monospace',
+	columns: {
+		gap: 8 as any,
+	},
+	columnsRow: {
+		flexDirection: 'row',
+	},
+	columnsStack: {
+		flexDirection: 'column',
+	},
+	column: {
+		borderRadius: 6,
+		borderWidth: 1,
+		overflow: 'hidden',
+	},
+	columnHalf: {
+		flex: 1,
+	},
+	columnBadge: {
 		paddingHorizontal: 8,
 		paddingVertical: 4,
-		borderRadius: 4,
 	},
-	// Section des données brutes
-	rawDataSection: {
-		borderRadius: 12,
-		padding: 16,
-		marginTop: 20,
-		borderWidth: 1,
+	columnBadgeText: {
+		fontSize: 10,
+		fontWeight: '700',
+		textTransform: 'uppercase',
+		letterSpacing: 0.5,
 	},
-	rawDataScroll: {
-		maxHeight: 300,
-	},
-	rawDataItem: {
-		borderRadius: 6,
-		padding: 10,
-		marginBottom: 8,
-		borderLeftWidth: 3,
-	},
-	rawDataKey: {
-		fontSize: 12,
-		fontWeight: '600',
-		marginBottom: 4,
-		textTransform: 'capitalize',
-	},
-	rawDataValue: {
+	valueText: {
 		fontSize: 13,
 		lineHeight: 18,
-		fontFamily: 'monospace',
-	},
-	rawDataLink: {
-		textDecorationLine: 'underline',
-		fontFamily: undefined,
-	},
-	// Bouton d'import amélioré
-	importButton: {
-		paddingVertical: 14,
-		paddingHorizontal: 20,
-		borderRadius: 12,
-		alignItems: 'center',
-		marginVertical: 20,
-		shadowOffset: {
-			width: 0,
-			height: 2,
-		},
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
-		elevation: 3,
-	},
-	importButtonText: {
-		fontSize: 16,
-		fontWeight: '600',
-	},
-	importButtonDisabled: {
-		opacity: 0.7,
-	},
-	importButtonTextDisabled: {
-		opacity: 0.8,
-	},
-	dataItemSelected: {
-		borderWidth: 2,
-	},
-	dataItemHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		marginBottom: 4,
-	},
-	selectionButtons: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		marginBottom: 16,
 		paddingHorizontal: 8,
+		paddingVertical: 6,
 	},
-	selectAllButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 6,
-		flex: 0.48,
-		alignItems: 'center',
+	identicalLabel: {
+		fontSize: 11,
+		fontStyle: 'italic',
+		textAlign: 'center',
+		marginTop: 6,
 	},
-	selectAllButtonText: {
-		fontSize: 14,
-		fontWeight: '600',
+	thumbnailInline: {
+		width: 60,
+		height: 90,
+		borderRadius: 4,
+		margin: 8,
+		alignSelf: 'center',
 	},
-	selectNoneButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 6,
-		flex: 0.48,
-		alignItems: 'center',
-	},
-	selectNoneButtonText: {
-		fontSize: 14,
-		fontWeight: '600',
-	},
-	// Styles pour les entités enrichies
 	entitiesContainer: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
-		gap: 8,
-		marginTop: 8,
+		gap: 4 as any,
+		paddingHorizontal: 8,
+		paddingVertical: 6,
 	},
 	entityChip: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 12,
+		paddingHorizontal: 7,
+		paddingVertical: 3,
+		borderRadius: 10,
 		borderWidth: 1,
-		marginRight: 6,
-		marginBottom: 4,
+		gap: 3 as any,
 	},
 	entityChipText: {
-		fontSize: 12,
+		fontSize: 11,
 		fontWeight: '500',
-		marginLeft: 4,
+	},
+	selectionLinks: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 8 as any,
+		paddingVertical: 10,
+		paddingHorizontal: 12,
+	},
+	selectionLinkText: {
+		fontSize: 12,
+		textDecorationLine: 'underline',
+	},
+	selectionLinkSep: {
+		fontSize: 14,
+	},
+	importButton: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 8 as any,
+		paddingVertical: 14,
+		paddingHorizontal: 20,
+		borderRadius: 10,
+		marginBottom: 4,
+	},
+	importButtonText: {
+		fontSize: 15,
+		fontWeight: '600',
 	},
 });

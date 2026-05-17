@@ -10,8 +10,11 @@ import { UserLoanRequest } from '@/types/userLoanRequest';
 
 const SEEN_DECLINED_KEY = 'seen_declined_loan_request_ids';
 
+import Constants from 'expo-constants';
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
 let Notifications: any = null;
-if (Platform.OS !== 'web') {
+if (Platform.OS !== 'web' && !isExpoGo) {
   Notifications = require('expo-notifications');
 }
 
