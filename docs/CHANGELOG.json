@@ -1,5 +1,12 @@
 [
     {
+        "version": "1.3.6",
+        "date": "2026-05-18",
+        "title": "Import/Export CSV et comparaison données en ligne",
+        "description": "- Édition : bouton \"Chercher les infos en ligne\" qui interroge Google Books et OpenLibrary à la demande, avec comparaison côte à côte des valeurs actuelles et en ligne (nouveau, différent, identique) pour choisir précisément quels champs importer.\n- La page de détail s'affiche instantanément, sans appels externes bloquants au chargement.\n- Export CSV de la bibliothèque depuis les paramètres.\n- Import CSV amélioré : gestion des conflits et doublons, résolution via une interface dédiée, persistance des conflits en attente entre sessions.",
+        "type": "feature"
+    },
+    {
         "version": "1.3.5",
         "date": "2026-04-16",
         "title": "Sous-titre des livres",
