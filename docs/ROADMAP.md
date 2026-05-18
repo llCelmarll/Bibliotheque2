@@ -22,7 +22,7 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - L'afficher dans les formulaires, les fiches livre, les listes et les cartes.
     - Inclure dans la recherche simple (titre + sous-titre).
     - [ ] *(itération future)* Recherche avancée par sous-titre
-    - [-] *(itération future)* Import/export CSV avec colonne sous-titre
+    - [x] Import/export CSV avec colonne sous-titre
 - [x] **Stabilisation Google Books / OpenLibrary (saisie + quota)**
     - Corriger l'ecran blanc qui annule la saisie lors d'une recherche ou d'un ajout via Google Books / OpenLibrary.
     - Utiliser une clé API Google Books dédiée pour réduire les erreurs de quota (`rateLimitExceeded`).
@@ -77,6 +77,18 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - Identifier les pages, endpoints et requêtes les plus coûteux.
     - Mesurer les temps de réponse, les chargements et les éventuels goulots d'étranglement.
     - Prioriser les optimisations à fort impact avant les prochaines évolutions.
+
+## Accessibilité & Référencement
+
+- [ ] **Accessibilité (a11y)**
+    - Ajouter des labels d'accessibilité (`accessibilityLabel`, `accessibilityHint`) sur les éléments interactifs (boutons, icônes, champs).
+    - Vérifier la compatibilité avec les lecteurs d'écran (TalkBack sur Android).
+    - Assurer un contraste suffisant pour les textes dans tous les thèmes visuels.
+    - Gérer la navigation au clavier et le focus logique dans les formulaires.
+- [ ] **Référencement / Découvrabilité (SEO / ASO)**
+    - Optimiser la fiche Google Play Store (titre, description, captures d'écran, mots-clés).
+    - Ajouter des métadonnées structurées si une version web publique est envisagée.
+    - Mettre en place une page de présentation publique (landing page) avec description de l'application.
 
 ## Plateformes
 

@@ -4,7 +4,7 @@ import { Platform, Alert } from 'react-native';
 
 export function UpdateChecker() {
   useEffect(() => {
-    if (Platform.OS === 'web') return;
+    if (Platform.OS === 'web' || __DEV__) return;
 
     async function checkForUpdates() {
       try {

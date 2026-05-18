@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,9 @@ import { bookService } from '@/services/bookService';
 import { BookCreate, SuggestedBook } from '@/types/scanTypes';
 import { BookUpdate } from '@/types/book';
 import { ErrorMessage } from '@/components/ErrorMessage';
+import { ExternalDataSection } from '@/components/scan/ExternalDataSection';
+import API_CONFIG from '@/config/api';
+import { getAccessToken } from '@/services/api/authInterceptor';
 import axios from 'axios';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -19,6 +22,10 @@ export default function EditBookScreen() {
   const theme = useTheme();
   const { book, loading, error, refetch } = useBookDetail(id as string);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [externalData, setExternalData] = useState<{ google_books: any; open_library: any } | null>(null);
+  const [loadingExternal, setLoadingExternal] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const suggestedDataRef = useRef<SuggestedBook | null>(null);
 
   // Convertir les données du livre en format SuggestedBook pour le formulaire
   const convertBookToSuggestedFormat = (): SuggestedBook | null => {
@@ -169,7 +176,49 @@ export default function EditBookScreen() {
     }
   };
 
-  const suggestedData = convertBookToSuggestedFormat();
+  const fetchExternalData = async () => {
+    if (!id) return;
+    setLoadingExternal(true);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_CONFIG.BASE_URL}/books/${id}/external`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const data = await res.json();
+      setExternalData(data);
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Impossible de récupérer les données externes');
+    } finally {
+      setLoadingExternal(false);
+    }
+  };
+
+  const handleImportData = (_source: 'google' | 'openLibrary', selectedData: any) => {
+    if (!suggestedDataRef.current) return;
+    const current = suggestedDataRef.current;
+    const merged: SuggestedBook = {
+      ...current,
+      ...(selectedData.title !== undefined && { title: selectedData.title }),
+      ...(selectedData.subtitle !== undefined && { subtitle: selectedData.subtitle }),
+      ...(selectedData.isbn !== undefined && { isbn: selectedData.isbn }),
+      ...(selectedData.publishedDate !== undefined && { published_date: selectedData.publishedDate }),
+      ...(selectedData.pageCount !== undefined && { page_count: selectedData.pageCount }),
+      ...(selectedData.thumbnail !== undefined && { cover_url: selectedData.thumbnail }),
+      ...(selectedData.authors !== undefined && { authors: selectedData.authors }),
+      ...(selectedData.publisher !== undefined && { publisher: selectedData.publisher }),
+      ...(selectedData.genres !== undefined && { genres: selectedData.genres }),
+    } as SuggestedBook;
+    suggestedDataRef.current = merged;
+    setFormKey(k => k + 1);
+    setExternalData(null);
+  };
+
+  const baseData = convertBookToSuggestedFormat();
+  if (baseData && !suggestedDataRef.current) {
+    suggestedDataRef.current = baseData;
+  }
+  const suggestedData = suggestedDataRef.current ?? baseData;
 
   if (!id) {
     return <ErrorMessage message="ID du livre manquant" onRetry={() => router.back()} />;
@@ -223,7 +272,34 @@ export default function EditBookScreen() {
               </View>
             )}
 
+            {book?.base?.isbn && (
+              <TouchableOpacity
+                style={[styles.externalButton, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}
+                onPress={fetchExternalData}
+                disabled={loadingExternal}
+              >
+                {loadingExternal ? (
+                  <ActivityIndicator size="small" color={theme.accent} />
+                ) : (
+                  <MaterialIcons name="search" size={18} color={theme.accent} />
+                )}
+                <Text style={[styles.externalButtonText, { color: theme.accent }]}>
+                  {loadingExternal ? 'Recherche en cours...' : 'Chercher les infos en ligne'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {externalData && (
+              <ExternalDataSection
+                googleData={externalData.google_books}
+                openLibraryData={externalData.open_library}
+                onImportData={handleImportData}
+                baseBook={book?.base}
+              />
+            )}
+
             <BookForm
+              key={formKey}
               initialData={suggestedData}
               onSubmit={handleFormSubmit}
               submitButtonText="Enregistrer les modifications"
@@ -302,5 +378,18 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 14,
     lineHeight: 20,
+  },
+  externalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8 as any,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  externalButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

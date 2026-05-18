@@ -1,8 +1,6 @@
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { BookDetail } from "@/types/book";
 import { BaseInfoTab } from "@/components/BookDetail/BaseInfoTab";
-import { GoogleBooksTab } from "@/components/BookDetail/GoogleBooksTab";
-import { OpenLibraryTab } from "@/components/BookDetail/OpenLibraryTab";
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface BookDetailTabsProps {
@@ -15,7 +13,6 @@ const Tab = createMaterialTopTabNavigator();
 
 export function BookDetailTabs({ book, onBookUpdated, readOnly }: BookDetailTabsProps) {
 	const theme = useTheme();
-	const bookId = book.base?.id?.toString() ?? '';
 
 	return (
 		<Tab.Navigator
@@ -36,16 +33,6 @@ export function BookDetailTabs({ book, onBookUpdated, readOnly }: BookDetailTabs
 					key={`base-${book.base.id}-${book.base.updated_at ?? ''}`}
 				/>
 			)}
-			<Tab.Screen
-				name="Google Books"
-				component={GoogleBooksTab}
-				initialParams={{ book }}
-			/>
-			<Tab.Screen
-				name="Open Library"
-				component={OpenLibraryTab}
-				initialParams={{ book }}
-			/>
 		</Tab.Navigator>
 	);
 }
