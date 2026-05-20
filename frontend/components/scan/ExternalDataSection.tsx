@@ -462,7 +462,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			if (key === 'authors') return (enriched?.authors?.length ?? 0) === 0 && (Array.isArray(onlineVal) && onlineVal.length === 0);
 			if (key === 'publisher') return !enriched?.publisher && !onlineVal;
 			if (key === 'categories') return (enriched?.genres?.length ?? 0) === 0 && (Array.isArray(onlineVal) && onlineVal.length === 0);
-			return onlineVal == null || onlineVal === '' || (Array.isArray(onlineVal) && onlineVal.length === 0);
+			return onlineVal == null || onlineVal === '' || (Array.isArray(onlineVal) && onlineVal.length === 0) || (key === 'pageCount' && onlineVal === 0);
 		})();
 		if (effectiveOnlineEmpty) return null;
 
