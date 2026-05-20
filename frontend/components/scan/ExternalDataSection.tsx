@@ -84,7 +84,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			return {
 				exploitable: {
 					title: data.title,
-					authors: data.authors?.map((a: any) => a.name) || [],
+					authors: data.authors?.map((a: any) => a.name).filter(Boolean) || [],
 					publisher: data.publishers?.[0],
 					publishedDate: data.publish_date,
 					pageCount: data.number_of_pages,
@@ -172,6 +172,31 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 	const normalizeStr = (v: any): string =>
 		v == null ? '' : String(v).trim().toLowerCase();
 
+	const MONTHS_EN: Record<string, string> = {
+		january: 'janvier', february: 'février', march: 'mars', april: 'avril',
+		may: 'mai', june: 'juin', july: 'juillet', august: 'août',
+		september: 'septembre', october: 'octobre', november: 'novembre', december: 'décembre',
+	};
+
+	const translateDate = (v: any): string => {
+		if (!v) return '';
+		const s = String(v).trim();
+		// ISO YYYY-MM-DD → DD/MM/YYYY
+		const isoFull = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+		if (isoFull) return `${isoFull[3]}/${isoFull[2]}/${isoFull[1]}`;
+		// ISO YYYY-MM → MM/YYYY
+		const isoMonth = s.match(/^(\d{4})-(\d{2})$/);
+		if (isoMonth) return `${isoMonth[2]}/${isoMonth[1]}`;
+		// ISO YYYY seul → laisser tel quel
+		if (s.match(/^\d{4}$/)) return s;
+		// Texte anglais "March 2000", "January 1, 1995" → traduire les mois
+		let result = s;
+		Object.entries(MONTHS_EN).forEach(([en, fr]) => {
+			result = result.replace(new RegExp(en, 'i'), fr);
+		});
+		return result;
+	};
+
 	const extractYear = (v: any): string => {
 		if (!v) return '';
 		const s = String(v).trim();
@@ -181,6 +206,9 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		// DD/MM/YYYY ou DD-MM-YYYY
 		const dmyMatch = s.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-](\d{4})/);
 		if (dmyMatch) return dmyMatch[1];
+		// "March 2000", "January 1, 1995", etc.
+		const yearAnywhere = s.match(/(\d{4})/);
+		if (yearAnywhere) return yearAnywhere[1];
 		return '';
 	};
 
@@ -406,9 +434,8 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			return <Image source={{ uri: onlineVal }} style={styles.thumbnailInline} resizeMode="contain" />;
 		}
 		if (field === 'publishedDate') {
-			const year = extractYear(onlineVal);
-			if (!year) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
-			return <Text style={[styles.valueText, { color: theme.textPrimary }]}>{year}</Text>;
+			if (!onlineVal) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
+			return <Text style={[styles.valueText, { color: theme.textPrimary }]}>{translateDate(onlineVal)}</Text>;
 		}
 		if (!onlineVal && onlineVal !== 0) return <Text style={[styles.valueText, { color: theme.textMuted, fontStyle: 'italic' }]}>—</Text>;
 		if (Array.isArray(onlineVal)) {
@@ -426,7 +453,18 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		isSelected: boolean,
 		enriched?: { authors?: Author[]; publisher?: Publisher | null; genres?: Genre[] },
 	) => {
-		if (onlineVal == null || onlineVal === '' || (Array.isArray(onlineVal) && onlineVal.length === 0)) return null;
+		// Vérifier la valeur en ligne selon le type de champ
+		const effectiveOnlineEmpty = (() => {
+			if (isEnriching) {
+				// Pendant l'enrichissement, se baser sur les valeurs brutes
+				return onlineVal == null || onlineVal === '' || (Array.isArray(onlineVal) && onlineVal.length === 0);
+			}
+			if (key === 'authors') return (enriched?.authors?.length ?? 0) === 0 && (Array.isArray(onlineVal) && onlineVal.length === 0);
+			if (key === 'publisher') return !enriched?.publisher && !onlineVal;
+			if (key === 'categories') return (enriched?.genres?.length ?? 0) === 0 && (Array.isArray(onlineVal) && onlineVal.length === 0);
+			return onlineVal == null || onlineVal === '' || (Array.isArray(onlineVal) && onlineVal.length === 0);
+		})();
+		if (effectiveOnlineEmpty) return null;
 
 		const status = baseBook ? getFieldStatus(key, onlineVal) : 'new';
 		const isIdentical = status === 'identical';
