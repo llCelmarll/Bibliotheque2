@@ -9,7 +9,6 @@ from sqlmodel import Session
 
 from app.services.auth_service import (
     AuthService,
-    _is_legacy_sha256,
     hash_password,
     verify_password,
 )
@@ -68,25 +67,12 @@ class TestAuthServiceValidation:
         assert valid is True
         assert msg == ""
 
-    def test_is_legacy_sha256_true(self):
-        legacy = hashlib.sha256(b"password").hexdigest()
-        assert _is_legacy_sha256(legacy) is True
-
-    def test_is_legacy_sha256_false_bcrypt(self):
-        bcrypt_hash = hash_password("password")
-        assert _is_legacy_sha256(bcrypt_hash) is False
-
     def test_hash_and_verify_password_roundtrip(self):
         pw = "MySecret1"
         hashed = hash_password(pw)
         assert verify_password(pw, hashed) is True
         assert verify_password("wrong", hashed) is False
 
-    def test_verify_password_legacy_sha256(self):
-        pw = "OldPassword1"
-        legacy_hash = hashlib.sha256(pw.encode()).hexdigest()
-        assert verify_password(pw, legacy_hash) is True
-        assert verify_password("wrong", legacy_hash) is False
 
 
 # ---------------------------------------------------------------------------
@@ -211,24 +197,6 @@ class TestAuthServiceAuthenticate:
         result = svc.authenticate_user("bcrypt2@example.com", "wrongpassword")
         assert result is None
 
-    def test_authenticate_user_legacy_sha256_upgrades_to_bcrypt(self, session):
-        password = "OldSecret1"
-        legacy_hash = hashlib.sha256(password.encode()).hexdigest()
-        user = User(
-            email="legacy@example.com",
-            username="legacyuser",
-            hashed_password=legacy_hash,
-            is_active=True,
-        )
-        session.add(user)
-        session.commit()
-        session.refresh(user)
-
-        svc = AuthService(session)
-        result = svc.authenticate_user("legacy@example.com", password)
-        assert result is not None
-        # Hash should have been upgraded to bcrypt
-        assert not _is_legacy_sha256(result.hashed_password)
 
 
 # ---------------------------------------------------------------------------

@@ -22,22 +22,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 # Configuration du bearer token
 security = HTTPBearer()
 
-def _is_legacy_sha256(hashed_password: str) -> bool:
-    """Détecte si le hash est un ancien SHA-256 hexadécimal (64 chars hex)."""
-    return len(hashed_password) == 64 and all(c in "0123456789abcdef" for c in hashed_password)
-
 def _prepare_for_bcrypt(password: str) -> bytes:
-    """Pré-hache le mot de passe en SHA-256 pour contourner la limite 72 bytes de bcrypt."""
+    # Pré-hash SHA256 pour contourner la limite de 72 bytes de bcrypt
     return hashlib.sha256(password.encode()).hexdigest().encode("utf-8")
 
 def hash_password(password: str) -> str:
-    """Hacher un mot de passe avec bcrypt (via pré-hash SHA-256)."""
     return bcrypt.hashpw(_prepare_for_bcrypt(password), bcrypt.gensalt()).decode("utf-8")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Vérifier un mot de passe contre son hash (bcrypt ou SHA-256 legacy)."""
-    if _is_legacy_sha256(hashed_password):
-        return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
     return bcrypt.checkpw(_prepare_for_bcrypt(plain_password), hashed_password.encode("utf-8"))
 
 class AuthService:
@@ -115,24 +107,11 @@ class AuthService:
         return result.first()
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        """Authentifier un utilisateur, avec upgrade transparent SHA-256 → bcrypt."""
         user = self.get_user_by_email(email)
         if not user or not user.is_active:
             return None
-
-        if _is_legacy_sha256(user.hashed_password):
-            # Hash legacy SHA-256 : vérification puis upgrade vers bcrypt
-            sha256_hash = hashlib.sha256(password.encode()).hexdigest()
-            if sha256_hash != user.hashed_password:
-                return None
-            user.hashed_password = hash_password(password)
-            self.session.add(user)
-            self.session.commit()
-        else:
-            # Hash bcrypt : vérification normale (via pré-hash SHA-256)
-            if not bcrypt.checkpw(_prepare_for_bcrypt(password), user.hashed_password.encode("utf-8")):
-                return None
-
+        if not verify_password(password, user.hashed_password):
+            return None
         return user
 
     def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None):

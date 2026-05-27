@@ -1,87 +1,74 @@
 from datetime import datetime, timedelta
-from collections import defaultdict
-from typing import Dict, Tuple
 from fastapi import HTTPException, status
+from sqlmodel import Session, select, delete
+from app.models.RateLimitAttempt import RateLimitAttempt
+
 
 class RateLimiter:
     """
-    Rate limiter simple pour prévenir les attaques brute force.
-    Limite le nombre de tentatives par IP sur une période donnée.
+    Rate limiter persistant via PostgreSQL.
+    Résiste aux redémarrages du backend contrairement à une implémentation en mémoire.
     """
-    def __init__(self):
-        # Format: {ip: [(timestamp, endpoint), ...]}
-        self.attempts: Dict[str, list] = defaultdict(list)
-        
-    def is_rate_limited(
-        self,
-        ip: str,
-        endpoint: str,
-        max_attempts: int = 5,
-        window_minutes: int = 15
-    ) -> Tuple[bool, int]:
-        """
-        Vérifie si une IP est rate limitée.
-        
-        Args:
-            ip: Adresse IP à vérifier
-            endpoint: Endpoint concerné (login, register, etc.)
-            max_attempts: Nombre maximum de tentatives
-            window_minutes: Fenêtre de temps en minutes
-            
-        Returns:
-            (is_limited, remaining_attempts)
-        """
-        now = datetime.utcnow()
-        cutoff = now - timedelta(minutes=window_minutes)
-        
-        # Nettoyer les anciennes tentatives
-        self.attempts[ip] = [
-            (ts, ep) for ts, ep in self.attempts[ip]
-            if ts > cutoff and ep == endpoint
-        ]
-        
-        # Compter les tentatives récentes pour cet endpoint
-        recent_attempts = len(self.attempts[ip])
-        
-        if recent_attempts >= max_attempts:
-            return True, 0
-        
-        return False, max_attempts - recent_attempts
-    
-    def record_attempt(self, ip: str, endpoint: str):
-        """Enregistrer une tentative"""
-        self.attempts[ip].append((datetime.utcnow(), endpoint))
-    
-    def clear_attempts(self, ip: str, endpoint: str):
-        """Effacer les tentatives (après succès)"""
-        self.attempts[ip] = [
-            (ts, ep) for ts, ep in self.attempts[ip]
-            if ep != endpoint
-        ]
-    
+
+    def _cutoff(self, window_minutes: int) -> datetime:
+        return datetime.utcnow() - timedelta(minutes=window_minutes)
+
+    def _count_recent(self, session: Session, ip: str, endpoint: str, window_minutes: int) -> int:
+        cutoff = self._cutoff(window_minutes)
+        result = session.exec(
+            select(RateLimitAttempt).where(
+                RateLimitAttempt.ip == ip,
+                RateLimitAttempt.endpoint == endpoint,
+                RateLimitAttempt.attempted_at > cutoff,
+            )
+        ).all()
+        return len(result)
+
     def check_and_record(
         self,
         ip: str,
         endpoint: str,
         max_attempts: int = 5,
-        window_minutes: int = 15
+        window_minutes: int = 15,
+        session: Session = None,
     ):
         """
         Vérifie le rate limit et enregistre la tentative.
-        Lève une HTTPException si rate limité.
+        Lève HTTPException 429 si la limite est atteinte.
         """
-        is_limited, remaining = self.is_rate_limited(
-            ip, endpoint, max_attempts, window_minutes
+        if session is None:
+            raise ValueError("session is required for persistent rate limiting")
+
+        # Nettoyage des entrées expirées pour éviter la croissance infinie de la table
+        cutoff = self._cutoff(window_minutes)
+        session.exec(
+            delete(RateLimitAttempt).where(
+                RateLimitAttempt.endpoint == endpoint,
+                RateLimitAttempt.attempted_at <= cutoff,
+            )
         )
-        
-        if is_limited:
+
+        count = self._count_recent(session, ip, endpoint, window_minutes)
+        if count >= max_attempts:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Trop de tentatives. Veuillez réessayer dans {window_minutes} minutes."
+                detail=f"Trop de tentatives. Veuillez réessayer dans {window_minutes} minutes.",
             )
-        
-        self.record_attempt(ip, endpoint)
-        return remaining
 
-# Instance globale
+        session.add(RateLimitAttempt(ip=ip, endpoint=endpoint))
+        session.commit()
+
+    def clear_attempts(self, ip: str, endpoint: str, session: Session = None):
+        """Efface les tentatives après un succès (ex: login réussi)."""
+        if session is None:
+            return
+        session.exec(
+            delete(RateLimitAttempt).where(
+                RateLimitAttempt.ip == ip,
+                RateLimitAttempt.endpoint == endpoint,
+            )
+        )
+        session.commit()
+
+
 rate_limiter = RateLimiter()

@@ -558,8 +558,6 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			.filter(f => !baseBook || getFieldStatus(f.key, f.val) !== 'identical')
 			.map(f => f.key);
 
-		const allSelected = selectableKeys.every(k => selectedData[k]);
-
 		return (
 			<View style={[styles.section, { borderColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}>
 				{baseBook && (

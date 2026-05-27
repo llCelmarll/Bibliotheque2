@@ -44,18 +44,17 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - Support de 4 thèmes (Chaleureuse, Sombre & Élégante, Minimaliste, Nature) sélectionnables depuis les paramètres.
 - [ ] **Détection automatique du thème système**
     - Utiliser `useColorScheme()` pour appliquer automatiquement un thème clair ou sombre selon les préférences système de l'appareil, avec possibilité d'override manuel.
-- [-] **Import / Export de données**
+- [x] **Import / Export de données**
     - [x] Export CSV de la bibliothèque complète.
     - [x] Import CSV avec gestion des doublons (avec et sans ISBN), résolution des conflits en batch, auto-couverture.
-    - [ ] *(itération future)* Import avec complétion des champs manquants via écran de modification.
+    - [x] Import avec complétion des champs manquants via écran de modification.
 
 ## Optimisations API externes (Google Books / OpenLibrary)
 
-- [ ] **Suppression des appels API sur la page détail**
-    - Actuellement `GET /books/{id}` appelle Google Books + OpenLibrary à chaque ouverture de fiche → provoque des 429.
-    - Solution : supprimer ces appels de `get_book_by_id()` et les déplacer dans l'écran de **modification du livre**.
-    - L'écran de modification proposera les données Google Books / OpenLibrary comme suggestions (couverture, auteurs, éditeur, etc.) que l'utilisateur peut accepter ou ignorer.
-    - La couverture sera notamment suggérée depuis Google Books et OpenLibrary si aucune n'est enregistrée en base.
+- [x] **Suppression des appels API sur la page détail**
+    - `GET /books/{id}` n'appelle plus Google Books + OpenLibrary → affichage instantané, plus de 429.
+    - L'écran d'édition propose un bouton "Chercher les infos en ligne" à la demande.
+    - Comparaison côte à côte des données en base et en ligne (nouveau / différent / identique) pour choisir précisément quels champs importer.
 - [x] **Version de test avant production (préproduction/staging)**
     - Créer une version de test dans les conditions réelles de déploiement.
     - Valider les éventuels problèmes (techniques, configuration, performance) avant déploiement sur la version de production.

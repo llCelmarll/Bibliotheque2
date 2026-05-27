@@ -69,7 +69,7 @@ async def forgot_password(
     Protection rate limiting : 3 tentatives / 15 min.
     """
     client_ip = get_client_ip(request)
-    rate_limiter.check_and_record(client_ip, "forgot-password", max_attempts=3, window_minutes=15)
+    rate_limiter.check_and_record(client_ip, "forgot-password", max_attempts=3, window_minutes=15, session=session)
 
     generic_response = {"message": "Si cet email correspond à un compte, vous recevrez un lien dans quelques minutes."}
 
@@ -131,7 +131,7 @@ async def reset_password(
     Protection rate limiting : 5 tentatives / 15 min.
     """
     client_ip = get_client_ip(request)
-    rate_limiter.check_and_record(client_ip, "reset-password", max_attempts=5, window_minutes=15)
+    rate_limiter.check_and_record(client_ip, "reset-password", max_attempts=5, window_minutes=15, session=session)
 
     reset_token = session.exec(
         select(PasswordResetToken).where(PasswordResetToken.token == data.token)

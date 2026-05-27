@@ -3,10 +3,12 @@ from datetime import timedelta
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session
 from app.schemas.User import UserLogin, UserRead, Token
 from app.schemas.auth import UserCreate, UserResponse
 from app.services.auth_service import AuthService, get_auth_service, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.User import User
+from app.db import get_session
 from app.utils.rate_limiter import rate_limiter
 
 logger = logging.getLogger("app")
@@ -35,17 +37,17 @@ async def login_for_access_token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     remember_me: bool = False,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    session: Session = Depends(get_session),
 ):
     """
     Connexion utilisateur avec email et mot de passe.
     Retourne un token JWT pour les requêtes authentifiées.
     Protection rate limiting: 10 tentatives max par 15 minutes.
     """
-    # Rate limiting
     client_ip = get_client_ip(request)
-    rate_limiter.check_and_record(client_ip, "login", max_attempts=10, window_minutes=15)
-    
+    rate_limiter.check_and_record(client_ip, "login", max_attempts=10, window_minutes=15, session=session)
+
     user = auth_service.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -53,10 +55,8 @@ async def login_for_access_token(
             detail="Email ou mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    # Succès: effacer les tentatives de login
-    rate_limiter.clear_attempts(client_ip, "login")
-    
+
+    rate_limiter.clear_attempts(client_ip, "login", session=session)
     tokens = auth_service.generate_tokens(user_id=str(user.id), remember_me=remember_me)
     return tokens
 class RefreshTokenRequest(BaseModel):
@@ -66,31 +66,32 @@ class RefreshTokenRequest(BaseModel):
 async def refresh_access_token(
     request: Request,
     body: RefreshTokenRequest,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    session: Session = Depends(get_session),
 ):
     """
     Renouvelle le token d'accès à partir du refresh token.
     Protection rate limiting: 10 tentatives max par 15 minutes.
     """
     client_ip = get_client_ip(request)
-    rate_limiter.check_and_record(client_ip, "refresh", max_attempts=10, window_minutes=15)
+    rate_limiter.check_and_record(client_ip, "refresh", max_attempts=10, window_minutes=15, session=session)
     return auth_service.renew_access_token(body.refresh_token)
 
 @router.post("/login-json", response_model=Token)
 async def login_with_json(
     request: Request,
     user_login: UserLogin,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    session: Session = Depends(get_session),
 ):
     """
     Connexion utilisateur avec JSON (pour le frontend).
     Alternative à login qui accepte un JSON au lieu d'un form.
     Protection rate limiting: 10 tentatives max par 15 minutes.
     """
-    # Rate limiting
     client_ip = get_client_ip(request)
-    rate_limiter.check_and_record(client_ip, "login", max_attempts=10, window_minutes=15)
-    
+    rate_limiter.check_and_record(client_ip, "login", max_attempts=10, window_minutes=15, session=session)
+
     user = auth_service.authenticate_user(user_login.email, user_login.password)
     if not user:
         raise HTTPException(
@@ -98,22 +99,20 @@ async def login_with_json(
             detail="Email ou mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    # Succès: effacer les tentatives de login
-    rate_limiter.clear_attempts(client_ip, "login")
-    
+
+    rate_limiter.clear_attempts(client_ip, "login", session=session)
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth_service.create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
-    
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/register", response_model=UserResponse)
 async def register_user(
     user_data: UserCreate,
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    session: Session = Depends(get_session),
 ):
     """
     Inscription d'un nouvel utilisateur.
@@ -123,21 +122,18 @@ async def register_user(
     - Envoie une notification email avec l'IP du nouvel inscrit
     Protection rate limiting: 3 tentatives max par 15 minutes.
     """
-    # Rate limiting strict sur le register
     client_ip = get_client_ip(request)
-    rate_limiter.check_and_record(client_ip, "register", max_attempts=3, window_minutes=15)
-    
+    rate_limiter.check_and_record(client_ip, "register", max_attempts=3, window_minutes=15, session=session)
+
     try:
-        # Créer l'utilisateur (avec toutes les validations)
         new_user = await auth_service.create_user(
             email=user_data.email,
             username=user_data.username,
             password=user_data.password,
             request=request
         )
-        
-        # Succès: effacer les tentatives de register
-        rate_limiter.clear_attempts(client_ip, "register")
+
+        rate_limiter.clear_attempts(client_ip, "register", session=session)
         
         # Générer un token pour la connexion automatique
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -169,9 +165,3 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
     """
     return current_user
 
-@router.get("/test")
-async def test_protected_endpoint(current_user: User = Depends(get_current_active_user)):
-    """
-    Endpoint de test pour vérifier l'authentification.
-    """
-    return {"message": f"Hello {current_user.username}! Vous êtes connecté."}
