@@ -21,9 +21,10 @@ class BookPerformanceUser(BibliothequeUser):
     @task(5)
     def test_list_books_performance(self):
         """Test de performance de la liste des livres."""
-        with self.client.get("/books", 
-                             headers=self.get_auth_headers(),
-                             catch_response=True) as response:
+        with self.client.post("/books/search/simple",
+                              json=[],
+                              headers=self.get_auth_headers(),
+                              catch_response=True) as response:
             if response.status_code == 200:
                 response.success()
             else:
@@ -81,10 +82,11 @@ class BookPerformanceUser(BibliothequeUser):
         """Test de performance de recherche de livres."""
         search_terms = ["Python", "Java", "Test", "Book", "Programming"]
         query = random.choice(search_terms)
-        
-        with self.client.get(f"/books/search?q={query}", 
-                             headers=self.get_auth_headers(),
-                             catch_response=True) as response:
+
+        with self.client.post(f"/books/search/simple?q={query}",
+                              json=[],
+                              headers=self.get_auth_headers(),
+                              catch_response=True) as response:
             if response.status_code == 200:
                 response.success()
             else:

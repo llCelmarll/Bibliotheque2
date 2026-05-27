@@ -21,19 +21,17 @@ L'application est fonctionnelle et stable en production privée (NAS Synology, ~
 Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inconnus.
 
 #### 1.1 Tests de performance
-- [ ] Identifier les endpoints les plus lents (logging des temps de réponse déjà en place)
-- [ ] Détecter les requêtes N+1 sur les listings de livres
-- [ ] Vérifier les index PostgreSQL (auteurs, genres, ISBN, owner_id)
-- [ ] Mesurer le temps de chargement initial de la liste de livres (cible < 300ms)
-- [ ] Tester le comportement sous charge légère (10–50 utilisateurs simultanés)
+- [x] Identifier les endpoints les plus lents (logging des temps de réponse déjà en place via middleware `perf_counter`)
+- [x] Détecter les requêtes N+1 sur les listings de livres — corrigé : suppression des `selectinload` imbriqués sur `Author.books` et `Genre.books` dans `book_repository.py` (3 requêtes)
+- [x] Vérifier les index PostgreSQL — migration `a2b3c4d5e6f7` : ajout de `(owner_id, is_read)`, `(owner_id, created_at)` sur `books` et `(book_id, status)` sur `borrowed_books`
+- [x] Optimiser le GROUP BY dans les recherches — `_deduplicate_and_sort` réduit de 14 colonnes à `Book.id` seul (compatible PostgreSQL PRIMARY KEY)
+- [x] Mesurer le temps de chargement initial de la liste de livres — baseline Locust (10 users, 2min) : `/books/search/simple` P50=47ms, P95=250ms ✅ sous cible 300ms. Register P95=2400ms (bcrypt, normal).
+- [ ] Tester le comportement sous charge légère (10–50 utilisateurs simultanés) — à refaire en prod sur infrastructure réelle
 
 #### 1.2 Tests de sécurité
-- [ ] **Migration SHA256 → bcrypt** pour le hashage des mots de passe
-  - Risque actuel : en cas de fuite de la DB, les mots de passe sont facilement cassables (pas de sel)
-  - Plan : migration transparente au prochain login (double vérification pendant la transition)
-- [ ] **Rate limiter persistant** — l'implémentation actuelle est en RAM, remise à zéro à chaque restart
-  - Solution : Redis ou stockage DB simple pour les compteurs de tentatives
-- [ ] **Supprimer `/auth/test`** — endpoint exposé sans utilité en production
+- [x] **Migration SHA256 → bcrypt** — tous les utilisateurs prod sont en bcrypt depuis mai 2026 (vérifié en base), support legacy SHA256 supprimé du code
+- [x] **Rate limiter persistant** — migré vers PostgreSQL (`RateLimitAttempt`, migration `f1a2b3c4d5e6`), plus de remise à zéro au restart
+- [x] **Supprimer `/auth/test`** — endpoint retiré
 - [ ] **Confirmation d'email** à l'inscription (si la whitelist est levée)
 - [ ] Audit des permissions : vérifier qu'aucun endpoint ne laisse accéder aux données d'un autre utilisateur
 - [ ] Test de fuzzing sur les champs de saisie (titre, auteur, ISBN)

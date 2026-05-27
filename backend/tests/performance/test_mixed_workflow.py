@@ -13,21 +13,23 @@ class MixedWorkflow(TaskSet):
     @task(10)
     def browse_books(self):
         """Navigation dans la liste des livres."""
-        self.client.get("/books", headers=self.parent.get_auth_headers())
-    
+        self.client.post("/books/search/simple", json=[],
+                         headers=self.parent.get_auth_headers())
+
     @task(5)
     def search_books(self):
         """Recherche de livres."""
         search_terms = ["Python", "Programming", "Science", "Fiction", "History"]
         query = random.choice(search_terms)
-        self.client.get(f"/books/search?q={query}", headers=self.parent.get_auth_headers())
-    
+        self.client.post(f"/books/search/simple?q={query}", json=[],
+                         headers=self.parent.get_auth_headers())
+
     @task(3)
     def scan_isbn(self):
         """Scanner un ISBN."""
         test_isbns = ["9780134685991", "9781617294938", "9780135957059"]
         isbn = random.choice(test_isbns)
-        self.client.get(f"/scan/isbn/{isbn}", headers=self.parent.get_auth_headers())
+        self.client.get(f"/scan/{isbn}", headers=self.parent.get_auth_headers())
     
     @task(2)
     def create_book(self):

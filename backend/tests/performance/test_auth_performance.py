@@ -3,41 +3,40 @@ Tests de performance pour les endpoints d'authentification.
 Mesure les performances de registration et login.
 """
 import random
+import uuid
 from locust import task
 from .base_user import BibliothequeUser
-from tests.factories import UserFactory
 
 
 class AuthPerformanceUser(BibliothequeUser):
     """Tests de performance pour l'authentification."""
-    
+
     @task(3)
     def test_login_performance(self):
         """Test de performance du login."""
         if not self.user_data:
             return
-            
+
         login_payload = {
-            "username": self.user_data["username"],
-            "password": "testpassword123"
+            "username": self.user_data["email"],
+            "password": "TestPass1"
         }
-        
+
         with self.client.post("/auth/login", data=login_payload, catch_response=True) as response:
             if response.status_code == 200:
                 response.success()
             else:
                 response.failure(f"Login failed: {response.text}")
-    
+
     @task(1)
     def test_registration_performance(self):
         """Test de performance de l'enregistrement."""
-        user_data = UserFactory.build()
-        
+        uid = uuid.uuid4().hex[:8]
         register_payload = {
-            "email": user_data.email,
-            "username": user_data.username,
-            "password": "testpassword123",
-            "confirm_password": "testpassword123"
+            "email": f"perf_{uid}@example.com",
+            "username": f"user_{uid}",
+            "password": "TestPass1",
+            "confirm_password": "TestPass1"
         }
         
         with self.client.post("/auth/register", json=register_payload, catch_response=True) as response:
@@ -53,9 +52,10 @@ class AuthPerformanceUser(BibliothequeUser):
     @task(2)
     def test_protected_endpoint_performance(self):
         """Test de performance d'un endpoint protégé."""
-        with self.client.get("/books", 
-                             headers=self.get_auth_headers(),
-                             catch_response=True) as response:
+        with self.client.post("/books/search/simple",
+                              json=[],
+                              headers=self.get_auth_headers(),
+                              catch_response=True) as response:
             if response.status_code == 200:
                 response.success()
             else:

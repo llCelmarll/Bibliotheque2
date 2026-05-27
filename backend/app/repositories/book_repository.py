@@ -30,8 +30,8 @@ class BookRepository:
 			.where(Book.id == book_id)
 			.options(
 				selectinload(Book.publisher),
-				selectinload(Book.authors).selectinload(Author.books),
-				selectinload(Book.genres).selectinload(Genre.books),
+				selectinload(Book.authors),
+				selectinload(Book.genres),
 				selectinload(Book.series)
 			)
 		)
@@ -249,8 +249,8 @@ class BookRepository:
 			.where(Book.isbn == isbn)
 			.options(
 				selectinload(Book.publisher),
-				selectinload(Book.authors).selectinload(Author.books),
-				selectinload(Book.genres).selectinload(Genre.books),
+				selectinload(Book.authors),
+				selectinload(Book.genres),
 				selectinload(Book.series)
 			)
 		)
@@ -265,8 +265,8 @@ class BookRepository:
 			.where((Book.isbn == code) | (Book.barcode == code))
 			.options(
 				selectinload(Book.publisher),
-				selectinload(Book.authors).selectinload(Author.books),
-				selectinload(Book.genres).selectinload(Genre.books),
+				selectinload(Book.authors),
+				selectinload(Book.genres),
 				selectinload(Book.series)
 			)
 		)
@@ -402,13 +402,8 @@ class BookRepository:
 		"""Applique GROUP BY pour dédupliquer et tri compatible PostgreSQL"""
 		order_field = self._get_order_field(sort_by)
 
-		# GROUP BY toutes les colonnes de Book pour dédupliquer
-		stmt = stmt.group_by(
-			Book.id, Book.title, Book.isbn, Book.published_date,
-			Book.page_count, Book.barcode, Book.publisher_id, Book.genre_id,
-			Book.owner_id, Book.cover_url, Book.is_read, Book.read_date,
-			Book.created_at, Book.updated_at
-		)
+		# GROUP BY sur la clé primaire seule — suffisant en PostgreSQL (dépendance fonctionnelle)
+		stmt = stmt.group_by(Book.id)
 
 		# Si le tri porte sur une colonne jointe, utiliser MIN/MAX comme agrégat
 		if sort_by in (SortBy.author, SortBy.publisher, SortBy.genre):

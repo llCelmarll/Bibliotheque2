@@ -6,6 +6,10 @@ __pycache__/
 *.db
 *.db.*
 
+# Locust performance results
+perf_results*.csv
+backend/tests/performance/results/
+
 # Node / Frontend
 node_modules/
 dist/
