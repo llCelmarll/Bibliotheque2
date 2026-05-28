@@ -219,33 +219,51 @@ class AuthService:
                 detail="Le nom d'utilisateur ne peut contenir que des lettres (y compris accentuées), chiffres, espaces, tirets et underscores"
             )
         
-        # 6. Créer le nouvel utilisateur
+        # 6. Créer le nouvel utilisateur (non vérifié)
+        import secrets
+        import sys
+        import logging
+        logger = logging.getLogger("app")
+
         hashed_password = self.get_password_hash(password)
         new_user = User(
             email=email,
             username=username,
             hashed_password=hashed_password,
             is_active=True,
+            email_verified_at=None,
             created_at=datetime.utcnow()
         )
-        
+
         self.session.add(new_user)
         self.session.commit()
         self.session.refresh(new_user)
-        
-        # 7. Envoyer notification email (sauf en mode test)
-        # Détecte si pytest est en cours d'exécution
-        import sys
-        import logging
-        logger = logging.getLogger("app")
+
+        # 7. Créer le token de vérification d'email (24h)
+        from app.models.EmailVerificationToken import EmailVerificationToken
+        raw_token = secrets.token_urlsafe(32)
+        verification_token = EmailVerificationToken(
+            token=raw_token,
+            user_id=new_user.id,
+            expires_at=datetime.utcnow() + timedelta(hours=24),
+            used=False,
+            created_at=datetime.utcnow(),
+        )
+        self.session.add(verification_token)
+        self.session.commit()
 
         is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true"
-        logger.info(f"[AUTH] is_testing={is_testing}, pytest in sys.modules={'pytest' in sys.modules}, TESTING env={os.getenv('TESTING')}")
 
         if request and not is_testing:
-            logger.info("[AUTH] Sending registration email notification...")
             try:
                 from .email_service import email_notification_service
+                # Email de vérification à l'utilisateur
+                await email_notification_service.send_email_verification(
+                    email=email,
+                    username=username,
+                    verification_token=raw_token,
+                )
+                # Notification admin
                 await email_notification_service.send_registration_notification(
                     username=username,
                     email=email,
@@ -256,10 +274,8 @@ class AuthService:
                     }
                 )
             except Exception as e:
-                logger.warning(f"Erreur notification email : {e}")
-        else:
-            logger.info("[AUTH] Skipping email notification (testing mode)")
-        
+                logger.warning("Erreur envoi emails inscription : %s", e)
+
         return new_user
 
 
@@ -290,7 +306,13 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive user"
         )
-        
+
+    if user.email_verified_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email non vérifié. Consultez votre boite mail pour activer votre compte."
+        )
+
     return user
 
 

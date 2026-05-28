@@ -13,6 +13,7 @@ from app.models.BorrowedBook import BorrowedBook
 from app.models.Contact import Contact
 from app.models.ContactInvitation import ContactInvitation
 from app.models.Loan import Loan
+from app.models.EmailVerificationToken import EmailVerificationToken
 from app.models.PasswordResetToken import PasswordResetToken
 from app.models.User import User
 from app.models.UserLoanRequest import UserLoanRequest
@@ -253,6 +254,7 @@ async def update_profile(
 @router.delete("/", status_code=200)
 async def delete_account(
     data: DeleteAccountRequest,
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     session: Session = Depends(get_session),
 ):
@@ -268,11 +270,10 @@ async def delete_account(
 
     user_id = current_user.id
 
-    # 1. Tokens de reset
-    session.exec(
-        select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
-    )
+    # 1. Tokens de reset et de vérification email
     for t in session.exec(select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)).all():
+        session.delete(t)
+    for t in session.exec(select(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)).all():
         session.delete(t)
 
     # 2. Demandes de prêt (en tant que demandeur ou prêteur)
@@ -320,6 +321,12 @@ async def delete_account(
         session.delete(book)
 
     # 9. Supprimer l'utilisateur
+    client_ip = get_client_ip(request)
+    logger.info(
+        "ACCOUNT_DELETED user_id=%s email=%s username=%s ip=%s",
+        user_id, current_user.email, current_user.username, client_ip,
+    )
+
     session.delete(current_user)
     session.commit()
 

@@ -7,6 +7,7 @@ from .BookAuthorLink import BookAuthorLink
 from .BookGenreLink import BookGenreLink
 from .Series import Series
 from .BookSeriesLink import BookSeriesLink
+from .EmailVerificationToken import EmailVerificationToken
 
 __all__ = [
     "User",
@@ -17,5 +18,6 @@ __all__ = [
     "Series",
     "BookAuthorLink",
     "BookGenreLink",
-    "BookSeriesLink"
+    "BookSeriesLink",
+    "EmailVerificationToken",
 ]

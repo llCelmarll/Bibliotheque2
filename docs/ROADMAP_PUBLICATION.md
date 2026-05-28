@@ -32,8 +32,9 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] **Migration SHA256 → bcrypt** — tous les utilisateurs prod sont en bcrypt depuis mai 2026 (vérifié en base), support legacy SHA256 supprimé du code
 - [x] **Rate limiter persistant** — migré vers PostgreSQL (`RateLimitAttempt`, migration `f1a2b3c4d5e6`), plus de remise à zéro au restart
 - [x] **Supprimer `/auth/test`** — endpoint retiré
-- [ ] **Confirmation d'email** à l'inscription (si la whitelist est levée)
-- [ ] Audit des permissions : vérifier qu'aucun endpoint ne laisse accéder aux données d'un autre utilisateur
+- [x] **Confirmation d'email** à l'inscription — token 24h, blocage connexion si non vérifié, renvoi possible via `POST /auth/resend-verification`
+- [x] Audit des permissions : vérifier qu'aucun endpoint ne laisse accéder aux données d'un autre utilisateur — ownership vérifié partout, aucune faille détectée
+- [x] Logging des suppressions de compte (date, IP) pour support et conformité RGPD
 - [ ] Test de fuzzing sur les champs de saisie (titre, auteur, ISBN)
 - [ ] Vérifier les headers de sécurité HTTP (CSP, X-Frame-Options, HSTS)
 
@@ -161,4 +162,7 @@ L'application est prête pour la publication publique quand :
 - Support iOS (prérequis payant, non prioritaire)
 - Détection automatique du thème système
 - Découverte sociale avancée (profil public, recherche géographique)
-- Système de rôles admin/bibliothécaire (SECURITY_PLAN.md)
+- Système de rôles admin/bibliothécaire complet (interface de gestion, whitelist dynamique, stats globales)
+  - Le modèle `UserRole` (user/moderator/admin) et `get_current_moderator_user` existent déjà
+  - Moderator : création/suppression auteurs, éditeurs, séries, genres (déjà en place)
+  - Admin v1.1.0 minimum : désactiver un compte sans supprimer les données (support, compte compromis)

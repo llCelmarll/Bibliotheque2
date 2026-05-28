@@ -87,7 +87,7 @@ export default function RegisterScreen() {
         confirm_password: form.confirmPassword,
       });
 
-      router.replace('/(tabs)/books');
+      router.replace('/auth/verify-email-pending');
 
     } catch (error: any) {
       const errorMessage = error.message || 'Une erreur est survenue lors de l\'inscription';

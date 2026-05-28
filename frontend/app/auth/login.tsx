@@ -27,6 +27,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isUnverified, setIsUnverified] = useState(false);
 
   const { login, isLoading } = useAuth();
   const router = useRouter();
@@ -50,14 +51,20 @@ export default function LoginScreen() {
     }
     setIsLoginLoading(true);
     setErrorMessage('');
+    setIsUnverified(false);
     try {
       await login({ email: email.trim(), password, remember_me: rememberMe });
       router.replace('/(tabs)/books');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Une erreur est survenue';
-      setErrorMessage(message);
-      if (Platform.OS !== 'web') {
-        Alert.alert('Erreur de connexion', message);
+      if (message.includes('non vérifié')) {
+        setIsUnverified(true);
+        setErrorMessage(message);
+      } else {
+        setErrorMessage(message);
+        if (Platform.OS !== 'web') {
+          Alert.alert('Erreur de connexion', message);
+        }
       }
     } finally {
       setIsLoginLoading(false);
@@ -91,7 +98,16 @@ export default function LoginScreen() {
             {errorMessage ? (
               <View style={[styles.errorContainer, { backgroundColor: theme.dangerBg, borderLeftColor: theme.danger }]}>
                 <MaterialIcons name="error-outline" size={20} color={theme.danger} />
-                <Text style={[styles.errorText, { color: theme.danger }]}>{errorMessage}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.errorText, { color: theme.danger }]}>{errorMessage}</Text>
+                  {isUnverified && (
+                    <TouchableOpacity onPress={() => router.push('/auth/verify-email-pending')} style={{ marginTop: 6 }}>
+                      <Text style={[styles.errorText, { color: theme.accent, fontWeight: '600' }]}>
+                        Renvoyer l'email de confirmation →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             ) : null}
 
@@ -104,7 +120,7 @@ export default function LoginScreen() {
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
-                  if (errorMessage) setErrorMessage('');
+                  if (errorMessage) { setErrorMessage(''); setIsUnverified(false); }
                 }}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -122,7 +138,7 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
-                  if (errorMessage) setErrorMessage('');
+                  if (errorMessage) { setErrorMessage(''); setIsUnverified(false); }
                 }}
                 secureTextEntry={!showPassword}
                 autoComplete="password"

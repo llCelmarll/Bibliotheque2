@@ -2,6 +2,9 @@
 from typing import Optional
 from datetime import datetime
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from fastapi import Request
 
 import resend
@@ -13,14 +16,36 @@ class EmailNotificationService:
         self.email_from = os.getenv("EMAIL_FROM", "noreply@mabibliotheque.ovh")
         self.notification_email = os.getenv("NOTIFICATION_EMAIL")
         self.enabled = os.getenv("EMAIL_NOTIFICATIONS_ENABLED", "true").lower() == "true"
-        env = os.getenv("ENV", "production")
+        self.env = os.getenv("ENV", "production")
         self.frontend_base_url = os.getenv(
             "FRONTEND_BASE_URL",
-            "http://localhost:8081" if env == "development" else "https://mabibliotheque.ovh"
+            "http://localhost:8081" if self.env == "development" else "https://mabibliotheque.ovh"
         )
+        # Papercut / Mailpit en développement
+        self.smtp_host = os.getenv("SMTP_HOST", "localhost")
+        self.smtp_port = int(os.getenv("SMTP_PORT", "25"))
 
         if self.api_key:
             resend.api_key = self.api_key
+
+    def _send(self, to: str, subject: str, html_body: str):
+        """Envoie via SMTP local (dev) ou Resend API (prod)."""
+        if self.env == "development":
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = self.email_from
+            msg["To"] = to
+            msg.attach(MIMEText(html_body, "html", "utf-8"))
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=5) as server:
+                server.sendmail(self.email_from, [to], msg.as_string())
+            print(f"Email SMTP local envoye a {to} ({self.smtp_host}:{self.smtp_port})")
+        else:
+            resend.Emails.send({
+                "from": f"Ma Bibliotheque <{self.email_from}>",
+                "to": [to],
+                "subject": subject,
+                "html": html_body,
+            })
 
     def get_client_ip(self, request: Request) -> str:
         """Récupère l'IP réelle du client (même derrière un proxy)"""
@@ -48,20 +73,19 @@ class EmailNotificationService:
         """Envoie une notification email pour chaque nouvelle inscription"""
 
         if not self.enabled:
-            print("📧 Notifications email désactivées")
             return
 
-        if not self.api_key:
-            print("⚠️ RESEND_API_KEY manquante - notification non envoyée")
+        if self.env != "development" and not self.api_key:
+            print("RESEND_API_KEY manquante - notification non envoyee")
             return
 
         if not self.notification_email:
-            print("⚠️ NOTIFICATION_EMAIL manquant - notification non envoyée")
+            print("NOTIFICATION_EMAIL manquant - notification non envoyee")
             return
 
         try:
             client_ip = self.get_client_ip(request)
-            timestamp = datetime.now().strftime("%d/%m/%Y à %H:%M:%S")
+            timestamp = datetime.now().strftime("%d/%m/%Y a %H:%M:%S")
 
             is_authorized = (
                 client_ip.startswith("192.168.") or
@@ -70,108 +94,137 @@ class EmailNotificationService:
                 client_ip == "127.0.0.1"
             )
 
-            alert_message = "⚠️ ALERTE : Cette inscription provient d'une IP non autorisée!" if not is_authorized else ""
-            user_agent = request.headers.get('User-Agent', 'Non spécifié')
+            user_agent = request.headers.get("User-Agent", "Non specifie")
             user_agent_short = user_agent[:100] + "..." if len(user_agent) > 100 else user_agent
-
-            subject = f"🔔 Nouvelle inscription - Ma Bibliothèque {'✅' if is_authorized else '⚠️'}"
+            subject = f"Nouvelle inscription - Ma Bibliotheque ({'OK' if is_authorized else 'ALERTE IP'})"
 
             html_body = f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-  <h2>🔔 Nouvelle inscription sur Ma Bibliothèque</h2>
-  <h3>📝 Détails de l'inscription</h3>
+  <h2>Nouvelle inscription sur Ma Bibliotheque</h2>
+  <h3>Details de l'inscription</h3>
   <ul>
     <li><strong>Nom d'utilisateur :</strong> {username}</li>
     <li><strong>Email :</strong> {email}</li>
     <li><strong>Date/Heure :</strong> {timestamp}</li>
   </ul>
-  <h3>🌐 Informations réseau</h3>
+  <h3>Informations reseau</h3>
   <ul>
     <li><strong>Adresse IP :</strong> {client_ip}</li>
     <li><strong>User-Agent :</strong> {user_agent_short}</li>
-    <li><strong>Referer :</strong> {request.headers.get('Referer', 'Accès direct')}</li>
+    <li><strong>Referer :</strong> {request.headers.get("Referer", "Acces direct")}</li>
+    <li><strong>Reseau :</strong> {"Reseau local/autorise" if is_authorized else "Internet public"}</li>
   </ul>
-  <h3>🔐 Sécurité</h3>
-  <ul>
-    <li><strong>Réseau :</strong> {'✅ Réseau local/autorisé' if is_authorized else '🌐 Internet public'}</li>
-  </ul>
-  {f'<p style="color: red; font-weight: bold;">{alert_message}</p>' if alert_message else ''}
-  {self._format_additional_info_html(additional_info) if additional_info else ''}
+  {self._format_additional_info_html(additional_info) if additional_info else ""}
   <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-  <p style="color: #aaa; font-size: 12px;">Système de notification Ma Bibliothèque</p>
+  <p style="color: #aaa; font-size: 12px;">Systeme de notification Ma Bibliotheque</p>
 </body>
 </html>
             """
 
-            resend.Emails.send({
-                "from": f"Ma Bibliothèque <{self.email_from}>",
-                "to": [self.notification_email],
-                "subject": subject,
-                "html": html_body,
-            })
-
-            print(f"✅ Notification email envoyée pour {username} ({client_ip}) - {'Autorisé' if is_authorized else 'NON AUTORISÉ'}")
+            self._send(self.notification_email, subject, html_body)
+            print(f"Notification envoyee pour {username} ({client_ip})")
 
         except Exception as e:
-            print(f"❌ Erreur envoi notification email : {e}")
+            print(f"Erreur envoi notification email : {e}")
 
     async def send_password_reset_email(self, email: str, reset_token: str):
         """Envoie un email de réinitialisation de mot de passe à l'utilisateur"""
 
         if not self.enabled:
-            print("📧 Notifications email désactivées")
             return
 
-        if not self.api_key:
-            print("⚠️ RESEND_API_KEY manquante - email reset non envoyé")
+        if self.env != "development" and not self.api_key:
+            print("RESEND_API_KEY manquante - email reset non envoye")
             return
 
         try:
             reset_url = f"{self.frontend_base_url}/auth/reset-password?token={reset_token}"
-            timestamp = datetime.now().strftime("%d/%m/%Y à %H:%M:%S")
+            timestamp = datetime.now().strftime("%d/%m/%Y a %H:%M:%S")
 
             html_body = f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-  <h2 style="color: #2196F3;">Réinitialisation de mot de passe</h2>
+  <h2 style="color: #2196F3;">Reinitialisation de mot de passe</h2>
   <p>Bonjour,</p>
-  <p>Vous avez demandé la réinitialisation de votre mot de passe sur <strong>Ma Bibliothèque</strong>.</p>
+  <p>Vous avez demande la reinitialisation de votre mot de passe sur <strong>Ma Bibliotheque</strong>.</p>
   <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
   <p style="text-align: center; margin: 30px 0;">
     <a href="{reset_url}"
        style="background-color: #2196F3; color: white; padding: 14px 28px;
               text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold;">
-      Réinitialiser mon mot de passe
+      Reinitialiser mon mot de passe
     </a>
   </p>
   <p style="color: #888; font-size: 13px;">
-    Ce lien est valable <strong>15 minutes</strong> (demande effectuée le {timestamp}).<br>
+    Ce lien est valable <strong>15 minutes</strong> (demande effectuee le {timestamp}).<br>
     Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
     <a href="{reset_url}" style="color: #2196F3; word-break: break-all;">{reset_url}</a>
   </p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
   <p style="color: #aaa; font-size: 12px;">
-    Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
-    Votre mot de passe actuel reste inchangé.
+    Si vous n'avez pas demande cette reinitialisation, ignorez cet email.
+    Votre mot de passe actuel reste inchange.
   </p>
 </body>
 </html>
             """
 
-            resend.Emails.send({
-                "from": f"Ma Bibliothèque <{self.email_from}>",
-                "to": [email],
-                "subject": "🔑 Réinitialisation de votre mot de passe - Ma Bibliothèque",
-                "html": html_body,
-            })
-
-            print(f"✅ Email reset envoyé à {email}")
+            self._send(email, "Reinitialisation de votre mot de passe - Ma Bibliotheque", html_body)
+            print(f"Email reset envoye a {email}")
 
         except Exception as e:
-            print(f"❌ Erreur envoi email reset : {e}")
+            print(f"Erreur envoi email reset : {e}")
+
+    async def send_email_verification(self, email: str, username: str, verification_token: str):
+        """Envoie un email de verification d'adresse a l'utilisateur"""
+
+        if not self.enabled:
+            return
+
+        if self.env != "development" and not self.api_key:
+            print("RESEND_API_KEY manquante - email verification non envoye")
+            return
+
+        try:
+            verify_url = f"{self.frontend_base_url}/auth/verify-email?token={verification_token}"
+            timestamp = datetime.now().strftime("%d/%m/%Y a %H:%M:%S")
+
+            html_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #4CAF50;">Confirmez votre adresse email</h2>
+  <p>Bonjour {username},</p>
+  <p>Merci de vous etre inscrit sur <strong>Ma Bibliotheque</strong>.</p>
+  <p>Cliquez sur le bouton ci-dessous pour activer votre compte :</p>
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{verify_url}"
+       style="background-color: #4CAF50; color: white; padding: 14px 28px;
+              text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold;">
+      Confirmer mon email
+    </a>
+  </p>
+  <p style="color: #888; font-size: 13px;">
+    Ce lien est valable <strong>24 heures</strong> (demande effectuee le {timestamp}).<br>
+    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+    <a href="{verify_url}" style="color: #4CAF50; word-break: break-all;">{verify_url}</a>
+  </p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #aaa; font-size: 12px;">
+    Si vous n'avez pas cree de compte, ignorez cet email.
+  </p>
+</body>
+</html>
+            """
+
+            self._send(email, "Confirmez votre adresse email - Ma Bibliotheque", html_body)
+            print(f"Email de verification envoye a {email}")
+
+        except Exception as e:
+            print(f"Erreur envoi email verification : {e}")
 
     def _format_additional_info_html(self, info: dict) -> str:
         """Formate les informations supplémentaires en HTML"""

@@ -1,13 +1,17 @@
 import logging
-from datetime import timedelta
+import os
+import secrets
+import sys
+from datetime import datetime, timedelta
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session
+from sqlmodel import Session, select
 from app.schemas.User import UserLogin, UserRead, Token
 from app.schemas.auth import UserCreate, UserResponse
 from app.services.auth_service import AuthService, get_auth_service, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.User import User
+from app.models.EmailVerificationToken import EmailVerificationToken
 from app.db import get_session
 from app.utils.rate_limiter import rate_limiter
 
@@ -56,6 +60,12 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if user.email_verified_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email non vérifié. Consultez votre boite mail pour activer votre compte.",
+        )
+
     rate_limiter.clear_attempts(client_ip, "login", session=session)
     tokens = auth_service.generate_tokens(user_id=str(user.id), remember_me=remember_me)
     return tokens
@@ -98,6 +108,12 @@ async def login_with_json(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if user.email_verified_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email non vérifié. Consultez votre boite mail pour activer votre compte.",
         )
 
     rate_limiter.clear_attempts(client_ip, "login", session=session)
@@ -164,4 +180,101 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
     Récupérer les informations de l'utilisateur actuellement connecté.
     """
     return current_user
+
+
+@router.get("/verify-email")
+async def verify_email(
+    token: str,
+    session: Session = Depends(get_session),
+):
+    """
+    Activation du compte via le lien reçu par email.
+    Le token est à usage unique et valable 24 heures.
+    """
+    record = session.exec(
+        select(EmailVerificationToken).where(EmailVerificationToken.token == token)
+    ).first()
+
+    if not record:
+        raise HTTPException(status_code=400, detail="Lien de vérification invalide.")
+
+    if record.used:
+        raise HTTPException(status_code=400, detail="Ce lien a déjà été utilisé.")
+
+    if datetime.utcnow() > record.expires_at:
+        raise HTTPException(status_code=400, detail="Ce lien a expiré. Demandez un nouveau lien.")
+
+    user = session.get(User, record.user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=400, detail="Compte introuvable ou désactivé.")
+
+    user.email_verified_at = datetime.utcnow()
+    session.add(user)
+
+    record.used = True
+    session.add(record)
+
+    session.commit()
+
+    return {"message": "Email vérifié avec succès. Vous pouvez maintenant vous connecter."}
+
+
+class ResendVerificationRequest(BaseModel):
+    email: str
+
+
+@router.post("/resend-verification")
+async def resend_verification(
+    data: ResendVerificationRequest,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """
+    Renvoie un email de vérification si le compte n'est pas encore activé.
+    Réponse toujours identique (anti-énumération).
+    Protection rate limiting : 3 tentatives / 15 min.
+    """
+    client_ip = get_client_ip(request)
+    rate_limiter.check_and_record(client_ip, "resend-verification", max_attempts=3, window_minutes=15, session=session)
+
+    generic_response = {"message": "Si cet email correspond à un compte non vérifié, vous recevrez un nouveau lien."}
+
+    user = session.exec(select(User).where(User.email == data.email.lower())).first()
+    if not user or not user.is_active or user.email_verified_at is not None:
+        return generic_response
+
+    # Invalider les anciens tokens non utilisés
+    for old in session.exec(
+        select(EmailVerificationToken).where(
+            EmailVerificationToken.user_id == user.id,
+            EmailVerificationToken.used == False,
+        )
+    ).all():
+        old.used = True
+        session.add(old)
+
+    raw_token = secrets.token_urlsafe(32)
+    new_token = EmailVerificationToken(
+        token=raw_token,
+        user_id=user.id,
+        expires_at=datetime.utcnow() + timedelta(hours=24),
+        used=False,
+        created_at=datetime.utcnow(),
+    )
+    session.add(new_token)
+    session.commit()
+
+    is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true"
+    if not is_testing:
+        try:
+            from app.services.email_service import email_notification_service
+            await email_notification_service.send_email_verification(
+                email=user.email,
+                username=user.username,
+                verification_token=raw_token,
+            )
+        except Exception as e:
+            logger.warning("Erreur renvoi email verification : %s", e)
+
+    return generic_response
 
