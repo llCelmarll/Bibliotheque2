@@ -17,6 +17,7 @@ from app.models.EmailVerificationToken import EmailVerificationToken
 from app.models.PasswordResetToken import PasswordResetToken
 from app.models.User import User
 from app.models.UserLoanRequest import UserLoanRequest
+from app.models.UserPushToken import UserPushToken
 from app.schemas.auth import (
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -270,10 +271,12 @@ async def delete_account(
 
     user_id = current_user.id
 
-    # 1. Tokens de reset et de vérification email
+    # 1. Tokens de reset, vérification email et push notifications
     for t in session.exec(select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)).all():
         session.delete(t)
     for t in session.exec(select(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)).all():
+        session.delete(t)
+    for t in session.exec(select(UserPushToken).where(UserPushToken.user_id == user_id)).all():
         session.delete(t)
 
     # 2. Demandes de prêt (en tant que demandeur ou prêteur)
