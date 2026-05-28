@@ -150,17 +150,11 @@ async def register_user(
         )
 
         rate_limiter.clear_attempts(client_ip, "register", session=session)
-        
-        # Générer un token pour la connexion automatique
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = auth_service.create_access_token(
-            data={"sub": str(new_user.id)}, expires_delta=access_token_expires
-        )
-        
+
         return {
             "user": new_user,
             "token": {
-                "access_token": access_token,
+                "access_token": "",
                 "token_type": "bearer"
             }
         }
