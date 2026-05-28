@@ -23,6 +23,7 @@ async function getItem(key: string) {
     return await SecureStore.getItemAsync(key);
   }
 }
+import { router } from 'expo-router';
 import { authService, LoginRequest, RegisterRequest, User } from '@/services/authService';
 import { registerForPushNotificationsAsync, sendTokenToBackend, PUSH_ENABLED_KEY } from '@/services/pushNotificationService';
 
@@ -137,12 +138,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
           }).catch(() => {});
         } catch (error: any) {
-          if (error && typeof error === 'object' && 'response' in error) {
-            // Axios-like error
-            // @ts-ignore
-          } else {
-          }
           await logout();
+          const message: string = error?.message ?? '';
+          if (message.includes('non vérifié')) {
+            router.replace('/auth/verify-email-pending');
+          }
         }
       }
     } catch (error) {
@@ -184,25 +184,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const register = async (data: RegisterRequest) => {
-  try {
+    try {
       setIsLoading(true);
-
-      // Inscription
-      const registerResponse = await authService.register(data);
-
-      // Stocker le token dans ACCESS_TOKEN_KEY (même clé que login pour cohérence)
-      await setItem(ACCESS_TOKEN_KEY, registerResponse.token.access_token);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(registerResponse.user));
-
-      setToken(registerResponse.token.access_token);
-      setUser(registerResponse.user);
-      // Enregistrement push en fire-and-forget (jamais bloquant, sauf si désactivé)
-      AsyncStorage.getItem(PUSH_ENABLED_KEY).then((val) => {
-        if (val === 'false') return;
-        return registerForPushNotificationsAsync().then((pushToken) => {
-          if (pushToken) sendTokenToBackend(pushToken);
-        });
-      }).catch(() => {});
+      // Inscription — ne pas stocker le token ni connecter l'utilisateur.
+      // Le compte doit être vérifié par email avant la première connexion.
+      await authService.register(data);
+      // Redirection vers l'écran d'attente de vérification (géré par le composant appelant)
     } catch (error) {
       throw error;
     } finally {

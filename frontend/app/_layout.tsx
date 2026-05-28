@@ -188,6 +188,8 @@ function RootLayoutNav() {
         <Stack.Screen name="auth/register" options={{ headerShown: false }} />
         <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
         <Stack.Screen name="auth/reset-password" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/verify-email-pending" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/verify-email" options={{ headerShown: false }} />
         <Stack.Screen name="account/change-password" options={{ headerShown: true, title: 'Changer le mot de passe', ...themedHeader }} />
         <Stack.Screen name="account/edit-profile" options={{ headerShown: true, title: 'Modifier le profil', ...themedHeader }} />
         <Stack.Screen name="account/delete-account" options={{ headerShown: true, title: 'Supprimer le compte', ...themedHeader }} />

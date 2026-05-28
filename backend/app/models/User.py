@@ -32,6 +32,9 @@ class User(SQLModel, table=True):
 
     # État du compte
     is_active: bool = Field(default=True)
+    email_verified_at: Optional[datetime] = Field(
+        default=None, sa_column=Column(DateTime, nullable=True)
+    )
 
     # Préférences de notifications push (JSON: {"contact_invitation": true, ...})
     push_prefs: Optional[dict] = Field(default=None, sa_column=Column(JSON, nullable=True))

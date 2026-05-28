@@ -4,35 +4,34 @@ Contient les utilitaires communs pour l'authentification et les requêtes.
 """
 import json
 import random
+import uuid
 from locust import HttpUser, task, between
-from tests.factories import UserFactory, BookFactory
 
 
 class BibliothequeUser(HttpUser):
     """Utilisateur de base pour les tests de performance."""
-    
+
     wait_time = between(1, 3)  # Attendre 1-3 secondes entre les requêtes
-    
+
     def on_start(self):
         """Méthode appelée au démarrage de chaque utilisateur."""
         self.token = None
         self.user_data = None
         self.books = []
-        
+
         # Créer et authentifier un utilisateur
         self.register_and_login()
-    
+
     def register_and_login(self):
         """Enregistrer un nouvel utilisateur et se connecter."""
-        # Générer des données utilisateur uniques
-        user_data = UserFactory.build()
-        
+        uid = uuid.uuid4().hex[:8]
+
         # Registration
         register_payload = {
-            "email": user_data.email,
-            "username": user_data.username,
-            "password": "testpassword123",
-            "confirm_password": "testpassword123"
+            "email": f"perf_{uid}@example.com",
+            "username": f"user_{uid}",
+            "password": "TestPass1",
+            "confirm_password": "TestPass1"
         }
         
         with self.client.post("/auth/register", json=register_payload, catch_response=True) as response:
@@ -52,11 +51,10 @@ class BibliothequeUser(HttpUser):
     
     def create_test_book(self):
         """Créer un livre de test et le retourner."""
-        book_data = BookFactory.build()
-        
+        uid = uuid.uuid4().hex[:8]
         book_payload = {
-            "title": book_data.title,
-            "isbn": book_data.isbn,
+            "title": f"Perf Book {uid}",
+            "isbn": f"978{random.randint(1000000000, 9999999999)}",
             "authors": [f"Author {random.randint(1, 1000)}"],
             "publisher": f"Publisher {random.randint(1, 100)}"
         }

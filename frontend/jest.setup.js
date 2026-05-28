@@ -18,6 +18,12 @@ jest.mock('expo-secure-store', () => ({
 // Mock expo-calendar (ESM not transformed by Jest)
 jest.mock('expo-calendar', () => ({}));
 
+// Mock expo-constants (expo-modules-core EventEmitter unavailable in Jest)
+jest.mock('expo-constants', () => ({
+  default: { executionEnvironment: 'bare' },
+  ExecutionEnvironment: { Bare: 'bare', StoreClient: 'storeClient', StandaloneApp: 'standalone' },
+}));
+
 // Silence warnings
 global.__DEV__ = true;
 
