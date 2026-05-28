@@ -62,7 +62,8 @@ export default function VerifyEmailPendingScreen() {
         <Text style={[styles.title, { color: theme.textPrimary }]}>Vérifiez votre email</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
           Un lien de confirmation a été envoyé à votre adresse email lors de l'inscription.
-          Cliquez sur ce lien pour activer votre compte.
+          Cliquez sur ce lien pour activer votre compte.{'\n\n'}
+          Si vous ne le trouvez pas, pensez à vérifier vos courriers indésirables (spam).
         </Text>
 
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}>
