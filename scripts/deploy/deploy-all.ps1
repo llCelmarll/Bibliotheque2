@@ -568,6 +568,13 @@ EXPO_PUBLIC_APK_FILENAME=bibliotheque.apk
 "@
     Set-Content -Path $dotEnvLocalPath -Value $prodEnvContent -NoNewline
 
+    # Injecter aussi dans l'environnement du processus (eas update peut ignorer .env.local)
+    $env:EXPO_PUBLIC_API_URL = "https://mabibliotheque.ovh/api"
+    $env:APP_VARIANT = "production"
+    $env:EXPO_PUBLIC_APP_VARIANT = "production"
+    $env:EXPO_PUBLIC_APK_URL = "https://mabibliotheque.ovh/bibliotheque.apk"
+    $env:EXPO_PUBLIC_APK_FILENAME = "bibliotheque.apk"
+
     try {
         eas update --branch production --clear-cache --message $UpdateMessage
 
