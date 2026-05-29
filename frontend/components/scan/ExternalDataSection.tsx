@@ -169,7 +169,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		}
 	};
 
-	const normalizeStr = (v: any): string =>
+const normalizeStr = (v: any): string =>
 		v == null ? '' : String(v).trim().toLowerCase();
 
 	const MONTHS_EN: Record<string, string> = {
@@ -505,23 +505,29 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 				</View>
 
 				{/* Colonnes */}
-				<View style={[styles.columns, twoColumns ? styles.columnsRow : styles.columnsStack]}>
-					{/* Colonne Base */}
-					<View style={[styles.column, twoColumns && styles.columnHalf, { borderColor: theme.borderLight }]}>
-						<View style={[styles.columnBadge, { backgroundColor: theme.bgSecondary }]}>
-							<Text style={[styles.columnBadgeText, { color: theme.textMuted }]}>Actuel</Text>
+				{baseBook ? (
+					<View style={[styles.columns, twoColumns ? styles.columnsRow : styles.columnsStack]}>
+						{/* Colonne Base */}
+						<View style={[styles.column, twoColumns && styles.columnHalf, { borderColor: theme.borderLight }]}>
+							<View style={[styles.columnBadge, { backgroundColor: theme.bgSecondary }]}>
+								<Text style={[styles.columnBadgeText, { color: theme.textMuted }]}>Actuel</Text>
+							</View>
+							{formatBaseValue(key)}
 						</View>
-						{formatBaseValue(key)}
-					</View>
 
-					{/* Colonne En ligne */}
-					<View style={[styles.column, twoColumns && styles.columnHalf, { borderColor: theme.accent + '44' }]}>
-						<View style={[styles.columnBadge, { backgroundColor: theme.accentLight }]}>
-							<Text style={[styles.columnBadgeText, { color: theme.accent }]}>En ligne</Text>
+						{/* Colonne En ligne */}
+						<View style={[styles.column, twoColumns && styles.columnHalf, { borderColor: theme.accent + '44' }]}>
+							<View style={[styles.columnBadge, { backgroundColor: theme.accentLight }]}>
+								<Text style={[styles.columnBadgeText, { color: theme.accent }]}>En ligne</Text>
+							</View>
+							{formatOnlineValue(key, onlineVal, enriched)}
 						</View>
+					</View>
+				) : (
+					<View style={[styles.column, { borderColor: theme.accent + '44' }]}>
 						{formatOnlineValue(key, onlineVal, enriched)}
 					</View>
-				</View>
+				)}
 
 				{isIdentical && (
 					<Text style={[styles.identicalLabel, { color: theme.textMuted }]}>Identique — aucune modification nécessaire</Text>
@@ -558,6 +564,12 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			.filter(f => !baseBook || getFieldStatus(f.key, f.val) !== 'identical')
 			.map(f => f.key);
 
+		const renderedCards = sorted.map(f =>
+			renderComparisonCard(f.key, f.label, f.val, currentSelection[f.key], f.enriched)
+		).filter(Boolean);
+
+		if (!isEnriching && renderedCards.length === 0) return null;
+
 		return (
 			<View style={[styles.section, { borderColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}>
 				{baseBook && (
@@ -578,9 +590,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 				)}
 
 				<View style={styles.cardsContainer}>
-					{sorted.map(f =>
-						renderComparisonCard(f.key, f.label, f.val, currentSelection[f.key], f.enriched)
-					)}
+					{renderedCards}
 				</View>
 
 				{/* Liens de sélection rapide */}
@@ -625,9 +635,12 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		const bookInfo = extractBookInfo(data, source);
 		if (!bookInfo) return null;
 
+		const exploitableSection = renderExploitableData(bookInfo.exploitable);
+		if (!exploitableSection) return null;
+
 		return (
 			<View>
-				{renderExploitableData(bookInfo.exploitable)}
+				{exploitableSection}
 
 				<TouchableOpacity
 					style={[
@@ -664,6 +677,12 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 		</View>
 	);
 
+	const googleBookInfo = hasGoogleData ? renderBookInfo(googleData, 'google') : null;
+	const openLibraryBookInfo = hasOpenLibraryData ? renderBookInfo(openLibraryData, 'openLibrary') : null;
+	const hasAnyContent = googleBookInfo || openLibraryBookInfo || googleError || openLibraryError;
+
+	if (!hasAnyContent) return null;
+
 	return (
 		<View style={[styles.container, { backgroundColor: theme.bgCard, borderColor: theme.borderLight }]}>
 			<Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Données externes</Text>
@@ -671,10 +690,10 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 			{googleError && renderErrorBanner(googleError)}
 			{openLibraryError && renderErrorBanner(openLibraryError)}
 
-			{(hasGoogleData || hasOpenLibraryData) && (
+			{(googleBookInfo || openLibraryBookInfo) && (
 				<>
 					<View style={[styles.tabContainer, { backgroundColor: theme.bgMuted }]}>
-						{hasGoogleData && (
+						{googleBookInfo && (
 							<TouchableOpacity
 								style={[styles.tab, activeTab === 'google' && { backgroundColor: theme.accent }]}
 								onPress={() => setActiveTab('google')}
@@ -684,7 +703,7 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 								</Text>
 							</TouchableOpacity>
 						)}
-						{hasOpenLibraryData && (
+						{openLibraryBookInfo && (
 							<TouchableOpacity
 								style={[styles.tab, activeTab === 'openLibrary' && { backgroundColor: theme.accent }]}
 								onPress={() => setActiveTab('openLibrary')}
@@ -697,8 +716,8 @@ export const ExternalDataSection: React.FC<ExternalDataSectionProps> = ({
 					</View>
 
 					<View style={styles.contentContainer}>
-						{activeTab === 'google' && renderBookInfo(googleData, 'google')}
-						{activeTab === 'openLibrary' && renderBookInfo(openLibraryData, 'openLibrary')}
+						{activeTab === 'google' && googleBookInfo}
+						{activeTab === 'openLibrary' && openLibraryBookInfo}
 					</View>
 				</>
 			)}

@@ -358,6 +358,7 @@ export default function ScanResultPage() {
 						<BookForm
 							initialData={formData || data.suggested}
 							onSubmit={handleFormSubmit}
+							disableInternalScroll={true}
 						/>
 					</View>
 				)}
@@ -371,6 +372,7 @@ export default function ScanResultPage() {
 							googleError={data.google_book_error}
 							openLibraryError={data.openlibrary_error}
 							onImportData={handleImportData}
+							baseBook={data.suggested}
 						/>
 					</View>
 				)}

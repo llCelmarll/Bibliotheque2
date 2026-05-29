@@ -6,7 +6,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { useScanResult } from '@/hooks/useScanResult';
 import { ExistingBookCard } from "@/components/scan/ExistingBookCard";
 import { BookForm } from "@/components/scan/BookForm";
-import { ExternalDataSection} from "@/components/scan/ExternalDataSection";
 import { SimilarBooksSection } from "@/components/scan/SimilarBooksSection";
 import { bookService } from "@/services/bookService";
 import { useTheme } from '@/contexts/ThemeContext';
@@ -92,34 +91,6 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 		}
 	};
 
-	const handleImportData = (source: 'google' | 'openLibrary', importedData: any) => {
-		try {
-			console.log('Import de données depuis', source, ':', importedData);
-
-			// Fusionner avec les données existantes du formulaire
-			const currentData = formData || data.suggested;
-			const updatedFormData = {
-				...currentData,
-				// Mapper les données importées vers la structure SuggestedBook
-				title: importedData.title || currentData?.title || '',
-				subtitle: importedData.subtitle ?? currentData?.subtitle ?? '',
-				authors: importedData.authors || currentData?.authors || [],
-				publisher: importedData.publisher || currentData?.publisher || '',
-				published_date: importedData.publishedDate || currentData?.published_date || '',
-				page_count: importedData.pageCount || currentData?.page_count || 0,
-				isbn: importedData.isbn || currentData?.isbn || '',
-				genres: importedData.genres || currentData?.genres || [], // Use 'genres' not 'categories'
-				cover_url: importedData.thumbnail || currentData?.cover_url || '',
-				barcode: currentData?.barcode || '',
-			};
-
-			setFormData(updatedFormData);
-
-		} catch (error) {
-			console.error('Erreur lors de l\'import:', error);
-		}
-	};
-
 	return (
 		<ScrollView style={[styles.container, { backgroundColor: theme.bgSecondary }]} contentContainerStyle={styles.contentContainer}>
 			{/* Livre existant trouvé */}
@@ -159,14 +130,6 @@ export const ScanResultScreen: React.FC<ScanResultScreenProps> = ({ isbn: propIs
 				</View>
 			)}
 
-			{/* Données externes */}
-			<View style={styles.section}>
-				<ExternalDataSection
-					googleData={data.google_book}
-					openLibraryData={data.openlibrary}
-					onImportData={handleImportData}
-				/>
-			</View>
 		</ScrollView>
 	);
 };
