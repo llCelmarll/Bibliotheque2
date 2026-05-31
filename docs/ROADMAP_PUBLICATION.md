@@ -1,7 +1,7 @@
 # Roadmap vers Publication — Ma Bibliothèque
 
 > Document de pilotage pour le passage de l'application en accès public.
-> Mis à jour le 2026-05-27.
+> Mis à jour le 2026-05-31.
 
 ---
 
@@ -25,8 +25,8 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] Détecter les requêtes N+1 sur les listings de livres — corrigé : suppression des `selectinload` imbriqués sur `Author.books` et `Genre.books` dans `book_repository.py` (3 requêtes)
 - [x] Vérifier les index PostgreSQL — migration `a2b3c4d5e6f7` : ajout de `(owner_id, is_read)`, `(owner_id, created_at)` sur `books` et `(book_id, status)` sur `borrowed_books`
 - [x] Optimiser le GROUP BY dans les recherches — `_deduplicate_and_sort` réduit de 14 colonnes à `Book.id` seul (compatible PostgreSQL PRIMARY KEY)
-- [x] Mesurer le temps de chargement initial de la liste de livres — baseline Locust (10 users, 2min) : `/books/search/simple` P50=47ms, P95=250ms ✅ sous cible 300ms. Register P95=2400ms (bcrypt, normal).
-- [ ] Tester le comportement sous charge légère (10–50 utilisateurs simultanés) — à refaire en prod sur infrastructure réelle
+- [x] Mesurer le temps de chargement initial de la liste de livres — baseline Locust (10 users, 2min) : `/books/search/simple` P50=38ms, P95=280ms ✅ sous cible 300ms. Register P95=2400ms (bcrypt, normal). Résultats : `backend/tests/performance/results/book_crud_20260527_210108_stats.csv`
+- [ ] Tester le comportement sous charge légère (10–50 utilisateurs simultanés) — à faire en prod sur infra réelle (tests actuels = machine locale uniquement)
 
 #### 1.2 Tests de sécurité
 - [x] **Migration SHA256 → bcrypt** — tous les utilisateurs prod sont en bcrypt depuis mai 2026 (vérifié en base), support legacy SHA256 supprimé du code
@@ -35,8 +35,8 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] **Confirmation d'email** à l'inscription — token 24h, blocage connexion si non vérifié, renvoi possible via `POST /auth/resend-verification`
 - [x] Audit des permissions : vérifier qu'aucun endpoint ne laisse accéder aux données d'un autre utilisateur — ownership vérifié partout, aucune faille détectée
 - [x] Logging des suppressions de compte (date, IP) pour support et conformité RGPD
-- [ ] Test de fuzzing sur les champs de saisie (titre, auteur, ISBN)
-- [ ] Vérifier les headers de sécurité HTTP (CSP, X-Frame-Options, HSTS)
+- [ ] Test de fuzzing sur les champs de saisie (titre, auteur, ISBN) — non commencé
+- [x] Vérifier les headers de sécurité HTTP (CSP, X-Frame-Options, HSTS) — middleware `security_headers` dans `main.py` ; HSTS activé uniquement hors dev ; Swagger désactivé en production
 
 #### 1.3 Tests d'accessibilité (a11y)
 - [ ] Ajouter `accessibilityLabel` sur tous les boutons icône (pas de texte visible)
@@ -60,7 +60,7 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
   - Usage personnel uniquement
   - Contenu uploadé (couvertures)
   - Limitation de responsabilité
-- [ ] **Suppression de compte complète** — vérifier que toutes les données personnelles sont effacées (livres, prêts, contacts, tokens push, invitations)
+- [x] **Suppression de compte complète** — implémentée et vérifiée : tokens (reset, email, push), demandes de prêt, invitations, contacts, prêts, livres empruntés, livres, log IP (`account.py`)
 - [ ] **Export des données** — déjà partiellement implémenté via CSV, à compléter pour couvrir toutes les données personnelles (droit à la portabilité)
 - [ ] Checkbox de consentement explicite à l'inscription
 
@@ -97,7 +97,7 @@ Travaux nécessaires :
 
 #### 3.2 Politique d'inscription
 - Décision : **inscription ouverte** dès le lancement public
-- [ ] Implémenter la confirmation d'email (service Resend déjà en place)
+- [x] Implémenter la confirmation d'email (service Resend déjà en place — token 24h, blocage connexion si non vérifié, renvoi possible)
 - [ ] Mettre en place une page de présentation publique (landing page)
 
 ---
@@ -148,12 +148,12 @@ Points d'attention :
 
 L'application est prête pour la publication publique quand :
 
-- [ ] Tous les points de la Phase 1 (sécurité) sont traités
+- [ ] Tous les points de la Phase 1 (sécurité) sont traités — manque : fuzzing, headers HTTP, a11y complète
 - [ ] La politique de confidentialité et les CGU sont rédigées et hébergées
-- [ ] La suppression de compte est complète et testée
+- [x] La suppression de compte est complète et testée
 - [ ] L'application tourne sur l'infrastructure publique depuis au moins 2 semaines sans incident
 - [ ] La fiche Play Store est complète et l'APK signé est prêt
-- [ ] La politique d'inscription (whitelist vs ouverte) est décidée et implémentée
+- [x] La politique d'inscription (whitelist vs ouverte) est décidée — inscription ouverte avec confirmation email
 
 ---
 

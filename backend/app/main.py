@@ -3,7 +3,7 @@ import os
 import json
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account, push_tokens, notifications
 from app.routers.import_jobs import router as import_jobs_router
@@ -41,17 +41,35 @@ tags_metadata = [
     {"name": "push-notifications", "description": "Tokens push Expo"},
 ]
 
+_is_production = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")) == "production"
+
 app = FastAPI(
     title="Bibliothèque API",
     version="0.1.0",
     lifespan=lifespan,
     openapi_version="3.1.0",
     openapi_tags=tags_metadata,
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
 )
 
 # Logging de base (provisoire)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
+
+# Headers de sécurité HTTP
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+	response = await call_next(request)
+	response.headers["X-Frame-Options"] = "DENY"
+	response.headers["X-Content-Type-Options"] = "nosniff"
+	response.headers["X-XSS-Protection"] = "1; mode=block"
+	response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+	response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+	response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+	if _is_production:
+		response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+	return response
 
 # Middleware de log des requêtes (début/fin)
 @app.middleware("http")
