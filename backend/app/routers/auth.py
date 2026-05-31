@@ -60,7 +60,7 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if user.email_verified_at is None:
+    if user.email_verified_at is None and os.getenv("EMAIL_VERIFICATION_ENABLED", "true").lower() != "false":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email non vérifié. Consultez votre boite mail pour activer votre compte.",
@@ -110,7 +110,7 @@ async def login_with_json(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if user.email_verified_at is None:
+    if user.email_verified_at is None and os.getenv("EMAIL_VERIFICATION_ENABLED", "true").lower() != "false":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email non vérifié. Consultez votre boite mail pour activer votre compte.",

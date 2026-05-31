@@ -307,7 +307,7 @@ async def get_current_user(
             detail="Inactive user"
         )
 
-    if user.email_verified_at is None:
+    if user.email_verified_at is None and os.getenv("EMAIL_VERIFICATION_ENABLED", "true").lower() != "false":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email non vérifié. Consultez votre boite mail pour activer votre compte."

@@ -238,6 +238,13 @@ EXPO_PUBLIC_APK_FILENAME=bibliotheque-staging.apk
 "@
     Set-Content -Path $dotEnvLocalPath -Value $stagingEnvContent -NoNewline
 
+    # Injecter aussi dans le processus (eas update peut ignorer .env.local)
+    $env:EXPO_PUBLIC_API_URL = $STAGING_API_URL
+    $env:APP_VARIANT = "staging"
+    $env:EXPO_PUBLIC_APP_VARIANT = "staging"
+    $env:EXPO_PUBLIC_APK_URL = "https://staging.mabibliotheque.ovh/bibliotheque-staging.apk"
+    $env:EXPO_PUBLIC_APK_FILENAME = "bibliotheque-staging.apk"
+
     Write-Host "  API URL pour OTA: $STAGING_API_URL" -ForegroundColor Gray
 
     try {
