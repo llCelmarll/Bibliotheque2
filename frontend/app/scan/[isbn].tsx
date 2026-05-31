@@ -15,6 +15,7 @@ import { SuggestedBook } from "@/types/scanTypes";
 import { bookService } from "@/services/bookService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from '@/contexts/ThemeContext';
+import { AmazonButton } from "@/components/AmazonButton";
 
 export default function ScanResultPage() {
 	const { isbn } = useLocalSearchParams<{ isbn: string }>();
@@ -352,6 +353,15 @@ export default function ScanResultPage() {
 					</View>
 				)}
 
+				{/* Lien Amazon — livre suggéré non possédé : visible immédiatement avant le formulaire */}
+				{data.suggested && !data.base && !data.previously_borrowed && !data.currently_borrowed && (
+					<AmazonButton
+						isbn={data.suggested.isbn}
+						title={data.suggested.title}
+						authors={data.suggested.authors?.map((a: any) => a.name ?? a)}
+					/>
+				)}
+
 				{/* Formulaire de suggestion - seulement si le livre n'existe pas déjà et n'est pas emprunté */}
 				{data.suggested && !data.base && !data.previously_borrowed && !data.currently_borrowed && (
 					<View style={styles.section}>
@@ -375,6 +385,15 @@ export default function ScanResultPage() {
 							baseBook={data.suggested}
 						/>
 					</View>
+				)}
+
+				{/* Lien Amazon — livre déjà dans la bibliothèque : en bas de la fiche */}
+				{data.base && (
+					<AmazonButton
+						isbn={data.base.isbn}
+						title={data.base.title}
+						authors={data.base.authors?.map((a: any) => a.name)}
+					/>
 				)}
 			</ScrollView>
 		</View>

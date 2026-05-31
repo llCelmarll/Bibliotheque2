@@ -117,10 +117,8 @@ Avantages :
 
 Mise en œuvre :
 - [x] Créer un compte Amazon Associates — Store ID : `mabibliothe08-21`
-- [ ] Construire les liens affiliés à partir de l'ISBN ou du titre du livre
-  - Format : `https://www.amazon.fr/s?k={ISBN}&tag={mon-id-affilié}`
-  - Fallback si pas d'ISBN : recherche par titre + auteur
-- [ ] Ajouter le bouton "Voir sur Amazon" sur la fiche livre (désactivable dans les paramètres ?)
+- [x] Construire les liens affiliés à partir de l'ISBN ou du titre du livre — `frontend/utils/amazonLink.ts`, Store ID dans `config/api.ts`
+- [x] Ajouter le bouton "Voir sur Amazon" — écran scan (`app/scan/[isbn].tsx`) et bibliothèque d'un contact (`components/BookDetail/SharedBookView.tsx`)
 - [ ] Mentionner les liens affiliés dans la politique de confidentialité (obligation légale)
 - [ ] Déclarer les liens commerciaux dans la fiche Play Store
 
@@ -166,3 +164,9 @@ L'application est prête pour la publication publique quand :
   - Le modèle `UserRole` (user/moderator/admin) et `get_current_moderator_user` existent déjà
   - Moderator : création/suppression auteurs, éditeurs, séries, genres (déjà en place)
   - Admin v1.1.0 minimum : désactiver un compte sans supprimer les données (support, compte compromis)
+- **Gestion des revues et magazines (ISSN)**
+  - Scanner/ajouter par ISSN (code-barres ou saisie manuelle)
+  - Gérer des numéros spécifiques (titre de la série + numéro + date de parution)
+  - Prêter des numéros comme les livres
+  - Intégration dans le catalogue principal avec badge/filtre "Revue"
+  - Récupération des métadonnées via Google Books (`issn:XXXX-XXXX`) ou OpenLibrary

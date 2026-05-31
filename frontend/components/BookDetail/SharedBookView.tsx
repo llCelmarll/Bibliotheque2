@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Book } from '@/types/book';
 import BookCover from '@/components/BookCover';
 import { useTheme } from '@/contexts/ThemeContext';
+import { AmazonButton } from '@/components/AmazonButton';
 
 // Mêmes constantes que BookHeader
 const COVER_WIDTH = 140;
@@ -107,6 +108,12 @@ export function SharedBookView({ book, onRequestPress, isUnavailable, isAlreadyB
                     <Text style={[styles.requestButtonText, { color: theme.textInverse }]}>Demander ce livre</Text>
                 </TouchableOpacity>
             )}
+
+            <AmazonButton
+                isbn={book.isbn}
+                title={book.title}
+                authors={book.authors?.map(a => a.name)}
+            />
         </View>
     );
 }

@@ -26,6 +26,7 @@ const API_CONFIG = {
   BASE_URL: getBaseUrl(),
   STATIC_URL: getBaseUrl(),
   APK_URL: getApkUrl(),
+  AMAZON_STORE_ID: 'mabibliothe08-21',
   ENDPOINTS: {
     SCAN: '/scan',
     BOOKS: '/books',
