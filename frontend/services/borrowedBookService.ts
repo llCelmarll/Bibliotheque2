@@ -2,12 +2,11 @@
 import axios from 'axios';
 import { setupAuthInterceptor } from '@/services/api/authInterceptor';
 import { BorrowedBook, BorrowedBookCreate, BorrowedBookUpdate, BorrowStatistics } from '@/types/borrowedBook';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+import API_CONFIG from '@/config/api';
 
 // Créer client axios avec intercepteur d'authentification
 const apiClient = axios.create({
-	baseURL: API_URL,
+	baseURL: API_CONFIG.BASE_URL,
 	timeout: 10000,
 	headers: {
 		'Content-Type': 'application/json',
