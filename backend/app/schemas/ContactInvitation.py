@@ -1,4 +1,5 @@
 from typing import Optional
+from pydantic import Field
 from sqlmodel import SQLModel
 from datetime import datetime
 from app.models.ContactInvitation import InvitationStatus
@@ -18,7 +19,7 @@ class ContactInvitationRead(SQLModel):
 
 class ContactInvitationCreate(SQLModel):
     recipient_id: int
-    message: Optional[str] = None
+    message: Optional[str] = Field(default=None, max_length=1000)
 
 
 class ContactInvitationDecline(SQLModel):

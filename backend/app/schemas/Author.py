@@ -1,3 +1,4 @@
+from pydantic import Field
 from sqlmodel import SQLModel
 
 class AuthorRead(SQLModel):
@@ -5,8 +6,8 @@ class AuthorRead(SQLModel):
     name: str
 
 class AuthorCreate(SQLModel):
-    name: str
+    name: str = Field(min_length=1, max_length=200)
 
 class AuthorUpdate(SQLModel):
     id: int
-    name: str
+    name: str = Field(min_length=1, max_length=200)

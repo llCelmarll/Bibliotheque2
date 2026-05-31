@@ -35,7 +35,7 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] **Confirmation d'email** à l'inscription — token 24h, blocage connexion si non vérifié, renvoi possible via `POST /auth/resend-verification`
 - [x] Audit des permissions : vérifier qu'aucun endpoint ne laisse accéder aux données d'un autre utilisateur — ownership vérifié partout, aucune faille détectée
 - [x] Logging des suppressions de compte (date, IP) pour support et conformité RGPD
-- [ ] Test de fuzzing sur les champs de saisie (titre, auteur, ISBN) — non commencé
+- [x] Test de fuzzing sur les champs de saisie (titre, auteur, ISBN) — 64 tests dans `tests/integration/test_fuzzing.py` ; validators `min_length`/`max_length` ajoutés dans tous les schémas Pydantic
 - [x] Vérifier les headers de sécurité HTTP (CSP, X-Frame-Options, HSTS) — middleware `security_headers` dans `main.py` ; HSTS activé uniquement hors dev ; Swagger désactivé en production
 
 #### 1.3 Tests d'accessibilité (a11y)

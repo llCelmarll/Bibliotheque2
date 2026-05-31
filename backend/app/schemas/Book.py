@@ -1,5 +1,5 @@
 from typing import Optional, List, ForwardRef, Dict, Any, Union
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlmodel import SQLModel
 from enum import Enum
 from datetime import datetime
@@ -167,13 +167,13 @@ class BookCreate(SQLModel):
     - expected_return_date: Date de retour prévue
     - borrow_notes: Notes sur l'emprunt
     """
-    title: str
-    subtitle: Optional[str] = None
-    isbn: Optional[str] = None
+    title: str = Field(min_length=1, max_length=500)
+    subtitle: Optional[str] = Field(default=None, max_length=500)
+    isbn: Optional[str] = Field(default=None, max_length=20)
     published_date: Optional[str] = None
     page_count: Optional[int] = None
-    barcode: Optional[str] = None
-    cover_url: Optional[str] = None
+    barcode: Optional[str] = Field(default=None, max_length=50)
+    cover_url: Optional[str] = Field(default=None, max_length=2000)
     is_read: Optional[bool] = None
     read_date: Optional[datetime] = None
     authors: List[int | str | Dict[str, Any]] = []
@@ -184,14 +184,14 @@ class BookCreate(SQLModel):
     # Champs optionnels pour marquer comme emprunté
     is_borrowed: Optional[bool] = False
     contact: Optional[int | str | Dict[str, Any]] = None  # Contact source de l'emprunt
-    borrowed_from: Optional[str] = None  # Legacy fallback
+    borrowed_from: Optional[str] = Field(default=None, max_length=200)
     borrowed_date: Optional[datetime] = None
     expected_return_date: Optional[datetime] = None
-    borrow_notes: Optional[str] = None
+    borrow_notes: Optional[str] = Field(default=None, max_length=2000)
 
     # Notation et notes personnelles
     rating: Optional[int] = None  # 0-5
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=5000)
 
 # Schema de mise à jour
 class BookUpdate(SQLModel):
@@ -213,17 +213,17 @@ class BookUpdate(SQLModel):
         # Format mixte
         {"authors": [1, {"name": "Nouvel Auteur"}], "publisher": {"name": "Editeur"}}
     """
-    title: Optional[str] = None
-    subtitle: Optional[str] = None
-    isbn: Optional[str] = None
+    title: Optional[str] = Field(default=None, min_length=1, max_length=500)
+    subtitle: Optional[str] = Field(default=None, max_length=500)
+    isbn: Optional[str] = Field(default=None, max_length=20)
     published_date: Optional[str] = None
     page_count: Optional[int] = None
-    barcode: Optional[str] = None
-    cover_url: Optional[str] = None
+    barcode: Optional[str] = Field(default=None, max_length=50)
+    cover_url: Optional[str] = Field(default=None, max_length=2000)
     is_read: Optional[bool] = None
     read_date: Optional[datetime] = None
     rating: Optional[int] = None  # 0-5
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=5000)
     is_lendable: Optional[bool] = None
     authors: Optional[List[Union[int, Dict[str, Any]]]] = None
     publisher: Optional[Union[int, Dict[str, Any]]] = None

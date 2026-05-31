@@ -1,4 +1,5 @@
 from typing import Optional
+from pydantic import Field
 from sqlmodel import SQLModel
 from datetime import datetime
 
@@ -20,17 +21,17 @@ class ContactRead(SQLModel):
 
 class ContactCreate(SQLModel):
     """Schéma de création pour un contact"""
-    name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    notes: Optional[str] = None
+    name: str = Field(min_length=1, max_length=200)
+    email: Optional[str] = Field(default=None, max_length=254)
+    phone: Optional[str] = Field(default=None, max_length=30)
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 
 class ContactUpdate(SQLModel):
     """Schéma de mise à jour pour un contact"""
-    name: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    notes: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    email: Optional[str] = Field(default=None, max_length=254)
+    phone: Optional[str] = Field(default=None, max_length=30)
+    notes: Optional[str] = Field(default=None, max_length=2000)
     linked_user_id: Optional[int] = None
     library_shared: Optional[bool] = None

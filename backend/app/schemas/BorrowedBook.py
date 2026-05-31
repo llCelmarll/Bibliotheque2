@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any
+from pydantic import Field
 from sqlmodel import SQLModel
 from datetime import datetime
 from app.models.BorrowedBook import BorrowStatus
@@ -35,7 +36,7 @@ class BorrowedBookCreate(SQLModel):
     contact: int | str | Dict[str, Any]
     borrowed_date: Optional[datetime] = None  # Defaults to now
     expected_return_date: Optional[datetime] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 
 class BorrowedBookUpdate(SQLModel):
@@ -45,7 +46,7 @@ class BorrowedBookUpdate(SQLModel):
     expected_return_date: Optional[datetime] = None
     actual_return_date: Optional[datetime] = None
     status: Optional[BorrowStatus] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
     calendar_event_id: Optional[str] = None
 
 

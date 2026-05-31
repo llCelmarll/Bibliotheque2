@@ -1,3 +1,4 @@
+from pydantic import Field
 from sqlmodel import SQLModel
 from typing import Optional
 
@@ -10,12 +11,12 @@ class SeriesRead(SQLModel):
 
 
 class SeriesCreate(SQLModel):
-    name: str
+    name: str = Field(min_length=1, max_length=200)
 
 
 class SeriesUpdate(SQLModel):
     id: int
-    name: str
+    name: str = Field(min_length=1, max_length=200)
 
 
 class BookSeriesRead(SQLModel):

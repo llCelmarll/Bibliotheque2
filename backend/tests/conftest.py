@@ -113,11 +113,13 @@ async def async_client(session: Session) -> AsyncGenerator[AsyncClient, None]:
 def test_user(session: Session) -> User:
     """Utilisateur de test."""
     from app.services.auth_service import hash_password
+    from datetime import datetime
     user = User(
         email="test@example.com",
         username="testuser",
         hashed_password=hash_password("testpassword123"),
-        is_active=True
+        is_active=True,
+        email_verified_at=datetime.utcnow(),
     )
     session.add(user)
     session.commit()
@@ -189,12 +191,14 @@ def clean_db(session: Session):
 def create_test_user(session: Session, **kwargs) -> User:
     """Helper pour créer un utilisateur de test avec des paramètres personnalisés."""
     from app.services.auth_service import hash_password
-    
+    from datetime import datetime
+
     defaults = {
         "email": "test@example.com",
         "username": "testuser",
         "hashed_password": hash_password("testpassword123"),
-        "is_active": True
+        "is_active": True,
+        "email_verified_at": datetime.utcnow(),
     }
     defaults.update(kwargs)
     

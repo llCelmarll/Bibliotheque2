@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any
+from pydantic import Field
 from sqlmodel import SQLModel
 from datetime import datetime
 from app.models.Loan import LoanStatus
@@ -43,7 +44,7 @@ class LoanCreate(SQLModel):
     contact: int | str | Dict[str, Any]
     loan_date: Optional[datetime] = None  # Si None, utilise datetime.utcnow()
     due_date: Optional[datetime] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 
 class LoanUpdate(SQLModel):
@@ -52,7 +53,7 @@ class LoanUpdate(SQLModel):
     due_date: Optional[datetime] = None
     return_date: Optional[datetime] = None
     status: Optional[LoanStatus] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
     calendar_event_id: Optional[str] = None
 
 
