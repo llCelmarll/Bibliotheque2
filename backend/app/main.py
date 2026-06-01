@@ -7,6 +7,8 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account, push_tokens, notifications
 from app.routers.import_jobs import router as import_jobs_router
+from app.routers.magazines import router as magazines_router
+from app.routers.magazine_loans import router as magazine_loans_router
 from app.db import init_db
 from app.services.reminder_scheduler import start_scheduler
 from app.config import COVERS_DIR
@@ -39,6 +41,8 @@ tags_metadata = [
     {"name": "borrowers", "description": "Emprunteurs"},
     {"name": "account", "description": "Gestion du compte (mot de passe, profil, suppression)"},
     {"name": "push-notifications", "description": "Tokens push Expo"},
+    {"name": "magazines", "description": "Séries et numéros de magazines"},
+    {"name": "magazine-loans", "description": "Prêts de magazines"},
 ]
 
 _is_production = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")) == "production"
@@ -114,6 +118,8 @@ app.include_router(account.router)
 app.include_router(push_tokens.router)
 app.include_router(notifications.router)
 app.include_router(import_jobs_router)
+app.include_router(magazines_router)
+app.include_router(magazine_loans_router)
 
 # Servir les images de couverture
 app.mount("/covers", StaticFiles(directory=str(COVERS_DIR)), name="covers")
