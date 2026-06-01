@@ -39,6 +39,20 @@ function TabLayoutInner() {
         }}
       />
       <Tabs.Screen
+        name="magazines"
+        options={{
+          title: "Magazines",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="newspaper-outline" size={size} color={color} />
+          ),
+        }}
+        listeners={{
+          tabPress: () => {
+            router.replace('/(tabs)/magazines');
+          },
+        }}
+      />
+      <Tabs.Screen
         name="loans"
         options={{
           title: "Prêts & Emprunts",

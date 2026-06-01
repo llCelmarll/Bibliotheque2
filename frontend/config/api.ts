@@ -41,6 +41,10 @@ const API_CONFIG = {
     USERS_SEARCH: '/users/search',
     USER_LIBRARY: (userId: number) => `/users/${userId}/library`,
     USER_LIBRARY_BOOK: (userId: number, bookId: number) => `/users/${userId}/library/${bookId}`,
+    MAGAZINES: '/magazines',
+    MAGAZINE_SERIES: '/magazines/series',
+    MAGAZINE_ISSUES: '/magazines/issues',
+    MAGAZINE_LOANS: '/magazine-loans',
   }
 };
 
