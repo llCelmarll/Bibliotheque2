@@ -22,3 +22,7 @@ psycopg2-binary==2.9.9
 Pillow>=10.4.0
 # Email
 resend==2.7.0
+# Admin interface
+sqladmin==0.16.1
+wtforms==3.1.2
+itsdangerous>=2.1.0

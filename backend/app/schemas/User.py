@@ -19,6 +19,7 @@ class UserRead(SQLModel):
     id: int
     email: str
     username: str
+    role: str
     is_active: bool
     created_at: datetime
 

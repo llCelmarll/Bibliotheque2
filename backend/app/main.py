@@ -7,6 +7,11 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account, push_tokens, notifications
 from app.routers.import_jobs import router as import_jobs_router
+from app.routers import reports, admin, admin_entities, contact_staff
+
+_sqladmin_enabled = os.getenv("SQLADMIN_ENABLED", "false").lower() == "true"
+if _sqladmin_enabled:
+    from app.admin.setup import setup_admin
 from app.db import init_db
 from app.services.reminder_scheduler import start_scheduler
 from app.config import COVERS_DIR
@@ -20,6 +25,7 @@ async def lifespan(app: FastAPI):
     init_db()
     start_scheduler()
     yield
+
 
 tags_metadata = [
     {"name": "authentication", "description": "Inscription, connexion, tokens"},
@@ -39,6 +45,9 @@ tags_metadata = [
     {"name": "borrowers", "description": "Emprunteurs"},
     {"name": "account", "description": "Gestion du compte (mot de passe, profil, suppression)"},
     {"name": "push-notifications", "description": "Tokens push Expo"},
+    {"name": "reports", "description": "Signalements de contenus"},
+    {"name": "admin", "description": "Administration et modération"},
+    {"name": "contact", "description": "Contact du staff"},
 ]
 
 _is_production = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")) == "production"
@@ -52,6 +61,9 @@ app = FastAPI(
     docs_url=None if _is_production else "/docs",
     redoc_url=None if _is_production else "/redoc",
 )
+
+if _sqladmin_enabled:
+    setup_admin(app)
 
 # Logging de base (provisoire)
 logging.basicConfig(level=logging.INFO)
@@ -89,6 +101,9 @@ else:
     origins_str = os.getenv("ALLOWED_ORIGINS", "https://mabibliotheque.ovh")
     allowed_origins = [o.strip() for o in origins_str.split(",")]
 
+if _sqladmin_enabled:
+    from starlette.middleware.sessions import SessionMiddleware
+    app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "change-me"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -115,6 +130,10 @@ app.include_router(account.router)
 app.include_router(push_tokens.router)
 app.include_router(notifications.router)
 app.include_router(import_jobs_router)
+app.include_router(reports.router)
+app.include_router(admin.router)
+app.include_router(admin_entities.router)
+app.include_router(contact_staff.router)
 
 # Servir les images de couverture
 app.mount("/covers", StaticFiles(directory=str(COVERS_DIR)), name="covers")

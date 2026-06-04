@@ -184,7 +184,7 @@ class AuthService:
             )
         
         # 2. Vérifier si l'email est dans la liste blanche
-        if not is_email_allowed(email):
+        if not is_email_allowed(email, session=self.session):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cette adresse email n'est pas autorisée à créer un compte. Contactez l'administrateur."
@@ -294,13 +294,13 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     token = credentials.credentials
     user = auth_service.get_user_from_token(token)
-    
+
     if user is None:
         raise credentials_exception
-        
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -316,6 +316,42 @@ async def get_current_user(
     return user
 
 
+def get_current_user_sync(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> User:
+    """Version synchrone de get_current_user — sans Depends(get_session), pour les routes def."""
+    from app.db import engine as _engine
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    token = credentials.credentials
+    with Session(_engine) as session:
+        svc = AuthService(session)
+        user = svc.get_user_from_token(token)
+
+    if user is None:
+        raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
+    if user.email_verified_at is None and os.getenv("EMAIL_VERIFICATION_ENABLED", "true").lower() != "false":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email non vérifié.")
+    return user
+
+
+def get_current_moderator_user_sync(current_user: User = Depends(get_current_user_sync)) -> User:
+    if current_user.role not in ("moderator", "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action réservée aux modérateurs et administrateurs")
+    return current_user
+
+
+def get_current_admin_user_sync(current_user: User = Depends(get_current_user_sync)) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action réservée aux administrateurs")
+    return current_user
+
+
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
     """Récupérer l'utilisateur actuel actif"""
     if not current_user.is_active:
@@ -329,5 +365,15 @@ async def get_current_moderator_user(current_user: User = Depends(get_current_us
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Action réservée aux modérateurs et administrateurs"
+        )
+    return current_user
+
+
+async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    """Récupérer l'utilisateur actuel s'il est admin"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Action réservée aux administrateurs"
         )
     return current_user

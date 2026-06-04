@@ -19,6 +19,9 @@ from app.models.BorrowedBook import BorrowedBook
 from app.models.UserLoanRequest import UserLoanRequest
 from app.models.ContactInvitation import ContactInvitation
 from app.models.PasswordResetToken import PasswordResetToken
+from app.models.Report import Report
+from app.models.AuditLog import AuditLog
+from app.models.WhitelistEntry import WhitelistEntry
 from sqlmodel import SQLModel
 
 # this is the Alembic Config object, which provides
