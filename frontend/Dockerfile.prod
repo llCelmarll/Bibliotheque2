@@ -1,16 +1,14 @@
-# Multi-stage build pour le frontend
-FROM node:20-alpine AS builder
+# Stage 1 : build frontend principal (Expo web)
+# Build context : racine du projet (pas ./frontend)
+FROM node:20-alpine AS builder-frontend
 
 WORKDIR /app
 
-# Copier les fichiers de dependances
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci
 
-# Copier le code source ET le fichier .env.production
-COPY . .
+COPY frontend/ .
 
-# Définir NODE_ENV pour utiliser .env.production
 ARG EXPO_PUBLIC_API_URL
 ARG EXPO_PUBLIC_APK_FILENAME=bibliotheque.apk
 ARG APP_VARIANT=production
@@ -21,24 +19,32 @@ ENV EXPO_PUBLIC_APK_FILENAME=${EXPO_PUBLIC_APK_FILENAME}
 ENV APP_VARIANT=${APP_VARIANT}
 ENV EXPO_PUBLIC_APP_VARIANT=${EXPO_PUBLIC_APP_VARIANT}
 
-# Supprimer les fichiers .env copiés (priorité sur les ENV ci-dessus dans Expo)
 RUN rm -f .env .env.local .env.production .env.staging
-
-# Build de l'application web avec les variables d'environnement de production
 RUN npx expo export --platform web
 
-# Stage de production avec Nginx
+# Stage 2 : build panel admin (React + Vite)
+FROM node:20-alpine AS builder-admin
+
+WORKDIR /app
+
+COPY frontend-admin/package*.json ./
+RUN npm ci
+
+COPY frontend-admin/ .
+
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=${VITE_API_URL}
+
+RUN npm run build
+
+# Stage 3 : nginx sert les deux
 FROM nginx:alpine
 
-# Copier les fichiers statiques depuis le builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder-frontend /app/dist /usr/share/nginx/html
+COPY --from=builder-admin /app/dist /usr/share/nginx/html/admin
 
-# Copier la configuration Nginx personnalisée (nginx-frontend.conf par défaut, nginx-frontend-staging.conf pour staging)
 ARG NGINX_CONF=nginx-frontend.conf
-COPY --from=builder /app/${NGINX_CONF} /etc/nginx/conf.d/default.conf
+COPY frontend/${NGINX_CONF} /etc/nginx/conf.d/default.conf
 
-# Exposer le port 80
 EXPOSE 80
-
-# Nginx démarre automatiquement
 CMD ["nginx", "-g", "daemon off;"]
