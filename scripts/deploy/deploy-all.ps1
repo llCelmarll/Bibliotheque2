@@ -128,7 +128,7 @@ function Get-DeploymentPlan {
 
     # Regles de detection
     $backendChanged = $changedFiles | Where-Object { $_ -match '^backend/' }
-    $frontendChanged = $changedFiles | Where-Object { $_ -match '^frontend/' }
+    $frontendChanged = $changedFiles | Where-Object { $_ -match '^frontend/' -or $_ -match '^frontend-admin/' }
     $nativeChanged = $changedFiles | Where-Object {
         $_ -match '^frontend/android/' -or
         $_ -match '^frontend/ios/' -or
@@ -609,17 +609,13 @@ if ($plan.Web) {
         exit 1
     }
 
-    Set-Location frontend
-
     Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray
-    docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.prod -t llcelmarll/mabibliotheque-frontend:latest --push .
+    docker buildx build --platform linux/amd64,linux/arm64 -f frontend/Dockerfile.prod -t llcelmarll/mabibliotheque-frontend:latest --push .
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Erreur lors du build Docker" -ForegroundColor Red
         exit 1
     }
-
-    Set-Location ..
 
     Write-Host ""
     Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray

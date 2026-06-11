@@ -1,18 +1,12 @@
-# Script PowerShell d'arrêt pour l'application Bibliothèque
-# Usage: .\scripts\stop.ps1
+﻿#!/usr/bin/env pwsh
+param()
 
-Write-Host "🛑 Arrêt de l'application Bibliothèque..." -ForegroundColor Red
+$Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
-# Arrêter et supprimer les conteneurs
-Write-Host "📦 Arrêt des conteneurs..." -ForegroundColor Yellow
-docker-compose down
-
-# Option pour nettoyer complètement (volumes, images, etc.)
-$cleanup = Read-Host "Voulez-vous supprimer les volumes et images? (y/N)"
-if ($cleanup -eq "y" -or $cleanup -eq "Y") {
-    Write-Host "🧹 Nettoyage complet..." -ForegroundColor Yellow
-    docker-compose down -v --rmi all
-    docker system prune -f
-}
-
-Write-Host "✅ Application arrêtée avec succès!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Arret des conteneurs Docker..." -ForegroundColor Yellow
+Set-Location $Root
+docker compose down
+Write-Host "Conteneurs arretes." -ForegroundColor Green
+Write-Host ""
+Write-Host "Note : les fenetres Backend / Frontend / Admin doivent etre fermees manuellement." -ForegroundColor Gray
