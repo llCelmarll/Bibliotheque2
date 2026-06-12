@@ -53,7 +53,7 @@ BOOKS = [
         published_date="1954",
         page_count=576,
         series=[{"name": "Le Seigneur des Anneaux", "volume_number": 1}],
-        is_read=True,
+        reading_status="lu",
         rating=5,
         notes="Chef-d'œuvre absolu. Relu plusieurs fois.",
         cover_url="https://covers.openlibrary.org/b/isbn/9782070612888-L.jpg",
@@ -65,7 +65,7 @@ BOOKS = [
         genres=["Philosophie"],
         published_date="2000",
         page_count=120,
-        is_read=False,
+        reading_status="non_lu",
     ),
     # 3. Livre sans genre
     BookCreate(
@@ -74,7 +74,7 @@ BOOKS = [
         publisher="Gallimard",
         published_date="1951",
         page_count=321,
-        is_read=True,
+        reading_status="lu",
         rating=4,
     ),
     # 4. Livre avec plusieurs auteurs
@@ -85,7 +85,7 @@ BOOKS = [
         genres=["Fantasy", "Humour"],
         published_date="1990",
         page_count=413,
-        is_read=True,
+        reading_status="lu",
         rating=5,
     ),
     # 5. Livre avec série sans numéro de tome
@@ -98,7 +98,7 @@ BOOKS = [
         published_date="1965",
         page_count=896,
         series=[{"name": "Dune", "volume_number": None}],
-        is_read=True,
+        reading_status="lu",
         rating=5,
         notes="Lecture obligatoire.",
     ),
@@ -108,7 +108,7 @@ BOOKS = [
         authors=["Auteur Test"],
         genres=["Test"],
         notes='Contient des ; point-virgules et des "guillemets" — doit être bien échappé dans le CSV.',
-        is_read=False,
+        reading_status="non_lu",
         rating=2,
     ),
     # 7. Livre sans statut de lecture (None)
@@ -126,7 +126,7 @@ BOOKS = [
         authors=["Auteur Local"],
         genres=["Test"],
         cover_url="/covers/999",
-        is_read=False,
+        reading_status="non_lu",
     ),
     # 9. Livre minimal — titre uniquement
     BookCreate(
@@ -143,7 +143,7 @@ BOOKS = [
         published_date="1954",
         page_count=441,
         series=[{"name": "Le Seigneur des Anneaux", "volume_number": 2}],
-        is_read=True,
+        reading_status="lu",
         rating=5,
         cover_url="https://covers.openlibrary.org/b/isbn/9782070612895-L.jpg",
     ),

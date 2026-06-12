@@ -30,7 +30,7 @@ def _make_book(**kwargs) -> BookRead:
         page_count=None,
         barcode=None,
         cover_url=None,
-        is_read=None,
+        reading_status=None,
         read_date=None,
         rating=None,
         notes=None,
@@ -136,7 +136,7 @@ class TestExportBooksCsv:
             published_date="1965",
             page_count=896,
             series=[_series("Dune", 1)],
-            is_read=True,
+            reading_status="lu",
             rating=5,
             notes="Chef-d'œuvre.",
             cover_url="https://example.com/dune.jpg",
@@ -154,7 +154,7 @@ class TestExportBooksCsv:
         assert r['date_publication'] == "1965"
         assert r['pages'] == "896"
         assert r['serie'] == "Dune:1"
-        assert r['lu'] == "oui"
+        assert r['lu'] == "lu"
         assert r['note'] == "5"
         assert r['notes'] == "Chef-d'œuvre."
         assert r['couverture'] == "https://example.com/dune.jpg"
@@ -169,20 +169,26 @@ class TestExportBooksCsv:
         assert rows[0]['genres'] == ''
         assert rows[0]['editeur'] == ''
 
-    def test_is_read_true(self, book_service):
-        book = _make_book(is_read=True)
+    def test_reading_status_lu(self, book_service):
+        book = _make_book(reading_status="lu")
         _setup_books(book_service, [book])
         rows = _parse_csv(book_service.export_books_csv())
-        assert rows[0]['lu'] == 'oui'
+        assert rows[0]['lu'] == 'lu'
 
-    def test_is_read_false(self, book_service):
-        book = _make_book(is_read=False)
+    def test_reading_status_non_lu(self, book_service):
+        book = _make_book(reading_status="non_lu")
         _setup_books(book_service, [book])
         rows = _parse_csv(book_service.export_books_csv())
-        assert rows[0]['lu'] == 'non'
+        assert rows[0]['lu'] == 'non lu'
 
-    def test_is_read_none(self, book_service):
-        book = _make_book(is_read=None)
+    def test_reading_status_in_progress(self, book_service):
+        book = _make_book(reading_status="in_progress")
+        _setup_books(book_service, [book])
+        rows = _parse_csv(book_service.export_books_csv())
+        assert rows[0]['lu'] == 'en cours'
+
+    def test_reading_status_none(self, book_service):
+        book = _make_book(reading_status=None)
         _setup_books(book_service, [book])
         rows = _parse_csv(book_service.export_books_csv())
         assert rows[0]['lu'] == ''

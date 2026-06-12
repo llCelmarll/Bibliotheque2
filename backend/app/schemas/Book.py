@@ -1,8 +1,10 @@
-from typing import Optional, List, ForwardRef, Dict, Any, Union
+from typing import Optional, List, ForwardRef, Dict, Any, Union, Literal
 from pydantic import BaseModel, Field
 from sqlmodel import SQLModel
 from enum import Enum
 from datetime import datetime
+
+ReadingStatus = Literal["lu", "non_lu", "in_progress"]
 from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 from app.schemas.Genre import GenreRead
@@ -49,7 +51,7 @@ class BookRead(SQLModel):
     page_count: Optional[int] = None
     barcode: Optional[str] = None
     cover_url: Optional[str] = None
-    is_read: Optional[bool] = None
+    reading_status: Optional[ReadingStatus] = None
     read_date: Optional[datetime] = None
     rating: Optional[int] = None  # 0-5, 0 = non renseigné
     notes: Optional[str] = None
@@ -89,7 +91,7 @@ class BookRead(SQLModel):
             "page_count": book.page_count,
             "barcode": book.barcode,
             "cover_url": book.cover_url,
-            "is_read": book.is_read,
+            "reading_status": book.reading_status,
             "read_date": book.read_date,
             "rating": getattr(book, "rating", None),
             "notes": getattr(book, "notes", None),
@@ -174,7 +176,7 @@ class BookCreate(SQLModel):
     page_count: Optional[int] = None
     barcode: Optional[str] = Field(default=None, max_length=50)
     cover_url: Optional[str] = Field(default=None, max_length=2000)
-    is_read: Optional[bool] = None
+    reading_status: Optional[ReadingStatus] = None
     read_date: Optional[datetime] = None
     authors: List[int | str | Dict[str, Any]] = []
     publisher: Optional[int | str | Dict[str, Any]] = None
@@ -220,7 +222,7 @@ class BookUpdate(SQLModel):
     page_count: Optional[int] = None
     barcode: Optional[str] = Field(default=None, max_length=50)
     cover_url: Optional[str] = Field(default=None, max_length=2000)
-    is_read: Optional[bool] = None
+    reading_status: Optional[ReadingStatus] = None
     read_date: Optional[datetime] = None
     rating: Optional[int] = None  # 0-5
     notes: Optional[str] = Field(default=None, max_length=5000)
@@ -237,7 +239,7 @@ class BookSearchParams(BaseModel):
     sort_by: SortBy = SortBy.title
     sort_order: SortOrder = SortOrder.asc
     filters: Optional[List[Filter]] = None
-    is_read: Optional[bool] = None  # True=lu, False=non lu, None=tous
+    reading_status: Optional[ReadingStatus] = None
     rating_min: Optional[int] = None  # 0-5, notation minimale
     skip: int = 0
     limit: int = 100
@@ -252,7 +254,7 @@ class BookAdvancedSearchParams(BaseModel):
     year_max: Optional[int] = None
     page_min: Optional[int] = None
     page_max: Optional[int] = None
-    is_read: Optional[bool] = None  # True=lu, False=non lu, None=tous
+    reading_status: Optional[ReadingStatus] = None
     rating_min: Optional[int] = None  # 0-5, notation minimale
     notes: Optional[str] = None  # Recherche plein texte dans les notes personnelles
     sort_by: SortBy = SortBy.title

@@ -37,6 +37,7 @@ Thumbs.db
 *.p12
 secrets/
 config/secrets/
+secrets-backup.txt
 
 # Couvertures uploadées (dev local)
 backend/data/covers/

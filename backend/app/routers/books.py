@@ -14,6 +14,7 @@ from app.schemas.Book import (
     BookUpdate,
     BookSearchParams,
     BookAdvancedSearchParams,
+    ReadingStatus,
     SortBy,
     SortOrder
 )
@@ -41,7 +42,7 @@ def search_books(
     limit: int = Query(100, ge=1, le=1000, description="Nombre max d'éléments à retourner"),
     sort_by: SortBy = Query(SortBy.title, description="Champ de tri"),
     sort_order: SortOrder = Query(SortOrder.asc, description="Ordre de tri"),
-    is_read: Optional[bool] = Query(None, description="Filtrer par statut de lecture (true=lu, false=non lu)"),
+    reading_status: Optional[ReadingStatus] = Query(None, description="Filtrer par statut de lecture (lu, non_lu, in_progress)"),
     rating_min: Optional[int] = Query(None, ge=0, le=5, description="Notation minimale (0-5 étoiles)"),
     filters: Optional[List[Filter]] = Body(default=None, description="Filtres de recherche"),
     service: BookService = Depends(get_book_service)
@@ -82,7 +83,7 @@ Notes :
         limit=limit,
         sort_by=sort_by,
         sort_order=sort_order,
-        is_read=is_read,
+        reading_status=reading_status,
         rating_min=rating_min,
         filters=filters
     )
@@ -101,7 +102,7 @@ def advanced_search_books(
     year_max: int = Query(None, ge=0, description="Année de publication maximale"),
     page_min: int = Query(None, ge=1, description="Nombre de pages minimal"),
     page_max: int = Query(None, ge=1, description="Nombre de pages maximal"),
-    is_read: Optional[bool] = Query(None, description="Filtrer par statut de lecture (true=lu, false=non lu)"),
+    reading_status: Optional[ReadingStatus] = Query(None, description="Filtrer par statut de lecture (lu, non_lu, in_progress)"),
     rating_min: Optional[int] = Query(None, ge=0, le=5, description="Notation minimale (0-5 étoiles)"),
     notes: Optional[str] = Query(None, description="Recherche dans les notes personnelles"),
     skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
@@ -126,7 +127,7 @@ def advanced_search_books(
         year_max=year_max,
         page_min=page_min,
         page_max=page_max,
-        is_read=is_read,
+        reading_status=reading_status,
         rating_min=rating_min,
         notes=notes,
         skip=skip,
@@ -354,7 +355,7 @@ async def get_book_external_data(
 
 class ReadStatusUpdate(BaseModel):
     """Schéma pour la mise à jour du statut de lecture"""
-    is_read: Optional[bool] = None
+    reading_status: Optional[ReadingStatus] = None
     read_date: Optional[datetime] = None
 
 
@@ -367,10 +368,10 @@ def update_read_status(
     """
     Met à jour le statut de lecture d'un livre.
 
-    - **is_read**: null (non renseigné), true (lu) ou false (non lu)
-    - **read_date**: Date de lecture (optionnel, pertinent si is_read=true)
+    - **reading_status**: null (non renseigné), "lu", "non_lu" ou "in_progress"
+    - **read_date**: Date de lecture (optionnel, pertinent si reading_status="lu")
     """
-    update = BookUpdate(is_read=data.is_read, read_date=data.read_date)
+    update = BookUpdate(reading_status=data.reading_status, read_date=data.read_date)
     return service.update_book(book_id, update)
 
 

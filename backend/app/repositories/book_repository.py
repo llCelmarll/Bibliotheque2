@@ -69,7 +69,7 @@ class BookRepository:
 			page_count=book_data.page_count,
 			barcode=book_data.barcode,
 			cover_url=book_data.cover_url,
-			is_read=book_data.is_read,
+			reading_status=book_data.reading_status,
 			read_date=book_data.read_date,
 			rating=book_data.rating,
 			notes=book_data.notes,
@@ -118,8 +118,8 @@ class BookRepository:
 		if params.filters:
 			stmt = self._apply_filters(stmt, params.filters)
 
-		if params.is_read is not None:
-			stmt = stmt.where(Book.is_read == params.is_read)
+		if params.reading_status is not None:
+			stmt = stmt.where(Book.reading_status == params.reading_status)
 		if params.rating_min is not None:
 			stmt = stmt.where(Book.rating >= params.rating_min)
 
@@ -389,8 +389,8 @@ class BookRepository:
 		if params.page_max:
 			conditions.append(Book.page_count <= params.page_max)
 
-		if params.is_read is not None:
-			conditions.append(Book.is_read == params.is_read)
+		if params.reading_status is not None:
+			conditions.append(Book.reading_status == params.reading_status)
 		if params.rating_min is not None:
 			conditions.append(Book.rating >= params.rating_min)
 		if params.notes:

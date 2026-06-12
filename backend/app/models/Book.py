@@ -66,8 +66,8 @@ class Book(SQLModel, table=True):
     # Couverture du livre
     cover_url: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
 
-    # Statut de lecture (None = non renseigné, True = lu, False = non lu)
-    is_read: Optional[bool] = Field(default=None, sa_column=Column(Boolean, nullable=True))
+    # Statut de lecture (None = non renseigné, "lu", "non_lu", "in_progress")
+    reading_status: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
     read_date: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
     # Notation (0-5, 0 = non renseigné) et notes personnelles

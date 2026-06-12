@@ -456,7 +456,7 @@ class TestSharedLibraryEndpoints:
         assert data["id"] == book.id
         assert data["current_loan"] is None
         # Données personnelles masquées
-        assert data["is_read"] is None
+        assert data["reading_status"] is None
         assert data["rating"] is None
         assert data["notes"] is None
         assert data["barcode"] is None

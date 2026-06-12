@@ -51,7 +51,7 @@ def convert_sqlite_to_postgres_types(record):
     converted = {}
     for key, value in record.items():
         # Convertir les entiers 0/1 en booléens pour les colonnes booléennes
-        if key in ('is_active', 'is_read') and isinstance(value, int):
+        if key in ('is_active',) and isinstance(value, int):
             converted[key] = bool(value)
         else:
             converted[key] = value

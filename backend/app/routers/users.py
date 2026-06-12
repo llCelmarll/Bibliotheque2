@@ -189,7 +189,7 @@ async def get_user_library(
             page_count=book.page_count,
             barcode=None,
             cover_url=book.cover_url,
-            is_read=None,
+            reading_status=None,
             read_date=None,
             rating=None,
             notes=None,

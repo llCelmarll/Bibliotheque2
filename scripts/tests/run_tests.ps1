@@ -63,8 +63,11 @@ if ($Backend -or $All) {
     Push-Location $backendDir
 
     try {
-        # Activer l'environnement virtuel s'il existe
-        $venvPath = Join-Path $backendDir ".venv"
+        # Activer l'environnement virtuel s'il existe (racine ou backend)
+        $venvPath = Join-Path $rootDir ".venv"
+        if (-not (Test-Path $venvPath)) {
+            $venvPath = Join-Path $backendDir ".venv"
+        }
         if (Test-Path $venvPath) {
             Write-Info "Activation de l'environnement virtuel..."
             $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
