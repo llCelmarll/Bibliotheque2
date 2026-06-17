@@ -35,7 +35,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copier la configuration Nginx personnalisée (nginx-frontend.conf par défaut, nginx-frontend-staging.conf pour staging)
 ARG NGINX_CONF=nginx-frontend.conf
-COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/${NGINX_CONF} /etc/nginx/conf.d/default.conf
 
 # Exposer le port 80
 EXPOSE 80
