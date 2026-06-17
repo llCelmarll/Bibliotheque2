@@ -80,6 +80,8 @@ export interface BookSeries {
  * @property {string} [updated_at] - Date de dernière modification du livre
  * @property {CurrentLoan} [current_loan] - Prêt actif si le livre est prêté
  */
+export type ReadingStatus = 'read' | 'unread' | 'in_progress';
+
 export interface Book {
     id: number;
     title: string;
@@ -90,7 +92,7 @@ export interface Book {
     authors?: Author[];
     publisher?: Publisher;
     cover_url?: string;
-	is_read?: boolean | null;
+	reading_status?: ReadingStatus | null;
 	read_date?: string;
 	rating?: number | null;
 	notes?: string | null;
@@ -114,7 +116,7 @@ export interface BookBase {
     published_date: string;
     page_count?: number;
     cover_url: string | null;
-    is_read: boolean | null;
+    reading_status?: ReadingStatus | null;
     read_date?: string | null;
     rating?: number | null;
     notes?: string | null;
@@ -188,7 +190,7 @@ export interface BookUpdate {
     page_count?: number;
     barcode?: string;
     cover_url?: string;
-    is_read?: boolean | null;
+    reading_status?: ReadingStatus | null;
     read_date?: string | null;
     rating?: number | null;
     notes?: string | null;

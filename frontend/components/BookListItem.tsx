@@ -50,12 +50,17 @@ export const BookListItem: React.FC<BookListItemProps> = ({ book , onFilterSelec
 					<TouchableOpacity onPress={handlePress} style={styles.titleTouchable}>
 						<Text style={[styles.title, { color: theme.textPrimary }]}>{book.title}</Text>
 					</TouchableOpacity>
-					{book.is_read === true && (
+					{book.reading_status === 'read' && (
 						<View style={[styles.readBadge, { backgroundColor: theme.successBg, borderColor: theme.success }]}>
 							<Text style={[styles.readBadgeText, { color: theme.success }]}>Lu</Text>
 						</View>
 					)}
-					{book.is_read === false && (
+					{book.reading_status === 'in_progress' && (
+						<View style={[styles.inProgressBadge, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+							<Text style={[styles.inProgressBadgeText, { color: theme.warning }]}>En cours</Text>
+						</View>
+					)}
+					{book.reading_status === 'unread' && (
 						<View style={[styles.unreadBadge, { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium }]}>
 							<Text style={[styles.unreadBadgeText, { color: theme.textMuted }]}>Non lu</Text>
 						</View>
@@ -223,6 +228,16 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 	},
 	readBadgeText: {
+		fontSize: 12,
+		fontWeight: '600',
+	},
+	inProgressBadge: {
+		borderRadius: 8,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderWidth: 1,
+	},
+	inProgressBadgeText: {
 		fontSize: 12,
 		fontWeight: '600',
 	},

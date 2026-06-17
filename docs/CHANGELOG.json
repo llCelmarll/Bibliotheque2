@@ -1,5 +1,12 @@
 [
     {
+        "version": "1.3.9",
+        "date": "2026-06-17",
+        "title": "Statut de lecture \"En cours\"",
+        "description": "Le statut de lecture dispose désormais de trois valeurs : Lu (vert), En cours de lecture (orange) et Non lu (gris). Le filtre de la bibliothèque propose les quatre options (Tous / Lu / En cours / Non lu). Les badges sont mis à jour dans toute l'application : liste des livres, fiche détail, formulaire d'ajout et d'édition. L'import CSV reconnaît la valeur \"en cours\" ainsi que les anciens formats booléens.",
+        "type": "feature"
+    },
+    {
         "version": "1.3.8",
         "date": "2026-05-31",
         "title": "Acheter sur Amazon",

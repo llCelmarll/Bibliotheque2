@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert, TextInput } from "react-native";
 import { ThemedSwitch } from '@/components/ThemedSwitch';
-import { BookDetail } from "@/types/book";
+import { BookDetail, ReadingStatus } from "@/types/book";
 import { InfoRow } from "@/components/BookDetail/InfoRow";
 import { useRoute } from "@react-navigation/native";
 import { formatDate, formatDateOnly } from "@/utils/dateFormatter";
@@ -13,19 +13,7 @@ import { BookFilter } from "@/types/filter";
 import { bookService } from "@/services/bookService";
 import { useTheme } from '@/contexts/ThemeContext';
 
-type ReadStatus = 'unset' | 'read' | 'unread';
-
-function getReadStatus(isRead: boolean | null | undefined): ReadStatus {
-  if (isRead === true) return 'read';
-  if (isRead === false) return 'unread';
-  return 'unset';
-}
-
-function readStatusToIsRead(status: ReadStatus): boolean | null {
-  if (status === 'read') return true;
-  if (status === 'unread') return false;
-  return null;
-}
+type LocalReadingStatus = ReadingStatus | 'unset';
 
 // Dans BaseInfoTab.tsx
 export function BaseInfoTab() {
@@ -33,7 +21,7 @@ export function BaseInfoTab() {
   const { book, onBookUpdated, readOnly } = route.params as { book: BookDetail; onBookUpdated?: () => void; readOnly?: boolean };
   const theme = useTheme();
 
-  const [readStatus, setReadStatus] = useState<ReadStatus>(getReadStatus(book.base.is_read));
+  const [readingStatus, setReadingStatus] = useState<LocalReadingStatus>(book.base.reading_status ?? 'unset');
   const [readDate, setReadDate] = useState<string | null>(book.base.read_date || null);
   const [rating, setRating] = useState<number | null>(book.base.rating ?? null);
   const [notes, setNotes] = useState<string>(book.base.notes ?? '');
@@ -44,22 +32,22 @@ export function BaseInfoTab() {
     console.log('Filter selected:', filter);
   };
 
-  const handleReadStatusChange = async (newStatus: ReadStatus) => {
-    const previousStatus = readStatus;
+  const handleReadStatusChange = async (newStatus: LocalReadingStatus) => {
+    const previousStatus = readingStatus;
     const previousDate = readDate;
 
-    setReadStatus(newStatus);
+    setReadingStatus(newStatus);
     const newDate = newStatus === 'read' ? (readDate || new Date().toISOString()) : null;
     setReadDate(newDate);
 
     try {
       await bookService.toggleReadStatus(
         book.base.id.toString(),
-        readStatusToIsRead(newStatus),
+        newStatus === 'unset' ? null : newStatus,
         newDate
       );
     } catch (error) {
-      setReadStatus(previousStatus);
+      setReadingStatus(previousStatus);
       setReadDate(previousDate);
       Alert.alert('Erreur', 'Impossible de mettre à jour le statut de lecture.');
     }
@@ -163,8 +151,10 @@ export function BaseInfoTab() {
     ));
   };
 
-  const clickableStatusOptions: { key: ReadStatus; label: string }[] = [
+  const statusOptions: { key: LocalReadingStatus; label: string }[] = [
+    { key: 'unset', label: 'Non renseigné' },
     { key: 'read', label: 'Lu' },
+    { key: 'in_progress', label: 'En cours' },
     { key: 'unread', label: 'Non lu' },
   ];
 
@@ -243,40 +233,44 @@ export function BaseInfoTab() {
               <Text style={[styles.label, { color: theme.textSecondary }]}>Statut</Text>
             </View>
             <View style={styles.segmentedContainer}>
-              {readStatus === 'unset' && (
-                <View style={[styles.segmentedButton, styles.segmentedButtonActive, { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium }]}>
-                  <Text style={[styles.segmentedButtonText, styles.segmentedButtonTextActive, { color: theme.textPrimary }]}>
-                    Non renseigné
-                  </Text>
-                </View>
-              )}
-              {clickableStatusOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  style={[
-                    styles.segmentedButton,
-                    { backgroundColor: theme.bgMuted, borderColor: theme.borderLight },
-                    readStatus === option.key && styles.segmentedButtonActive,
-                    readStatus === option.key && { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium },
-                    readStatus === option.key && option.key === 'read' && { backgroundColor: theme.successBg, borderColor: theme.success },
-                    readStatus === option.key && option.key === 'unread' && { backgroundColor: theme.warningBg, borderColor: theme.warning },
-                  ]}
-                  onPress={() => handleReadStatusChange(option.key)}
-                >
-                  <Text style={[
-                    styles.segmentedButtonText,
-                    { color: theme.textSecondary },
-                    readStatus === option.key && { color: theme.textPrimary, fontWeight: '600' },
-                    readStatus === option.key && option.key === 'read' && { color: theme.success },
-                    readStatus === option.key && option.key === 'unread' && { color: theme.warning },
-                  ]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {statusOptions.map((option) => {
+                const isActive = readingStatus === option.key;
+                const activeBg =
+                  option.key === 'read' ? theme.successBg :
+                  option.key === 'in_progress' ? theme.warningBg :
+                  theme.bgMuted;
+                const activeBorder =
+                  option.key === 'read' ? theme.success :
+                  option.key === 'in_progress' ? theme.warning :
+                  theme.borderMedium;
+                const activeColor =
+                  option.key === 'read' ? theme.success :
+                  option.key === 'in_progress' ? theme.warning :
+                  theme.textPrimary;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[
+                      styles.segmentedButton,
+                      { backgroundColor: theme.bgMuted, borderColor: theme.borderLight },
+                      isActive && styles.segmentedButtonActive,
+                      isActive && { backgroundColor: activeBg, borderColor: activeBorder },
+                    ]}
+                    onPress={() => handleReadStatusChange(option.key)}
+                  >
+                    <Text style={[
+                      styles.segmentedButtonText,
+                      { color: theme.textSecondary },
+                      isActive && { color: activeColor, fontWeight: '600' },
+                    ]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
-          {readStatus === 'read' && readDate && (
+          {readingStatus === 'read' && readDate && (
             <InfoRow label="Date de lecture" value={formatDateOnly(readDate)} />
           )}
         </CollapsibleSection>

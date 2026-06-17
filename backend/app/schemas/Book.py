@@ -4,7 +4,7 @@ from sqlmodel import SQLModel
 from enum import Enum
 from datetime import datetime
 
-ReadingStatus = Literal["lu", "non_lu", "in_progress"]
+ReadingStatus = Literal["read", "unread", "in_progress"]
 from app.schemas.Author import AuthorRead
 from app.schemas.Publisher import PublisherRead
 from app.schemas.Genre import GenreRead

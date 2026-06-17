@@ -1,5 +1,5 @@
 import {useState, useCallback, useRef} from "react";
-import {Book} from "@/types/book";
+import {Book, ReadingStatus} from "@/types/book";
 import {BookFilter} from "@/types/filter";
 import {fetchBooks, fetchBooksAdvanced, FetchBooksAdvancedParams} from "@/services/booksService";
 import {useBookFilters} from "@/hooks/useBookFilters";
@@ -29,7 +29,7 @@ export function useBooks({
 	const [sortBy, setSortBy] = useState(initialSortBy);
 	const [order, setOrder] = useState<'asc' | 'desc'>(initialOrder);
 	const [loadError, setLoadError] = useState(false);
-	const [isRead, setIsRead] = useState<boolean | null>(null);
+	const [readingStatus, setReadingStatus] = useState<ReadingStatus | null>(null);
 	const [ratingMin, setRatingMin] = useState<number | null>(null);
 	const [isAdvancedMode, setIsAdvancedMode] = useState(false);
 	const [advancedParams, setAdvancedParams] = useState<FetchBooksAdvancedParams | null>(null);
@@ -43,7 +43,7 @@ export function useBooks({
 			currentOrder: order,
 			currentSearchQuery: searchQuery,
 			currentFilters: activeFilters,
-			currentIsRead: isRead,
+			currentReadingStatus: readingStatus,
 			currentRatingMin: ratingMin,
 		}
 	) => {
@@ -62,7 +62,7 @@ export function useBooks({
 				order: options.currentOrder,
 				searchQuery: options.currentSearchQuery ?? "",
 				filters: options.currentFilters ?? [],
-				isRead: options.currentIsRead ?? undefined,
+				readingStatus: options.currentReadingStatus ?? undefined,
 				ratingMin: options.currentRatingMin ?? undefined,
 			});
 			if (isLoadingMore) setBooks(prev => [...prev, ...newBooks]);
@@ -76,7 +76,7 @@ export function useBooks({
 			setLoading(false);
 			setLoadingMore(false);
 		}
-	}, [sortBy, order, searchQuery, activeFilters, isRead, ratingMin, initialPageSize, isAuthenticated]);
+	}, [sortBy, order, searchQuery, activeFilters, readingStatus, ratingMin, initialPageSize, isAuthenticated]);
 
 	const loadBooksAdvanced = useCallback(async (
 		params: FetchBooksAdvancedParams,
@@ -146,11 +146,11 @@ export function useBooks({
 				currentOrder: newOrder,
 				currentSearchQuery: searchQuery,
 				currentFilters: activeFilters,
-				currentIsRead: isRead,
+				currentReadingStatus: readingStatus,
 				currentRatingMin: ratingMin,
 			});
 		}
-	}, [loadBooks, loadBooksAdvanced, searchQuery, activeFilters, isRead, ratingMin, isAdvancedMode, advancedParams]);
+	}, [loadBooks, loadBooksAdvanced, searchQuery, activeFilters, readingStatus, ratingMin, isAdvancedMode, advancedParams]);
 
 	const handleSearch = useCallback(async () => {
 		setIsAdvancedMode(false);
@@ -176,10 +176,10 @@ export function useBooks({
 			currentOrder: order,
 			currentSearchQuery: searchQuery,
 			currentFilters: activeFilters,
-			currentIsRead: isRead,
+			currentReadingStatus: readingStatus,
 			currentRatingMin: ratingMin,
 		});
-	}, [loadBooks, sortBy, order, searchQuery, activeFilters, isRead, ratingMin]);
+	}, [loadBooks, sortBy, order, searchQuery, activeFilters, readingStatus, ratingMin]);
 
 	const handleFilterRemove = useCallback(async (filter: BookFilter) => {
 		removeFilter(filter);
@@ -196,8 +196,8 @@ export function useBooks({
 		setSearchQuery,
 		sortBy,
 		order,
-		isRead,
-		setIsRead,
+		readingStatus,
+		setReadingStatus,
 		ratingMin,
 		setRatingMin,
 		isAdvancedMode,

@@ -2,18 +2,26 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { StarRating } from "@/components/StarRating";
 import { useTheme } from "@/contexts/ThemeContext";
+import { ReadingStatus } from "@/types/book";
+
+const STATUS_OPTIONS: { key: ReadingStatus | null; label: string }[] = [
+	{ key: null, label: "Tous" },
+	{ key: "read", label: "Lu" },
+	{ key: "in_progress", label: "En cours" },
+	{ key: "unread", label: "Non lu" },
+];
 
 interface SimpleSearchFiltersProps {
-	isRead: boolean | null;
-	setIsRead: (v: boolean | null) => void;
+	readingStatus: ReadingStatus | null;
+	setReadingStatus: (v: ReadingStatus | null) => void;
 	ratingMin: number | null;
 	setRatingMin: (v: number | null) => void;
 	onApply?: () => void;
 }
 
 export const SimpleSearchFilters: React.FC<SimpleSearchFiltersProps> = ({
-	isRead,
-	setIsRead,
+	readingStatus,
+	setReadingStatus,
 	ratingMin,
 	setRatingMin,
 }) => {
@@ -23,14 +31,14 @@ export const SimpleSearchFilters: React.FC<SimpleSearchFiltersProps> = ({
 			<View style={styles.section}>
 				<Text style={[styles.label, { color: theme.textMuted }]}>Statut</Text>
 				<View style={styles.chipRow}>
-					{([null, true, false] as const).map((val) => (
+					{STATUS_OPTIONS.map(({ key, label }) => (
 						<TouchableOpacity
-							key={val === null ? "tous" : val ? "lu" : "nonlu"}
-							style={[styles.chip, { backgroundColor: isRead === val ? theme.accent : theme.bgMuted }]}
-							onPress={() => setIsRead(val)}
+							key={key ?? "tous"}
+							style={[styles.chip, { backgroundColor: readingStatus === key ? theme.accent : theme.bgMuted }]}
+							onPress={() => setReadingStatus(key)}
 						>
-							<Text style={[styles.chipText, { color: isRead === val ? theme.textInverse : theme.textSecondary }]}>
-								{val === null ? "Tous" : val ? "Lu" : "Non lu"}
+							<Text style={[styles.chipText, { color: readingStatus === key ? theme.textInverse : theme.textSecondary }]}>
+								{label}
 							</Text>
 						</TouchableOpacity>
 					))}

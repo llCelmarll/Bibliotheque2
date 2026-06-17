@@ -103,7 +103,7 @@ const suggestedBookToFormData = (suggested: SuggestedBook): BookFormData => ({
 			metadata: { volume_number: s.volume_number }
 		} as Entity<SeriesMetadata>)) || [],
 	// Initialiser champs de lecture (défaut: Non lu pour les nouveaux livres)
-	is_read: suggested.is_read ?? false,
+	reading_status: suggested.reading_status ?? 'unread',
 	read_date: suggested.read_date || '',
 	rating: suggested.rating ?? null,
 	notes: suggested.notes ?? '',
@@ -160,7 +160,7 @@ const formDataToBookCreate = (formData: BookFormData, forceOwnership: boolean = 
 			})
 			: [],
 	// Inclure champs de lecture
-	is_read: formData.is_read ?? undefined,
+	reading_status: formData.reading_status ?? undefined,
 	read_date: formData.read_date || undefined,
 	rating: formData.rating ?? undefined,
 	notes: formData.notes || undefined,
@@ -357,22 +357,22 @@ export const BookForm: React.FC<BookFormProps> = ({
 							<Text style={[styles.sectionSubtitle, { color: theme.textPrimary }]}>Statut de lecture</Text>
 							<View style={styles.readStatusRow}>
 								{([
-									{ key: true, label: 'Lu' },
-									{ key: false, label: 'Non lu' },
-								] as { key: boolean | undefined; label: string }[]).map((option) => (
+									{ key: 'read', label: 'Lu', activeBg: theme.successBg, activeBorder: theme.success, activeColor: theme.success },
+									{ key: 'in_progress', label: 'En cours', activeBg: theme.warningBg, activeBorder: theme.warning, activeColor: theme.warning },
+									{ key: 'unread', label: 'Non lu', activeBg: theme.bgMuted, activeBorder: theme.borderMedium, activeColor: theme.textPrimary },
+								] as { key: string; label: string; activeBg: string; activeBorder: string; activeColor: string }[]).map((option) => (
 									<TouchableOpacity
-										key={String(option.key)}
+										key={option.key}
 										style={[
 											styles.readStatusButton,
-											formik.values.is_read === option.key && styles.readStatusButtonActive,
-											formik.values.is_read === option.key && option.key === true && { backgroundColor: theme.successBg, borderColor: theme.success },
-											formik.values.is_read === option.key && option.key === false && { backgroundColor: theme.warningBg, borderColor: theme.warning },
+											formik.values.reading_status === option.key && styles.readStatusButtonActive,
+											formik.values.reading_status === option.key && { backgroundColor: option.activeBg, borderColor: option.activeBorder },
 										]}
 										onPress={() => {
-											formik.setFieldValue('is_read', option.key);
-											if (option.key === true && !formik.values.read_date) {
+											formik.setFieldValue('reading_status', option.key);
+											if (option.key === 'read' && !formik.values.read_date) {
 												formik.setFieldValue('read_date', new Date().toISOString().split('T')[0]);
-											} else if (option.key !== true) {
+											} else if (option.key !== 'read') {
 												formik.setFieldValue('read_date', '');
 											}
 										}}
@@ -380,16 +380,14 @@ export const BookForm: React.FC<BookFormProps> = ({
 										<Text style={[
 											styles.readStatusButtonText,
 											{ color: theme.textSecondary },
-											formik.values.is_read === option.key && { color: theme.textPrimary, fontWeight: '600' as const },
-											formik.values.is_read === option.key && option.key === true && { color: theme.success },
-											formik.values.is_read === option.key && option.key === false && { color: theme.warning },
+											formik.values.reading_status === option.key && { color: option.activeColor, fontWeight: '600' as const },
 										]}>
 											{option.label}
 										</Text>
 									</TouchableOpacity>
 								))}
 							</View>
-							{formik.values.is_read === true && (
+							{formik.values.reading_status === 'read' && (
 								renderFormField('Date de lecture', 'read_date', formik, 'JJ/MM/AAAA')
 							)}
 						</View>

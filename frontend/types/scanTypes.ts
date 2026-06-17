@@ -2,6 +2,7 @@
 
 // Import des types de prêt et d'emprunt pour éviter les dépendances circulaires
 import { BorrowedBook } from './borrowedBook';
+import { ReadingStatus } from './book';
 
 export interface LoanRead {
 	id: number;
@@ -35,8 +36,8 @@ export interface BookRead {
 	publisher?: PublisherRead;
 	genres?: GenreRead[];
 	series?: { id: number; name: string; volume_number?: number }[];
-	is_read?: boolean | null;     // Statut de lecture (null = non renseigné)
-	read_date?: string;           // Date de lecture
+	reading_status?: ReadingStatus | null;  // Statut de lecture (null = non renseigné)
+	read_date?: string;                     // Date de lecture
 	rating?: number | null;       // Notation 0-5
 	notes?: string | null;        // Notes personnelles
 	current_loan?: LoanRead;  // Prêt actif (TO other) - livre prêté à quelqu'un
@@ -57,7 +58,7 @@ export interface BookCreate {
 	series?: (number | string | {name: string; id?: number; exists?: boolean; volume_number?: number})[];
 
 	// Statut de lecture
-	is_read?: boolean | null;
+	reading_status?: ReadingStatus | null;
 	read_date?: string;
 
 	// Notation et notes
@@ -112,7 +113,7 @@ export interface SuggestedBook {
 	publisher?: SuggestedPublisher;
 	genres: SuggestedGenre[];
 	series?: SuggestedSeries[];
-	is_read?: boolean | null;
+	reading_status?: ReadingStatus | null;
 	read_date?: string;
 	rating?: number | null;
 	notes?: string | null;

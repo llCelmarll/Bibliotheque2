@@ -113,14 +113,19 @@ export function BookHeader({book, onBookDeleted, readOnly}: BookHeaderProps) {
           )}
 
           {/* Badge de lecture */}
-          {book.base?.is_read === true && (
+          {book.base?.reading_status === 'read' && (
             <View style={[styles.readBadge, { backgroundColor: theme.successBg, borderColor: theme.success }]}>
               <Text style={[styles.readBadgeText, { color: theme.success }]}>
                 ✓ Lu {book.base.read_date ? `le ${formatDate(book.base.read_date)}` : ''}
               </Text>
             </View>
           )}
-          {book.base?.is_read === false && (
+          {book.base?.reading_status === 'in_progress' && (
+            <View style={[styles.inProgressBadge, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+              <Text style={[styles.inProgressBadgeText, { color: theme.warning }]}>En cours de lecture</Text>
+            </View>
+          )}
+          {book.base?.reading_status === 'unread' && (
             <View style={[styles.unreadBadge, { backgroundColor: theme.bgMuted, borderColor: theme.borderMedium }]}>
               <Text style={[styles.unreadBadgeText, { color: theme.textSecondary }]}>Non lu</Text>
             </View>
@@ -231,6 +236,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   readBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  inProgressBadge: {
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  inProgressBadgeText: {
     fontSize: 12,
     fontWeight: '600',
   },

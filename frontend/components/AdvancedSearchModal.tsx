@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { ReadingStatus } from "@/types/book";
 import {
 	View,
 	Text,
@@ -42,7 +43,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 	const [yearMax, setYearMax] = useState("");
 	const [pageMin, setPageMin] = useState("");
 	const [pageMax, setPageMax] = useState("");
-	const [isRead, setIsRead] = useState<boolean | null>(null);
+	const [readingStatus, setReadingStatus] = useState<ReadingStatus | null>(null);
 	const [ratingMin, setRatingMin] = useState<number | null>(null);
 	const [notes, setNotes] = useState("");
 
@@ -64,7 +65,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 		if (!isNaN(pMin) && pMin >= 1) params.pageMin = pMin;
 		const pMax = parseInt(pageMax, 10);
 		if (!isNaN(pMax) && pMax >= 1) params.pageMax = pMax;
-		if (isRead !== null) params.isRead = isRead;
+		if (readingStatus !== null) params.readingStatus = readingStatus;
 		if (ratingMin !== null && ratingMin >= 0) params.ratingMin = ratingMin;
 		if (notes.trim()) params.notes = notes.trim();
 		onSearch(params);
@@ -79,7 +80,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 		yearMax,
 		pageMin,
 		pageMax,
-		isRead,
+		readingStatus,
 		ratingMin,
 		notes,
 		sortBy,
@@ -98,7 +99,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 		setYearMax("");
 		setPageMin("");
 		setPageMax("");
-		setIsRead(null);
+		setReadingStatus(null);
 		setRatingMin(null);
 		setNotes("");
 	}, []);
@@ -218,24 +219,29 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 						</View>
 						<Text style={[styles.label, { color: theme.textSecondary }]}>Statut de lecture</Text>
 						<View style={styles.chipRow}>
-							{([null, true, false] as const).map((val) => (
+							{([
+								{ key: null, label: "Tous" },
+								{ key: "read" as ReadingStatus, label: "Lu" },
+								{ key: "in_progress" as ReadingStatus, label: "En cours" },
+								{ key: "unread" as ReadingStatus, label: "Non lu" },
+							]).map(({ key, label }) => (
 								<TouchableOpacity
-									key={val === null ? "tous" : val ? "lu" : "nonlu"}
+									key={key ?? "tous"}
 									style={[
 										styles.chip,
 										{ backgroundColor: theme.bgMuted },
-										isRead === val && { backgroundColor: theme.accent },
+										readingStatus === key && { backgroundColor: theme.accent },
 									]}
-									onPress={() => setIsRead(val)}
+									onPress={() => setReadingStatus(key)}
 								>
 									<Text
 										style={[
 											styles.chipText,
 											{ color: theme.textPrimary },
-											isRead === val && { color: theme.textInverse },
+											readingStatus === key && { color: theme.textInverse },
 										]}
 									>
-										{val === null ? "Tous" : val ? "Lu" : "Non lu"}
+										{label}
 									</Text>
 								</TouchableOpacity>
 							))}

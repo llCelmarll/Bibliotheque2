@@ -65,7 +65,7 @@ export default function EditBookScreen() {
         exists: true,
         volume_number: s.volume_number
       })) || [],
-      is_read: book.base.is_read ?? undefined,
+      reading_status: book.base.reading_status ?? undefined,
       read_date: book.base.read_date || undefined,
       rating: book.base.rating ?? undefined,
       notes: book.base.notes ?? undefined,
@@ -102,7 +102,7 @@ export default function EditBookScreen() {
         publisher: values.publisher,
         genres: values.genres,
         series: values.series,
-        is_read: values.is_read ?? null,
+        reading_status: values.reading_status ?? null,
         read_date: values.read_date || null,
         rating: values.rating ?? null,
         notes: values.notes || null,

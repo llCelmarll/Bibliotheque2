@@ -1,7 +1,7 @@
 // services/booksService.ts
 import axios from "axios";
 import API_CONFIG from "@/config/api";
-import { Book } from "@/types/book";
+import { Book, ReadingStatus } from "@/types/book";
 import { BookFilter } from "@/types/filter";
 import { setupAuthInterceptor } from "@/services/api/authInterceptor";
 
@@ -24,7 +24,7 @@ export interface FetchBooksParams {
     order?: "asc" | "desc";
     searchQuery?: string;
     filters?: BookFilter[];
-    isRead?: boolean | null;
+    readingStatus?: ReadingStatus | null;
     ratingMin?: number | null;
 }
 
@@ -42,7 +42,7 @@ export interface FetchBooksAdvancedParams {
     yearMax?: number | null;
     pageMin?: number | null;
     pageMax?: number | null;
-    isRead?: boolean | null;
+    readingStatus?: ReadingStatus | null;
     ratingMin?: number | null;
     notes?: string;
 }
@@ -59,7 +59,7 @@ export async function fetchBooks({
         order = "asc",
         searchQuery = "",
         filters = [],
-        isRead,
+        readingStatus,
         ratingMin,
 }: FetchBooksParams = {}): Promise<Book[]> {
     const skip = (page - 1) * pageSize;
@@ -73,7 +73,7 @@ export async function fetchBooks({
             sort_by: sortBy,
             sort_order: order,
         };
-        if (isRead !== undefined && isRead !== null) params.is_read = isRead;
+        if (readingStatus !== undefined && readingStatus !== null) params.reading_status = readingStatus;
         if (ratingMin !== undefined && ratingMin !== null) params.rating_min = ratingMin;
 
         const res = await apiClient.post(
@@ -108,7 +108,7 @@ export async function fetchBooksAdvanced({
         yearMax,
         pageMin,
         pageMax,
-        isRead,
+        readingStatus,
         ratingMin,
         notes,
 }: FetchBooksAdvancedParams = {}): Promise<Book[]> {
@@ -131,7 +131,7 @@ export async function fetchBooksAdvanced({
         if (yearMax != null) params.year_max = yearMax;
         if (pageMin != null) params.page_min = pageMin;
         if (pageMax != null) params.page_max = pageMax;
-        if (isRead !== undefined && isRead !== null) params.is_read = isRead;
+        if (readingStatus !== undefined && readingStatus !== null) params.reading_status = readingStatus;
         if (ratingMin !== undefined && ratingMin !== null) params.rating_min = ratingMin;
         if (notes != null && notes !== "") params.notes = notes;
 

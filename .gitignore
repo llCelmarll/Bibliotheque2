@@ -69,3 +69,4 @@ docs/tests logs/
 
 # Résultats de tests de performance
 backend/tests/performance/results/
+scripts/tests/test_import.csv

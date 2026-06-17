@@ -383,7 +383,7 @@ class BookService:
                 book.published_date or '',
                 str(book.page_count) if book.page_count else '',
                 series_str,
-                'lu' if book.reading_status == 'lu' else ('non lu' if book.reading_status == 'non_lu' else ('en cours' if book.reading_status == 'in_progress' else '')),
+                'lu' if book.reading_status == 'read' else ('non lu' if book.reading_status == 'unread' else ('en cours' if book.reading_status == 'in_progress' else '')),
                 str(book.rating) if book.rating is not None else '',
                 book.notes or '',
                 cover,

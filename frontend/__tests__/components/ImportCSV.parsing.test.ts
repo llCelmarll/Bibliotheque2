@@ -1,6 +1,6 @@
 /**
  * Tests unitaires pour la logique de parsing CSV (utils/csvParser.ts).
- * Couvre les edge cases : séries, is_read, rating, auteurs, titres vides, champs absents.
+ * Couvre les edge cases : séries, reading_status, rating, auteurs, titres vides, champs absents.
  */
 import { parseCSVRow } from '../../utils/csvParser';
 
@@ -57,7 +57,6 @@ describe('parseCSVRow', () => {
   });
 
   it('série avec colon et colonne volume — le colon prend la priorité', () => {
-    // Quand il y a un ":" dans series, volume est ignoré (format export)
     const result = parseCSVRow({ title: 'T', series: 'Dune:1', volume: '99' });
     expect(result.series).toEqual([{ name: 'Dune', volume_number: 1 }]);
   });
@@ -72,48 +71,79 @@ describe('parseCSVRow', () => {
     expect(result.series).toEqual([{ name: 'Dune', volume_number: undefined }]);
   });
 
-  // ── is_read ────────────────────────────────────────────────────────────────
+  // ── reading_status (colonne is_read rétrocompat) ───────────────────────────
 
-  it('is_read "oui" → true', () => {
-    expect(parseCSVRow({ title: 'T', is_read: 'oui' }).is_read).toBe(true);
+  it('is_read "oui" → reading_status "read"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: 'oui' }).reading_status).toBe('read');
   });
 
-  it('is_read "non" → false', () => {
-    expect(parseCSVRow({ title: 'T', is_read: 'non' }).is_read).toBe(false);
+  it('is_read "non" → reading_status "unread"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: 'non' }).reading_status).toBe('unread');
   });
 
-  it('is_read "true" → true', () => {
-    expect(parseCSVRow({ title: 'T', is_read: 'true' }).is_read).toBe(true);
+  it('is_read "true" → reading_status "read"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: 'true' }).reading_status).toBe('read');
   });
 
-  it('is_read "1" → true', () => {
-    expect(parseCSVRow({ title: 'T', is_read: '1' }).is_read).toBe(true);
+  it('is_read "1" → reading_status "read"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: '1' }).reading_status).toBe('read');
   });
 
-  it('is_read "yes" → true', () => {
-    expect(parseCSVRow({ title: 'T', is_read: 'yes' }).is_read).toBe(true);
+  it('is_read "yes" → reading_status "read"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: 'yes' }).reading_status).toBe('read');
   });
 
-  it('is_read "lu" → true', () => {
-    expect(parseCSVRow({ title: 'T', is_read: 'lu' }).is_read).toBe(true);
+  it('is_read "lu" → reading_status "read"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: 'lu' }).reading_status).toBe('read');
   });
 
-  it('is_read "false" → false', () => {
-    expect(parseCSVRow({ title: 'T', is_read: 'false' }).is_read).toBe(false);
+  it('is_read "false" → reading_status "unread"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: 'false' }).reading_status).toBe('unread');
   });
 
-  it('is_read "0" → false', () => {
-    expect(parseCSVRow({ title: 'T', is_read: '0' }).is_read).toBe(false);
+  it('is_read "0" → reading_status "unread"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: '0' }).reading_status).toBe('unread');
   });
 
-  it('is_read absent → is_read non défini', () => {
+  it('is_read "en cours" → reading_status "in_progress"', () => {
+    expect(parseCSVRow({ title: 'T', is_read: 'en cours' }).reading_status).toBe('in_progress');
+  });
+
+  it('is_read absent → reading_status non défini', () => {
     const result = parseCSVRow({ title: 'T' });
-    expect(result.is_read).toBeUndefined();
+    expect(result.reading_status).toBeUndefined();
   });
 
-  it('is_read "" (vide) → is_read non défini', () => {
+  it('is_read "" (vide) → reading_status non défini', () => {
     const result = parseCSVRow({ title: 'T', is_read: '' });
-    expect(result.is_read).toBeUndefined();
+    expect(result.reading_status).toBeUndefined();
+  });
+
+  // ── reading_status (colonne directe, prioritaire) ──────────────────────────
+
+  it('reading_status "read" direct → "read"', () => {
+    expect(parseCSVRow({ title: 'T', reading_status: 'read' }).reading_status).toBe('read');
+  });
+
+  it('reading_status "unread" direct → "unread"', () => {
+    expect(parseCSVRow({ title: 'T', reading_status: 'unread' }).reading_status).toBe('unread');
+  });
+
+  it('reading_status "in_progress" direct → "in_progress"', () => {
+    expect(parseCSVRow({ title: 'T', reading_status: 'in_progress' }).reading_status).toBe('in_progress');
+  });
+
+  it('reading_status "en cours" direct → "in_progress"', () => {
+    expect(parseCSVRow({ title: 'T', reading_status: 'en cours' }).reading_status).toBe('in_progress');
+  });
+
+  it('reading_status "lu" direct → "read"', () => {
+    expect(parseCSVRow({ title: 'T', reading_status: 'lu' }).reading_status).toBe('read');
+  });
+
+  it('reading_status prioritaire sur is_read', () => {
+    // reading_status doit l'emporter sur is_read quand les deux sont présents
+    expect(parseCSVRow({ title: 'T', reading_status: 'in_progress', is_read: 'oui' }).reading_status).toBe('in_progress');
   });
 
   // ── Rating ─────────────────────────────────────────────────────────────────
@@ -222,7 +252,7 @@ describe('parseCSVRow', () => {
     expect(result.authors).toBeUndefined();
     expect(result.genres).toBeUndefined();
     expect(result.series).toBeUndefined();
-    expect(result.is_read).toBeUndefined();
+    expect(result.reading_status).toBeUndefined();
     expect(result.rating).toBeUndefined();
     expect(result.notes).toBeUndefined();
   });

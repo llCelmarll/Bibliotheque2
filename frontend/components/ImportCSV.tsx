@@ -24,6 +24,7 @@ interface ParsedBook {
   page_count?: string;
   series?: string;
   volume?: string;
+  reading_status?: string;
   is_read?: string;
   rating?: string;
   notes?: string;
@@ -75,6 +76,7 @@ export default function ImportCSV() {
     page_count: ['pages', 'page_count', 'nb_pages', 'nombre_pages', 'Pages', 'Nombre de pages'],
     series: ['serie', 'série', 'series', 'Series', 'Série', 'collection', 'Collection'],
     volume: ['tome', 'volume', 'Tome', 'Volume', 'numero', 'numéro', 'vol'],
+    reading_status: ['reading_status', 'statut_lecture', 'statut', 'status'],
     is_read: ['lu', 'is_read', 'Lu', 'Is_Read', 'read', 'Read'],
     rating: ['note', 'rating', 'Note', 'Rating', 'notation', 'Notation'],
     notes: ['notes', 'Notes', 'commentaire', 'Commentaire', 'commentaires', 'description'],
@@ -223,7 +225,7 @@ export default function ImportCSV() {
           const columnLabels: Record<string, string> = {
             title: 'titre *', subtitle: 'sous-titre', isbn: 'isbn', authors: 'auteurs',
             publisher: 'éditeur', genres: 'genres', published_date: 'date', page_count: 'pages',
-            series: 'série', volume: 'tome', is_read: 'lu', rating: 'note', notes: 'notes', cover_url: 'couverture',
+            series: 'série', volume: 'tome', reading_status: 'statut lect.', is_read: 'lu (ancien)', rating: 'note', notes: 'notes', cover_url: 'couverture',
           };
           setDetectedColumns(
             Object.keys(columnLabels).map(key => ({
@@ -685,7 +687,8 @@ export default function ImportCSV() {
           { label: 'pages', values: 'pages, page_count, nombre_pages' },
           { label: 'série', values: 'serie, série, collection', note: '("Dune:1" ou "Dune:1 ; Fondation:3" pour plusieurs)' },
           { label: 'tome', values: 'tome, volume, numéro, vol', note: '(alternatif si série sans ":")' },
-          { label: 'lu', values: 'lu, is_read, read', note: '(oui/non ou true/false)' },
+          { label: 'statut', values: 'reading_status, statut_lecture', note: '(read/unread/in_progress ou lu/non lu/en cours)' },
+          { label: 'lu (ancien)', values: 'lu, is_read, read', note: '(rétrocompat : oui/non, true/false, en cours)' },
           { label: 'note', values: 'note, rating, notation', note: '(0 à 5)' },
           { label: 'notes', values: 'notes, commentaire, description', note: '(texte libre)' },
           { label: 'couverture', values: 'couverture, cover_url, image, cover', note: '(URL)' },
@@ -813,9 +816,14 @@ export default function ImportCSV() {
                         <Text style={[styles.bold, { color: theme.textPrimary }]}>Série:</Text> {book.series}{book.volume ? ` (t. ${book.volume})` : ''}
                       </Text>
                     )}
-                    {book.is_read !== undefined && book.is_read !== '' && (
+                    {(book.reading_status !== undefined && book.reading_status !== '') && (
                       <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
-                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Lu:</Text> {book.is_read}
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Statut:</Text> {book.reading_status}
+                      </Text>
+                    )}
+                    {!book.reading_status && book.is_read !== undefined && book.is_read !== '' && (
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.bold, { color: theme.textPrimary }]}>Lu (ancien):</Text> {book.is_read}
                       </Text>
                     )}
                     {book.rating && (

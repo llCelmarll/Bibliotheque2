@@ -43,8 +43,8 @@ export default function Index() {
 		setSearchQuery,
 		sortBy,
 		order,
-		isRead,
-		setIsRead,
+		readingStatus,
+		setReadingStatus,
 		ratingMin,
 		setRatingMin,
 		isAdvancedMode,
@@ -139,11 +139,11 @@ export default function Index() {
 				currentOrder: order,
 				currentSearchQuery: searchQuery,
 				currentFilters: activeFilters,
-				currentIsRead: isRead,
+				currentReadingStatus: readingStatus,
 				currentRatingMin: ratingMin,
 			});
 		}
-	}, [activeFilters, isRead, ratingMin, isAdvancedMode]);
+	}, [activeFilters, readingStatus, ratingMin, isAdvancedMode]);
 
 	return (
 		<View style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
@@ -169,8 +169,8 @@ export default function Index() {
 				</View>
 			) : (
 				<SimpleSearchFilters
-					isRead={isRead}
-					setIsRead={setIsRead}
+					readingStatus={readingStatus}
+					setReadingStatus={setReadingStatus}
 					ratingMin={ratingMin}
 					setRatingMin={setRatingMin}
 				/>

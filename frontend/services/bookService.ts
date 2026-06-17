@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import API_CONFIG from '@/config/api';
 import { BookCreate, BookRead } from '@/types/scanTypes';
-import { BookUpdate } from '@/types/book';
+import { BookUpdate, ReadingStatus } from '@/types/book';
 import { setupAuthInterceptor } from '@/services/api/authInterceptor';
 
 // Configuration axios avec intercepteur d'authentification
@@ -207,11 +207,11 @@ class BookService {
   /**
    * Met à jour le statut de lecture d'un livre
    */
-  async toggleReadStatus(bookId: string, isRead: boolean | null, readDate?: string | null): Promise<BookRead> {
+  async toggleReadStatus(bookId: string, readingStatus: ReadingStatus | null, readDate?: string | null): Promise<BookRead> {
     try {
       const response = await apiClient.patch(
         `${API_CONFIG.ENDPOINTS.BOOKS}/${bookId}/read-status`,
-        { is_read: isRead, read_date: readDate || null }
+        { reading_status: readingStatus, read_date: readDate || null }
       );
       return response.data;
     } catch (error) {

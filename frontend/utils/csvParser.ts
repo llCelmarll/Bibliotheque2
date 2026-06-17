@@ -56,10 +56,13 @@ export function parseCSVRow(mappedRow: MappedCSVRow): BookCreate {
     }
   }
 
-  if (mappedRow.is_read !== undefined && mappedRow.is_read !== '') {
-    const val = mappedRow.is_read.toLowerCase().trim();
-    if (['true', 'oui', '1', 'yes', 'lu'].includes(val)) book.is_read = true;
-    else if (['false', 'non', '0', 'no'].includes(val)) book.is_read = false;
+  // Support colonne reading_status (prioritaire) et is_read (rétrocompat)
+  const rawStatus = mappedRow.reading_status ?? mappedRow.is_read;
+  if (rawStatus !== undefined && rawStatus !== '') {
+    const val = rawStatus.toLowerCase().trim();
+    if (['read', 'lu', 'oui', 'true', '1', 'yes'].includes(val)) book.reading_status = 'read';
+    else if (['unread', 'non_lu', 'non lu', 'non', 'false', '0', 'no'].includes(val)) book.reading_status = 'unread';
+    else if (['in_progress', 'en_cours', 'en cours', 'encours', 'in progress'].includes(val)) book.reading_status = 'in_progress';
   }
 
   if (mappedRow.rating) {

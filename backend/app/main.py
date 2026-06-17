@@ -66,7 +66,8 @@ async def security_headers(request: Request, call_next):
 	response.headers["X-XSS-Protection"] = "1; mode=block"
 	response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 	response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-	response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+	if _is_production or request.url.path not in ("/docs", "/redoc", "/openapi.json"):
+		response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
 	if _is_production:
 		response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 	return response

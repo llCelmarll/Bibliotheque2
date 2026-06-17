@@ -46,8 +46,8 @@ Stop-Process -Name "chrome" -Force -ErrorAction SilentlyContinue
 Write-Host "Chrome ferme." -ForegroundColor Green
 
 Write-Host "Arret de Docker Desktop..." -ForegroundColor Yellow
-& "C:\Program Files\Docker\Docker\Docker Desktop.exe" --quit 2>$null
-Start-Sleep -Seconds 2
-# Si toujours actif, forcer
-Get-Process | Where-Object { $_.Path -like "*Docker\Docker Desktop.exe" } | Stop-Process -Force -ErrorAction SilentlyContinue
+taskkill /IM "Docker Desktop.exe" /F 2>$null | Out-Null
+taskkill /IM "com.docker.backend.exe" /F 2>$null | Out-Null
+taskkill /IM "com.docker.build.exe" /F 2>$null | Out-Null
+taskkill /IM "com.docker.service.exe" /F 2>$null | Out-Null
 Write-Host "Docker Desktop arrete." -ForegroundColor Green

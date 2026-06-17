@@ -136,7 +136,7 @@ class TestExportBooksCsv:
             published_date="1965",
             page_count=896,
             series=[_series("Dune", 1)],
-            reading_status="lu",
+            reading_status="read",
             rating=5,
             notes="Chef-d'œuvre.",
             cover_url="https://example.com/dune.jpg",
@@ -170,13 +170,13 @@ class TestExportBooksCsv:
         assert rows[0]['editeur'] == ''
 
     def test_reading_status_lu(self, book_service):
-        book = _make_book(reading_status="lu")
+        book = _make_book(reading_status="read")
         _setup_books(book_service, [book])
         rows = _parse_csv(book_service.export_books_csv())
         assert rows[0]['lu'] == 'lu'
 
     def test_reading_status_non_lu(self, book_service):
-        book = _make_book(reading_status="non_lu")
+        book = _make_book(reading_status="unread")
         _setup_books(book_service, [book])
         rows = _parse_csv(book_service.export_books_csv())
         assert rows[0]['lu'] == 'non lu'
