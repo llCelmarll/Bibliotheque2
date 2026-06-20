@@ -87,8 +87,6 @@ Notes :
         rating_min=rating_min,
         filters=filters
     )
-    print("Requete reçue : " + str(params))
-
     return service.search_books(params)
 
 @router.get("/search/advanced", response_model=List[BookRead])

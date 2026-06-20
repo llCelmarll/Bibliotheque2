@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class SortBy(str, Enum):
 	"""Enum pour les champs de tri."""
+	id = "id"
 	title = "title"
 	published_date = "published_date"
 	page_count = "page_count"

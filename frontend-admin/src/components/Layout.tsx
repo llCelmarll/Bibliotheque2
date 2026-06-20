@@ -1,10 +1,12 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 
 const navItems = [
   { to: '/dashboard', label: 'Tableau de bord' },
   { to: '/reports', label: 'Signalements' },
   { to: '/users', label: 'Utilisateurs' },
+  { to: '/books', label: 'Livres' },
+  { to: '/loans', label: 'Prêts' },
   { to: '/entities', label: 'Entités' },
 ]
 

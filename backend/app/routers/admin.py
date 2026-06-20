@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 from sqlalchemy import func
-from app.db import engine
+from app.db import engine, get_session
 from app.models.User import User
 from app.models.Book import Book
 from app.models.Loan import Loan, LoanStatus
@@ -13,7 +13,11 @@ from app.schemas.Admin import (
     AdminStats, AdminUserRead, AdminUserUpdate,
     WhitelistEntryRead, WhitelistEntryCreate, AuditLogRead,
 )
+from app.schemas.Book import BookRead, BookAdvancedSearchParams
+from app.schemas.Other import SortBy, SortOrder
 from app.services.auth_service import get_current_moderator_user_sync as get_current_moderator_user, get_current_admin_user_sync as get_current_admin_user
+from app.services.book_service import BookService
+from app.repositories.book_repository import BookRepository
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -47,7 +51,7 @@ def list_users(
     is_active: Optional[bool] = Query(None),
     role: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     current_user: User = Depends(get_current_moderator_user),
 ):
     with Session(engine) as session:
@@ -62,6 +66,38 @@ def list_users(
             query = query.where(User.role == role)
         query = query.order_by(User.created_at.desc()).offset(offset).limit(limit)
         return session.exec(query).all()
+
+
+@router.get("/users/{user_id}/loans")
+def get_user_loans(
+    user_id: int,
+    limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(get_current_moderator_user),
+):
+    with Session(engine) as session:
+        user = session.get(User, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+        query = (
+            select(Loan)
+            .where(Loan.owner_id == user_id)
+            .order_by(Loan.loan_date.desc())
+            .limit(limit)
+        )
+        loans = session.exec(query).all()
+        result = []
+        for loan in loans:
+            book = session.get(Book, loan.book_id) if loan.book_id else None
+            result.append({
+                "id": loan.id,
+                "status": loan.status,
+                "loan_date": loan.loan_date,
+                "due_date": loan.due_date,
+                "return_date": loan.return_date,
+                "book": {"id": book.id, "title": book.title, "authors": [{"name": a.name} for a in book.authors]} if book else None,
+                "contact": {"first_name": loan.contact.first_name, "last_name": loan.contact.last_name} if loan.contact else None,
+            })
+        return result
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserRead)
@@ -151,7 +187,7 @@ def remove_from_whitelist(email: str, current_user: User = Depends(get_current_a
 def get_audit_log(
     action: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     current_user: User = Depends(get_current_admin_user),
 ):
     with Session(engine) as session:
@@ -160,3 +196,45 @@ def get_audit_log(
             query = query.where(AuditLog.action == action)
         query = query.order_by(AuditLog.created_at.desc()).offset(offset).limit(limit)
         return session.exec(query).all()
+
+
+@router.get("/books", response_model=List[BookRead])
+def admin_list_books(
+    owner_id: Optional[int] = Query(None, description="Filtrer par propriétaire"),
+    title: Optional[str] = Query(None),
+    author: Optional[str] = Query(None),
+    publisher: Optional[str] = Query(None),
+    genre: Optional[str] = Query(None),
+    isbn: Optional[str] = Query(None),
+    reading_status: Optional[str] = Query(None),
+    rating_min: Optional[int] = Query(None, ge=0, le=5),
+    year_min: Optional[int] = Query(None, ge=0),
+    year_max: Optional[int] = Query(None, ge=0),
+    sort_by: SortBy = Query(SortBy.created_at),
+    sort_order: SortOrder = Query(SortOrder.desc),
+    limit: int = Query(10000, ge=1, le=10000),
+    skip: int = Query(0, ge=0),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_moderator_user),
+):
+    from app.schemas.Book import ReadingStatus
+    params = BookAdvancedSearchParams(
+        owner_id=owner_id,
+        title=title,
+        author=author,
+        publisher=publisher,
+        genre=genre,
+        isbn=isbn,
+        reading_status=ReadingStatus(reading_status) if reading_status else None,
+        rating_min=rating_min,
+        year_min=year_min,
+        year_max=year_max,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        limit=limit,
+        skip=skip,
+    )
+    repo = BookRepository(session)
+    books = repo.advanced_search_books(params, user_id=None)
+    service = BookService(session, user_id=owner_id)
+    return [service._enrich_book_read(b) for b in books]

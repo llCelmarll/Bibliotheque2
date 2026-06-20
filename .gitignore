@@ -5,6 +5,11 @@ __pycache__/
 *.pyc
 *.db
 *.db.*
+.coverage
+backend/.coverage
+
+# Dev scripts
+.dev-pids
 
 # Locust performance results
 perf_results*.csv

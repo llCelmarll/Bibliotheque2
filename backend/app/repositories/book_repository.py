@@ -132,22 +132,23 @@ class BookRepository:
 		"""Recherche avancée avec filtres spécifiques pour un utilisateur"""
 		stmt = self._build_base_query()
 
-		# Filtrer par propriétaire si spécifié
-		if user_id is not None:
-			stmt = stmt.where(Book.owner_id == user_id)
+		# Filtrer par propriétaire : params.owner_id (admin) prime sur user_id (session)
+		effective_owner = params.owner_id if params.owner_id is not None else user_id
+		if effective_owner is not None:
+			stmt = stmt.where(Book.owner_id == effective_owner)
 
 			# Exclure les livres empruntés retournés (avec subqueries pour gérer multiples emprunts)
 			# Subquery pour trouver les livres qui ont AU MOINS un emprunt actif
 			has_active_borrow_subquery = (
 				select(BorrowedBook.book_id)
-				.where(BorrowedBook.user_id == user_id)
+				.where(BorrowedBook.user_id == effective_owner)
 				.where(BorrowedBook.status.in_([BorrowStatus.ACTIVE, BorrowStatus.OVERDUE]))
 			).scalar_subquery()
 
 			# Subquery pour trouver les livres qui ont AU MOINS un emprunt (peu importe le statut)
 			has_any_borrow_subquery = (
 				select(BorrowedBook.book_id)
-				.where(BorrowedBook.user_id == user_id)
+				.where(BorrowedBook.user_id == effective_owner)
 			).scalar_subquery()
 
 			stmt = stmt.where(
@@ -433,12 +434,13 @@ class BookRepository:
 	def _get_order_field(self, sort_by: SortBy):
 		"""Retourne le champ de tri"""
 		field_mapping = {
+			SortBy.id: Book.id,
 			SortBy.title: Book.title,
 			SortBy.published_date: Book.published_date,
 			SortBy.page_count: Book.page_count,
-			SortBy.isbn: Book.isbn,  # Ajouté ISBN manquant
-			SortBy.created_at: Book.id,  # Proxy pour created_date (en attendant les timestamps)
-			SortBy.updated_at: Book.id,  # Proxy pour updated_date (en attendant les timestamps)
+			SortBy.isbn: Book.isbn,
+			SortBy.created_at: Book.created_at,
+			SortBy.updated_at: Book.updated_at,
 			SortBy.author: Author.name,
 			SortBy.publisher: Publisher.name,
 			SortBy.genre: Genre.name

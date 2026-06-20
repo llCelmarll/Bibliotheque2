@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from '@/hooks/useAuth'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import Reports from '@/pages/Reports'
@@ -7,11 +6,13 @@ import Users from '@/pages/Users'
 import Entities from '@/pages/Entities'
 import Whitelist from '@/pages/Whitelist'
 import AuditLog from '@/pages/AuditLog'
+import Books from '@/pages/Books'
+import Loans from '@/pages/Loans'
 import Layout from '@/components/Layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function App() {
-  const basename = import.meta.env.PROD ? '/admin' : '/'
+  const basename = (import.meta as any).env.PROD ? '/admin' : '/'
 
   return (
     <BrowserRouter basename={basename}>
@@ -30,6 +31,8 @@ export default function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="users" element={<Users />} />
           <Route path="entities" element={<Entities />} />
+          <Route path="books" element={<Books />} />
+          <Route path="loans" element={<Loans />} />
           <Route
             path="whitelist"
             element={

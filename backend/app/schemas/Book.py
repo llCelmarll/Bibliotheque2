@@ -55,6 +55,7 @@ class BookRead(SQLModel):
     read_date: Optional[datetime] = None
     rating: Optional[int] = None  # 0-5, 0 = non renseigné
     notes: Optional[str] = None
+    owner_id: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     authors: List[AuthorRead] = []
@@ -84,6 +85,7 @@ class BookRead(SQLModel):
         # Créer le BookRead avec les données de base
         data = {
             "id": book.id,
+            "owner_id": getattr(book, "owner_id", None),
             "title": book.title,
             "subtitle": getattr(book, "subtitle", None),
             "isbn": book.isbn,
@@ -255,8 +257,9 @@ class BookAdvancedSearchParams(BaseModel):
     page_min: Optional[int] = None
     page_max: Optional[int] = None
     reading_status: Optional[ReadingStatus] = None
-    rating_min: Optional[int] = None  # 0-5, notation minimale
-    notes: Optional[str] = None  # Recherche plein texte dans les notes personnelles
+    rating_min: Optional[int] = None
+    notes: Optional[str] = None
+    owner_id: Optional[int] = None
     sort_by: SortBy = SortBy.title
     sort_order: SortOrder = SortOrder.asc
     skip: int = 0
