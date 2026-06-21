@@ -8,6 +8,7 @@ param(
     [switch]$ForceMobile,
     [switch]$ForceApk,
     [switch]$ForceAdmin,
+    [switch]$AdminOnly,
 
     # Message OTA optionnel (defaut = dernier message de commit)
     [string]$UpdateMessage,
@@ -356,6 +357,15 @@ $plan = Get-DeploymentPlan `
     -ForceWeb:$ForceWeb `
     -ForceMobile:$ForceMobile `
     -ForceApk:$ForceApk
+
+# -AdminOnly : forcer uniquement l'admin, annuler tout le reste
+if ($AdminOnly) {
+    $plan.Backend = $false
+    $plan.Web     = $false
+    $plan.Mobile  = $false
+    $plan.Apk     = $false
+    $plan.Admin   = $true
+}
 
 # Message OTA : parametre fourni ou dernier commit
 if (-not $UpdateMessage) {

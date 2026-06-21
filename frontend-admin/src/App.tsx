@@ -12,10 +12,8 @@ import Layout from '@/components/Layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function App() {
-  const basename = (import.meta as any).env.PROD ? '/admin' : '/'
-
   return (
-    <BrowserRouter basename={basename}>
+    <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route

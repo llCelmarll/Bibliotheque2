@@ -1,7 +1,7 @@
 # Redeploiement du frontend admin PRODUCTION uniquement
 # Pull la nouvelle image :latest et relance le conteneur sur le port 8082.
 
-$envFile = Join-Path $PSScriptRoot "..\..\..\.env.deploy"
+$envFile = Join-Path $PSScriptRoot "..\..\\.env.deploy"
 if (-not (Test-Path $envFile)) {
     $envFile = Join-Path $PSScriptRoot ".env.deploy"
 }
