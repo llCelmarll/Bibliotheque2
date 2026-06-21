@@ -7,6 +7,7 @@ param(
     [switch]$ForceWeb,
     [switch]$ForceMobile,
     [switch]$ForceApk,
+    [switch]$ForceAdmin,
 
     # Message OTA optionnel (defaut = dernier message de commit)
     [string]$UpdateMessage,
@@ -97,6 +98,7 @@ function Get-DeploymentPlan {
         Web          = $false
         Mobile       = $false
         Apk          = $false
+        Admin        = $false
         ChangedFiles = @()
         IsFirstDeploy = $false
     }
@@ -109,6 +111,7 @@ function Get-DeploymentPlan {
         $plan.Web          = $true
         $plan.Mobile       = $true
         $plan.Apk          = $true
+        $plan.Admin        = $true
         $plan.IsFirstDeploy = $true
         return $plan
     }
@@ -128,7 +131,8 @@ function Get-DeploymentPlan {
 
     # Regles de detection
     $backendChanged = $changedFiles | Where-Object { $_ -match '^backend/' }
-    $frontendChanged = $changedFiles | Where-Object { $_ -match '^frontend/' -or $_ -match '^frontend-admin/' }
+    $frontendChanged = $changedFiles | Where-Object { $_ -match '^frontend/' -and $_ -notmatch '^frontend-admin/' }
+    $adminChanged = $changedFiles | Where-Object { $_ -match '^frontend-admin/' }
     $nativeChanged = $changedFiles | Where-Object {
         $_ -match '^frontend/android/' -or
         $_ -match '^frontend/ios/' -or
@@ -140,6 +144,7 @@ function Get-DeploymentPlan {
     $plan.Web     = ($frontendChanged.Count -gt 0) -or $ForceWeb.IsPresent
     $plan.Mobile  = ($frontendChanged.Count -gt 0) -or $ForceMobile.IsPresent
     $plan.Apk     = ($nativeChanged.Count -gt 0) -or $ForceApk.IsPresent
+    $plan.Admin   = ($adminChanged.Count -gt 0) -or $ForceAdmin.IsPresent
 
     return $plan
 }
@@ -198,6 +203,16 @@ function Show-DeploymentSummary {
         Write-Host ("  APK ANDROID".PadRight($col1) + "[IGNORE] ".PadRight($col2) + "aucun fichier natif modifie") -ForegroundColor DarkGray
     }
 
+    # Admin
+    if ($Plan.Admin) {
+        $label = "[DEPLOYE]".PadRight($col2)
+        $adminFiles = @($changedFiles | Where-Object { $_ -match '^frontend-admin/' })
+        $detail = if ($adminFiles.Count -gt 0) { "frontend-admin/ ($($adminFiles.Count) fichier(s))" } else { "force (-ForceAdmin)" }
+        Write-Host ("  ADMIN".PadRight($col1) + $label + $detail) -ForegroundColor Green
+    } else {
+        Write-Host ("  ADMIN".PadRight($col1) + "[IGNORE] ".PadRight($col2) + "aucun changement detecte") -ForegroundColor DarkGray
+    }
+
     Write-Host ""
     if ($Plan.Mobile) {
         Write-Host "  Message OTA : $UpdateMessage" -ForegroundColor Cyan
@@ -211,7 +226,7 @@ function Get-UserConfirmation {
     while ($true) {
         Show-DeploymentSummary -Plan $Plan -UpdateMessage $UpdateMessage.Value
 
-        if (-not ($Plan.Backend -or $Plan.Web -or $Plan.Mobile -or $Plan.Apk)) {
+        if (-not ($Plan.Backend -or $Plan.Web -or $Plan.Mobile -or $Plan.Apk -or $Plan.Admin)) {
             Write-Host "Aucune action planifiee." -ForegroundColor Gray
             return $null
         }
@@ -231,6 +246,7 @@ function Get-UserConfirmation {
                 Write-Host "  [W] Ajouter/retirer Web       (actuellement: $(if ($Plan.Web) {'OUI'} else {'NON'}))"
                 Write-Host "  [O] Ajouter/retirer OTA       (actuellement: $(if ($Plan.Mobile) {'OUI'} else {'NON'}))"
                 Write-Host "  [A] Ajouter/retirer APK       (actuellement: $(if ($Plan.Apk) {'OUI'} else {'NON'}))"
+                Write-Host "  [D] Ajouter/retirer Admin     (actuellement: $(if ($Plan.Admin) {'OUI'} else {'NON'}))"
                 if ($Plan.Mobile) {
                     Write-Host "  [U] Modifier le message OTA   (actuel: $($UpdateMessage.Value))"
                 }
@@ -242,6 +258,7 @@ function Get-UserConfirmation {
                     "W" { $Plan.Web = -not $Plan.Web }
                     "O" { $Plan.Mobile = -not $Plan.Mobile }
                     "A" { $Plan.Apk = -not $Plan.Apk }
+                    "D" { $Plan.Admin = -not $Plan.Admin }
                     "U" {
                         $newMsg = Read-Host "Nouveau message OTA"
                         if ($newMsg.Trim() -ne "") { $UpdateMessage.Value = $newMsg.Trim() }
@@ -266,6 +283,7 @@ function Update-ProdBranch {
     if ($Plan.Web)     { $parts += "web" }
     if ($Plan.Mobile)  { $parts += "mobile" }
     if ($Plan.Apk)     { $parts += "apk" }
+    if ($Plan.Admin)   { $parts += "admin" }
     $deployed = $parts -join "+"
 
     $appConfigPath = Join-Path $PSScriptRoot "..\..\frontend\app.config.js"
@@ -345,7 +363,7 @@ if (-not $UpdateMessage) {
 }
 
 # Cas : rien a deployer
-if (-not ($plan.Backend -or $plan.Web -or $plan.Mobile -or $plan.Apk)) {
+if (-not ($plan.Backend -or $plan.Web -or $plan.Mobile -or $plan.Apk -or $plan.Admin)) {
     Show-DeploymentSummary -Plan $plan -UpdateMessage $UpdateMessage
     Write-Host "Aucun changement detecte depuis le dernier deploiement." -ForegroundColor Green
     Write-Host "Utilisez -ForceBackend, -ForceWeb, -ForceMobile, -ForceApk pour forcer un deploiement." -ForegroundColor Gray
@@ -597,11 +615,47 @@ EXPO_PUBLIC_APK_FILENAME=bibliotheque.apk
 }
 
 # ---------------------------------------------------------------------------
-# [4] FRONTEND WEB
+# [4] ADMIN
+# ---------------------------------------------------------------------------
+
+if ($plan.Admin) {
+    Write-Host "[4/5] Build et deploiement du frontend Admin..." -ForegroundColor Yellow
+    Write-Host ""
+
+    if (-not (Start-DockerIfNeeded)) {
+        Write-Host "Impossible de continuer sans Docker Desktop" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "  Build de l'image Docker (AMD64 + ARM64)..." -ForegroundColor Gray
+    docker buildx build --platform linux/amd64,linux/arm64 `
+        -f frontend-admin/Dockerfile `
+        --build-arg NGINX_CONF=nginx-admin-prod.conf `
+        -t llcelmarll/mabibliotheque-admin:latest `
+        --push `
+        frontend-admin/
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Erreur lors du build Docker de l'admin" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
+    & "$PSScriptRoot\redeploy-admin.ps1"
+
+    Write-Host ""
+    Write-Host "  Frontend Admin deploye !" -ForegroundColor Green
+    Write-Host "  URL: https://admin.mabibliotheque.ovh/admin" -ForegroundColor Gray
+    Write-Host ""
+}
+
+# ---------------------------------------------------------------------------
+# [5] FRONTEND WEB
 # ---------------------------------------------------------------------------
 
 if ($plan.Web) {
-    Write-Host "[4/4] Build et deploiement du frontend Web..." -ForegroundColor Yellow
+    Write-Host "[5/5] Build et deploiement du frontend Web..." -ForegroundColor Yellow
     Write-Host ""
 
     if (-not (Start-DockerIfNeeded)) {
@@ -643,4 +697,5 @@ if ($plan.Backend) { Write-Host "  Backend API:   https://mabibliotheque.ovh/api
 if ($plan.Web)     { Write-Host "  Frontend Web:  https://mabibliotheque.ovh" -ForegroundColor Green }
 if ($plan.Mobile)  { Write-Host "  App Mobile:    Mise a jour OTA publiee (branch: production)" -ForegroundColor Green }
 if ($plan.Apk)     { Write-Host "  APK Android:   https://mabibliotheque.ovh/bibliotheque.apk" -ForegroundColor Green }
+if ($plan.Admin)   { Write-Host "  Admin:         https://admin.mabibliotheque.ovh/admin" -ForegroundColor Green }
 Write-Host ""
