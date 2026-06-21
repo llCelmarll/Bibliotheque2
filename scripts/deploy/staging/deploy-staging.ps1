@@ -100,11 +100,20 @@ ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker run -d --name 
 Write-Host "  Backend staging demarre" -ForegroundColor Green
 
 # [6] Frontend staging
-Write-Host "[6/6] Demarrage du frontend staging (port $FRONTEND_PORT)..." -ForegroundColor Yellow
+Write-Host "[6/7] Demarrage du frontend staging (port $FRONTEND_PORT)..." -ForegroundColor Yellow
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker rm -f ${FRONTEND_CONT} 2>/dev/null || true"
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker pull llcelmarll/mabibliotheque-frontend:staging"
 ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker run -d --name ${FRONTEND_CONT} --network ${NETWORK_NAME} --restart unless-stopped -p ${FRONTEND_PORT}:80 -v ${STAGING_PATH}/apk:/app/apk:ro llcelmarll/mabibliotheque-frontend:staging"
 Write-Host "  Frontend staging demarre" -ForegroundColor Green
+
+# [7] Admin staging
+$ADMIN_CONT  = "mabibliotheque-staging-admin"
+$ADMIN_PORT  = "8091"
+Write-Host "[7/7] Demarrage de l'admin staging (port $ADMIN_PORT)..." -ForegroundColor Yellow
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker rm -f ${ADMIN_CONT} 2>/dev/null || true"
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker pull llcelmarll/mabibliotheque-admin:staging"
+ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker run -d --name ${ADMIN_CONT} --network ${NETWORK_NAME} --restart unless-stopped -p ${ADMIN_PORT}:80 llcelmarll/mabibliotheque-admin:staging"
+Write-Host "  Admin staging demarre" -ForegroundColor Green
 
 # Resume
 Write-Host ""
@@ -113,6 +122,7 @@ ssh "${SYNOLOGY_USER}@${SYNOLOGY_IP}" "sudo /usr/local/bin/docker ps --filter na
 Write-Host ""
 Write-Host "Setup staging termine !" -ForegroundColor Cyan
 Write-Host "Frontend: http://${SYNOLOGY_IP}:${FRONTEND_PORT}" -ForegroundColor Cyan
+Write-Host "Admin:    http://${SYNOLOGY_IP}:8091/admin" -ForegroundColor Cyan
 Write-Host "API docs: http://${SYNOLOGY_IP}:${FRONTEND_PORT}/api/docs" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Pour les prochains deploiements : .\deploy-all-staging.ps1" -ForegroundColor Gray

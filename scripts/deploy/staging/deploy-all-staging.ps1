@@ -3,15 +3,17 @@
 # Ne touche PAS la production (conteneurs, branches git, OTA mobile).
 #
 # Usage:
-#   .\deploy-all-staging.ps1                  # deployer backend + frontend + OTA
+#   .\deploy-all-staging.ps1                  # deployer backend + frontend + admin + OTA
 #   .\deploy-all-staging.ps1 -BackendOnly     # backend uniquement
-#   .\deploy-all-staging.ps1 -FrontendOnly    # frontend uniquement
+#   .\deploy-all-staging.ps1 -FrontendOnly    # frontend mobile uniquement
+#   .\deploy-all-staging.ps1 -AdminOnly       # interface admin uniquement
 #   .\deploy-all-staging.ps1 -OtaOnly         # OTA mobile uniquement (pas de rebuild Docker)
 #   .\deploy-all-staging.ps1 -DryRun          # afficher le plan sans executer
 
 param(
     [switch]$BackendOnly,
     [switch]$FrontendOnly,
+    [switch]$AdminOnly,
     [switch]$OtaOnly,
     [string]$UpdateMessage,
     [switch]$DryRun
@@ -83,9 +85,10 @@ Get-Content $envFile | ForEach-Object {
     }
 }
 
-$deployBackend  = -not $FrontendOnly -and -not $OtaOnly
-$deployFrontend = -not $BackendOnly -and -not $OtaOnly
-$deployOta      = -not $BackendOnly
+$deployBackend  = -not $FrontendOnly -and -not $AdminOnly -and -not $OtaOnly
+$deployFrontend = -not $BackendOnly  -and -not $AdminOnly -and -not $OtaOnly
+$deployAdmin    = -not $BackendOnly  -and -not $FrontendOnly -and -not $OtaOnly
+$deployOta      = -not $BackendOnly  -and -not $AdminOnly
 $repoRoot       = Join-Path $PSScriptRoot "..\..\..\"
 $STAGING_API_URL = "https://staging.mabibliotheque.ovh/api"
 
@@ -102,6 +105,7 @@ Write-Host "`nDeploy STAGING" -ForegroundColor Cyan
 Write-Host "===============" -ForegroundColor Cyan
 Write-Host "  Backend:  $(if ($deployBackend)  {'[OUI]'} else {'[NON]'})" -ForegroundColor $(if ($deployBackend)  {'Green'} else {'DarkGray'})
 Write-Host "  Frontend: $(if ($deployFrontend) {'[OUI]'} else {'[NON]'})" -ForegroundColor $(if ($deployFrontend) {'Green'} else {'DarkGray'})
+Write-Host "  Admin:    $(if ($deployAdmin)    {'[OUI]'} else {'[NON]'})" -ForegroundColor $(if ($deployAdmin)    {'Green'} else {'DarkGray'})
 Write-Host "  OTA:      $(if ($deployOta)      {'[OUI] ' + $UpdateMessage} else {'[NON]'})" -ForegroundColor $(if ($deployOta) {'Green'} else {'DarkGray'})
 Write-Host "  Branche:  $(git rev-parse --abbrev-ref HEAD 2>$null) @ $(git log --format='%h %s' -1 2>$null)" -ForegroundColor Gray
 Write-Host "  API URL:  $STAGING_API_URL" -ForegroundColor Gray
@@ -168,8 +172,8 @@ if ($deployFrontend) {
     Write-Host "`n[2/2] Build et deploiement du frontend STAGING..." -ForegroundColor Yellow
     Write-Host ""
 
-    $frontendDir = Join-Path $repoRoot "frontend"
-    Set-Location $frontendDir
+    # Build depuis la racine : le Dockerfile référence frontend/ et frontend-admin/ comme sous-dossiers
+    Set-Location $repoRoot
 
     Write-Host "  Build llcelmarll/mabibliotheque-frontend:staging (AMD64 + ARM64)..." -ForegroundColor Gray
     Write-Host "  Nginx config: nginx-frontend-staging.conf" -ForegroundColor Gray
@@ -177,7 +181,7 @@ if ($deployFrontend) {
 
     docker buildx build `
         --platform linux/amd64,linux/arm64 `
-        -f Dockerfile.prod `
+        -f frontend/Dockerfile.prod `
         --build-arg NGINX_CONF=nginx-frontend-staging.conf `
         --build-arg EXPO_PUBLIC_API_URL=$STAGING_API_URL `
         --build-arg EXPO_PUBLIC_APK_FILENAME=bibliotheque-staging.apk `
@@ -188,11 +192,8 @@ if ($deployFrontend) {
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Erreur lors du build frontend staging" -ForegroundColor Red
-        Set-Location $repoRoot
         exit 1
     }
-
-    Set-Location $repoRoot
 
     Write-Host ""
     Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
@@ -206,11 +207,52 @@ if ($deployFrontend) {
 }
 
 # ---------------------------------------------------------------------------
-# [3] OTA MOBILE
+# [3] ADMIN
+# ---------------------------------------------------------------------------
+
+if ($deployAdmin) {
+    Write-Host "`n[3/4] Build et deploiement de l'admin STAGING..." -ForegroundColor Yellow
+    Write-Host ""
+
+    $adminDir = Join-Path $repoRoot "frontend-admin"
+    Set-Location $adminDir
+
+    Write-Host "  Build llcelmarll/mabibliotheque-admin:staging (AMD64 + ARM64)..." -ForegroundColor Gray
+    Write-Host "  API URL: /api (proxy Nginx vers backend staging)" -ForegroundColor Gray
+
+    docker buildx build `
+        --platform linux/amd64,linux/arm64 `
+        -f Dockerfile `
+        --build-arg NGINX_CONF=nginx-admin-staging.conf `
+        --build-arg VITE_API_URL=/api `
+        -t llcelmarll/mabibliotheque-admin:staging `
+        --push .
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Erreur lors du build admin staging" -ForegroundColor Red
+        Set-Location $repoRoot
+        exit 1
+    }
+
+    Set-Location $repoRoot
+
+    Write-Host ""
+    Write-Host "  Redeploy sur le NAS..." -ForegroundColor Gray
+    & "$PSScriptRoot\redeploy-staging-admin.ps1"
+    if ($LASTEXITCODE -ne 0) { exit 1 }
+
+    Write-Host ""
+    Write-Host "  Admin staging deploye !" -ForegroundColor Green
+    Write-Host "  URL: http://${SYNOLOGY_IP}:8091/admin" -ForegroundColor Gray
+    Write-Host ""
+}
+
+# ---------------------------------------------------------------------------
+# [4] OTA MOBILE
 # ---------------------------------------------------------------------------
 
 if ($deployOta) {
-    Write-Host "`n[3/3] Mise a jour OTA mobile STAGING..." -ForegroundColor Yellow
+    Write-Host "`n[4/4] Mise a jour OTA mobile STAGING..." -ForegroundColor Yellow
     Write-Host ""
 
     $frontendDir = Join-Path $repoRoot "frontend"
@@ -275,5 +317,6 @@ Write-Host "[Resume] Staging deploye !" -ForegroundColor Cyan
 Write-Host ""
 if ($deployBackend)  { Write-Host "  Backend:  $STAGING_API_URL" -ForegroundColor Green }
 if ($deployFrontend) { Write-Host "  Frontend: http://${SYNOLOGY_IP}:8090" -ForegroundColor Green }
+if ($deployAdmin)    { Write-Host "  Admin:    http://${SYNOLOGY_IP}:8091/admin" -ForegroundColor Green }
 if ($deployOta)      { Write-Host "  OTA:      Publiee sur branch staging" -ForegroundColor Green }
 Write-Host ""
