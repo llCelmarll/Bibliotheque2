@@ -20,7 +20,11 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 
 from app.main import app as main_app
 from app.db import get_session
-from app.services.auth_service import get_current_user
+from app.services.auth_service import (
+    get_current_user,
+    get_current_moderator_user_sync as get_current_moderator_user,
+    get_current_admin_user_sync as get_current_admin_user,
+)
 from app.models.User import User
 from app.models.Book import Book
 from app.models.Author import Author
@@ -257,6 +261,45 @@ def create_test_borrowed_book(
     session.commit()
     session.refresh(borrowed_book)
     return borrowed_book
+
+
+@pytest.fixture(scope="function")
+def moderator_user(session: Session) -> User:
+    """Utilisateur modérateur de test."""
+    return create_test_user(
+        session,
+        email="moderator@example.com",
+        username="moderatoruser",
+        role="moderator",
+    )
+
+
+@pytest.fixture(scope="function")
+def admin_user(session: Session) -> User:
+    """Utilisateur admin de test."""
+    return create_test_user(
+        session,
+        email="admin@example.com",
+        username="adminuser",
+        role="admin",
+    )
+
+
+@pytest.fixture(scope="function")
+def moderator_client(client: TestClient, moderator_user: User) -> TestClient:
+    """Client authentifié en tant que modérateur."""
+    client.app.dependency_overrides[get_current_moderator_user] = lambda: moderator_user
+    client.app.dependency_overrides[get_current_user] = lambda: moderator_user
+    return client
+
+
+@pytest.fixture(scope="function")
+def admin_client(client: TestClient, admin_user: User) -> TestClient:
+    """Client authentifié en tant qu'admin."""
+    client.app.dependency_overrides[get_current_admin_user] = lambda: admin_user
+    client.app.dependency_overrides[get_current_moderator_user] = lambda: admin_user
+    client.app.dependency_overrides[get_current_user] = lambda: admin_user
+    return client
 
 
 @pytest.fixture(scope="function")
