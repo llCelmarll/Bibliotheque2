@@ -30,8 +30,15 @@ export default function Login() {
       localStorage.setItem('admin_token', access_token)
       localStorage.setItem('admin_user', JSON.stringify(user))
       navigate('/dashboard')
-    } catch {
-      setError('Email ou mot de passe incorrect.')
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 401) {
+        setError('Email ou mot de passe incorrect.')
+      } else if (status === 403) {
+        setError('Accès refusé — votre compte n\'a pas les droits nécessaires.')
+      } else {
+        setError('Erreur de connexion, veuillez réessayer.')
+      }
     } finally {
       setLoading(false)
     }

@@ -19,10 +19,10 @@ let sessionExpiredNotified = false
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 || err.response?.status === 403) {
+    const isLoginRequest = err.config?.url?.includes('/auth/login-json')
+    if (!isLoginRequest && (err.response?.status === 401 || err.response?.status === 403)) {
       if (!sessionExpiredNotified) {
         sessionExpiredNotified = true
-        // Dispatch a custom event so the Toast system (inside React) can show a message
         window.dispatchEvent(new CustomEvent('session-expired', {
           detail: { status: err.response.status }
         }))
