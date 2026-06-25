@@ -9,6 +9,7 @@ from app.models.Loan import Loan, LoanStatus
 from app.models.Report import Report, ReportStatus
 from app.models.AuditLog import AuditLog
 from app.models.WhitelistEntry import WhitelistEntry
+from app.models.WaitlistEntry import WaitlistEntry, WaitlistStatus
 from app.schemas.Admin import (
     AdminStats, AdminUserRead, AdminUserUpdate,
     WhitelistEntryRead, WhitelistEntryCreate, AuditLogRead,
@@ -35,6 +36,9 @@ def get_stats(
     active_loans = session.scalar(select(func.count(Loan.id)).where(Loan.status == LoanStatus.ACTIVE))
     pending_reports = session.scalar(select(func.count(Report.id)).where(Report.status == ReportStatus.pending))
     whitelist_count = session.scalar(select(func.count(WhitelistEntry.id)))
+    pending_waitlist = session.scalar(
+        select(func.count(WaitlistEntry.id)).where(WaitlistEntry.status == WaitlistStatus.pending)
+    )
     return AdminStats(
         total_users=total_users,
         active_users=active_users,
@@ -42,6 +46,7 @@ def get_stats(
         active_loans=active_loans,
         pending_reports=pending_reports,
         whitelist_count=whitelist_count,
+        pending_waitlist=pending_waitlist,
     )
 
 

@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account, push_tokens, notifications
 from app.routers.import_jobs import router as import_jobs_router
-from app.routers import reports, admin, admin_entities, contact_staff
+from app.routers import reports, admin, admin_entities, contact_staff, waitlist
 
 _sqladmin_enabled = os.getenv("SQLADMIN_ENABLED", "false").lower() == "true"
 if _sqladmin_enabled:
@@ -48,6 +48,7 @@ tags_metadata = [
     {"name": "reports", "description": "Signalements de contenus"},
     {"name": "admin", "description": "Administration et modération"},
     {"name": "contact", "description": "Contact du staff"},
+    {"name": "waitlist", "description": "Liste d'attente (inscription publique + gestion admin)"},
 ]
 
 _is_production = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")) == "production"
@@ -134,6 +135,7 @@ app.include_router(reports.router)
 app.include_router(admin.router)
 app.include_router(admin_entities.router)
 app.include_router(contact_staff.router)
+app.include_router(waitlist.router)
 
 # Servir les images de couverture
 app.mount("/covers", StaticFiles(directory=str(COVERS_DIR)), name="covers")

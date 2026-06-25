@@ -15,6 +15,7 @@ from app.models.BookSeriesLink import BookSeriesLink
 from app.models.Report import Report
 from app.models.AuditLog import AuditLog
 from app.models.WhitelistEntry import WhitelistEntry
+from app.models.WaitlistEntry import WaitlistEntry
 from sqlmodel import create_engine, Session
 import os
 import logging

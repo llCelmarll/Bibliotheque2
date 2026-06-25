@@ -22,6 +22,7 @@ from app.models.PasswordResetToken import PasswordResetToken
 from app.models.Report import Report
 from app.models.AuditLog import AuditLog
 from app.models.WhitelistEntry import WhitelistEntry
+from app.models.WaitlistEntry import WaitlistEntry
 from sqlmodel import SQLModel
 
 # this is the Alembic Config object, which provides

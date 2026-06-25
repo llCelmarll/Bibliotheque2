@@ -11,6 +11,7 @@ class AdminStats(BaseModel):
     active_loans: int
     pending_reports: int
     whitelist_count: int
+    pending_waitlist: int
 
 
 class AdminUserRead(BaseModel):

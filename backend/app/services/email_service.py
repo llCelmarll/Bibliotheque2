@@ -1,6 +1,7 @@
 # Email service pour notifications d'inscription et réinitialisation de mot de passe
 from typing import Optional
 from datetime import datetime
+import html
 import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -98,6 +99,11 @@ class EmailNotificationService:
             user_agent_short = user_agent[:100] + "..." if len(user_agent) > 100 else user_agent
             subject = f"Nouvelle inscription - Ma Bibliotheque ({'OK' if is_authorized else 'ALERTE IP'})"
 
+            safe_username = html.escape(username)
+            safe_email = html.escape(email)
+            safe_user_agent = html.escape(user_agent_short)
+            safe_referer = html.escape(request.headers.get("Referer", "Acces direct"))
+
             html_body = f"""
 <!DOCTYPE html>
 <html>
@@ -105,15 +111,15 @@ class EmailNotificationService:
   <h2>Nouvelle inscription sur Ma Bibliotheque</h2>
   <h3>Details de l'inscription</h3>
   <ul>
-    <li><strong>Nom d'utilisateur :</strong> {username}</li>
-    <li><strong>Email :</strong> {email}</li>
+    <li><strong>Nom d'utilisateur :</strong> {safe_username}</li>
+    <li><strong>Email :</strong> {safe_email}</li>
     <li><strong>Date/Heure :</strong> {timestamp}</li>
   </ul>
   <h3>Informations reseau</h3>
   <ul>
     <li><strong>Adresse IP :</strong> {client_ip}</li>
-    <li><strong>User-Agent :</strong> {user_agent_short}</li>
-    <li><strong>Referer :</strong> {request.headers.get("Referer", "Acces direct")}</li>
+    <li><strong>User-Agent :</strong> {safe_user_agent}</li>
+    <li><strong>Referer :</strong> {safe_referer}</li>
     <li><strong>Reseau :</strong> {"Reseau local/autorise" if is_authorized else "Internet public"}</li>
   </ul>
   {self._format_additional_info_html(additional_info) if additional_info else ""}
@@ -225,6 +231,104 @@ class EmailNotificationService:
 
         except Exception as e:
             print(f"Erreur envoi email verification : {e}")
+
+    async def send_waitlist_confirmation(self, email: str, name: str):
+        """Confirmation à l'utilisateur après son inscription sur la liste d'attente."""
+        if not self.enabled:
+            return
+        if self.env != "development" and not self.api_key:
+            return
+        try:
+            safe_name = html.escape(name)
+            html_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #8B2020;">Inscription sur liste d'attente confirmee</h2>
+  <p>Bonjour {safe_name},</p>
+  <p>Merci de votre interet pour <strong>Ma Bibliotheque</strong> !</p>
+  <p>Votre demande a bien ete enregistree. Nous vous contacterons des que votre acces sera disponible.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #aaa; font-size: 12px;">Ma Bibliotheque — ne pas repondre a cet email.</p>
+</body>
+</html>
+            """
+            self._send(email, "Vous etes sur la liste d'attente - Ma Bibliotheque", html_body)
+            print(f"Confirmation waitlist envoyee a {email}")
+        except Exception as e:
+            print(f"Erreur envoi confirmation waitlist : {e}")
+
+    async def send_waitlist_admin_notification(self, name: str, email: str, message: Optional[str], referred_by: Optional[str] = None):
+        """Notifie l'admin d'une nouvelle inscription sur la liste d'attente."""
+        if not self.enabled:
+            return
+        if not self.notification_email:
+            return
+        try:
+            safe_name = html.escape(name)
+            safe_email = html.escape(email)
+            safe_message = html.escape(message) if message else '—'
+            safe_referred_by = html.escape(referred_by) if referred_by else '—'
+            html_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2>Nouvelle inscription sur la liste d'attente</h2>
+  <ul>
+    <li><strong>Nom :</strong> {safe_name}</li>
+    <li><strong>Email :</strong> {safe_email}</li>
+    <li><strong>Message :</strong> {safe_message}</li>
+    <li><strong>Recommandé par :</strong> {safe_referred_by}</li>
+  </ul>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #aaa; font-size: 12px;">Ma Bibliotheque — systeme de notification</p>
+</body>
+</html>
+            """
+            self._send(
+                self.notification_email,
+                f"[Ma Bibliotheque] Nouvelle inscription waitlist — {name} ({email})",
+                html_body,
+            )
+        except Exception as e:
+            print(f"Erreur notification admin waitlist : {e}")
+
+    async def send_waitlist_invitation(self, email: str, name: str):
+        """Envoie l'invitation quand l'admin passe le statut à 'invited'."""
+        if not self.enabled:
+            return
+        if self.env != "development" and not self.api_key:
+            return
+        try:
+            safe_name = html.escape(name)
+            register_url = f"{self.frontend_base_url}/auth/register"
+            html_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #8B2020;">Votre invitation est prete !</h2>
+  <p>Bonjour {safe_name},</p>
+  <p>Nous avons le plaisir de vous inviter a rejoindre <strong>Ma Bibliotheque</strong>.</p>
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{register_url}"
+       style="background-color: #8B2020; color: white; padding: 14px 28px;
+              text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold;">
+      Creer mon compte
+    </a>
+  </p>
+  <p style="color: #888; font-size: 13px;">
+    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+    <a href="{register_url}" style="color: #8B2020; word-break: break-all;">{register_url}</a>
+  </p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #aaa; font-size: 12px;">Ma Bibliotheque — ne pas repondre a cet email.</p>
+</body>
+</html>
+            """
+            self._send(email, "Votre invitation Ma Bibliotheque est prete", html_body)
+            print(f"Invitation waitlist envoyee a {email}")
+        except Exception as e:
+            print(f"Erreur envoi invitation waitlist : {e}")
 
     def _format_additional_info_html(self, info: dict) -> str:
         """Formate les informations supplémentaires en HTML"""
