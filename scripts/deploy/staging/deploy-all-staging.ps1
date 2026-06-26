@@ -143,7 +143,7 @@ if ($deployBackend) {
     Copy-Item -Path (Join-Path $repoRoot "docs\CHANGELOG.json") -Destination "docs\CHANGELOG.json" -Force
 
     Write-Host "  Build llcelmarll/mabibliotheque-backend:staging (AMD64 + ARM64)..." -ForegroundColor Gray
-    docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile -t llcelmarll/mabibliotheque-backend:staging --push .
+    docker buildx build --no-cache --platform linux/amd64,linux/arm64 -f Dockerfile -t llcelmarll/mabibliotheque-backend:staging --push .
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Erreur lors du build backend staging" -ForegroundColor Red
