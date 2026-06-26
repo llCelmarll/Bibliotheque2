@@ -9,6 +9,7 @@ interface Stats {
   active_loans: number
   pending_reports: number
   whitelist_count: number
+  pending_waitlist: number
 }
 
 function StatCard({
@@ -98,6 +99,13 @@ export default function Dashboard() {
           label="Emails whitelist"
           value={data.whitelist_count}
           to="/whitelist"
+        />
+        <StatCard
+          label="Liste d'attente"
+          value={data.pending_waitlist}
+          warn
+          to="/waitlist-entries"
+          sublabel={data.pending_waitlist > 0 ? "En attente d'invitation" : undefined}
         />
       </div>
 

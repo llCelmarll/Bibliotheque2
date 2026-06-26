@@ -5,6 +5,7 @@ import Reports from '@/pages/Reports'
 import Users from '@/pages/Users'
 import Entities from '@/pages/Entities'
 import Whitelist from '@/pages/Whitelist'
+import WaitlistEntries from '@/pages/WaitlistEntries'
 import AuditLog from '@/pages/AuditLog'
 import Books from '@/pages/Books'
 import Loans from '@/pages/Loans'
@@ -36,6 +37,14 @@ export default function App() {
             element={
               <ProtectedRoute requireAdmin>
                 <Whitelist />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="waitlist-entries"
+            element={
+              <ProtectedRoute requireAdmin>
+                <WaitlistEntries />
               </ProtectedRoute>
             }
           />

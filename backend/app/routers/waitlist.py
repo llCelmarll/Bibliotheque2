@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlmodel import Session, select
 from app.db import get_session
 from app.models.WaitlistEntry import WaitlistEntry, WaitlistStatus
+from app.models.WhitelistEntry import WhitelistEntry
 from app.models.User import User
 from app.schemas.Waitlist import WaitlistEntryCreate, WaitlistEntryRead, WaitlistEntryUpdateStatus
 from app.services.auth_service import get_current_admin_user_sync as get_current_admin_user
@@ -92,6 +93,14 @@ async def update_waitlist_status(
     session.refresh(entry)
 
     if data.status == WaitlistStatus.invited:
+        # Ajouter à la whitelist si pas déjà présent
+        already_whitelisted = session.exec(
+            select(WhitelistEntry).where(WhitelistEntry.email == entry.email)
+        ).first()
+        if not already_whitelisted:
+            session.add(WhitelistEntry(email=entry.email, added_by_id=current_user.id))
+            session.commit()
+
         await email_notification_service.send_waitlist_invitation(entry.email, entry.name)
 
     return entry

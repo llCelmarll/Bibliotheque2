@@ -11,6 +11,7 @@ const navItems = [
 ]
 
 const adminItems = [
+  { to: '/waitlist-entries', label: "Liste d'attente" },
   { to: '/whitelist', label: 'Whitelist' },
   { to: '/audit-log', label: 'Audit Log' },
 ]
