@@ -78,6 +78,16 @@ export default function WaitlistEntries() {
     onError: () => toast.error('Erreur lors de la mise à jour.'),
   })
 
+  const deleteEntry = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/waitlist/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['waitlist-entries'] })
+      qc.invalidateQueries({ queryKey: ['admin-stats'] })
+      toast.success('Entrée supprimée.')
+    },
+    onError: () => toast.error('Erreur lors de la suppression.'),
+  })
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-2">Liste d'attente</h1>
@@ -152,27 +162,49 @@ export default function WaitlistEntries() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {e.status === 'pending' && (
-                      <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      {e.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => updateStatus.mutate({ id: e.id, status: 'invited' })}
+                            disabled={updateStatus.isPending}
+                            className="text-xs bg-green-600 text-white rounded px-2.5 py-1 hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
+                          >
+                            Inviter
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Rejeter la demande de ${e.name} (${e.email}) ?`))
+                                updateStatus.mutate({ id: e.id, status: 'rejected' })
+                            }}
+                            disabled={updateStatus.isPending}
+                            className="text-xs bg-gray-100 text-gray-600 rounded px-2.5 py-1 hover:bg-gray-200 disabled:opacity-50"
+                          >
+                            Rejeter
+                          </button>
+                        </>
+                      )}
+                      {e.status === 'rejected' && (
                         <button
                           onClick={() => updateStatus.mutate({ id: e.id, status: 'invited' })}
                           disabled={updateStatus.isPending}
-                          className="text-xs bg-green-600 text-white rounded px-2.5 py-1 hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
+                          className="text-xs bg-green-100 text-green-700 rounded px-2.5 py-1 hover:bg-green-200 disabled:opacity-50 whitespace-nowrap"
                         >
-                          Inviter
+                          Réinviter
                         </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Rejeter la demande de ${e.name} (${e.email}) ?`))
-                              updateStatus.mutate({ id: e.id, status: 'rejected' })
-                          }}
-                          disabled={updateStatus.isPending}
-                          className="text-xs bg-gray-100 text-gray-600 rounded px-2.5 py-1 hover:bg-gray-200 disabled:opacity-50"
-                        >
-                          Rejeter
-                        </button>
-                      </div>
-                    )}
+                      )}
+                      <button
+                        onClick={() => {
+                          if (confirm(`Supprimer définitivement la demande de ${e.name} ?`))
+                            deleteEntry.mutate(e.id)
+                        }}
+                        disabled={deleteEntry.isPending}
+                        className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 px-1"
+                        title="Supprimer"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -6,11 +6,18 @@ import { ScrollViewStyleReset } from 'expo-router/html';
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <title>Ma Bibliothèque — Gérez vos livres, prêtez à vos amis</title>
+        <meta name="description" content="Cataloguez vos livres, suivez vos prêts et partagez vos lectures avec vos proches. Application gratuite, vos données vous appartiennent." />
+        <meta name="robots" content="index, follow" />
+        <meta property="og:title" content="Ma Bibliothèque" />
+        <meta property="og:description" content="Cataloguez vos livres, suivez vos prêts et partagez vos lectures avec vos proches." />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="fr_FR" />
 
         {/* 
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 

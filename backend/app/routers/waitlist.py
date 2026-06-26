@@ -76,6 +76,19 @@ def list_waitlist(
     return session.exec(query).all()
 
 
+@router.delete("/admin/waitlist/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_waitlist_entry(
+    entry_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_admin_user),
+):
+    entry = session.get(WaitlistEntry, entry_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entrée introuvable.")
+    session.delete(entry)
+    session.commit()
+
+
 @router.patch("/admin/waitlist/{entry_id}", response_model=WaitlistEntryRead)
 async def update_waitlist_status(
     entry_id: int,
