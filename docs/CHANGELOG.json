@@ -1,5 +1,12 @@
 [
     {
+        "version": "1.4.0",
+        "date": "2026-06-26",
+        "title": "Page d'accueil publique",
+        "description": "L'adresse mabibliotheque.ovh est maintenant partageable ! Les visiteurs non connectés découvrent une présentation de l'application et peuvent rejoindre la liste d'attente pour demander un accès. Partagez le lien à vos proches directement.",
+        "type": "feature"
+    },
+    {
         "version": "1.3.9",
         "date": "2026-06-17",
         "title": "Statut de lecture \"En cours\"",
