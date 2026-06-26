@@ -1,4 +1,4 @@
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -113,8 +113,8 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
       if (isAuthenticated && isRoot) {
         router.replace('/(tabs)/books');
       }
-      // Redirection vers login si pas authentifié et à la racine
-      else if (!isAuthenticated && isRoot) {
+      // Redirection vers login si pas authentifié et à la racine (natif seulement — web affiche la landing page)
+      else if (!isAuthenticated && isRoot && Platform.OS !== 'web') {
         router.replace('/auth/login');
       }
     }
@@ -184,6 +184,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/register" options={{ headerShown: false }} />
         <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
@@ -195,6 +196,7 @@ function RootLayoutNav() {
         <Stack.Screen name="account/delete-account" options={{ headerShown: true, title: 'Supprimer le compte', ...themedHeader }} />
         <Stack.Screen name="account/changelog" options={{ headerShown: true, title: 'Historique des versions', ...themedHeader }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="public" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         <Stack.Screen 
           name="scan" 
