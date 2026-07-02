@@ -26,7 +26,7 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] Vérifier les index PostgreSQL — migration `a2b3c4d5e6f7` : ajout de `(owner_id, is_read)`, `(owner_id, created_at)` sur `books` et `(book_id, status)` sur `borrowed_books`
 - [x] Optimiser le GROUP BY dans les recherches — `_deduplicate_and_sort` réduit de 14 colonnes à `Book.id` seul (compatible PostgreSQL PRIMARY KEY)
 - [x] Mesurer le temps de chargement initial de la liste de livres — baseline Locust (10 users, 2min) : `/books/search/simple` P50=38ms, P95=280ms ✅ sous cible 300ms. Register P95=2400ms (bcrypt, normal). Résultats : `backend/tests/performance/results/book_crud_20260527_210108_stats.csv`
-- [ ] Tester le comportement sous charge légère (10–50 utilisateurs simultanés) — à faire en prod sur infra réelle (tests actuels = machine locale uniquement)
+- [ ] Tester le comportement sous charge légère (10–50 utilisateurs simultanés) — à faire en prod sur infra réelle (tests actuels = machine locale uniquement) — [Plan →](PLAN_TEST_CHARGE_PROD.md)
 
 #### 1.2 Tests de sécurité
 - [x] **Migration SHA256 → bcrypt** — tous les utilisateurs prod sont en bcrypt depuis mai 2026 (vérifié en base), support legacy SHA256 supprimé du code
@@ -98,7 +98,7 @@ Travaux nécessaires :
 #### 3.2 Politique d'inscription
 - Décision : **inscription ouverte** dès le lancement public
 - [x] Implémenter la confirmation d'email (service Resend déjà en place — token 24h, blocage connexion si non vérifié, renvoi possible)
-- [ ] Mettre en place une page de présentation publique (landing page)
+- [x] Mettre en place une page de présentation publique (landing page)
 
 ---
 

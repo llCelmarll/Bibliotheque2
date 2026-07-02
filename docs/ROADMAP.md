@@ -60,6 +60,8 @@ Cette liste recense les futures évolutions envisagées pour l'application.
     - Valider les éventuels problèmes (techniques, configuration, performance) avant déploiement sur la version de production.
 - [x] **Notifications Android**
     - Mise en place de notifications push (Expo Notifications) pour les événements importants (demandes d'amis, prêts, etc.).
+- [ ] **Refonte de la navigation Contacts et Notifications**
+    - Revoir la structure de navigation des sections Contacts et Notifications dans l'app mobile.
 
 ## Qualité & Tests
 
@@ -87,7 +89,8 @@ Cette liste recense les futures évolutions envisagées pour l'application.
 - [ ] **Référencement / Découvrabilité (SEO / ASO)**
     - Optimiser la fiche Google Play Store (titre, description, captures d'écran, mots-clés).
     - Ajouter des métadonnées structurées si une version web publique est envisagée.
-    - Mettre en place une page de présentation publique (landing page) avec description de l'application.
+    - [x] Mettre en place une page de présentation publique (landing page) avec description de l'application.
+    - Ajouter un lien de téléchargement de l'APK sur la page d'accueil publique.
 
 ## Plateformes
 
