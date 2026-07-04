@@ -34,6 +34,36 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
+    it('should return requires_consent_update true when backend returns it', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'test-token',
+          token_type: 'bearer',
+          requires_consent_update: true,
+          current_cgu_version: '2026-07',
+        }),
+      } as Response);
+
+      const result = await authService.login({ email: 'test@example.com', password: 'password123' });
+      expect(result.requires_consent_update).toBe(true);
+      expect(result.current_cgu_version).toBe('2026-07');
+    });
+
+    it('should return requires_consent_update false when backend returns it', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'test-token',
+          token_type: 'bearer',
+          requires_consent_update: false,
+        }),
+      } as Response);
+
+      const result = await authService.login({ email: 'test@example.com', password: 'password123' });
+      expect(result.requires_consent_update).toBe(false);
+    });
+
     it('should login user successfully', async () => {
       const mockResponseData = {
         access_token: 'test-token',
@@ -103,7 +133,9 @@ describe('AuthService', () => {
         email: 'test@example.com',
         username: 'testuser',
         password: 'password123',
-        confirm_password: 'password123'
+        confirm_password: 'password123',
+        consent_accepted: true,
+        consent_version: '2026-07',
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -117,11 +149,33 @@ describe('AuthService', () => {
             email: 'test@example.com',
             username: 'testuser',
             password: 'password123',
-            confirm_password: 'password123'
+            confirm_password: 'password123',
+            consent_accepted: true,
+            consent_version: '2026-07',
           })
         })
       );
       expect(result).toEqual(mockResponseData);
+    });
+
+    it('should send consent_accepted and consent_version in body', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ user: {}, token: {} }),
+      } as Response);
+
+      await authService.register({
+        email: 'test@example.com',
+        username: 'testuser',
+        password: 'password123',
+        confirm_password: 'password123',
+        consent_accepted: true,
+        consent_version: '2026-07',
+      });
+
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.consent_accepted).toBe(true);
+      expect(body.consent_version).toBe('2026-07');
     });
 
     it('should handle registration failure', async () => {
@@ -179,6 +233,38 @@ describe('AuthService', () => {
       } as Response);
 
       await expect(authService.getCurrentUser('invalid-token')).rejects.toThrow('Unauthorized');
+    });
+  });
+
+  describe('updateConsent', () => {
+    it('should call POST /auth/consent with Authorization header', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'ok', consent_version: '2026-07' }),
+      } as Response);
+
+      await authService.updateConsent('my-token');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/consent'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('should throw on server error', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: async () => ({ detail: 'Server error' }),
+      } as Response);
+
+      await expect(authService.updateConsent('my-token')).rejects.toThrow('Server error');
     });
   });
 });
