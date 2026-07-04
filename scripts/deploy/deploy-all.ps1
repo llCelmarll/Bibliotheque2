@@ -147,6 +147,41 @@ function Get-DeploymentPlan {
     $plan.Apk     = ($nativeChanged.Count -gt 0) -or $ForceApk.IsPresent
     $plan.Admin   = ($adminChanged.Count -gt 0) -or $ForceAdmin.IsPresent
 
+    # Detection de modifications des documents legaux
+    $legalChanged = @($changedFiles | Where-Object {
+        $_ -eq 'docs/CGU.md' -or $_ -eq 'docs/POLITIQUE_CONFIDENTIALITE.md'
+    })
+    if ($legalChanged.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  AVERTISSEMENT : Documents legaux modifies :" -ForegroundColor Yellow
+        $legalChanged | ForEach-Object { Write-Host "    - $_" -ForegroundColor Yellow }
+        Write-Host ""
+        Write-Host "  Si ces modifications sont substantielles (nouvelles donnees collectees," -ForegroundColor Yellow
+        Write-Host "  nouveaux tiers, modification des droits utilisateurs), il faut bumper" -ForegroundColor Yellow
+        Write-Host "  la version CGU pour forcer le re-consentement de tous les utilisateurs." -ForegroundColor Yellow
+        Write-Host "  Pour de simples corrections de typos, repondre N." -ForegroundColor Gray
+        Write-Host ""
+        $bump = Read-Host "  Bumper la version CGU maintenant ? (O/N)"
+        if ($bump -match '^[oO]$') {
+            $newVersion = (Get-Date).ToString("yyyy-MM")
+            $repoRoot = Join-Path $PSScriptRoot "..\.."
+            $envSynologyPath = Join-Path $repoRoot ".env.synology"
+            $apiConfigPath   = Join-Path $repoRoot "frontend\config\api.ts"
+            if (Test-Path $envSynologyPath) {
+                (Get-Content $envSynologyPath) -replace 'CGU_VERSION=.*', "CGU_VERSION=$newVersion" |
+                    Set-Content $envSynologyPath -Encoding UTF8
+            }
+            if (Test-Path $apiConfigPath) {
+                (Get-Content $apiConfigPath) -replace "CGU_VERSION: '[^']*'", "CGU_VERSION: '$newVersion'" |
+                    Set-Content $apiConfigPath -Encoding UTF8
+            }
+            Write-Host "  Version CGU mise a jour : $newVersion" -ForegroundColor Green
+            Write-Host "  (backend + web seront redeploys pour prendre effet)" -ForegroundColor Gray
+            $plan.Backend = $true
+            $plan.Web     = $true
+        }
+    }
+
     return $plan
 }
 

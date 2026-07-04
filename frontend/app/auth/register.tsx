@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ExternalLink } from '@/components/ExternalLink';
+import API_CONFIG from '@/config/api';
 
 interface RegisterForm {
   email: string;
@@ -93,6 +94,8 @@ export default function RegisterScreen() {
         username: form.username,
         password: form.password,
         confirm_password: form.confirmPassword,
+        consent_accepted: consentAccepted,
+        consent_version: API_CONFIG.CGU_VERSION,
       });
 
       router.replace('/auth/verify-email-pending');
@@ -224,11 +227,11 @@ export default function RegisterScreen() {
             />
             <Text style={[styles.consentText, { color: theme.textSecondary }]}>
               {'J\'accepte les '}
-              <ExternalLink href="https://mabibliotheque.ovh/cgu">
+              <ExternalLink href={`${API_CONFIG.WEB_URL}/cgu`}>
                 <Text style={{ color: theme.accent }}>CGU</Text>
               </ExternalLink>
               {' et la '}
-              <ExternalLink href="https://mabibliotheque.ovh/politique-confidentialite">
+              <ExternalLink href={`${API_CONFIG.WEB_URL}/politique-confidentialite`}>
                 <Text style={{ color: theme.accent }}>politique de confidentialité</Text>
               </ExternalLink>
             </Text>

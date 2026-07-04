@@ -28,7 +28,6 @@ export default function LoginScreen() {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isUnverified, setIsUnverified] = useState(false);
-
   const { login, isLoading } = useAuth();
   const router = useRouter();
   const theme = useTheme();
@@ -53,8 +52,10 @@ export default function LoginScreen() {
     setErrorMessage('');
     setIsUnverified(false);
     try {
-      await login({ email: email.trim(), password, remember_me: rememberMe });
-      router.replace('/(tabs)/books');
+      const { requiresConsentUpdate } = await login({ email: email.trim(), password, remember_me: rememberMe });
+      if (!requiresConsentUpdate) {
+        router.replace('/(tabs)/books');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Une erreur est survenue';
       if (message.includes('non vérifié')) {

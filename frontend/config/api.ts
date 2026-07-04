@@ -11,6 +11,13 @@ const getApkUrl = () => {
   return process.env.EXPO_PUBLIC_APK_URL || 'https://mabibliotheque.ovh/bibliotheque.apk';
 };
 
+const getWebUrl = () => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'https://mabibliotheque.ovh';
+};
+
 const getBaseUrl = () => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     // Dev local : hostname = localhost → backend sur port 8000
@@ -26,9 +33,11 @@ const getBaseUrl = () => {
 
 const API_CONFIG = {
   BASE_URL: getBaseUrl(),
+  WEB_URL: getWebUrl(),
   STATIC_URL: getBaseUrl(),
   APK_URL: getApkUrl(),
   AMAZON_STORE_ID: 'mabibliothe08-21',
+  CGU_VERSION: '2026-07',
   ENDPOINTS: {
     SCAN: '/scan',
     BOOKS: '/books',

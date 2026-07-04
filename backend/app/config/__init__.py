@@ -22,3 +22,7 @@ COVERS_DIR.mkdir(parents=True, exist_ok=True)
 _domain = os.getenv("DOMAIN_NAME", "localhost:8000")
 _scheme = "http" if _domain.startswith("localhost") else "https"
 APP_BASE_URL = os.getenv("APP_BASE_URL", f"{_scheme}://{_domain}")
+
+# Version courante des CGU / Politique de confidentialité
+# Format YYYY-MM. Changer cette valeur force un re-consentement de tous les utilisateurs existants.
+CGU_VERSION: str = os.getenv("CGU_VERSION", "2026-07")

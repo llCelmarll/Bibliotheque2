@@ -9,7 +9,9 @@ class UserCreate(BaseModel):
     username: str
     password: str
     confirm_password: str
-    
+    consent_accepted: bool = False
+    consent_version: str = ""
+
     @validator('username')
     def username_length(cls, v):
         if len(v) < 3:
@@ -17,17 +19,23 @@ class UserCreate(BaseModel):
         if len(v) > 50:
             raise ValueError('Le nom d\'utilisateur ne peut pas dépasser 50 caractères')
         return v
-    
+
     @validator('password')
     def password_length(cls, v):
         if len(v) < 6:
             raise ValueError('Le mot de passe doit contenir au moins 6 caractères')
         return v
-    
+
     @validator('confirm_password')
     def passwords_match(cls, v, values):
         if 'password' in values and v != values['password']:
             raise ValueError('Les mots de passe ne correspondent pas')
+        return v
+
+    @validator('consent_accepted')
+    def must_accept_consent(cls, v):
+        if not v:
+            raise ValueError('Vous devez accepter les CGU et la politique de confidentialité')
         return v
 
 class UserLogin(BaseModel):

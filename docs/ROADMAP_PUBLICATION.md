@@ -56,6 +56,7 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] **Suppression de compte complète** — implémentée et vérifiée : tokens (reset, email, push), demandes de prêt, invitations, contacts, prêts, livres empruntés, livres, log IP (`account.py`)
 - [ ] **Export des données** — déjà partiellement implémenté via CSV, à compléter pour couvrir toutes les données personnelles (droit à la portabilité)
 - [x] Checkbox de consentement explicite à l'inscription — implémentée dans `frontend/app/auth/register.tsx`
+- [x] **Versioning et suivi du consentement CGU** — stockage de `consent_version` + `consent_accepted_at` en base, validation backend à l'inscription, modale de re-consentement au login si version obsolète, endpoint `POST /auth/consent` — [Protocole →](PROTOCOLE_MAJ_CGU.md)
 
 #### 2.2 Google Play Store
 - [x] Politique de confidentialité hébergée sur une URL publique — `mabibliotheque.ovh/politique-confidentialite`
@@ -140,7 +141,7 @@ Points d'attention :
 L'application est prête pour la publication publique quand :
 
 - [ ] Tous les points de la Phase 1 (sécurité) sont traités — manque : fuzzing, headers HTTP, a11y complète
-- [ ] La politique de confidentialité et les CGU sont rédigées et hébergées
+- [x] La politique de confidentialité et les CGU sont rédigées, hébergées et leur versioning est implémenté
 - [x] La suppression de compte est complète et testée
 - [ ] L'application tourne sur l'infrastructure publique depuis au moins 2 semaines sans incident
 - [ ] La fiche Play Store est complète et l'APK signé est prêt
