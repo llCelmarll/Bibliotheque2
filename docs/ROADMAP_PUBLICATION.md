@@ -51,15 +51,8 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 ### Phase 2 — Conformité légale (obligatoire avant publication)
 
 #### 2.1 RGPD
-- [ ] **Politique de confidentialité** — document légal obligatoire, accessible depuis l'app et le site
-  - Données collectées : email, username, bibliothèque, historique de prêts, token push
-  - Base légale : consentement explicite à l'inscription
-  - Durée de conservation
-  - Droits des utilisateurs (accès, rectification, suppression, portabilité)
-- [ ] **CGU (Conditions Générales d'Utilisation)**
-  - Usage personnel uniquement
-  - Contenu uploadé (couvertures)
-  - Limitation de responsabilité
+- [x] **Politique de confidentialité** — rédigée → [docs/POLITIQUE_CONFIDENTIALITE.md](POLITIQUE_CONFIDENTIALITE.md) — à héberger sur une URL publique
+- [x] **CGU (Conditions Générales d'Utilisation)** — rédigées → [docs/CGU.md](CGU.md) — à héberger sur une URL publique
 - [x] **Suppression de compte complète** — implémentée et vérifiée : tokens (reset, email, push), demandes de prêt, invitations, contacts, prêts, livres empruntés, livres, log IP (`account.py`)
 - [ ] **Export des données** — déjà partiellement implémenté via CSV, à compléter pour couvrir toutes les données personnelles (droit à la portabilité)
 - [ ] Checkbox de consentement explicite à l'inscription
@@ -119,7 +112,7 @@ Mise en œuvre :
 - [x] Créer un compte Amazon Associates — Store ID : `mabibliothe08-21`
 - [x] Construire les liens affiliés à partir de l'ISBN ou du titre du livre — `frontend/utils/amazonLink.ts`, Store ID dans `config/api.ts`
 - [x] Ajouter le bouton "Voir sur Amazon" — écran scan (`app/scan/[isbn].tsx`) et bibliothèque d'un contact (`components/BookDetail/SharedBookView.tsx`)
-- [ ] Mentionner les liens affiliés dans la politique de confidentialité (obligation légale)
+- [x] Mentionner les liens affiliés dans la politique de confidentialité (obligation légale)
 - [ ] Déclarer les liens commerciaux dans la fiche Play Store
 
 Points d'attention :
