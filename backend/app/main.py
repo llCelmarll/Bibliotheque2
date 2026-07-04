@@ -12,6 +12,8 @@ from app.routers import reports, admin, admin_entities, contact_staff, waitlist
 _sqladmin_enabled = os.getenv("SQLADMIN_ENABLED", "false").lower() == "true"
 if _sqladmin_enabled:
     from app.admin.setup import setup_admin
+from alembic.config import Config as AlembicConfig
+from alembic import command as alembic_command
 from app.db import init_db
 from app.services.reminder_scheduler import start_scheduler
 from app.config import COVERS_DIR
@@ -22,6 +24,8 @@ from time import perf_counter
 # Initialiser la base de données
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    alembic_cfg = AlembicConfig("alembic.ini")
+    alembic_command.upgrade(alembic_cfg, "head")
     init_db()
     start_scheduler()
     yield
