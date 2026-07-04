@@ -8,16 +8,19 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import Checkbox from 'expo-checkbox';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ExternalLink } from '@/components/ExternalLink';
 
 interface RegisterForm {
   email: string;
   username: string;
   password: string;
   confirmPassword: string;
+  consent?: string;
 }
 
 export default function RegisterScreen() {
@@ -32,6 +35,7 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<RegisterForm>>({});
   const [serverError, setServerError] = useState<string>('');
+  const [consentAccepted, setConsentAccepted] = useState(false);
 
   const router = useRouter();
   const { register: registerUser } = useAuth();
@@ -66,6 +70,10 @@ export default function RegisterScreen() {
       newErrors.confirmPassword = 'Veuillez confirmer votre mot de passe';
     } else if (form.password !== form.confirmPassword) {
       newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    }
+
+    if (!consentAccepted) {
+      newErrors.consent = 'Vous devez accepter les CGU et la politique de confidentialité';
     }
 
     setErrors(newErrors);
@@ -203,6 +211,31 @@ export default function RegisterScreen() {
           {errors.confirmPassword && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.confirmPassword}</Text>}
         </View>
 
+        {/* Consent */}
+        <View>
+          <View style={styles.consentRow}>
+            <Checkbox
+              value={consentAccepted}
+              onValueChange={(val) => {
+                setConsentAccepted(val);
+                if (errors.consent) setErrors(prev => ({ ...prev, consent: undefined }));
+              }}
+              color={consentAccepted ? theme.accent : undefined}
+            />
+            <Text style={[styles.consentText, { color: theme.textSecondary }]}>
+              {'J\'accepte les '}
+              <ExternalLink href="https://mabibliotheque.ovh/cgu">
+                <Text style={{ color: theme.accent }}>CGU</Text>
+              </ExternalLink>
+              {' et la '}
+              <ExternalLink href="https://mabibliotheque.ovh/politique-confidentialite">
+                <Text style={{ color: theme.accent }}>politique de confidentialité</Text>
+              </ExternalLink>
+            </Text>
+          </View>
+          {errors.consent && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.consent}</Text>}
+        </View>
+
         {/* Register Button */}
         <TouchableOpacity
           style={[styles.registerButton, { backgroundColor: theme.accent }, loading && { backgroundColor: theme.borderMedium }]}
@@ -325,5 +358,15 @@ const styles = StyleSheet.create({
   loginLinkText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  consentText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

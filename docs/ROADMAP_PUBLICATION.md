@@ -55,10 +55,10 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] **CGU (Conditions Générales d'Utilisation)** — rédigées → [docs/CGU.md](CGU.md) — à héberger sur une URL publique
 - [x] **Suppression de compte complète** — implémentée et vérifiée : tokens (reset, email, push), demandes de prêt, invitations, contacts, prêts, livres empruntés, livres, log IP (`account.py`)
 - [ ] **Export des données** — déjà partiellement implémenté via CSV, à compléter pour couvrir toutes les données personnelles (droit à la portabilité)
-- [ ] Checkbox de consentement explicite à l'inscription
+- [x] Checkbox de consentement explicite à l'inscription — implémentée dans `frontend/app/auth/register.tsx`
 
 #### 2.2 Google Play Store
-- [ ] Politique de confidentialité hébergée sur une URL publique (obligatoire pour le Play Store)
+- [x] Politique de confidentialité hébergée sur une URL publique — `mabibliotheque.ovh/politique-confidentialite`
 - [ ] Fiche store : titre, description courte, description longue, captures d'écran (min. 2)
 - [ ] Déclaration des permissions utilisées (caméra pour scan, notifications, stockage)
 - [ ] Questionnaire de contenu Google Play (classification de l'app)
