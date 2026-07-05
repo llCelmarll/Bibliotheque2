@@ -19,6 +19,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://staging.mabibliotheque.ovh/api",
+        "EXPO_PUBLIC_WEB_URL": "https://staging.mabibliotheque.ovh",
         "APP_VARIANT": "staging",
         "EXPO_PUBLIC_APK_URL": "https://staging.mabibliotheque.ovh/bibliotheque-staging.apk",
         "EXPO_PUBLIC_APK_FILENAME": "bibliotheque-staging.apk"
@@ -31,7 +32,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mabibliotheque.ovh/api"
+        "EXPO_PUBLIC_API_URL": "https://mabibliotheque.ovh/api",
+        "EXPO_PUBLIC_WEB_URL": "https://mabibliotheque.ovh"
       }
     },
     "production": {
@@ -39,7 +41,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mabibliotheque.ovh/api"
+        "EXPO_PUBLIC_API_URL": "https://mabibliotheque.ovh/api",
+        "EXPO_PUBLIC_WEB_URL": "https://mabibliotheque.ovh"
       }
     }
   },

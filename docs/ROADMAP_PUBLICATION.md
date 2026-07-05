@@ -51,21 +51,15 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 ### Phase 2 — Conformité légale (obligatoire avant publication)
 
 #### 2.1 RGPD
-- [ ] **Politique de confidentialité** — document légal obligatoire, accessible depuis l'app et le site
-  - Données collectées : email, username, bibliothèque, historique de prêts, token push
-  - Base légale : consentement explicite à l'inscription
-  - Durée de conservation
-  - Droits des utilisateurs (accès, rectification, suppression, portabilité)
-- [ ] **CGU (Conditions Générales d'Utilisation)**
-  - Usage personnel uniquement
-  - Contenu uploadé (couvertures)
-  - Limitation de responsabilité
+- [x] **Politique de confidentialité** — rédigée → [docs/POLITIQUE_CONFIDENTIALITE.md](POLITIQUE_CONFIDENTIALITE.md) — à héberger sur une URL publique
+- [x] **CGU (Conditions Générales d'Utilisation)** — rédigées → [docs/CGU.md](CGU.md) — à héberger sur une URL publique
 - [x] **Suppression de compte complète** — implémentée et vérifiée : tokens (reset, email, push), demandes de prêt, invitations, contacts, prêts, livres empruntés, livres, log IP (`account.py`)
 - [ ] **Export des données** — déjà partiellement implémenté via CSV, à compléter pour couvrir toutes les données personnelles (droit à la portabilité)
-- [ ] Checkbox de consentement explicite à l'inscription
+- [x] Checkbox de consentement explicite à l'inscription — implémentée dans `frontend/app/auth/register.tsx`
+- [x] **Versioning et suivi du consentement CGU** — stockage de `consent_version` + `consent_accepted_at` en base, validation backend à l'inscription, modale de re-consentement au login si version obsolète, endpoint `POST /auth/consent` — [Protocole →](PROTOCOLE_MAJ_CGU.md)
 
 #### 2.2 Google Play Store
-- [ ] Politique de confidentialité hébergée sur une URL publique (obligatoire pour le Play Store)
+- [x] Politique de confidentialité hébergée sur une URL publique — `mabibliotheque.ovh/politique-confidentialite`
 - [ ] Fiche store : titre, description courte, description longue, captures d'écran (min. 2)
 - [ ] Déclaration des permissions utilisées (caméra pour scan, notifications, stockage)
 - [ ] Questionnaire de contenu Google Play (classification de l'app)
@@ -119,7 +113,7 @@ Mise en œuvre :
 - [x] Créer un compte Amazon Associates — Store ID : `mabibliothe08-21`
 - [x] Construire les liens affiliés à partir de l'ISBN ou du titre du livre — `frontend/utils/amazonLink.ts`, Store ID dans `config/api.ts`
 - [x] Ajouter le bouton "Voir sur Amazon" — écran scan (`app/scan/[isbn].tsx`) et bibliothèque d'un contact (`components/BookDetail/SharedBookView.tsx`)
-- [ ] Mentionner les liens affiliés dans la politique de confidentialité (obligation légale)
+- [x] Mentionner les liens affiliés dans la politique de confidentialité (obligation légale)
 - [ ] Déclarer les liens commerciaux dans la fiche Play Store
 
 Points d'attention :
@@ -147,7 +141,7 @@ Points d'attention :
 L'application est prête pour la publication publique quand :
 
 - [ ] Tous les points de la Phase 1 (sécurité) sont traités — manque : fuzzing, headers HTTP, a11y complète
-- [ ] La politique de confidentialité et les CGU sont rédigées et hébergées
+- [x] La politique de confidentialité et les CGU sont rédigées, hébergées et leur versioning est implémenté
 - [x] La suppression de compte est complète et testée
 - [ ] L'application tourne sur l'infrastructure publique depuis au moins 2 semaines sans incident
 - [ ] La fiche Play Store est complète et l'APK signé est prêt

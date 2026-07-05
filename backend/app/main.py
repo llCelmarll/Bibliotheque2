@@ -24,8 +24,9 @@ from time import perf_counter
 # Initialiser la base de données
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    alembic_cfg = AlembicConfig("alembic.ini")
-    alembic_command.upgrade(alembic_cfg, "head")
+    if os.getenv("TESTING") != "true":
+        alembic_cfg = AlembicConfig("alembic.ini")
+        alembic_command.upgrade(alembic_cfg, "head")
     init_db()
     start_scheduler()
     yield

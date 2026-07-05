@@ -29,6 +29,11 @@ class Token(BaseModel):
     token_type: str
     refresh_token: Optional[str] = None
 
+# Schema pour la réponse de login (inclut le statut de consentement CGU)
+class LoginToken(Token):
+    requires_consent_update: bool = False
+    current_cgu_version: str = ""
+
 # Schema pour les données du token
 class TokenData(BaseModel):
     user_id: Optional[int] = None

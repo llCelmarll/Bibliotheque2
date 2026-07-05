@@ -17,6 +17,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'), override=Fals
 
 # Doit être défini AVANT l'import de app.main (auth_service le lit au niveau module)
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
+# Bloque l'auto-migration Alembic dans lifespan (doit être avant l'import de app.main)
+os.environ["TESTING"] = "true"
 
 from app.main import app as main_app
 from app.db import get_session

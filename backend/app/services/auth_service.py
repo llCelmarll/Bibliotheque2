@@ -173,7 +173,7 @@ class AuthService:
         
         return True, ""
 
-    async def create_user(self, email: str, username: str, password: str, request=None) -> User:
+    async def create_user(self, email: str, username: str, password: str, request=None, consent_version: str = "") -> User:
         """Créer un nouvel utilisateur avec validation stricte"""
         
         # 1. Valider le format de l'email
@@ -232,7 +232,9 @@ class AuthService:
             hashed_password=hashed_password,
             is_active=True,
             email_verified_at=None,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
+            consent_version=consent_version or None,
+            consent_accepted_at=datetime.utcnow() if consent_version else None,
         )
 
         self.session.add(new_user)
@@ -277,6 +279,16 @@ class AuthService:
                 logger.warning("Erreur envoi emails inscription : %s", e)
 
         return new_user
+
+    def update_consent(self, user_id: int, consent_version: str) -> User:
+        """Enregistre l'acceptation d'une nouvelle version des CGU."""
+        user = self.session.get(User, user_id)
+        user.consent_version = consent_version
+        user.consent_accepted_at = datetime.utcnow()
+        self.session.add(user)
+        self.session.commit()
+        self.session.refresh(user)
+        return user
 
 
 def get_auth_service(session: Session = Depends(get_session)) -> AuthService:

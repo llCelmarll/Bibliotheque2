@@ -39,6 +39,10 @@ class User(SQLModel, table=True):
     # Préférences de notifications push (JSON: {"contact_invitation": true, ...})
     push_prefs: Optional[dict] = Field(default=None, sa_column=Column(JSON, nullable=True))
 
+    # Consentement CGU / Politique de confidentialité
+    consent_version: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
+    consent_accepted_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+
     # Timestamps
     created_at: datetime = Field(
         default_factory=datetime.utcnow,

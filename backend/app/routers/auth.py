@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
-from app.schemas.User import UserLogin, UserRead, Token
+from app.schemas.User import UserLogin, UserRead, Token, LoginToken
 from app.schemas.auth import UserCreate, UserResponse
 from app.services.auth_service import AuthService, get_auth_service, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.User import User
@@ -36,7 +36,7 @@ def get_client_ip(request: Request) -> str:
     
     return "unknown"
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginToken)
 async def login_for_access_token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -49,6 +49,8 @@ async def login_for_access_token(
     Retourne un token JWT pour les requêtes authentifiées.
     Protection rate limiting: 10 tentatives max par 15 minutes.
     """
+    from app.config import CGU_VERSION
+
     client_ip = get_client_ip(request)
     rate_limiter.check_and_record(client_ip, "login", max_attempts=10, window_minutes=15, session=session)
 
@@ -68,7 +70,17 @@ async def login_for_access_token(
 
     rate_limiter.clear_attempts(client_ip, "login", session=session)
     tokens = auth_service.generate_tokens(user_id=str(user.id), remember_me=remember_me)
-    return tokens
+
+    requires_consent_update = (
+        user.consent_version is None or
+        user.consent_version != CGU_VERSION
+    )
+
+    return LoginToken(
+        **tokens,
+        requires_consent_update=requires_consent_update,
+        current_cgu_version=CGU_VERSION,
+    )
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
@@ -146,7 +158,8 @@ async def register_user(
             email=user_data.email,
             username=user_data.username,
             password=user_data.password,
-            request=request
+            request=request,
+            consent_version=user_data.consent_version,
         )
 
         rate_limiter.clear_attempts(client_ip, "register", session=session)
@@ -272,3 +285,16 @@ async def resend_verification(
 
     return generic_response
 
+
+@router.post("/consent")
+async def update_consent(
+    current_user: User = Depends(get_current_active_user),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """
+    Enregistre l'acceptation de la version courante des CGU par l'utilisateur connecté.
+    Appelé depuis la modale de re-consentement lors d'une mise à jour des CGU.
+    """
+    from app.config import CGU_VERSION
+    auth_service.update_consent(current_user.id, CGU_VERSION)
+    return {"status": "ok", "consent_version": CGU_VERSION}

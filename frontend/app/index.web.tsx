@@ -326,7 +326,15 @@ export default function WebLanding() {
         <View style={styles.container}>
           <Text style={styles.footerLogo}>Ma Bibliothèque</Text>
           <Text style={styles.footerText}>© 2026 — Application gratuite, vos données vous appartiennent.</Text>
-          {/* Liens légaux à venir */}
+          <View style={styles.footerLinks}>
+            <TouchableOpacity onPress={() => router.push('/cgu' as any)}>
+              <Text style={styles.footerLink}>CGU</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkSep}>·</Text>
+            <TouchableOpacity onPress={() => router.push('/politique-confidentialite' as any)}>
+              <Text style={styles.footerLink}>Politique de confidentialité</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -524,4 +532,7 @@ const styles = StyleSheet.create({
   },
   footerLogo: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 8 },
   footerText: { fontSize: 13, color: '#888' },
+  footerLinks: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  footerLink: { fontSize: 13, color: '#aaa', textDecorationLine: 'underline' },
+  footerLinkSep: { fontSize: 13, color: '#555' },
 });

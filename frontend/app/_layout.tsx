@@ -38,6 +38,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 import { UpdateChecker } from '@/components/UpdateChecker';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
+import { ConsentUpdateModal } from '@/components/ConsentUpdateModal';
+import { authService } from '@/services/authService';
 import { useChangelog } from '@/utils/useChangelog';
 
 export {
@@ -94,7 +96,7 @@ import { useEffect as useReactEffect, useRef, useState } from 'react';
 function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, requiresConsentUpdate, clearConsentFlag, token, logout } = useAuth();
   const theme = useTheme();
   const initialCheckDone = useRef(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
@@ -148,6 +150,25 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
     markAsSeen();
   };
 
+  const [consentLoading, setConsentLoading] = useState(false);
+
+  const handleConsentAccept = async () => {
+    if (consentLoading) return;
+    setConsentLoading(true);
+    try {
+      if (token) await authService.updateConsent(token);
+    } catch {}
+    setConsentLoading(false);
+    clearConsentFlag();
+    router.replace('/(tabs)/books');
+  };
+
+  const handleConsentDecline = async () => {
+    clearConsentFlag();
+    await logout();
+    router.replace('/auth/login');
+  };
+
   // Afficher un loader UNIQUEMENT pendant le check initial d'authentification
   // Pas pendant les opérations login/register
   if (isLoading && !initialCheckDone.current) {
@@ -167,6 +188,12 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
           onClose={handleCloseWhatsNew}
         />
       )}
+      <ConsentUpdateModal
+        visible={requiresConsentUpdate}
+        onAccept={handleConsentAccept}
+        onDecline={handleConsentDecline}
+        loading={consentLoading}
+      />
     </>
   );
 }
@@ -197,6 +224,8 @@ function RootLayoutNav() {
         <Stack.Screen name="account/changelog" options={{ headerShown: true, title: 'Historique des versions', ...themedHeader }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="public" options={{ headerShown: false }} />
+        <Stack.Screen name="cgu" options={{ headerShown: false }} />
+        <Stack.Screen name="politique-confidentialite" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         <Stack.Screen 
           name="scan" 

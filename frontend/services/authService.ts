@@ -35,6 +35,8 @@ export interface LoginResponse {
   access_token: string;
   refresh_token?: string;
   token_type: string;
+  requires_consent_update?: boolean;
+  current_cgu_version?: string;
 }
 
 export interface RegisterRequest {
@@ -42,6 +44,8 @@ export interface RegisterRequest {
   username: string;
   password: string;
   confirm_password: string;
+  consent_accepted: boolean;
+  consent_version: string;
 }
 
 export interface User {
@@ -166,6 +170,13 @@ class AuthService {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+  }
+
+  async updateConsent(token: string): Promise<void> {
+    await this.makeRequest<{ status: string }>('/auth/consent', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
     });
   }
 }

@@ -28,7 +28,6 @@ export default function LoginScreen() {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isUnverified, setIsUnverified] = useState(false);
-
   const { login, isLoading } = useAuth();
   const router = useRouter();
   const theme = useTheme();
@@ -53,8 +52,10 @@ export default function LoginScreen() {
     setErrorMessage('');
     setIsUnverified(false);
     try {
-      await login({ email: email.trim(), password, remember_me: rememberMe });
-      router.replace('/(tabs)/books');
+      const { requiresConsentUpdate } = await login({ email: email.trim(), password, remember_me: rememberMe });
+      if (!requiresConsentUpdate) {
+        router.replace('/(tabs)/books');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Une erreur est survenue';
       if (message.includes('non vérifié')) {
@@ -193,6 +194,16 @@ export default function LoginScreen() {
             <Text style={[styles.registerText, { color: theme.textSecondary }]}>Pas encore de compte ? </Text>
             <TouchableOpacity onPress={() => router.push('/auth/register')}>
               <Text style={[styles.registerLinkText, { color: theme.accent }]}>S'inscrire</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.legalLinks}>
+            <TouchableOpacity onPress={() => Linking.openURL(`${API_CONFIG.WEB_URL}/cgu`)}>
+              <Text style={[styles.legalLinkText, { color: theme.textMuted }]}>CGU</Text>
+            </TouchableOpacity>
+            <Text style={[styles.legalSeparator, { color: theme.textMuted }]}>·</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(`${API_CONFIG.WEB_URL}/politique-confidentialite`)}>
+              <Text style={[styles.legalLinkText, { color: theme.textMuted }]}>Politique de confidentialité</Text>
             </TouchableOpacity>
           </View>
 
@@ -337,6 +348,20 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     textAlign: 'center',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 6,
+  },
+  legalLinkText: {
+    fontSize: 12,
+  },
+  legalSeparator: {
+    fontSize: 12,
   },
   stagingBanner: {
     backgroundColor: '#e67e00',

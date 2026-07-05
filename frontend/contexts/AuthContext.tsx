@@ -32,7 +32,9 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
+  requiresConsentUpdate: boolean;
+  clearConsentFlag: () => void;
+  login: (credentials: LoginRequest) => Promise<{ requiresConsentUpdate: boolean }>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [requiresConsentUpdate, setRequiresConsentUpdate] = useState(false);
 
   const isAuthenticated = !!token && !!user;
 
@@ -152,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const login = async (credentials: LoginRequest) => {
+  const login = async (credentials: LoginRequest): Promise<{ requiresConsentUpdate: boolean }> => {
   try {
       setIsLoading(true);
       // Connexion avec remember_me si présent
@@ -175,6 +178,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (pushToken) sendTokenToBackend(pushToken);
         });
       }).catch(() => {});
+      const needsConsent = !!loginResponse.requires_consent_update;
+      setRequiresConsentUpdate(needsConsent);
+      return { requiresConsentUpdate: needsConsent };
     } catch (error) {
       console.error('Erreur de connexion:', error);
       throw error;
@@ -196,6 +202,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(false);
     }
   };
+
+  const clearConsentFlag = () => setRequiresConsentUpdate(false);
 
   const updateUser = async (updatedUser: User) => {
     setUser(updatedUser);
@@ -232,6 +240,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     token,
     isLoading,
     isAuthenticated,
+    requiresConsentUpdate,
+    clearConsentFlag,
     login,
     register,
     logout,

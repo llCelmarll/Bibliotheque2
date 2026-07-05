@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Alert, Linking } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
@@ -10,6 +10,7 @@ import { CalendarPreferencesSection } from "@/components/settings/CalendarPrefer
 import { PushNotificationsSection } from "@/components/settings/PushNotificationsSection";
 import { useTheme, useThemeControls } from "@/contexts/ThemeContext";
 import { themes, ThemeName, AppTheme } from '@/constants/Theme';
+import API_CONFIG from "@/config/api";
 
 export default function SettingsScreen() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
@@ -278,6 +279,25 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Mentions légales */}
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary, marginTop: 16, marginBottom: 10 }]}>Mentions légales</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent, marginBottom: 12 }]}
+            onPress={() => Linking.openURL(`${API_CONFIG.WEB_URL}/cgu`)}
+          >
+            <MaterialIcons name="gavel" size={24} color={theme.textSecondary} />
+            <Text style={[styles.updateButtonText, { color: theme.textPrimary }]}>Conditions Générales d'Utilisation</Text>
+            <MaterialIcons name="open-in-new" size={20} color={theme.borderMedium} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent, marginBottom: 12 }]}
+            onPress={() => Linking.openURL(`${API_CONFIG.WEB_URL}/politique-confidentialite`)}
+          >
+            <MaterialIcons name="privacy-tip" size={24} color={theme.textSecondary} />
+            <Text style={[styles.updateButtonText, { color: theme.textPrimary }]}>Politique de confidentialité</Text>
+            <MaterialIcons name="open-in-new" size={20} color={theme.borderMedium} />
+          </TouchableOpacity>
 
           <View style={[styles.infoCard, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
             <Text style={[styles.infoText, { color: theme.textMuted }]}>Version de développement</Text>
