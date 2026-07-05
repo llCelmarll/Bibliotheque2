@@ -1,5 +1,12 @@
 [
     {
+        "version": "1.4.1",
+        "date": "2026-07-05",
+        "title": "Politique de confidentialité et CGU",
+        "description": "Ajout des conditions générales d'utilisation et de la politique de confidentialité, avec consentement obligatoire à l'inscription et suivi des mises à jour. Un message s'affiche à la connexion si les CGU ont évolué depuis votre dernier consentement.",
+        "type": "feature"
+    },
+    {
         "version": "1.4.0",
         "date": "2026-06-26",
         "title": "Page d'accueil publique",
