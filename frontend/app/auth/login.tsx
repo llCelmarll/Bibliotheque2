@@ -197,6 +197,16 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.legalLinks}>
+            <TouchableOpacity onPress={() => Linking.openURL(`${API_CONFIG.WEB_URL}/cgu`)}>
+              <Text style={[styles.legalLinkText, { color: theme.textMuted }]}>CGU</Text>
+            </TouchableOpacity>
+            <Text style={[styles.legalSeparator, { color: theme.textMuted }]}>·</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(`${API_CONFIG.WEB_URL}/politique-confidentialite`)}>
+              <Text style={[styles.legalLinkText, { color: theme.textMuted }]}>Politique de confidentialité</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.textMuted }]}>
               Version de développement avec authentification
@@ -338,6 +348,20 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     textAlign: 'center',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 6,
+  },
+  legalLinkText: {
+    fontSize: 12,
+  },
+  legalSeparator: {
+    fontSize: 12,
   },
   stagingBanner: {
     backgroundColor: '#e67e00',

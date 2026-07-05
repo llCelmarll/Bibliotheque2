@@ -1,4 +1,4 @@
-// config/api.ts
+﻿// config/api.ts
 import { Platform } from 'react-native';
 
 const getApkUrl = () => {
@@ -7,7 +7,7 @@ const getApkUrl = () => {
     const filename = process.env.EXPO_PUBLIC_APK_FILENAME || 'bibliotheque.apk';
     return `${window.location.origin}/${filename}`;
   }
-  // Natif (APK) : utiliser l'URL complète depuis env
+  // Natif (APK) : utiliser l'URL complÃ¨te depuis env
   return process.env.EXPO_PUBLIC_APK_URL || 'https://mabibliotheque.ovh/bibliotheque.apk';
 };
 
@@ -15,12 +15,12 @@ const getWebUrl = () => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return 'https://mabibliotheque.ovh';
+  return process.env.EXPO_PUBLIC_WEB_URL || 'https://mabibliotheque.ovh';
 };
 
 const getBaseUrl = () => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    // Dev local : hostname = localhost → backend sur port 8000
+    // Dev local : hostname = localhost â†’ backend sur port 8000
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:8000';
     }

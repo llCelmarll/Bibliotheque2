@@ -111,6 +111,47 @@ Write-Host "  Branche:  $(git rev-parse --abbrev-ref HEAD 2>$null) @ $(git log -
 Write-Host "  API URL:  $STAGING_API_URL" -ForegroundColor Gray
 Write-Host ""
 
+# ---------------------------------------------------------------------------
+# DETECTION DES MODIFICATIONS CGU
+# ---------------------------------------------------------------------------
+
+$changedFiles = @(git diff --name-only prod HEAD 2>$null)
+$legalChanged = @($changedFiles | Where-Object {
+    $_ -eq 'docs/CGU.md' -or $_ -eq 'docs/POLITIQUE_CONFIDENTIALITE.md'
+})
+if ($legalChanged.Count -gt 0) {
+    Write-Host ""
+    Write-Host "  AVERTISSEMENT : Documents legaux modifies :" -ForegroundColor Yellow
+    $legalChanged | ForEach-Object { Write-Host "    - $_" -ForegroundColor Yellow }
+    Write-Host ""
+    $bump = Read-Host "  Bumper la version CGU staging maintenant ? (O/N)"
+    if ($bump -match '^[oO]$') {
+        $newVersion = (Get-Date).ToString("yyyy-MM")
+        $envStagingPath = Join-Path $repoRoot ".env.staging"
+        $apiConfigPath  = Join-Path $repoRoot "frontend\config\api.ts"
+        if (Test-Path $envStagingPath) {
+            (Get-Content $envStagingPath) -replace 'CGU_VERSION=.*', "CGU_VERSION=$newVersion" |
+                Set-Content $envStagingPath -Encoding UTF8
+        }
+        if (Test-Path $apiConfigPath) {
+            (Get-Content $apiConfigPath) -replace "CGU_VERSION: '[^']*'", "CGU_VERSION: '$newVersion'" |
+                Set-Content $apiConfigPath -Encoding UTF8
+        }
+        Write-Host "  Version CGU staging mise a jour : $newVersion" -ForegroundColor Green
+
+        # Rotation du SECRET_KEY pour invalider tous les tokens JWT existants
+        $newSecretKey = -join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
+        if (Test-Path $envStagingPath) {
+            (Get-Content $envStagingPath) -replace 'SECRET_KEY=.*', "SECRET_KEY=$newSecretKey" |
+                Set-Content $envStagingPath -Encoding UTF8
+        }
+        Write-Host "  SECRET_KEY staging regenere -- tous les tokens JWT seront invalides apres redeploy" -ForegroundColor Yellow
+        Write-Host "  (les utilisateurs devront se reconnecter et accepter les nouvelles CGU)" -ForegroundColor Gray
+        $deployBackend = $true
+    }
+    Write-Host ""
+}
+
 if ($DryRun) {
     Write-Host "[DryRun] Aucune action executee." -ForegroundColor Cyan
     exit 0

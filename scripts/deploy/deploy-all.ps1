@@ -176,7 +176,17 @@ function Get-DeploymentPlan {
                     Set-Content $apiConfigPath -Encoding UTF8
             }
             Write-Host "  Version CGU mise a jour : $newVersion" -ForegroundColor Green
-            Write-Host "  (backend + web seront redeploys pour prendre effet)" -ForegroundColor Gray
+
+            # Rotation du SECRET_KEY pour invalider tous les tokens JWT existants
+            # et forcer la reconnexion de tous les utilisateurs
+            $newSecretKey = -join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
+            if (Test-Path $envSynologyPath) {
+                (Get-Content $envSynologyPath) -replace 'SECRET_KEY=.*', "SECRET_KEY=$newSecretKey" |
+                    Set-Content $envSynologyPath -Encoding UTF8
+            }
+            Write-Host "  SECRET_KEY regenere -- tous les tokens JWT seront invalides apres redeploy" -ForegroundColor Yellow
+            Write-Host "  (les utilisateurs devront se reconnecter et accepter les nouvelles CGU)" -ForegroundColor Gray
+
             $plan.Backend = $true
             $plan.Web     = $true
         }

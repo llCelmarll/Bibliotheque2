@@ -166,6 +166,7 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
   const handleConsentDecline = async () => {
     clearConsentFlag();
     await logout();
+    router.replace('/auth/login');
   };
 
   // Afficher un loader UNIQUEMENT pendant le check initial d'authentification
