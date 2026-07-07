@@ -3,14 +3,14 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 from typing import List, Optional
 
-from app.models.Contact import Contact
-from app.models.User import User
-from app.models.UserLoanRequest import UserLoanRequestStatus
+from app.models.contact_model import Contact
+from app.models.user_model import User
+from app.models.user_loan_request_model import UserLoanRequestStatus
 from app.repositories.contact_repository import ContactRepository
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
 from app.repositories.user_loan_request_repository import UserLoanRequestRepository
-from app.schemas.Contact import ContactCreate, ContactRead, ContactUpdate
+from app.schemas.contact_schemas import ContactCreate, ContactRead, ContactUpdate
 
 
 class ContactService:

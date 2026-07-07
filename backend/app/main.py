@@ -5,9 +5,33 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from app.routers import books, authors, publishers, genres, series, scan, auth, contacts, loans, borrowed_books, covers, user_loan_requests, users, contact_invitations, account, push_tokens, notifications
-from app.routers.import_jobs import router as import_jobs_router
-from app.routers import reports, admin, admin_entities, contact_staff, waitlist
+from app.routers import (
+    books_router as books,
+    authors_router as authors,
+    publishers_router as publishers,
+    genres_router as genres,
+    series_router as series,
+    scan_router as scan,
+    auth_router as auth,
+    contacts_router as contacts,
+    loans_router as loans,
+    borrowed_books_router as borrowed_books,
+    covers_router as covers,
+    user_loan_requests_router as user_loan_requests,
+    users_router as users,
+    contact_invitations_router as contact_invitations,
+    account_router as account,
+    push_tokens_router as push_tokens,
+    notifications_router as notifications,
+)
+from app.routers.import_jobs_router import router as import_jobs_router
+from app.routers import (
+    reports_router as reports,
+    admin_router as admin,
+    admin_entities_router as admin_entities,
+    contact_staff_router as contact_staff,
+    waitlist_router as waitlist,
+)
 
 _sqladmin_enabled = os.getenv("SQLADMIN_ENABLED", "false").lower() == "true"
 if _sqladmin_enabled:

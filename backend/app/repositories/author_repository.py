@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
-from app.models.Author import Author
-from app.schemas.Author import AuthorRead, AuthorCreate
+from app.models.author_model import Author
+from app.schemas.author_schemas import AuthorRead, AuthorCreate
 
 class AuthorRepository:
 	"""Repository pour les auteurs"""

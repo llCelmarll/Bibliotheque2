@@ -4,14 +4,14 @@ from sqlmodel import Session, select
 from typing import List
 from datetime import datetime
 
-from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
-from app.models.Contact import Contact
-from app.models.User import User
+from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
+from app.models.contact_model import Contact
+from app.models.user_model import User
 from app.repositories.user_loan_request_repository import UserLoanRequestRepository
 from app.repositories.book_repository import BookRepository
 from app.repositories.loan_repository import LoanRepository
 from app.services.push_notification_service import push_notification_service
-from app.schemas.UserLoanRequest import (
+from app.schemas.user_loan_request_schemas import (
     UserLoanRequestRead,
     UserLoanRequestCreate,
     UserLoanRequestAccept,

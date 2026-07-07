@@ -5,7 +5,7 @@ import pytest
 from sqlmodel import Session
 from fastapi.testclient import TestClient
 
-from app.models.User import User
+from app.models.user_model import User
 
 
 @pytest.mark.unit

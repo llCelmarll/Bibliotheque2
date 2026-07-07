@@ -2,10 +2,10 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.models.Genre import Genre
-from app.models.BookGenreLink import BookGenreLink
+from app.models.genre_model import Genre
+from app.models.book_genre_link_model import BookGenreLink
 from app.repositories.genre_repository import GenreRepository
-from app.schemas.Genre import GenreCreate, GenreRead, GenreUpdate
+from app.schemas.genre_schemas import GenreCreate, GenreRead, GenreUpdate
 
 class GenreService:
 	"""Service pour la logique metier des genres"""

@@ -4,10 +4,10 @@ Factory pour créer des livres de test.
 import factory
 from factory import Faker, SubFactory, LazyFunction
 from datetime import datetime
-from app.models.Book import Book
-from app.models.Author import Author
-from app.models.Publisher import Publisher
-from app.models.Genre import Genre
+from app.models.book_model import Book
+from app.models.author_model import Author
+from app.models.publisher_model import Publisher
+from app.models.genre_model import Genre
 
 
 class AuthorFactory(factory.Factory):

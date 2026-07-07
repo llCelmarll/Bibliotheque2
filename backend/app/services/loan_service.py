@@ -3,11 +3,11 @@ from sqlmodel import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from app.models.Loan import Loan, LoanStatus
+from app.models.loan_model import Loan, LoanStatus
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.book_repository import BookRepository
 from app.repositories.contact_repository import ContactRepository
-from app.schemas.Loan import LoanCreate, LoanRead, LoanUpdate, LoanReturn
+from app.schemas.loan_schemas import LoanCreate, LoanRead, LoanUpdate, LoanReturn
 from app.services.contact_service import ContactService
 
 
@@ -266,7 +266,7 @@ class LoanService:
                 return existing.id
 
             # Créer un nouveau contact avec toutes les infos
-            from app.models.Contact import Contact
+            from app.models.contact_model import Contact
             new_contact = Contact(
                 name=name,
                 email=contact_input.get("email"),

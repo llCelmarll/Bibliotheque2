@@ -7,7 +7,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from sqlmodel import Session
 
 from app.services.book_service import BookService
-from app.models.Book import Book
+from app.models.book_model import Book
 from tests.conftest import create_test_user
 
 

@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch, call
 
 from app.services.push_notification_service import PushNotificationService
-from app.models.UserPushToken import UserPushToken
+from app.models.user_push_token_model import UserPushToken
 from tests.conftest import create_test_user
 
 

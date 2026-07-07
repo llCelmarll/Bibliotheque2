@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
-from app.models.PasswordResetToken import PasswordResetToken
+from app.models.password_reset_token_model import PasswordResetToken
 from app.services.auth_service import hash_password
 from tests.conftest import create_test_user
 
@@ -246,7 +246,7 @@ class TestDeleteAccount:
             "confirmation": "SUPPRIMER",
         })
         assert response.status_code == 200
-        from app.models.User import User
+        from app.models.user_model import User
         user = session.get(User, test_user.id)
         assert user is None
 

@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
-from app.models.Publisher import Publisher
+from app.models.publisher_model import Publisher
 
 class PublisherRepository:
 	"""Repository de éditeurs"""

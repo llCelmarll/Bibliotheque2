@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
-from app.models.Loan import Loan
+from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
+from app.models.loan_model import Loan
 from app.services.push_notification_service import push_notification_service
 
 

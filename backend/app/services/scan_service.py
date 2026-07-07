@@ -7,10 +7,10 @@ from app.repositories.author_repository import AuthorRepository
 from app.repositories.publisher_repository import PublisherRepository
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
-from app.schemas.Book import BookCreate, BookRead, CurrentLoanRead
-from app.schemas.Author import AuthorRead
-from app.schemas.Publisher import PublisherRead
-from app.schemas.BorrowedBook import BorrowedBookRead
+from app.schemas.book_schemas import BookCreate, BookRead, CurrentLoanRead
+from app.schemas.author_schemas import AuthorRead
+from app.schemas.publisher_schemas import PublisherRead
+from app.schemas.borrowed_book_schemas import BorrowedBookRead
 
 
 class SuggestedAuthor(SQLModel):

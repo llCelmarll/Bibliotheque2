@@ -188,8 +188,8 @@ class TestBookEndpoints:
 
     def test_book_with_active_loan_includes_loan_info(self, authenticated_client: TestClient, session: Session, test_user):
         """Test que les livres avec prêts actifs incluent les informations de prêt."""
-        from app.models.Contact import Contact
-        from app.models.Loan import Loan, LoanStatus
+        from app.models.contact_model import Contact
+        from app.models.loan_model import Loan, LoanStatus
         from datetime import datetime, timedelta
 
         # Créer un livre
@@ -238,8 +238,8 @@ class TestBookEndpoints:
 
     def test_book_search_includes_loan_info(self, authenticated_client: TestClient, session: Session, test_user):
         """Test que la recherche de livres inclut les informations de prêt."""
-        from app.models.Contact import Contact
-        from app.models.Loan import Loan, LoanStatus
+        from app.models.contact_model import Contact
+        from app.models.loan_model import Loan, LoanStatus
         from datetime import datetime, timedelta
 
         # Créer deux livres
@@ -428,7 +428,7 @@ class TestScanBookSimilarDetection:
 
     def test_book_with_active_borrow_includes_borrow_info(self, authenticated_client: TestClient, session: Session, test_user):
         """Test que les livres avec emprunts actifs incluent les informations d'emprunt."""
-        from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+        from app.models.borrowed_book_model import BorrowedBook, BorrowStatus
         from datetime import datetime, timedelta
 
         # Créer un livre
@@ -467,7 +467,7 @@ class TestScanBookSimilarDetection:
 
     def test_book_search_includes_borrow_info(self, authenticated_client: TestClient, session: Session, test_user):
         """Test que la recherche de livres inclut les informations d'emprunt."""
-        from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+        from app.models.borrowed_book_model import BorrowedBook, BorrowStatus
         from datetime import datetime, timedelta
 
         # Créer deux livres

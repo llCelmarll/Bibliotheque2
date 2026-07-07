@@ -144,7 +144,7 @@ class TestConsentEndpoints:
     def test_register_with_consent_stores_version(self, client: TestClient, session: Session):
         """Inscription avec consentement → consent_version stockée en base."""
         from sqlmodel import select
-        from app.models.User import User
+        from app.models.user_model import User
 
         user_data = {
             "email": "consent@example.com",
@@ -216,7 +216,7 @@ class TestConsentEndpoints:
     def test_update_consent_stores_version(self, client: TestClient, session: Session, test_user):
         """POST /auth/consent met à jour consent_version en base."""
         from sqlmodel import select
-        from app.models.User import User
+        from app.models.user_model import User
         from app.config import CGU_VERSION
 
         # Obtenir un token valide

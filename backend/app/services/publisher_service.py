@@ -2,10 +2,10 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.models.Publisher import Publisher
-from app.models.Book import Book
+from app.models.publisher_model import Publisher
+from app.models.book_model import Book
 from app.repositories.publisher_repository import PublisherRepository
-from app.schemas.Publisher import PublisherCreate, PublisherRead, PublisherUpdate
+from app.schemas.publisher_schemas import PublisherCreate, PublisherRead, PublisherUpdate
 
 class PublisherService:
 	"""Service pour la logique metier des éditeurs"""

@@ -12,7 +12,7 @@ from app.services.auth_service import (
     hash_password,
     verify_password,
 )
-from app.models.User import User
+from app.models.user_model import User
 from tests.conftest import create_test_user
 
 

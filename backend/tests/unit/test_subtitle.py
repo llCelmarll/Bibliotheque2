@@ -12,10 +12,10 @@ import pytest
 from unittest.mock import patch
 from sqlmodel import Session
 
-from app.models.Book import Book
-from app.models.User import User
+from app.models.book_model import Book
+from app.models.user_model import User
 from app.repositories.book_repository import BookRepository
-from app.schemas.Book import BookCreate, BookUpdate, BookSearchParams
+from app.schemas.book_schemas import BookCreate, BookUpdate, BookSearchParams
 from app.services.book_service import BookService
 from app.services.scan_service import ScanService, SuggestedBook
 from tests.conftest import create_test_book

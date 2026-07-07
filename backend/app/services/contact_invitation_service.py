@@ -4,10 +4,10 @@ from sqlmodel import Session, select, func
 from typing import List
 from datetime import datetime
 
-from app.models.ContactInvitation import ContactInvitation, InvitationStatus
-from app.models.Contact import Contact
-from app.models.User import User
-from app.schemas.ContactInvitation import ContactInvitationRead, ContactInvitationCreate
+from app.models.contact_invitation_model import ContactInvitation, InvitationStatus
+from app.models.contact_model import Contact
+from app.models.user_model import User
+from app.schemas.contact_invitation_schemas import ContactInvitationRead, ContactInvitationCreate
 from app.services.push_notification_service import push_notification_service
 
 

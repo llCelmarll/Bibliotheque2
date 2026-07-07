@@ -7,9 +7,9 @@ from sqlmodel import Session
 from datetime import datetime
 
 from app.services.book_service import BookService
-from app.models.Book import Book
-from app.models.Author import Author
-from app.models.Publisher import Publisher
+from app.models.book_model import Book
+from app.models.author_model import Author
+from app.models.publisher_model import Publisher
 
 
 @pytest.mark.unit

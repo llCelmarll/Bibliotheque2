@@ -3,7 +3,7 @@ import asyncio
 import httpx
 from sqlmodel import Session, select
 
-from app.models.UserPushToken import UserPushToken
+from app.models.user_push_token_model import UserPushToken
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
@@ -53,7 +53,7 @@ class PushNotificationService:
         try:
             # Vérifier les préférences si un type est fourni
             if data and data.get("type"):
-                from app.models.User import User
+                from app.models.user_model import User
                 user = session.get(User, user_id)
                 if user and user.push_prefs is not None:
                     if user.push_prefs.get(data["type"]) is False:

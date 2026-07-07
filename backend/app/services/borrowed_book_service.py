@@ -3,12 +3,12 @@ from sqlmodel import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+from app.models.borrowed_book_model import BorrowedBook, BorrowStatus
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
 from app.repositories.book_repository import BookRepository
 from app.repositories.contact_repository import ContactRepository
 from app.services.contact_service import ContactService
-from app.schemas.BorrowedBook import (
+from app.schemas.borrowed_book_schemas import (
     BorrowedBookCreate, BorrowedBookRead, BorrowedBookUpdate,
     BorrowedBookReturn, BorrowedBookStats
 )
@@ -249,7 +249,7 @@ class BorrowedBookService:
                 return existing.id, existing.name
 
             # Créer un nouveau contact avec toutes les infos
-            from app.models.Contact import Contact
+            from app.models.contact_model import Contact
             new_contact = Contact(
                 name=name,
                 email=contact_input.get("email"),

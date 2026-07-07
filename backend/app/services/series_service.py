@@ -2,10 +2,10 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.models.Series import Series
-from app.models.BookSeriesLink import BookSeriesLink
+from app.models.series_model import Series
+from app.models.book_series_link_model import BookSeriesLink
 from app.repositories.series_repository import SeriesRepository
-from app.schemas.Series import SeriesCreate, SeriesRead, SeriesUpdate
+from app.schemas.series_schemas import SeriesCreate, SeriesRead, SeriesUpdate
 
 class SeriesService:
 	"""Service pour la logique metier des séries"""

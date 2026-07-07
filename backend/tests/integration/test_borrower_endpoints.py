@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from tests.conftest import create_test_user
-from app.models.Contact import Contact
+from app.models.contact_model import Contact
 
 
 def create_test_contact(session: Session, owner_id: int, name: str = "Test Contact", **kwargs) -> Contact:

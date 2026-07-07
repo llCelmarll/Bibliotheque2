@@ -7,7 +7,7 @@ from unittest.mock import Mock
 from sqlmodel import Session
 
 from app.services.book_service import BookService
-from app.models.Book import Book
+from app.models.book_model import Book
 
 
 @pytest.mark.unit
@@ -27,7 +27,7 @@ class TestBookService:
 
     def test_search_books_with_query(self, book_service: BookService, mock_session, test_user):
         """Test de recherche de livres avec une requête."""
-        from app.schemas.Book import BookSearchParams
+        from app.schemas.book_schemas import BookSearchParams
 
         # Mock des résultats de recherche
         search_results = [
@@ -56,7 +56,7 @@ class TestBookService:
     
     def test_search_books_empty_query(self, book_service: BookService, mock_session, test_user):
         """Test de recherche avec requête vide."""
-        from app.schemas.Book import BookSearchParams
+        from app.schemas.book_schemas import BookSearchParams
 
         # Mock du repository - retourne tous les livres de l'utilisateur
         user_books = [
@@ -84,7 +84,7 @@ class TestBookService:
     
     def test_search_books_no_results(self, book_service: BookService, mock_session, test_user):
         """Test de recherche sans résultats."""
-        from app.schemas.Book import BookSearchParams
+        from app.schemas.book_schemas import BookSearchParams
 
         # Mock du repository - aucun résultat
         book_service.book_repository = Mock()
@@ -106,7 +106,7 @@ class TestBookService:
     
     def test_search_books_all_user_books(self, book_service: BookService, mock_session, test_user):
         """Test de récupération de tous les livres de l'utilisateur."""
-        from app.schemas.Book import BookSearchParams
+        from app.schemas.book_schemas import BookSearchParams
 
         # Mock du repository
         user_books = [
@@ -158,7 +158,7 @@ class TestBookBulkImport:
     
     def test_bulk_create_books_atomic_success(self, book_service: BookService, mock_session, test_user):
         """Test de création en masse en mode atomique - succès."""
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         
         # Mock de create_book pour qu'il réussisse
         books_data = [
@@ -186,7 +186,7 @@ class TestBookBulkImport:
     
     def test_bulk_create_books_atomic_failure(self, book_service: BookService, mock_session, test_user):
         """Test de création en masse en mode atomique - échec."""
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         from fastapi import HTTPException
         
         books_data = [
@@ -212,7 +212,7 @@ class TestBookBulkImport:
     
     def test_bulk_create_books_skip_errors_success(self, book_service: BookService, mock_session, test_user):
         """Test de création en masse avec skip_errors=True - tous réussissent."""
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         
         books_data = [
             BookCreate(title="Book 1", isbn="1234567890"),
@@ -238,7 +238,7 @@ class TestBookBulkImport:
     
     def test_bulk_create_books_skip_errors_partial(self, book_service: BookService, mock_session, test_user):
         """Test de création en masse avec skip_errors=True - succès partiel."""
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         from fastapi import HTTPException
         
         books_data = [
@@ -274,7 +274,7 @@ class TestBookBulkImport:
     
     def test_bulk_create_books_skip_errors_all_fail(self, book_service: BookService, mock_session, test_user):
         """Test de création en masse avec skip_errors=True - tous échouent."""
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         from fastapi import HTTPException
         
         books_data = [
@@ -303,7 +303,7 @@ class TestBookBulkImport:
     
     def test_bulk_create_books_empty_list(self, book_service: BookService, mock_session, test_user):
         """Test de création en masse avec liste vide."""
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         
         books_data = []
         
@@ -317,7 +317,7 @@ class TestBookBulkImport:
     
     def test_bulk_create_books_with_authors_and_genres(self, book_service: BookService, mock_session, test_user):
         """Test de création en masse avec auteurs et genres."""
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         
         books_data = [
             BookCreate(
@@ -394,7 +394,7 @@ class TestBookServiceRatingAndNotes:
 
     def test_update_book_with_rating_and_notes(self, book_service: BookService, mock_session, test_user):
         """Test de mise à jour partielle avec rating et notes."""
-        from app.schemas.Book import BookUpdate
+        from app.schemas.book_schemas import BookUpdate
 
         existing_book = Book(
             id=1, title="Existing Book", isbn="9781234567890",
@@ -493,7 +493,7 @@ class TestBookServiceValidateBookData:
         return BookService(Mock(spec=Session), user_id=1)
 
     def _book_create(self, **kwargs):
-        from app.schemas.Book import BookCreate
+        from app.schemas.book_schemas import BookCreate
         defaults = {"title": "Valid Title"}
         defaults.update(kwargs)
         return BookCreate(**defaults)
@@ -625,8 +625,8 @@ class TestBookServiceValidateFilters:
 
     def test_validate_filters_duplicate_type_raises_400(self, session):
         from fastapi import HTTPException
-        from app.schemas.Other import Filter, FilterType
-        from app.models.Author import Author
+        from app.schemas.other_schemas import Filter, FilterType
+        from app.models.author_model import Author
         author = Author(name="Dup Author")
         session.add(author)
         session.commit()
@@ -641,7 +641,7 @@ class TestBookServiceValidateFilters:
 
     def test_validate_filters_invalid_id_zero_raises_400(self, session):
         from fastapi import HTTPException
-        from app.schemas.Other import Filter, FilterType
+        from app.schemas.other_schemas import Filter, FilterType
         svc = self._svc(session)
         with pytest.raises(HTTPException) as exc:
             svc._validate_filters([Filter(type=FilterType.AUTHOR, id=0)])
@@ -649,7 +649,7 @@ class TestBookServiceValidateFilters:
 
     def test_validate_filters_author_not_found_raises_400(self, session):
         from fastapi import HTTPException
-        from app.schemas.Other import Filter, FilterType
+        from app.schemas.other_schemas import Filter, FilterType
         svc = self._svc(session)
         with pytest.raises(HTTPException) as exc:
             svc._validate_filters([Filter(type=FilterType.AUTHOR, id=99999)])
@@ -657,7 +657,7 @@ class TestBookServiceValidateFilters:
 
     def test_validate_filters_publisher_not_found_raises_400(self, session):
         from fastapi import HTTPException
-        from app.schemas.Other import Filter, FilterType
+        from app.schemas.other_schemas import Filter, FilterType
         svc = self._svc(session)
         with pytest.raises(HTTPException) as exc:
             svc._validate_filters([Filter(type=FilterType.PUBLISHER, id=99999)])
@@ -665,7 +665,7 @@ class TestBookServiceValidateFilters:
 
     def test_validate_filters_genre_not_found_raises_400(self, session):
         from fastapi import HTTPException
-        from app.schemas.Other import Filter, FilterType
+        from app.schemas.other_schemas import Filter, FilterType
         svc = self._svc(session)
         with pytest.raises(HTTPException) as exc:
             svc._validate_filters([Filter(type=FilterType.GENRE, id=99999)])
@@ -685,7 +685,7 @@ class TestBookServiceProcessEntities:
 
     def _new_book(self, session, owner_id=1):
         from tests.conftest import create_test_user
-        from app.models.Book import Book
+        from app.models.book_model import Book
         book = Book(title="Test Book", owner_id=owner_id)
         session.add(book)
         session.commit()
@@ -695,7 +695,7 @@ class TestBookServiceProcessEntities:
     # --- Authors ---
 
     def test_process_authors_by_int_id_existing(self, session, test_user):
-        from app.models.Author import Author
+        from app.models.author_model import Author
         author = Author(name="Existing Author")
         session.add(author)
         session.commit()
@@ -714,7 +714,7 @@ class TestBookServiceProcessEntities:
         assert exc.value.status_code == 400
 
     def test_process_authors_by_str_creates_new(self, session, test_user):
-        from app.models.Author import Author
+        from app.models.author_model import Author
         from sqlmodel import select
         book = self._new_book(session, owner_id=test_user.id)
         svc = self._svc(session)
@@ -723,7 +723,7 @@ class TestBookServiceProcessEntities:
         assert found is not None
 
     def test_process_authors_by_str_reuses_existing(self, session, test_user):
-        from app.models.Author import Author
+        from app.models.author_model import Author
         from sqlmodel import select
         author = Author(name="Reuse Author")
         session.add(author)
@@ -735,7 +735,7 @@ class TestBookServiceProcessEntities:
         assert count == 1
 
     def test_process_authors_by_dict_with_id(self, session, test_user):
-        from app.models.Author import Author
+        from app.models.author_model import Author
         author = Author(name="Dict Author")
         session.add(author)
         session.commit()
@@ -756,7 +756,7 @@ class TestBookServiceProcessEntities:
     # --- Publisher ---
 
     def test_process_publisher_by_int_id(self, session):
-        from app.models.Publisher import Publisher
+        from app.models.publisher_model import Publisher
         pub = Publisher(name="Test Pub")
         session.add(pub)
         session.commit()
@@ -773,7 +773,7 @@ class TestBookServiceProcessEntities:
         assert exc.value.status_code == 400
 
     def test_process_publisher_by_str_creates_new(self, session):
-        from app.models.Publisher import Publisher
+        from app.models.publisher_model import Publisher
         from sqlmodel import select
         svc = self._svc(session)
         result = svc._process_publisher_for_book("New Publisher")
@@ -782,7 +782,7 @@ class TestBookServiceProcessEntities:
         assert result == found.id
 
     def test_process_publisher_by_str_reuses_existing(self, session):
-        from app.models.Publisher import Publisher
+        from app.models.publisher_model import Publisher
         from sqlmodel import select
         pub = Publisher(name="Existing Pub")
         session.add(pub)
@@ -793,7 +793,7 @@ class TestBookServiceProcessEntities:
         assert count == 1
 
     def test_process_publisher_by_dict_with_id(self, session):
-        from app.models.Publisher import Publisher
+        from app.models.publisher_model import Publisher
         pub = Publisher(name="Dict Pub")
         session.add(pub)
         session.commit()
@@ -812,7 +812,7 @@ class TestBookServiceProcessEntities:
     # --- Series ---
 
     def test_process_series_by_int_id(self, session, test_user):
-        from app.models.Series import Series
+        from app.models.series_model import Series
         series = Series(name="Existing Series")
         session.add(series)
         session.commit()
@@ -820,7 +820,7 @@ class TestBookServiceProcessEntities:
         book = self._new_book(session, owner_id=test_user.id)
         svc = self._svc(session)
         svc._process_series_for_book(book, [series.id])
-        from app.models.BookSeriesLink import BookSeriesLink
+        from app.models.book_series_link_model import BookSeriesLink
         from sqlmodel import select
         link = session.exec(select(BookSeriesLink).where(BookSeriesLink.book_id == book.id)).first()
         assert link is not None
@@ -834,8 +834,8 @@ class TestBookServiceProcessEntities:
         assert exc.value.status_code == 400
 
     def test_process_series_by_str_creates_link(self, session, test_user):
-        from app.models.Series import Series
-        from app.models.BookSeriesLink import BookSeriesLink
+        from app.models.series_model import Series
+        from app.models.book_series_link_model import BookSeriesLink
         from sqlmodel import select
         book = self._new_book(session, owner_id=test_user.id)
         svc = self._svc(session)
@@ -848,8 +848,8 @@ class TestBookServiceProcessEntities:
         assert link is not None
 
     def test_process_series_by_dict_with_id_and_volume(self, session, test_user):
-        from app.models.Series import Series
-        from app.models.BookSeriesLink import BookSeriesLink
+        from app.models.series_model import Series
+        from app.models.book_series_link_model import BookSeriesLink
         from sqlmodel import select
         series = Series(name="Volume Series")
         session.add(series)
@@ -873,7 +873,7 @@ class TestBookServiceProcessEntities:
         assert exc.value.status_code == 400
 
     def test_process_series_by_dict_name_creates_link(self, session, test_user):
-        from app.models.Series import Series
+        from app.models.series_model import Series
         from sqlmodel import select
         book = self._new_book(session, owner_id=test_user.id)
         svc = self._svc(session)
@@ -906,7 +906,7 @@ class TestBookServiceGetByCategory:
         assert exc.value.status_code == 404
 
     def test_get_books_by_author_returns_empty_list(self, svc, mock_session):
-        from app.models.Author import Author
+        from app.models.author_model import Author
         author = Author(id=1, name="Test Author")
         author.books = []
         mock_session.get.return_value = author
@@ -922,7 +922,7 @@ class TestBookServiceGetByCategory:
 
     def test_get_books_by_publisher_returns_books(self, svc, mock_session, test_user):
         from unittest.mock import MagicMock
-        from app.models.Publisher import Publisher
+        from app.models.publisher_model import Publisher
         publisher = Publisher(id=1, name="Test Pub")
         publisher.books = []
         mock_session.get.return_value = publisher
@@ -937,7 +937,7 @@ class TestBookServiceGetByCategory:
         assert exc.value.status_code == 404
 
     def test_get_books_by_genre_returns_books(self, svc, mock_session, test_user):
-        from app.models.Genre import Genre
+        from app.models.genre_model import Genre
         genre = Genre(id=1, name="Test Genre")
         genre.books = []
         mock_session.get.return_value = genre

@@ -6,11 +6,11 @@ from datetime import datetime, timedelta
 from sqlmodel import Session
 from fastapi.testclient import TestClient
 
-from app.models.User import User
-from app.models.Book import Book
-from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+from app.models.user_model import User
+from app.models.book_model import Book
+from app.models.borrowed_book_model import BorrowedBook, BorrowStatus
 from app.services.borrowed_book_service import BorrowedBookService
-from app.schemas.BorrowedBook import BorrowedBookCreate, BorrowedBookUpdate, BorrowedBookReturn
+from app.schemas.borrowed_book_schemas import BorrowedBookCreate, BorrowedBookUpdate, BorrowedBookReturn
 
 
 @pytest.mark.unit

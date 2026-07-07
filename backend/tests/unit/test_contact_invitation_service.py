@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 from sqlmodel import Session
 
-from app.models.ContactInvitation import ContactInvitation, InvitationStatus
-from app.models.Contact import Contact
-from app.models.User import User
-from app.schemas.ContactInvitation import ContactInvitationCreate
+from app.models.contact_invitation_model import ContactInvitation, InvitationStatus
+from app.models.contact_model import Contact
+from app.models.user_model import User
+from app.schemas.contact_invitation_schemas import ContactInvitationCreate
 from app.services.contact_invitation_service import ContactInvitationService
 from tests.conftest import create_test_user
 

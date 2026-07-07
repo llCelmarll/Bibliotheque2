@@ -21,8 +21,8 @@ from app.services.import_job_service import (
     ImportJobManager,
     JobStatus,
 )
-from app.schemas.Book import BookCreate
-from app.models.Book import Book
+from app.schemas.book_schemas import BookCreate
+from app.models.book_model import Book
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

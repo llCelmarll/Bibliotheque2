@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlmodel import Session, select, and_, or_, delete
 from sqlalchemy.orm import selectinload
 from datetime import datetime
-from app.models.BorrowedBook import BorrowedBook, BorrowStatus
+from app.models.borrowed_book_model import BorrowedBook, BorrowStatus
 
 
 class BorrowedBookRepository:

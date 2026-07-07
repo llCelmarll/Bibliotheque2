@@ -7,8 +7,8 @@ from sqlmodel import Session
 from datetime import datetime
 
 from tests.conftest import create_test_user, create_test_book
-from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
-from app.models.ContactInvitation import ContactInvitation, InvitationStatus
+from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
+from app.models.contact_invitation_model import ContactInvitation, InvitationStatus
 from app.services.auth_service import get_current_user
 from app.db import get_session
 from app.main import app as main_app

@@ -8,7 +8,7 @@ from sqlmodel import Session
 from fastapi import HTTPException
 
 from app.services.book_service import BookService
-from app.models.Book import Book
+from app.models.book_model import Book
 
 
 @pytest.mark.unit

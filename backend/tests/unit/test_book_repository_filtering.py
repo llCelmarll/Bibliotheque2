@@ -5,11 +5,11 @@ import pytest
 from datetime import datetime, timedelta
 from sqlmodel import Session
 
-from app.models.User import User
-from app.models.Book import Book
-from app.models.BorrowedBook import BorrowStatus
+from app.models.user_model import User
+from app.models.book_model import Book
+from app.models.borrowed_book_model import BorrowStatus
 from app.repositories.book_repository import BookRepository
-from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams
+from app.schemas.book_schemas import BookSearchParams, BookAdvancedSearchParams
 from tests.conftest import create_test_book, create_test_borrowed_book
 
 

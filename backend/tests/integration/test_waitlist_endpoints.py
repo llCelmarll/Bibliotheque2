@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from tests.conftest import create_test_user
-from app.models.WaitlistEntry import WaitlistEntry, WaitlistStatus
-from app.models.WhitelistEntry import WhitelistEntry
+from app.models.waitlist_entry_model import WaitlistEntry, WaitlistStatus
+from app.models.whitelist_entry_model import WhitelistEntry
 
 
 def create_waitlist_entry(session: Session, email: str = "alice@test.com", name: str = "Alice", **kwargs) -> WaitlistEntry:

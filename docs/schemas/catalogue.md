@@ -88,7 +88,7 @@ users |o--o{ books : has
   **uniques globalement** (toutes bibliothèques confondues) : les livres de plusieurs
   utilisateurs partagent la même ligne auteur/éditeur/genre/série en base.
 - **`books.reading_status`** est un `VARCHAR` en base mais un enum applicatif à 3
-  valeurs (`read` / `unread` / `in_progress`, `backend/app/schemas/Book.py`).
+  valeurs (`read` / `unread` / `in_progress`, `backend/app/schemas/book_schemas.py`).
 - **`books.rating`** : pas de contrainte SQL, mais borné 0–5 en validation applicative
   (`BookService._validate_rating`) ; `0` signifie "non renseigné".
 - **`books.isbn`** : doit faire 10 ou 13 caractères une fois les tirets retirés

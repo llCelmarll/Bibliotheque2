@@ -4,17 +4,17 @@ import re
 
 from sqlmodel import Session
 from fastapi import HTTPException
-from app.models.Book import Book
-from app.models.Author import Author
-from app.models.Publisher import Publisher
-from app.models.Genre import Genre
-from app.models.Series import Series
-from app.models.BookSeriesLink import BookSeriesLink
+from app.models.book_model import Book
+from app.models.author_model import Author
+from app.models.publisher_model import Publisher
+from app.models.genre_model import Genre
+from app.models.series_model import Series
+from app.models.book_series_link_model import BookSeriesLink
 from app.repositories.book_repository import BookRepository
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.borrowed_book_repository import BorrowedBookRepository
-from app.schemas.Book import BookCreate, BookUpdate, BookRead, CurrentLoanRead, CurrentBorrowRead, BookSearchParams, BookAdvancedSearchParams
-from app.schemas.Other import Filter, FilterType
+from app.schemas.book_schemas import BookCreate, BookUpdate, BookRead, CurrentLoanRead, CurrentBorrowRead, BookSearchParams, BookAdvancedSearchParams
+from app.schemas.other_schemas import Filter, FilterType
 from app.clients.openlibrary import fetch_openlibrary
 from app.clients.google_books import fetch_google_books
 from datetime import datetime
@@ -161,7 +161,7 @@ class BookService:
         if not base_book:
             raise HTTPException(status_code=404, detail="Livre introuvable")
 
-        from app.schemas.Book import BookRead
+        from app.schemas.book_schemas import BookRead
         book_read = BookRead.from_orm(base_book)
         book_read.series = BookRead._build_series_with_volumes(base_book)
 
@@ -235,7 +235,7 @@ class BookService:
         # Gestion des séries si fourni
         if book_data.series is not None:
             # Supprimer les anciennes relations via la table de liaison
-            from app.models.BookSeriesLink import BookSeriesLink
+            from app.models.book_series_link_model import BookSeriesLink
             from sqlmodel import select as sql_select
             old_links = self.session.exec(
                 sql_select(BookSeriesLink).where(BookSeriesLink.book_id == book.id)
@@ -586,7 +586,7 @@ class BookService:
         
         if existing_book:
             # Si le livre existe, retourner les données comme pour get_book_by_id
-            from app.schemas.Book import BookRead
+            from app.schemas.book_schemas import BookRead
             book_read = BookRead.from_orm(existing_book)
             book_read.series = BookRead._build_series_with_volumes(existing_book)
             book_dict = book_read.model_dump()
@@ -613,7 +613,7 @@ class BookService:
             # Recherche d'un potentiel livre similaire dans la base (même titre, même auteur mais ISBN différent)
             similar_books = self.book_repository.search_title_match(title, isbn, self.user_id)
             # Conversion des livres similaires - import local pour éviter les conflits avec les tests mockés
-            from app.schemas.Book import BookRead as BookReadSchema
+            from app.schemas.book_schemas import BookRead as BookReadSchema
             title_match_list = []
             for similar_book in similar_books:
                 book_read = BookReadSchema.model_validate(similar_book)

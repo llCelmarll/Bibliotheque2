@@ -2,10 +2,10 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.models.Author import Author
-from app.models.BookAuthorLink import BookAuthorLink
+from app.models.author_model import Author
+from app.models.book_author_link_model import BookAuthorLink
 from app.repositories.author_repository import AuthorRepository
-from app.schemas.Author import AuthorCreate, AuthorRead, AuthorUpdate
+from app.schemas.author_schemas import AuthorCreate, AuthorRead, AuthorUpdate
 
 
 class AuthorService:

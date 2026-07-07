@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from app.models.BorrowedBook import BorrowStatus
+from app.models.borrowed_book_model import BorrowStatus
 from app.services.borrowed_book_service import BorrowedBookService
-from app.schemas.BorrowedBook import BorrowedBookCreate, BorrowedBookUpdate, BorrowedBookReturn
+from app.schemas.borrowed_book_schemas import BorrowedBookCreate, BorrowedBookUpdate, BorrowedBookReturn
 from tests.conftest import create_test_book, create_test_user, create_test_contact, create_test_borrowed_book
 
 

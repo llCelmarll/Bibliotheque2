@@ -8,9 +8,9 @@ from sqlmodel import Session
 from datetime import datetime, timedelta
 
 from tests.conftest import create_test_user, create_test_book
-from app.models.Contact import Contact
-from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
-from app.models.Loan import Loan, LoanStatus
+from app.models.contact_model import Contact
+from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
+from app.models.loan_model import Loan, LoanStatus
 from app.services.auth_service import get_current_user
 from app.db import get_session
 from app.main import app as main_app

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Callable, Dict, Any
 
-from app.schemas.Book import BookCreate
+from app.schemas.book_schemas import BookCreate
 
 logger = logging.getLogger(__name__)
 

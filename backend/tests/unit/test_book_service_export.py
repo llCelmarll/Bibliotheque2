@@ -10,11 +10,11 @@ from unittest.mock import Mock, patch
 from sqlmodel import Session
 
 from app.services.book_service import BookService
-from app.schemas.Book import BookRead
-from app.schemas.Author import AuthorRead
-from app.schemas.Publisher import PublisherRead
-from app.schemas.Genre import GenreRead
-from app.schemas.Series import BookSeriesRead
+from app.schemas.book_schemas import BookRead
+from app.schemas.author_schemas import AuthorRead
+from app.schemas.publisher_schemas import PublisherRead
+from app.schemas.genre_schemas import GenreRead
+from app.schemas.series_schemas import BookSeriesRead
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────

@@ -27,13 +27,13 @@ from app.services.auth_service import (
     get_current_moderator_user_sync as get_current_moderator_user,
     get_current_admin_user_sync as get_current_admin_user,
 )
-from app.models.User import User
-from app.models.Book import Book
-from app.models.Author import Author
-from app.models.Publisher import Publisher
-from app.models.Genre import Genre
-from app.models.BorrowedBook import BorrowedBook, BorrowStatus
-from app.models.Contact import Contact
+from app.models.user_model import User
+from app.models.book_model import Book
+from app.models.author_model import Author
+from app.models.publisher_model import Publisher
+from app.models.genre_model import Genre
+from app.models.borrowed_book_model import BorrowedBook, BorrowStatus
+from app.models.contact_model import Contact
 
 # Import des factories (commenté temporairement)
 # from tests.factories.user_factory import UserFactory

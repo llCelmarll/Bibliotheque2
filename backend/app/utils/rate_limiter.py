@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from sqlmodel import Session, select, delete
-from app.models.RateLimitAttempt import RateLimitAttempt
+from app.models.rate_limit_attempt_model import RateLimitAttempt
 
 
 class RateLimiter:

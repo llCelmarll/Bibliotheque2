@@ -120,8 +120,8 @@ class TestAdminUserLoans:
 
     def test_loans_isolated_per_user(self, moderator_client: TestClient, session: Session, moderator_user):
         """Les prêts retournés appartiennent bien à l'utilisateur demandé, pas à l'appelant."""
-        from app.models.Loan import Loan, LoanStatus
-        from app.models.Contact import Contact
+        from app.models.loan_model import Loan, LoanStatus
+        from app.models.contact_model import Contact
         from datetime import datetime
 
         user_a = create_test_user(session, email="usera@example.com", username="usera")

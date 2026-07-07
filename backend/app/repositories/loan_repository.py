@@ -2,9 +2,9 @@ from typing import List, Optional
 from sqlmodel import Session, select, and_, or_
 from sqlalchemy.orm import selectinload
 from datetime import datetime
-from app.models.Loan import Loan, LoanStatus
-from app.models.Book import Book
-from app.models.Contact import Contact
+from app.models.loan_model import Loan, LoanStatus
+from app.models.book_model import Book
+from app.models.contact_model import Contact
 
 
 class LoanRepository:

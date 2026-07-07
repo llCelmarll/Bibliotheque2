@@ -1,7 +1,7 @@
 import asyncio
 from sqlmodel import Session, select
 from app.db import engine
-from app.models.Book import Book
+from app.models.book_model import Book
 from app.clients.google_books import fetch_google_books
 from app.clients.openlibrary import fetch_openlibrary
 

@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
-from app.models.Series import Series
+from app.models.series_model import Series
 
 class SeriesRepository:
 	"""Repository des séries"""

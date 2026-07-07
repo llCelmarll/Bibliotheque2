@@ -14,15 +14,15 @@ from sqlmodel import Session
 
 from app.main import app as main_app
 from app.services.auth_service import get_current_user, hash_password
-from app.models.User import User
-from app.models.Author import Author
-from app.models.Genre import Genre
-from app.models.Publisher import Publisher
-from app.models.Series import Series
-from app.models.Book import Book
-from app.models.BookAuthorLink import BookAuthorLink
-from app.models.BookGenreLink import BookGenreLink
-from app.models.BookSeriesLink import BookSeriesLink
+from app.models.user_model import User
+from app.models.author_model import Author
+from app.models.genre_model import Genre
+from app.models.publisher_model import Publisher
+from app.models.series_model import Series
+from app.models.book_model import Book
+from app.models.book_author_link_model import BookAuthorLink
+from app.models.book_genre_link_model import BookGenreLink
+from app.models.book_series_link_model import BookSeriesLink
 from tests.conftest import create_test_book, create_test_user
 
 

@@ -25,30 +25,28 @@ sys.path.insert(0, os.path.abspath(BACKEND_DIR))
 from sqlmodel import SQLModel
 
 # Import every model module so its table registers on SQLModel.metadata.
-from app.models import (  # noqa: F401
-    AuditLog,
-    Author,
-    Book,
-    BookAuthorLink,
-    BookGenreLink,
-    BookSeriesLink,
-    BorrowedBook,
-    Contact,
-    ContactInvitation,
-    EmailVerificationToken,
-    Genre,
-    Loan,
-    PasswordResetToken,
-    Publisher,
-    RateLimitAttempt,
-    Report,
-    Series,
-    User,
-    UserLoanRequest,
-    UserPushToken,
-    WaitlistEntry,
-    WhitelistEntry,
-)
+from app.models.audit_log_model import AuditLog  # noqa: F401
+from app.models.author_model import Author  # noqa: F401
+from app.models.book_model import Book  # noqa: F401
+from app.models.book_author_link_model import BookAuthorLink  # noqa: F401
+from app.models.book_genre_link_model import BookGenreLink  # noqa: F401
+from app.models.book_series_link_model import BookSeriesLink  # noqa: F401
+from app.models.borrowed_book_model import BorrowedBook  # noqa: F401
+from app.models.contact_model import Contact  # noqa: F401
+from app.models.contact_invitation_model import ContactInvitation  # noqa: F401
+from app.models.email_verification_token_model import EmailVerificationToken  # noqa: F401
+from app.models.genre_model import Genre  # noqa: F401
+from app.models.loan_model import Loan  # noqa: F401
+from app.models.password_reset_token_model import PasswordResetToken  # noqa: F401
+from app.models.publisher_model import Publisher  # noqa: F401
+from app.models.rate_limit_attempt_model import RateLimitAttempt  # noqa: F401
+from app.models.report_model import Report  # noqa: F401
+from app.models.series_model import Series  # noqa: F401
+from app.models.user_model import User  # noqa: F401
+from app.models.user_loan_request_model import UserLoanRequest  # noqa: F401
+from app.models.user_push_token_model import UserPushToken  # noqa: F401
+from app.models.waitlist_entry_model import WaitlistEntry  # noqa: F401
+from app.models.whitelist_entry_model import WhitelistEntry  # noqa: F401
 
 from eralchemy2 import render_er
 
@@ -73,7 +71,7 @@ THEMES = [
   **uniques globalement** (toutes bibliothèques confondues) : les livres de plusieurs
   utilisateurs partagent la même ligne auteur/éditeur/genre/série en base.
 - **`books.reading_status`** est un `VARCHAR` en base mais un enum applicatif à 3
-  valeurs (`read` / `unread` / `in_progress`, `backend/app/schemas/Book.py`).
+  valeurs (`read` / `unread` / `in_progress`, `backend/app/schemas/book_schemas.py`).
 - **`books.rating`** : pas de contrainte SQL, mais borné 0–5 en validation applicative
   (`BookService._validate_rating`) ; `0` signifie "non renseigné".
 - **`books.isbn`** : doit faire 10 ou 13 caractères une fois les tirets retirés

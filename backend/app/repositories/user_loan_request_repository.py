@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func, or_
 from sqlalchemy.orm import selectinload
-from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
+from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
 
 
 class UserLoanRequestRepository:

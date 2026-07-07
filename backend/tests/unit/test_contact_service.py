@@ -5,12 +5,12 @@ import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from app.models.Contact import Contact
-from app.models.Loan import Loan
+from app.models.contact_model import Contact
+from app.models.loan_model import Loan
 from app.services.contact_service import ContactService
-from app.schemas.Contact import ContactCreate, ContactUpdate
+from app.schemas.contact_schemas import ContactCreate, ContactUpdate
 from tests.conftest import create_test_user, create_test_contact, create_test_book, create_test_borrowed_book
-from app.models.BorrowedBook import BorrowStatus
+from app.models.borrowed_book_model import BorrowStatus
 
 
 @pytest.mark.unit
@@ -145,7 +145,7 @@ class TestContactServiceDelete:
         session.commit()
         session.refresh(contact_ab)
 
-        from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
+        from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
         req = UserLoanRequest(
             requester_id=second.id,
             lender_id=test_user.id,
@@ -167,7 +167,7 @@ class TestContactServiceDelete:
         session.commit()
         session.refresh(contact_ab)
 
-        from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
+        from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
         req = UserLoanRequest(
             requester_id=test_user.id,
             lender_id=second.id,

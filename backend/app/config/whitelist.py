@@ -39,7 +39,7 @@ def is_email_allowed(email: str, session=None) -> bool:
     if session is not None:
         try:
             from sqlmodel import select
-            from app.models.WhitelistEntry import WhitelistEntry
+            from app.models.whitelist_entry_model import WhitelistEntry
             entries = session.exec(select(WhitelistEntry)).all()
             if entries:
                 allowed = [e.email.lower() for e in entries]

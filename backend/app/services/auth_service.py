@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import Session, select
-from app.models.User import User
+from app.models.user_model import User
 from app.db import get_session
 from app.config.whitelist import is_email_allowed
 
@@ -242,7 +242,7 @@ class AuthService:
         self.session.refresh(new_user)
 
         # 7. Créer le token de vérification d'email (24h)
-        from app.models.EmailVerificationToken import EmailVerificationToken
+        from app.models.email_verification_token_model import EmailVerificationToken
         raw_token = secrets.token_urlsafe(32)
         verification_token = EmailVerificationToken(
             token=raw_token,

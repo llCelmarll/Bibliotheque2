@@ -7,7 +7,7 @@ from sqlmodel import Session
 from datetime import datetime
 
 from tests.conftest import create_test_user, create_test_book
-from app.models.UserLoanRequest import UserLoanRequest, UserLoanRequestStatus
+from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
 from app.repositories.user_loan_request_repository import UserLoanRequestRepository
 
 

@@ -5,18 +5,18 @@ from starlette.responses import RedirectResponse
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.models.User import User
-from app.models.Book import Book
-from app.models.Author import Author
-from app.models.Publisher import Publisher
-from app.models.Genre import Genre
-from app.models.Series import Series
-from app.models.Report import Report
-from app.models.AuditLog import AuditLog
-from app.models.Loan import Loan
-from app.models.UserLoanRequest import UserLoanRequest
-from app.models.Contact import Contact
-from app.models.WhitelistEntry import WhitelistEntry
+from app.models.user_model import User
+from app.models.book_model import Book
+from app.models.author_model import Author
+from app.models.publisher_model import Publisher
+from app.models.genre_model import Genre
+from app.models.series_model import Series
+from app.models.report_model import Report
+from app.models.audit_log_model import AuditLog
+from app.models.loan_model import Loan
+from app.models.user_loan_request_model import UserLoanRequest
+from app.models.contact_model import Contact
+from app.models.whitelist_entry_model import WhitelistEntry
 
 
 class AdminAuth(AuthenticationBackend):

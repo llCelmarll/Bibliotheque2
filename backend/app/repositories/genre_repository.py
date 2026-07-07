@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
-from app.models.Genre import Genre
+from app.models.genre_model import Genre
 
 class GenreRepository:
 	"""Repository des genres"""

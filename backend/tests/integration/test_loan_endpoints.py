@@ -8,8 +8,8 @@ from sqlmodel import Session
 from datetime import datetime, timedelta
 
 from tests.conftest import create_test_user, create_test_book
-from app.models.Contact import Contact
-from app.models.Loan import Loan, LoanStatus
+from app.models.contact_model import Contact
+from app.models.loan_model import Loan, LoanStatus
 
 
 def create_test_contact(session: Session, owner_id: int, name: str = "Test Contact", **kwargs) -> Contact:

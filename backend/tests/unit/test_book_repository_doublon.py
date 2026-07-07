@@ -8,7 +8,7 @@ Tests unitaires pour BookRepository.get_by_title_isbn_owner() :
 import pytest
 from sqlmodel import Session
 
-from app.models.Book import Book
+from app.models.book_model import Book
 from app.repositories.book_repository import BookRepository
 from tests.conftest import create_test_book
 

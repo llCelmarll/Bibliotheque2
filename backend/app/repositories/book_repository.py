@@ -5,17 +5,17 @@ from certifi import where
 from sqlalchemy.orm import selectinload, joinedload
 from sqlmodel import Session, select, or_, and_, func
 from sqlalchemy import desc, asc
-from app.models.Book import Book
-from app.models.Author import Author
-from app.models.BookAuthorLink import BookAuthorLink
-from app.models.BookGenreLink import BookGenreLink
-from app.models.Publisher import Publisher
-from app.models.Genre import Genre
-from app.models.Series import Series
-from app.models.BookSeriesLink import BookSeriesLink
-from app.models.BorrowedBook import BorrowedBook, BorrowStatus
-from app.schemas.Book import BookSearchParams, BookAdvancedSearchParams, BookCreate
-from app.schemas.Other import Filter, FilterType, SortBy, SortOrder
+from app.models.book_model import Book
+from app.models.author_model import Author
+from app.models.book_author_link_model import BookAuthorLink
+from app.models.book_genre_link_model import BookGenreLink
+from app.models.publisher_model import Publisher
+from app.models.genre_model import Genre
+from app.models.series_model import Series
+from app.models.book_series_link_model import BookSeriesLink
+from app.models.borrowed_book_model import BorrowedBook, BorrowStatus
+from app.schemas.book_schemas import BookSearchParams, BookAdvancedSearchParams, BookCreate
+from app.schemas.other_schemas import Filter, FilterType, SortBy, SortOrder
 
 class BookRepository:
 	"""Repository pour les opérations de données de livres"""
