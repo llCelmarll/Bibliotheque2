@@ -18,7 +18,7 @@ Détails, choix techniques et diagrammes : voir [docs/ARCHITECTURE.md](docs/ARCH
 
 ## Fonctionnalités principales
 
-- **Catalogue** — ajout manuel ou par scan de code-barres (Google Books puis OpenLibrary en repli), import/export CSV en masse avec détection d'encodage et mapping de colonnes, gestion flexible des auteurs/éditeurs/genres/séries (création automatique à la volée), statut de lecture, notation, couvertures.
+- **Catalogue** — ajout manuel ou par scan de code-barres (auto-complétion via Google Books et OpenLibrary combinés), import/export CSV en masse avec détection d'encodage et mapping de colonnes, gestion flexible des auteurs/éditeurs/genres/séries (création automatique à la volée), statut de lecture, notation, couvertures.
 - **Prêts** — deux mécanismes complémentaires : suivi manuel d'un prêt consenti à un contact, et demandes d'emprunt entre utilisateurs de l'app (avec acceptation/refus), rappels automatiques 48h avant échéance, intégration calendrier.
 - **Réseau & contacts** — invitations entre utilisateurs, partage de bibliothèque, fiches contact libres ou liées à un compte réel.
 - **Comptes & sécurité** — inscription par whitelist, vérification d'email, réinitialisation de mot de passe, CGU versionnées avec re-consentement, suppression de compte complète (RGPD).
