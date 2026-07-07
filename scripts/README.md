@@ -1,290 +1,74 @@
-# 📜 Scripts de Gestion du Projet
+# Scripts de gestion du projet
 
-Scripts pour le développement local, le déploiement et la configuration de l'application Bibliothèque.
+Toutes les opérations courantes passent par `run.ps1` à la racine (`.\run.ps1 help` pour la liste complète). Ce dossier contient les scripts qu'il invoque, plus quelques utilitaires ponctuels.
 
----
+## Développement local
 
-## 🏠 Développement Local
+Voir [local/README.md](local/README.md) — `run.ps1 dev` / `start` / `stop`, prérequis, URLs des trois services (API, frontend web, admin).
 
-### 📦 Configuration Initiale
-
-```powershell
-# 1. Configurer l'environnement (première fois seulement)
-.\scripts\setup-env.ps1
-
-# 2. Éditer les fichiers .env avec vos valeurs
-# - .env
-# - backend/.env  
-# - frontend/.env
-```
-
-### 🚀 Lancer l'Application
+## Déploiement
 
 ```powershell
-# Mode production (Docker)
-.\scripts\local\start.ps1
-
-# Mode développement (Hot-reload)
-.\scripts\local\dev.ps1
+.\run.ps1 deploy           # backend + web + mobile (Synology NAS)
+.\run.ps1 deploy-backend   # backend uniquement
+.\run.ps1 deploy-web       # frontend web uniquement
+.\run.ps1 deploy-mobile    # mise à jour OTA mobile (EAS)
 ```
 
-**Accès :**
-- 📱 Frontend : http://localhost:8081
-- 🔧 Backend API : http://localhost:8000
-- 📚 Documentation API : http://localhost:8000/docs
+| Script | Rôle |
+|---|---|
+| `deploy/deploy-all.ps1` | Déploiement complet avec détection automatique des changements (compare la branche courante à `prod`) |
+| `deploy/deploy-synology.ps1` | Setup initial complet sur le NAS (PostgreSQL + backend + frontend), distinct de `deploy-all.ps1` |
+| `deploy/redeploy-backend.ps1` | Backend uniquement, avec backup PostgreSQL automatique avant redéploiement |
+| `deploy/redeploy-frontend.ps1` | Frontend web uniquement |
+| `deploy/redeploy-admin.ps1` | Panneau d'administration (`frontend-admin/`) uniquement |
+| `deploy/update-apk.ps1` | Télécharge le dernier build EAS et l'héberge sur le NAS (voir [deploy/README-APK.md](deploy/README-APK.md)) |
+| `deploy/bump-version.ps1` | Incrémente la version affichée dans l'app (patch/minor/major) — met à jour `frontend/app.config.js` et `docs/CHANGELOG.json` |
 
-### 🛑 Arrêter l'Application
+**Prérequis déploiement :**
+- Docker Hub : `docker login`
+- SSH vers le NAS (clé SSH recommandée) — voir [docs/PRODUCTION_SETUP.md](../docs/PRODUCTION_SETUP.md)
+- EAS CLI : `eas login` (compte Expo)
 
-```powershell
-.\scripts\local\stop.ps1
-```
+### Staging
 
----
+`deploy/staging/` contient les équivalents pour l'environnement de staging (`deploy-all-staging.ps1`, `redeploy-staging-backend.ps1`, etc.) — voir [docs/STAGING_SETUP.md](../docs/STAGING_SETUP.md).
 
-## 🌐 Déploiement en Production
+## Utilitaires
 
-### 🏗️ Déploiement Complet (Web + Mobile + APK)
+| Script | Rôle |
+|---|---|
+| `setup-env.ps1` | Configuration initiale des fichiers `.env` (racine, backend, frontend) — recommandé |
+| `setup-env-simple.ps1` | Variante simplifiée |
+| `generate-secret-key.ps1` | Génère une clé pour `SECRET_KEY` |
+| `export-secrets.ps1` | Exporte les secrets vers le format attendu par l'environnement cible |
+| `clean-env-history.ps1` | Nettoie l'historique Git des fichiers `.env` committés par erreur |
+| `start-dev-mobile.ps1` | Démarre Expo en mode dev pour le mobile (tunnel/LAN) |
+| `start.sh` | Point d'entrée du conteneur backend en production (utilisé par le `Dockerfile`) |
+| `gen_schema_diagram.py` | Régénère les diagrammes ER (`docs/schema_bdd.md` + `docs/schemas/*.md`) depuis les modèles SQLModel — voir [docs/schema_bdd.md](../docs/schema_bdd.md) |
 
-```powershell
-.\scripts\deploy\deploy-all.ps1
-```
+## Variables d'environnement
 
-**Options :**
-```powershell
-# Sauter le déploiement web
-.\scripts\deploy\deploy-all.ps1 -SkipWeb
-
-# Sauter la mise à jour OTA mobile
-.\scripts\deploy\deploy-all.ps1 -SkipMobile
-
-# Personnaliser le message de mise à jour
-.\scripts\deploy\deploy-all.ps1 -UpdateMessage "Correction bugs import CSV"
-```
-
-### 🔄 Redéploiement Rapide du Frontend
-
-```powershell
-.\scripts\deploy\redeploy-frontend.ps1
-```
-
-### 🏠 Déploiement sur Synology NAS
-
-```powershell
-.\scripts\deploy\deploy-synology.ps1
-```
-
----
-
-## 🛠️ Utilitaires
-
-### 🔑 Génération de Clé Secrète
-
-```powershell
-.\scripts\generate-secret-key.ps1
-```
-
-### 🧪 Test Docker
-
-```powershell
-.\scripts\test-docker.ps1
-```
-
-### 🧹 Nettoyage
-
-```powershell
-# Nettoyer l'historique des fichiers .env
-.\scripts\clean-env-history.ps1
-```
-
----
-
-## 📁 Structure des Scripts
-
-```
-scripts/
-├── README.md                    # Ce fichier
-├── setup-env.ps1               # Configuration initiale (recommandé)
-├── setup-env-simple.ps1        # Configuration simple
-├── generate-secret-key.ps1     # Générateur de clé
-├── test-docker.ps1             # Test Docker
-├── clean-env-history.ps1       # Nettoyage
-├── local/                      # Développement local
-│   ├── start.ps1              # Démarrer en mode production
-│   ├── dev.ps1                # Démarrer en mode dev (hot-reload)
-│   └── stop.ps1               # Arrêter l'application
-└── deploy/                     # Déploiement production
-    ├── deploy-all.ps1         # Déploiement complet (backend + frontend + mobile)
-    ├── deploy-synology.ps1    # Alias vers deploy-all.ps1
-    ├── redeploy-backend.ps1   # Redéploiement backend uniquement
-    └── redeploy-frontend.ps1  # Redéploiement frontend uniquement
-```
-
----
-
-## 📦 Détails des Scripts de Déploiement
-
-### `deploy-all.ps1` - Déploiement Complet
-
-Déploie **backend + frontend web + mobile** en une seule commande.
-
-```powershell
-# Déploiement complet
-.\scripts\deploy\deploy-all.ps1
-
-# Déploiement sélectif
-.\scripts\deploy\deploy-all.ps1 -SkipBackend   # Sans le backend
-.\scripts\deploy\deploy-all.ps1 -SkipWeb       # Sans le frontend web
-.\scripts\deploy\deploy-all.ps1 -SkipMobile    # Sans la mise à jour mobile OTA
-.\scripts\deploy\deploy-all.ps1 -SkipApk       # Sans la configuration APK
-
-# Message personnalisé pour la mise à jour mobile
-.\scripts\deploy\deploy-all.ps1 -UpdateMessage "Correction bugs critiques"
-```
-
-**Étapes du déploiement :**
-1. **Backend** : Build multi-arch (AMD64 + ARM64) → Push sur Docker Hub → Disponible pour NAS
-2. **Frontend Web** : Build multi-arch → Push Docker Hub → Redéploiement SSH sur NAS
-3. **Mobile OTA** : Publication EAS update (branch: preview) → Apps mobiles mises à jour automatiquement
-4. **APK** : Configuration nginx pour téléchargement APK Android
-
-**Prérequis :**
-- Docker Hub : `docker login` avec compte `llcelmarll`
-- SSH NAS : Accès `admin@192.168.1.100` (clé SSH recommandée)
-- EAS CLI : `eas login` avec compte Expo
-
-### `redeploy-backend.ps1` - Backend Uniquement
-
-Redémarre le container backend sur le NAS avec la dernière image.
-
-```powershell
-.\scripts\deploy\redeploy-backend.ps1
-```
-
-**Utile pour :**
-- Déploiement rapide après un fix backend
-- Mise à jour de l'API sans toucher au frontend
-- Tests de nouvelles fonctionnalités backend en production
-
-### `redeploy-frontend.ps1` - Frontend Uniquement
-
-Redémarre le container frontend sur le NAS avec la dernière image.
-
-```powershell
-.\scripts\deploy\redeploy-frontend.ps1
-```
-
-**Utile pour :**
-- Déploiement rapide après un fix UI
-- Mise à jour du frontend web sans toucher au backend
-- Tests de nouvelles fonctionnalités frontend en production
-
----
-
-## ⚙️ Variables d'Environnement
-
-### Backend (.env et backend/.env)
+Le projet utilise PostgreSQL (pas SQLite) — voir `.env.example` à la racine et dans `backend/` pour la liste complète. Points clés :
 
 ```bash
-# Base de données
-DATABASE_URL=sqlite:///./data/bibliotheque.db
+# backend/.env
+DATABASE_URL=postgresql://user:password@localhost:5432/bibliotheque
+SECRET_KEY=...              # généré via generate-secret-key.ps1
+ALLOWED_EMAILS=...          # whitelist d'inscription (repli si la table whitelist_entries est vide)
 
-# Sécurité
-SECRET_KEY=votre_cle_secrete_generee   # Utiliser generate-secret-key.ps1
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# CORS
-CORS_ORIGINS=http://localhost:8081,http://localhost:3000
+# frontend/.env
+EXPO_PUBLIC_API_URL=http://localhost:8000   # local
 ```
 
-### Frontend (frontend/.env)
+## Dépannage
 
-```bash
-# URL de l'API
-EXPO_PUBLIC_API_URL=http://localhost:8000  # Local
-# EXPO_PUBLIC_API_URL=https://mabibliotheque.ovh/api  # Production
-```
-
----
-
-## 🔄 Workflow Typique
-
-### Développement
-
+**Port déjà utilisé (8000, 8081, 3001)**
 ```powershell
-# 1. Première installation
-.\scripts\setup-env.ps1
-# Éditer les .env avec vos valeurs
-
-# 2. Lancer en mode développement
-.\scripts\local\dev.ps1
-
-# 3. Développer avec hot-reload...
-
-# 4. Arrêter
-Ctrl+C ou .\scripts\local\stop.ps1
-```
-
-### Mise en Production
-
-```powershell
-# 1. Tester localement
-.\scripts\local\start.ps1
-
-# 2. Vérifier que tout fonctionne
-# http://localhost:8081 et http://localhost:8000/docs
-
-# 3. Déployer
-.\scripts\deploy\deploy-all.ps1 -UpdateMessage "Nouvelle fonctionnalité X"
-
-# 4. Vérifier la prod
-# https://mabibliotheque.ovh
-```
-
----
-
-## 🆘 Troubleshooting
-
-### Docker n'est pas installé
-```powershell
-# Installer Docker Desktop depuis docker.com
-# Redémarrer PowerShell après installation
-```
-
-### Erreur de permissions Docker
-```powershell
-# Ajouter votre utilisateur au groupe docker (Linux)
-sudo usermod -aG docker $USER
-
-# Redémarrer Docker Desktop (Windows)
-```
-
-### Ports déjà utilisés
-```powershell
-# Vérifier les processus sur les ports
 netstat -ano | findstr ":8000"
-netstat -ano | findstr ":8081"
-
-# Tuer le processus si nécessaire
 taskkill /PID <PID> /F
 ```
 
-### Base de données corrompue
-```powershell
-# Sauvegarder l'ancienne
-Copy-Item backend/data/bibliotheque.db backend/data/bibliotheque.db.bak
+**Docker ne démarre pas** — vérifier que Docker Desktop est lancé, puis `docker-compose up -d postgres`.
 
-# Recréer une nouvelle (toutes les données seront perdues)
-Remove-Item backend/data/bibliotheque.db
-
-# Redémarrer l'application
-.\scripts\local\start.ps1
-```
-
----
-
-## 📝 Notes
-
-- **Sécurité** : Ne jamais commiter les fichiers `.env`
-- **Backup** : Sauvegarder régulièrement `backend/data/bibliotheque.db`
-- **Docker** : Les scripts nécessitent Docker Desktop installé et lancé
-- **Ports** : Par défaut 8000 (backend) et 8081 (frontend)
+**Base de données locale désynchronisée du code** — voir [docs/schema_bdd.md](../docs/schema_bdd.md) pour comparer le schéma réel aux modèles ; les migrations Alembic s'appliquent automatiquement au démarrage du backend.

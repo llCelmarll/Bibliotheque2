@@ -16,8 +16,8 @@ pip install -r requirements-dev.txt
 Le backend local doit tourner sur `http://localhost:8000`. Pour le démarrer :
 
 ```powershell
-# Depuis backend/ — charge les variables du .env local
-.\start-backend-local.ps1
+# Depuis la racine du repo
+.\run.ps1 dev
 ```
 
 La base de données PostgreSQL locale doit être active :

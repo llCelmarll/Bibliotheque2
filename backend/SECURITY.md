@@ -34,30 +34,31 @@
 
 ## 📝 Gestion de la whitelist
 
-**IMPORTANT**: Les emails autorisés sont stockés dans le fichier `.env` via la variable `ALLOWED_EMAILS` pour des raisons de sécurité.
+Les emails autorisés sont gérés via la table `whitelist_entries` en base, administrable
+depuis le panneau d'administration (`frontend-admin/`) ou directement via l'API :
 
-### Ajouter un email autorisé
 ```bash
-cd backend
-python manage_whitelist.py add user@example.com
+# Lister les emails autorisés
+GET /admin/whitelist
+
+# Ajouter un email autorisé
+POST /admin/whitelist
+{"email": "user@example.com"}
+
+# Retirer un email
+DELETE /admin/whitelist/{email}
 ```
 
-### Retirer un email
-```bash
-cd backend
-python manage_whitelist.py remove user@example.com
-```
+Ces routes nécessitent un compte `admin` et chaque action est tracée dans `audit_logs`
+(`whitelist_add` / `whitelist_remove`, voir `backend/app/routers/admin.py`).
 
-### Lister les emails autorisés
-```bash
-cd backend
-python manage_whitelist.py list
-```
+### Repli via variable d'environnement (legacy)
 
-### Édition manuelle
-Éditez le fichier `backend/.env` et modifiez la variable `ALLOWED_EMAILS`:
+Si la table `whitelist_entries` est vide, le système retombe sur la variable d'env
+`ALLOWED_EMAILS` (`backend/app/config/whitelist.py`) :
+
 ```bash
-# Format: emails séparés par des virgules
+# Format: emails séparés par des virgules, dans backend/.env
 ALLOWED_EMAILS=user1@example.com,user2@example.com,@mondomaine.com
 ```
 
@@ -66,6 +67,8 @@ ALLOWED_EMAILS=user1@example.com,user2@example.com,@mondomaine.com
 - Plusieurs emails: `user1@example.com,user2@example.com`
 - Domaine complet: `@mondomaine.com` (autorise tous les emails du domaine)
 - Mixte: `user1@example.com,@mondomaine.com`
+
+Si ni la table ni `ALLOWED_EMAILS` ne sont renseignées, l'inscription est ouverte à tous.
 
 ## 🚀 Configuration Cloudflare recommandée
 
@@ -119,14 +122,8 @@ Les tentatives de login/register sont trackées en mémoire. Pour un monitoring 
 
 ## ⚠️ Important
 
-**Avant de déployer**, configurez la whitelist avec les vrais emails dans `.env`:
-```bash
-cd backend
-python manage_whitelist.py add votre.email@gmail.com
-python manage_whitelist.py add email.mere@gmail.com
-```
-
-Ou éditez directement `.env`:
+**Avant de déployer**, configurez la whitelist avec les vrais emails via le panneau
+d'administration (`POST /admin/whitelist`), ou en repli via `.env` :
 ```bash
 ALLOWED_EMAILS=votre.email@gmail.com,email.mere@gmail.com
 ```
