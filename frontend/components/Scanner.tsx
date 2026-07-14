@@ -330,7 +330,12 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange, onManualAdd }: S
             </View>
 
             <View style={styles.controlsContainer}>
-              <TouchableOpacity style={styles.torchButton} onPress={toggleTorch}>
+              <TouchableOpacity
+                style={styles.torchButton}
+                onPress={toggleTorch}
+                accessibilityLabel={torch ? "Désactiver le flash" : "Activer le flash"}
+                accessibilityHint="Utile pour scanner un code-barres en faible luminosité"
+              >
                 <MaterialCommunityIcons
                   name={torch ? "flashlight" : "flashlight-off"}
                   size={32}
@@ -349,6 +354,7 @@ function MobileScanner({ onScanned, torchEnabled, onModeChange, onManualAdd }: S
                   setShowManualInput(true);
                   onModeChange?.(true);
                 }}
+                accessibilityHint="Alternative au scan par caméra, permet de taper le code ISBN au clavier"
               >
                 <MaterialCommunityIcons name="keyboard" size={20} color={theme.textInverse} />
                 <Text style={[styles.manualInputButtonText, { color: theme.textInverse }]}>Saisir l'ISBN manuellement</Text>

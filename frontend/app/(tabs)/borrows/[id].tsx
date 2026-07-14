@@ -163,18 +163,27 @@ function BorrowDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bgPrimary }]}>
       <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
-        <TouchableOpacity onPress={editMode ? handleCancelEdit : () => router.back()} style={styles.headerBackButton}>
+        <TouchableOpacity
+          onPress={editMode ? handleCancelEdit : () => router.back()}
+          style={styles.headerBackButton}
+          accessibilityLabel={editMode ? 'Annuler la modification' : 'Retour'}
+        >
           <MaterialIcons name={editMode ? 'close' : 'arrow-back'} size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{editMode ? "Modifier l'emprunt" : "Détails de l'emprunt"}</Text>
         <View style={styles.headerActions}>
           {!editMode && borrow.status !== BorrowStatus.RETURNED && (
-            <TouchableOpacity onPress={handleEdit} style={styles.headerEditButton}>
+            <TouchableOpacity onPress={handleEdit} style={styles.headerEditButton} accessibilityLabel="Modifier l'emprunt">
               <MaterialIcons name="edit" size={24} color={theme.accent} />
             </TouchableOpacity>
           )}
           {!editMode && (
-            <TouchableOpacity onPress={handleDelete} style={styles.headerDeleteButton}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.headerDeleteButton}
+              accessibilityLabel="Supprimer l'emprunt"
+              accessibilityHint="Supprime définitivement cet emprunt"
+            >
               <MaterialIcons name="delete" size={24} color={theme.danger} />
             </TouchableOpacity>
           )}

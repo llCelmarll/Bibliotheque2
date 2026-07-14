@@ -112,7 +112,11 @@ export default function ResetPasswordScreen() {
                   secureTextEntry={!showNewPassword}
                   editable={!isLoading}
                 />
-                <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeIcon}>
+                <TouchableOpacity
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                  style={styles.eyeIcon}
+                  accessibilityLabel={showNewPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
                   <MaterialIcons name={showNewPassword ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
@@ -131,7 +135,11 @@ export default function ResetPasswordScreen() {
                   secureTextEntry={!showConfirmPassword}
                   editable={!isLoading}
                 />
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeIcon}
+                  accessibilityLabel={showConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
                   <MaterialIcons name={showConfirmPassword ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>

@@ -68,7 +68,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
               {conflicts.length} livre{conflicts.length > 1 ? 's' : ''} en conflit
             </Text>
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Fermer">
             <MaterialIcons name="close" size={24} color={theme.textMuted} />
           </TouchableOpacity>
         </View>

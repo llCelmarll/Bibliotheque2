@@ -187,7 +187,7 @@ function LoansScreen() {
             placeholderTextColor={theme.textMuted}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Effacer la recherche">
               <MaterialIcons name="close" size={20} color={theme.textMuted} />
             </TouchableOpacity>
           )}

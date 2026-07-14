@@ -53,6 +53,8 @@ export  default function BookDetailScreen() {
 								color={theme.textPrimary}
 								style={{marginLeft: 16}}
 								onPress={() => router.replace('/(tabs)/books')}
+								accessibilityLabel="Retour"
+								accessibilityRole="button"
 							/>
 						);
 					}

@@ -238,6 +238,9 @@ export default function EditBookScreen() {
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: `${theme.textInverse}33` }]}
             onPress={() => router.back()}
+            accessibilityLabel="Retour"
+            // @ts-ignore - title works on web for tooltip
+            title="Retour"
           >
             <MaterialIcons name="arrow-back" size={24} color={theme.textInverse} />
           </TouchableOpacity>

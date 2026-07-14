@@ -71,7 +71,7 @@ export function DatePickerField({ label, value, onChange, error, minimumDate }: 
           {value ? formatDisplay(value) : 'Sélectionner une date'}
         </Text>
         {value && (
-          <TouchableOpacity onPress={() => onChange(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity onPress={() => onChange(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Effacer la date">
             <MaterialIcons name="close" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         )}

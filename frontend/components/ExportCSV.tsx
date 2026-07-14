@@ -36,7 +36,7 @@ export default function ExportCSV() {
         ) : (
           <MaterialIcons name="file-download" size={20} color={theme.accent} />
         )}
-        <Text style={[styles.buttonText, { color: theme.text }]}>
+        <Text style={[styles.buttonText, { color: theme.textPrimary }]}>
           {isLoading ? 'Export en cours…' : 'Exporter ma bibliothèque (CSV)'}
         </Text>
         {!isLoading && (

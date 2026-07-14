@@ -246,6 +246,7 @@ export default function Index() {
 
 			{/* Bouton d'ajout manuel flottant */}
 			<TouchableOpacity
+				accessibilityLabel="Ajouter un livre"
 				style={[
 					styles.addButton,
 					{

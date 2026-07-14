@@ -101,7 +101,7 @@ function ContactsScreen() {
           onSubmitEditing={handleSearch}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Effacer la recherche">
             <MaterialIcons name="close" size={20} color={theme.textMuted} />
           </TouchableOpacity>
         )}
@@ -134,7 +134,7 @@ function ContactsScreen() {
       )}
 
       {/* Bouton Flottant pour créer un contact */}
-      <TouchableOpacity style={[styles.fab, { backgroundColor: theme.accent }]} onPress={handleCreateContact}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: theme.accent }]} onPress={handleCreateContact} accessibilityLabel="Créer un contact">
         <MaterialIcons name="add" size={28} color={theme.textInverse} />
       </TouchableOpacity>
     </View>

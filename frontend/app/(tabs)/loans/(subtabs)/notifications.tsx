@@ -415,7 +415,7 @@ function NotificationsScreen() {
                                         setSearchResults([]);
                                         setInviteMessage('');
                                         setSendError(null);
-                                    }}>
+                                    }} accessibilityLabel="Fermer">
                                         <MaterialIcons name="close" size={24} color={theme.textMuted} />
                                     </TouchableOpacity>
                                 </View>
@@ -424,7 +424,7 @@ function NotificationsScreen() {
                                     <View style={[styles.selectedUser, { backgroundColor: theme.accentLight }]}>
                                         <MaterialIcons name="person" size={20} color={theme.accent} />
                                         <Text style={[styles.selectedUserName, { color: theme.accent }]}>{selectedUser.username}</Text>
-                                        <TouchableOpacity onPress={() => { setSelectedUser(null); setSearchQuery(''); }}>
+                                        <TouchableOpacity onPress={() => { setSelectedUser(null); setSearchQuery(''); }} accessibilityLabel="Retirer l'utilisateur sélectionné">
                                             <MaterialIcons name="close" size={18} color={theme.textMuted} />
                                         </TouchableOpacity>
                                     </View>

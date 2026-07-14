@@ -200,18 +200,27 @@ function LoanDetailScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bgPrimary }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
-        <TouchableOpacity onPress={editMode ? handleCancelEdit : () => router.back()} style={styles.headerBackButton}>
+        <TouchableOpacity
+          onPress={editMode ? handleCancelEdit : () => router.back()}
+          style={styles.headerBackButton}
+          accessibilityLabel={editMode ? 'Annuler la modification' : 'Retour'}
+        >
           <MaterialIcons name={editMode ? 'close' : 'arrow-back'} size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{editMode ? 'Modifier le prêt' : 'Détails du prêt'}</Text>
         <View style={styles.headerActions}>
           {!editMode && loan.status !== LoanStatus.RETURNED && (
-            <TouchableOpacity onPress={handleEdit} style={styles.headerEditButton}>
+            <TouchableOpacity onPress={handleEdit} style={styles.headerEditButton} accessibilityLabel="Modifier le prêt">
               <MaterialIcons name="edit" size={24} color={theme.accent} />
             </TouchableOpacity>
           )}
           {!editMode && (
-            <TouchableOpacity onPress={handleDelete} style={styles.headerDeleteButton}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.headerDeleteButton}
+              accessibilityLabel="Supprimer le prêt"
+              accessibilityHint="Supprime définitivement ce prêt"
+            >
               <MaterialIcons name="delete" size={24} color={theme.danger} />
             </TouchableOpacity>
           )}

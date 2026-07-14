@@ -276,6 +276,9 @@ export default function ScanResultPage() {
 				<TouchableOpacity
 					style={[styles.backButton, { backgroundColor: `${theme.textInverse}33` }]}
 					onPress={() => router.push('/(tabs)/scanner')}
+					accessibilityLabel="Retour"
+					// @ts-ignore - title works on web for tooltip
+					title="Retour"
 				>
 					<MaterialIcons name="arrow-back" size={24} color={theme.textInverse} />
 				</TouchableOpacity>
@@ -283,6 +286,7 @@ export default function ScanResultPage() {
 				<TouchableOpacity
 					style={[styles.scanButton, { backgroundColor: `${theme.textInverse}33` }]}
 					onPress={() => router.push('/(tabs)/scanner')}
+					accessibilityLabel="Scanner un autre code-barres"
 				>
 					<MaterialIcons name="qr-code-scanner" size={24} color={theme.textInverse} />
 				</TouchableOpacity>

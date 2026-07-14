@@ -80,6 +80,7 @@ export const EntityChip = <T,>({
 					style={styles.removeButton}
 					onPress={onRemove}
 					hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+					accessibilityLabel={`Retirer ${entity?.name || 'cette entité'}`}
 				>
 					<MaterialIcons
 						name="close"

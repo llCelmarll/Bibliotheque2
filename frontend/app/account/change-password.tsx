@@ -82,7 +82,11 @@ export default function ChangePasswordScreen() {
               secureTextEntry={!showCurrent}
               editable={!isLoading}
             />
-            <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)} style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowCurrent(!showCurrent)}
+              style={styles.eyeIcon}
+              accessibilityLabel={showCurrent ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
               <MaterialIcons name={showCurrent ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
@@ -99,7 +103,11 @@ export default function ChangePasswordScreen() {
               secureTextEntry={!showNew}
               editable={!isLoading}
             />
-            <TouchableOpacity onPress={() => setShowNew(!showNew)} style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowNew(!showNew)}
+              style={styles.eyeIcon}
+              accessibilityLabel={showNew ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
               <MaterialIcons name={showNew ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
@@ -116,7 +124,11 @@ export default function ChangePasswordScreen() {
               secureTextEntry={!showConfirm}
               editable={!isLoading}
             />
-            <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowConfirm(!showConfirm)}
+              style={styles.eyeIcon}
+              accessibilityLabel={showConfirm ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
               <MaterialIcons name={showConfirm ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>

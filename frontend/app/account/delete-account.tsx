@@ -110,7 +110,11 @@ export default function DeleteAccountScreen() {
               secureTextEntry={!showPassword}
               editable={!isLoading}
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+              accessibilityLabel={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
               <MaterialIcons name={showPassword ? 'visibility-off' : 'visibility'} size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>

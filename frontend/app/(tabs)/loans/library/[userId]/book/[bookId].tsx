@@ -97,7 +97,13 @@ function SharedBookDetailScreen() {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
                 <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={styles.backButton}
+                        accessibilityLabel="Retour"
+                        // @ts-ignore - title works on web for tooltip
+                        title="Retour"
+                    >
                         <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
@@ -112,7 +118,13 @@ function SharedBookDetailScreen() {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]} edges={['top']}>
                 <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={styles.backButton}
+                        accessibilityLabel="Retour"
+                        // @ts-ignore - title works on web for tooltip
+                        title="Retour"
+                    >
                         <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
@@ -132,7 +144,13 @@ function SharedBookDetailScreen() {
             <Head><title>{book.title}</title></Head>
 
             <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={styles.backButton}
+                    accessibilityLabel="Retour"
+                    // @ts-ignore - title works on web for tooltip
+                    title="Retour"
+                >
                     <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.textPrimary }]} numberOfLines={1}>{book.title}</Text>

@@ -101,7 +101,7 @@ export const SharedLibraryAdvancedModal: React.FC<SharedLibraryAdvancedModalProp
                 <View style={[styles.modal, { backgroundColor: theme.bgCard }]}>
                     <View style={[styles.header, { borderBottomColor: theme.borderLight }]}>
                         <Text style={[styles.title, { color: theme.textPrimary }]}>Recherche avancée</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                        <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Fermer">
                             <MaterialIcons name="close" size={24} color={theme.textPrimary} />
                         </TouchableOpacity>
                     </View>

@@ -33,9 +33,10 @@ if (!isExpoGo) {
   });
 }
 
+import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { AppThemeProvider } from '@/contexts/ThemeContext';
+import { AppThemeProvider, useThemeControls } from '@/contexts/ThemeContext';
 import { UpdateChecker } from '@/components/UpdateChecker';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ConsentUpdateModal } from '@/components/ConsentUpdateModal';
@@ -201,6 +202,7 @@ function AuthRedirectWrapper({ children }: { children: React.ReactNode }) {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const theme = useTheme();
+  const { themeName } = useThemeControls();
 
   const themedHeader = {
     headerStyle: { backgroundColor: theme.bgCard },
@@ -210,6 +212,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <StatusBar style={themeName === 'darkPremium' ? 'light' : 'dark'} />
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />

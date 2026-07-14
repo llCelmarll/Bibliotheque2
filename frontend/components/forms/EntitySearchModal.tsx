@@ -254,6 +254,7 @@ export const EntitySearchModal = <T,>({
 					<TouchableOpacity
 						style={styles.closeButton}
 						onPress={onClose}
+						accessibilityLabel="Fermer"
 					>
 						<MaterialIcons name="close" size={24} color={theme.textPrimary} />
 					</TouchableOpacity>
@@ -281,6 +282,7 @@ export const EntitySearchModal = <T,>({
 						<TouchableOpacity
 							style={styles.clearButton}
 							onPress={() => setSearchQuery('')}
+							accessibilityLabel="Effacer la recherche"
 						>
 							<MaterialIcons name="clear" size={20} color={theme.textMuted} />
 						</TouchableOpacity>

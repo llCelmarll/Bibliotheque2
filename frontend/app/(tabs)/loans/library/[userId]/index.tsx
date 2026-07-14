@@ -97,7 +97,13 @@ function SharedLibraryScreen() {
 
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={styles.backButton}
+                    accessibilityLabel="Retour"
+                    // @ts-ignore - title works on web for tooltip
+                    title="Retour"
+                >
                     <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
                 <View style={styles.headerTitles}>
@@ -122,6 +128,8 @@ function SharedLibraryScreen() {
                     <Pressable
                         style={[styles.iconButton, { backgroundColor: theme.bgSecondary }, isAdvancedMode && { backgroundColor: theme.accent }]}
                         onPress={() => setAdvancedModalVisible(true)}
+                        accessibilityLabel="Recherche avancée"
+                        accessibilityState={{ selected: isAdvancedMode }}
                     >
                         <MaterialIcons
                             name="tune"
@@ -132,6 +140,7 @@ function SharedLibraryScreen() {
                     <Pressable
                         style={[styles.iconButton, { backgroundColor: theme.bgSecondary }]}
                         onPress={() => handleSearch(searchQuery)}
+                        accessibilityLabel="Rechercher"
                     >
                         <MaterialIcons name="search" size={22} color={theme.textPrimary} />
                     </Pressable>

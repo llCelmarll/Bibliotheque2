@@ -398,7 +398,7 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
               <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
                 {existingEventId ? 'Modifier le rappel' : 'Nouveau rappel'}
               </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} accessibilityLabel="Fermer">
                 <MaterialIcons name="close" size={24} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>

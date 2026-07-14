@@ -46,6 +46,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 					<Pressable
 						style={[styles.searchButton, { backgroundColor: isAdvancedMode ? theme.accent : theme.bgMuted, borderRadius: theme.radiusInput }]}
 						onPress={onAdvancedPress}
+						accessibilityLabel="Recherche avancée"
+						accessibilityState={{ selected: isAdvancedMode }}
 					>
 						<MaterialIcons
 							name="tune"
@@ -54,7 +56,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 						/>
 					</Pressable>
 				)}
-				<Pressable style={[styles.searchButton, { backgroundColor: theme.bgMuted, borderRadius: theme.radiusInput }]} onPress={handleSearch}>
+				<Pressable style={[styles.searchButton, { backgroundColor: theme.bgMuted, borderRadius: theme.radiusInput }]} onPress={handleSearch} accessibilityLabel="Rechercher">
 					<MaterialIcons name="search" size={22} color={theme.textSecondary} />
 				</Pressable>
 			</View>
@@ -65,7 +67,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 					currentOrder={order}
 					onSortChange={onSortChange}
 				/>
-				<Pressable style={[styles.viewButton, { backgroundColor: theme.bgMuted, borderRadius: theme.radiusInput }]} onPress={toggleView}>
+				<Pressable
+					style={[styles.viewButton, { backgroundColor: theme.bgMuted, borderRadius: theme.radiusInput }]}
+					onPress={toggleView}
+					accessibilityLabel={isGridView ? "Afficher en liste" : "Afficher en grille"}
+				>
 					<MaterialIcons
 						name={isGridView ? "view-list" : "grid-view"}
 						size={22}

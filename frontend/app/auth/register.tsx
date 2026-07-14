@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -37,6 +37,9 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<Partial<RegisterForm>>({});
   const [serverError, setServerError] = useState<string>('');
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const usernameRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
 
   const router = useRouter();
   const { register: registerUser } = useAuth();
@@ -149,6 +152,9 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              returnKeyType="next"
+              onSubmitEditing={() => usernameRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
           {errors.email && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.email}</Text>}
@@ -160,6 +166,7 @@ export default function RegisterScreen() {
           <View style={[styles.inputWrapper, { backgroundColor: theme.bgCard, borderColor: errors.username ? theme.danger : theme.borderLight }]}>
             <MaterialIcons name="person" size={20} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
+              ref={usernameRef}
               style={[styles.input, { color: theme.textPrimary }]}
               placeholder="Votre nom d'utilisateur"
               placeholderTextColor={theme.textMuted}
@@ -167,6 +174,9 @@ export default function RegisterScreen() {
               onChangeText={(value) => updateForm('username', value)}
               autoCapitalize="none"
               autoComplete="username"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
           {errors.username && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.username}</Text>}
@@ -178,6 +188,7 @@ export default function RegisterScreen() {
           <View style={[styles.inputWrapper, { backgroundColor: theme.bgCard, borderColor: errors.password ? theme.danger : theme.borderLight }]}>
             <MaterialIcons name="lock" size={20} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
+              ref={passwordRef}
               style={[styles.input, { color: theme.textPrimary }]}
               placeholder="Votre mot de passe"
               placeholderTextColor={theme.textMuted}
@@ -185,8 +196,15 @@ export default function RegisterScreen() {
               onChangeText={(value) => updateForm('password', value)}
               secureTextEntry={!showPassword}
               autoComplete="new-password"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+              blurOnSubmit={false}
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+              accessibilityLabel={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
               <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={20} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
@@ -199,6 +217,7 @@ export default function RegisterScreen() {
           <View style={[styles.inputWrapper, { backgroundColor: theme.bgCard, borderColor: errors.confirmPassword ? theme.danger : theme.borderLight }]}>
             <MaterialIcons name="lock" size={20} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
+              ref={confirmPasswordRef}
               style={[styles.input, { color: theme.textPrimary }]}
               placeholder="Confirmez votre mot de passe"
               placeholderTextColor={theme.textMuted}
@@ -206,8 +225,14 @@ export default function RegisterScreen() {
               onChangeText={(value) => updateForm('confirmPassword', value)}
               secureTextEntry={!showConfirmPassword}
               autoComplete="new-password"
+              returnKeyType="done"
+              onSubmitEditing={handleRegister}
             />
-            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={styles.eyeIcon}
+              accessibilityLabel={showConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
               <MaterialIcons name={showConfirmPassword ? 'visibility' : 'visibility-off'} size={20} color={theme.textMuted} />
             </TouchableOpacity>
           </View>

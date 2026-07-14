@@ -145,6 +145,7 @@ export default function ManualBookAddPage() {
             style={[styles.headerButton, { backgroundColor: theme.bgSecondary }]}
             onPress={() => router.push('/books')}
             activeOpacity={0.7}
+            accessibilityLabel="Voir la liste des livres"
           >
             <MaterialIcons name="list" size={20} color={theme.accent} />
           </TouchableOpacity>

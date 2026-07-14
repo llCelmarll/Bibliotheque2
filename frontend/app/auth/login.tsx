@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Checkbox from 'expo-checkbox';
 import {
   View,
@@ -28,6 +28,7 @@ export default function LoginScreen() {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isUnverified, setIsUnverified] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
   const { login, isLoading } = useAuth();
   const router = useRouter();
   const theme = useTheme();
@@ -127,12 +128,16 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 editable={!isLoginLoading}
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
 
             <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
               <MaterialIcons name="lock" size={24} color={theme.textMuted} style={styles.inputIcon} />
               <TextInput
+                ref={passwordRef}
                 style={[styles.input, { color: theme.textPrimary }]}
                 placeholder="Mot de passe"
                 placeholderTextColor={theme.textMuted}
@@ -144,11 +149,14 @@ export default function LoginScreen() {
                 secureTextEntry={!showPassword}
                 autoComplete="password"
                 editable={!isLoginLoading}
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
                 onPress={() => setShowPassword(!showPassword)}
                 disabled={isLoginLoading}
+                accessibilityLabel={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
               >
                 <MaterialIcons
                   name={showPassword ? "visibility-off" : "visibility"}

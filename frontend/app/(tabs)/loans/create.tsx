@@ -220,7 +220,13 @@ function CreateLoanScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bgSecondary }]}>
       <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityLabel="Retour"
+          // @ts-ignore - title works on web for tooltip
+          title="Retour"
+        >
           <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Nouveau prêt</Text>
@@ -255,7 +261,7 @@ function CreateLoanScreen() {
                         </Text>
                       )}
                     </View>
-                    <TouchableOpacity onPress={() => handleRemoveBook(book.id)}>
+                    <TouchableOpacity onPress={() => handleRemoveBook(book.id)} accessibilityLabel="Retirer ce livre">
                       <MaterialIcons name="close" size={20} color={theme.textSecondary} />
                     </TouchableOpacity>
                   </View>

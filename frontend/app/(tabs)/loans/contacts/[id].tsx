@@ -334,6 +334,7 @@ function ContactDetailScreen() {
             onPress={handleDelete}
             style={styles.headerActionButton}
             accessibilityLabel="Supprimer le contact"
+            accessibilityHint="Supprime définitivement ce contact"
           >
             <MaterialIcons name="delete" size={24} color={theme.danger} />
           </TouchableOpacity>
@@ -510,7 +511,7 @@ function ContactDetailScreen() {
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Historique des prêts</Text>
             {!contact.linked_user_id && (
-              <TouchableOpacity onPress={handleCreateLoan}>
+              <TouchableOpacity onPress={handleCreateLoan} accessibilityLabel="Créer un prêt">
                 <MaterialIcons name="add-circle" size={24} color={theme.accent} />
               </TouchableOpacity>
             )}
@@ -545,7 +546,13 @@ function ContactDetailScreen() {
                         {loan.status === 'active' && <View style={[styles.statusBadge, { backgroundColor: theme.successBg }]}><Text style={[styles.statusText, { color: theme.success }]}>En cours</Text></View>}
                         {loan.status === 'returned' && <View style={[styles.statusBadge, { backgroundColor: theme.bgSecondary }]}><Text style={[styles.statusText, { color: theme.textSecondary }]}>Retourné</Text></View>}
                         {canReturn ? (
-                          <TouchableOpacity onPress={() => handleReturnLoan(loan.id, loan.book.title)} style={styles.returnIconButton} disabled={actionLoading}>
+                          <TouchableOpacity
+                            onPress={() => handleReturnLoan(loan.id, loan.book.title)}
+                            style={styles.returnIconButton}
+                            disabled={actionLoading}
+                            accessibilityLabel="Marquer comme retourné"
+                            accessibilityHint={`Enregistre le retour de ${loan.book.title}`}
+                          >
                             <MaterialIcons name="assignment-return" size={20} color={actionLoading ? theme.textMuted : theme.success} />
                           </TouchableOpacity>
                         ) : (

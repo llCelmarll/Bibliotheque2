@@ -79,7 +79,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
             </View>
           </View>
           {!disabled && (
-            <TouchableOpacity onPress={handleRemoveContact}>
+            <TouchableOpacity onPress={handleRemoveContact} accessibilityLabel="Retirer le contact sélectionné">
               <MaterialIcons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
@@ -108,7 +108,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
         <View style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Sélectionner un contact</Text>
-            <TouchableOpacity onPress={() => setIsModalOpen(false)}>
+            <TouchableOpacity onPress={() => setIsModalOpen(false)} accessibilityLabel="Fermer">
               <MaterialIcons name="close" size={28} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
@@ -123,7 +123,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
               onSubmitEditing={handleSearch}
               autoFocus
             />
-            <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+            <TouchableOpacity onPress={handleSearch} style={styles.searchButton} accessibilityLabel="Rechercher">
               <MaterialIcons name="search" size={24} color={theme.accent} />
             </TouchableOpacity>
           </View>

@@ -151,7 +151,7 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
             )}
           </View>
           {!disabled && (
-            <TouchableOpacity onPress={handleRemoveBook}>
+            <TouchableOpacity onPress={handleRemoveBook} accessibilityLabel="Retirer le livre sélectionné">
               <MaterialIcons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
@@ -180,7 +180,7 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
         <View style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Sélectionner un livre</Text>
-            <TouchableOpacity onPress={() => setIsModalOpen(false)}>
+            <TouchableOpacity onPress={() => setIsModalOpen(false)} accessibilityLabel="Fermer">
               <MaterialIcons name="close" size={28} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
@@ -195,7 +195,7 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
               onSubmitEditing={handleSearch}
               autoFocus
             />
-            <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+            <TouchableOpacity onPress={handleSearch} style={styles.searchButton} accessibilityLabel="Rechercher">
               <MaterialIcons name="search" size={24} color={theme.accent} />
             </TouchableOpacity>
           </View>
