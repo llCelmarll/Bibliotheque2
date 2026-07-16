@@ -54,7 +54,7 @@ Objectif : rendre l'application robuste avant d'exposer à des utilisateurs inco
 - [x] **Politique de confidentialité** — rédigée → [docs/POLITIQUE_CONFIDENTIALITE.md](POLITIQUE_CONFIDENTIALITE.md) — à héberger sur une URL publique
 - [x] **CGU (Conditions Générales d'Utilisation)** — rédigées → [docs/CGU.md](CGU.md) — à héberger sur une URL publique
 - [x] **Suppression de compte complète** — implémentée et vérifiée : tokens (reset, email, push), demandes de prêt, invitations, contacts, prêts, livres empruntés, livres, log IP (`account.py`)
-- [ ] **Export des données** — déjà partiellement implémenté via CSV, à compléter pour couvrir toutes les données personnelles (droit à la portabilité)
+- [x] **Export des données** — export ZIP complet (profil, livres, contacts, prêts consentis, emprunts, demandes de prêt, invitations, notifications push) via `GET /account/export`, couvre le droit à la portabilité — bouton "Exporter mes données (RGPD)" dans Paramètres → Mentions légales
 - [x] Checkbox de consentement explicite à l'inscription — implémentée dans `frontend/app/auth/register.tsx`
 - [x] **Versioning et suivi du consentement CGU** — stockage de `consent_version` + `consent_accepted_at` en base, validation backend à l'inscription, modale de re-consentement au login si version obsolète, endpoint `POST /auth/consent` — [Protocole →](PROTOCOLE_MAJ_CGU.md)
 

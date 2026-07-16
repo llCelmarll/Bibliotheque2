@@ -1,8 +1,17 @@
 // services/accountService.ts
+import axios from 'axios';
 import API_CONFIG from '@/config/api';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '@/services/authService';
+import { setupAuthInterceptor } from '@/services/api/authInterceptor';
+
+// Client axios dédié pour les téléchargements binaires (responseType 'blob')
+const exportApiClient = axios.create({
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: 30000,
+});
+setupAuthInterceptor(exportApiClient);
 
 let SecureStore: any = null;
 if (Platform.OS !== 'web') {
@@ -109,6 +118,23 @@ class AccountService {
       method: 'DELETE',
       body: JSON.stringify({ password, confirmation: 'SUPPRIMER' }),
     });
+  }
+
+  /**
+   * Exporte l'ensemble des données personnelles de l'utilisateur (ZIP, droit à la portabilité RGPD).
+   * Disponible uniquement sur web pour le moment (téléchargement de fichier binaire).
+   */
+  async exportAccountData(): Promise<void> {
+    if (Platform.OS !== 'web') {
+      throw new Error('Export disponible uniquement sur la version web pour le moment.');
+    }
+    const response = await exportApiClient.get('/account/export', { responseType: 'blob' });
+    const url = URL.createObjectURL(response.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mes_donnees_bibliotheque.zip';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
 

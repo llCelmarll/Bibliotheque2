@@ -1,6 +1,8 @@
 """
 Tests d'intégration pour les endpoints de gestion de compte.
 """
+import io
+import zipfile
 from datetime import datetime, timedelta
 
 import pytest
@@ -9,7 +11,7 @@ from sqlmodel import Session, select
 
 from app.models.password_reset_token_model import PasswordResetToken
 from app.services.auth_service import hash_password
-from tests.conftest import create_test_user
+from tests.conftest import create_test_book, create_test_contact, create_test_user
 
 
 def create_reset_token(
@@ -233,6 +235,83 @@ class TestUpdateProfile:
         """Sans token retourne 403."""
         response = client.patch("/account/profile", json={"username": "test"})
         assert response.status_code == 403
+
+
+@pytest.mark.integration
+class TestExportAccountData:
+    """Tests de l'endpoint GET /account/export."""
+
+    def test_success_returns_zip(self, authenticated_client: TestClient):
+        """Retourne un ZIP contenant les 8 fichiers CSV attendus."""
+        response = authenticated_client.get("/account/export")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/zip"
+        assert "attachment" in response.headers["content-disposition"]
+
+        zf = zipfile.ZipFile(io.BytesIO(response.content))
+        names = zf.namelist()
+        assert "profil.csv" in names
+        assert "livres.csv" in names
+        assert "contacts.csv" in names
+        assert "invitations.csv" in names
+        assert "demandes_de_pret.csv" in names
+        assert "prets_consentis.csv" in names
+        assert "emprunts.csv" in names
+        assert "notifications_push.csv" in names
+
+    def test_profile_csv_contains_user_email(self, authenticated_client: TestClient, test_user):
+        """Le profil exporté contient bien l'email de l'utilisateur connecté."""
+        response = authenticated_client.get("/account/export")
+        zf = zipfile.ZipFile(io.BytesIO(response.content))
+        content = zf.read("profil.csv").decode("utf-8-sig")
+        assert test_user.email in content
+
+    def test_own_book_present_other_user_book_absent(
+        self, authenticated_client: TestClient, session: Session, test_user, second_user
+    ):
+        """Les livres de l'utilisateur connecté apparaissent, ceux d'un autre compte non."""
+        create_test_book(session, owner_id=test_user.id, title="Mon Livre", isbn="9781111111111")
+        create_test_book(session, owner_id=second_user.id, title="Livre Autrui", isbn="9782222222222")
+
+        response = authenticated_client.get("/account/export")
+        zf = zipfile.ZipFile(io.BytesIO(response.content))
+        content = zf.read("livres.csv").decode("utf-8-sig")
+
+        assert "Mon Livre" in content
+        assert "Livre Autrui" not in content
+
+    def test_contact_linked_user_resolved_to_username(
+        self, authenticated_client: TestClient, session: Session, test_user, second_user
+    ):
+        """Un contact lié à un autre utilisateur affiche son username dans contacts.csv."""
+        from app.models.contact_model import Contact
+
+        contact = Contact(
+            name="Contact Lié",
+            owner_id=test_user.id,
+            linked_user_id=second_user.id,
+        )
+        session.add(contact)
+        session.commit()
+
+        response = authenticated_client.get("/account/export")
+        zf = zipfile.ZipFile(io.BytesIO(response.content))
+        content = zf.read("contacts.csv").decode("utf-8-sig")
+
+        assert "Contact Lié" in content
+        assert second_user.username in content
+
+    def test_unauthenticated_returns_403(self, client: TestClient):
+        """Sans token retourne 403."""
+        response = client.get("/account/export")
+        assert response.status_code == 403
+
+    def test_rate_limit(self, authenticated_client: TestClient):
+        """4e appel en moins de 5 min retourne 429."""
+        for _ in range(3):
+            authenticated_client.get("/account/export")
+        response = authenticated_client.get("/account/export")
+        assert response.status_code == 429
 
 
 @pytest.mark.integration

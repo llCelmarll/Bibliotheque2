@@ -130,7 +130,7 @@ Conformément au Règlement Général sur la Protection des Données (UE 2016/67
 - **Droit d'accès** : consulter toutes vos données via votre profil dans l'application
 - **Droit de rectification** : modifier votre e-mail ou nom d'utilisateur depuis les paramètres
 - **Droit à l'effacement** : supprimer votre compte et toutes vos données depuis les paramètres de l'application (suppression immédiate et définitive)
-- **Droit à la portabilité** : exporter votre bibliothèque au format CSV depuis l'application
+- **Droit à la portabilité** : exporter l'ensemble de vos données personnelles (profil, bibliothèque, contacts, prêts, emprunts, demandes de prêt, invitations) au format ZIP depuis les paramètres de l'application
 - **Droit d'opposition aux notifications** : désactiver chaque type de notification push indépendamment
 - **Droit de réclamation** : introduire une réclamation auprès de la CNIL (cnil.fr)
 

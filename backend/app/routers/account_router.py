@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import Response
 from sqlmodel import Session, select
 
 from app.config.whitelist import is_email_allowed
@@ -26,6 +27,7 @@ from app.schemas.auth_schemas import (
     UpdateProfileRequest,
 )
 
+from app.services.account_service import AccountService
 from app.services.auth_service import (
     get_auth_service,
     get_current_active_user,
@@ -40,6 +42,13 @@ logger = logging.getLogger("app")
 router = APIRouter(prefix="/account", tags=["account"])
 
 RESET_TOKEN_EXPIRE_MINUTES = 15
+
+
+def get_account_service(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> AccountService:
+    return AccountService(session, user_id=current_user.id)
 
 
 def get_client_ip(request: Request) -> str:
@@ -246,6 +255,36 @@ async def update_profile(
         "is_active": current_user.is_active,
         "created_at": current_user.created_at,
     }
+
+
+# ---------------------------------------------------------------------------
+# GET /account/export
+# ---------------------------------------------------------------------------
+
+@router.get("/export")
+async def export_account_data(
+    request: Request,
+    session: Session = Depends(get_session),
+    service: AccountService = Depends(get_account_service),
+):
+    """
+    Exporte l'ensemble des données personnelles de l'utilisateur au format ZIP
+    (un CSV par catégorie de données + un fichier profil).
+    Droit à la portabilité RGPD. Rate limite : 3 exports / 5 min.
+    """
+    client_ip = get_client_ip(request)
+    rate_limiter.check_and_record(client_ip, "account-export", max_attempts=3, window_minutes=5, session=session)
+
+    zip_bytes = service.export_account_data_zip()
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": 'attachment; filename="mes_donnees_bibliotheque.zip"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

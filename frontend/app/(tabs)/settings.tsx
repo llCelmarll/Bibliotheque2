@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import * as Updates from 'expo-updates';
 import ImportCSV from "@/components/ImportCSV";
 import ExportCSV from "@/components/ExportCSV";
+import { accountService } from "@/services/accountService";
 import { CalendarPreferencesSection } from "@/components/settings/CalendarPreferencesSection";
 import { PushNotificationsSection } from "@/components/settings/PushNotificationsSection";
 import { useTheme, useThemeControls } from "@/contexts/ThemeContext";
@@ -18,6 +19,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { themeName, setTheme } = useThemeControls();
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
+  const [isExportingAccountData, setIsExportingAccountData] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{
     updateId?: string;
     channel?: string;
@@ -51,6 +53,18 @@ export default function SettingsScreen() {
       router.replace("/auth/login");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  const handleExportAccountData = async () => {
+    setIsExportingAccountData(true);
+    try {
+      await accountService.exportAccountData();
+    } catch (error) {
+      console.error('Erreur export données personnelles:', error);
+      Alert.alert('Erreur', "Impossible d'exporter vos données. Veuillez réessayer.");
+    } finally {
+      setIsExportingAccountData(false);
+    }
+  };
 
   const checkForUpdates = async () => {
     if (Platform.OS === 'web' || __DEV__) {
@@ -298,6 +312,26 @@ export default function SettingsScreen() {
             <Text style={[styles.updateButtonText, { color: theme.textPrimary }]}>Politique de confidentialité</Text>
             <MaterialIcons name="open-in-new" size={20} color={theme.borderMedium} />
           </TouchableOpacity>
+
+          {Platform.OS === 'web' && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: theme.bgCard, shadowColor: theme.accent, marginBottom: 12 }]}
+              onPress={handleExportAccountData}
+              disabled={isExportingAccountData}
+            >
+              {isExportingAccountData ? (
+                <ActivityIndicator size="small" color={theme.textSecondary} />
+              ) : (
+                <MaterialIcons name="folder-zip" size={24} color={theme.textSecondary} />
+              )}
+              <Text style={[styles.updateButtonText, { color: theme.textPrimary }]}>
+                {isExportingAccountData ? 'Export en cours…' : 'Exporter mes données (RGPD)'}
+              </Text>
+              {!isExportingAccountData && (
+                <MaterialIcons name="file-download" size={20} color={theme.borderMedium} />
+              )}
+            </TouchableOpacity>
+          )}
 
           <View style={[styles.infoCard, { backgroundColor: theme.bgCard, shadowColor: theme.accent }]}>
             <Text style={[styles.infoText, { color: theme.textMuted }]}>Version de développement</Text>
