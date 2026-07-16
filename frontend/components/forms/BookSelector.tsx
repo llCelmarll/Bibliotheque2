@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Modal, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Book } from '@/types/book';
@@ -6,6 +6,7 @@ import { fetchBooks } from '@/services/booksService';
 import { loanService } from '@/services/loanService';
 import BookCover from '@/components/BookCover';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface BookSelectorProps {
   selectedBook: Book | null;
@@ -30,6 +31,8 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [books, setBooks] = useState<BookWithLoanStatus[]>([]);
   const [loading, setLoading] = useState(false);
+  const modalRef = useRef<View>(null);
+  useModalFocusTrap(modalRef, isModalOpen);
 
   const loadBooks = async (query: string = '') => {
     setLoading(true);
@@ -177,7 +180,7 @@ export const BookSelector: React.FC<BookSelectorProps> = ({
         transparent={false}
         onRequestClose={() => setIsModalOpen(false)}
       >
-        <View style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
+        <View ref={modalRef} style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Sélectionner un livre</Text>
             <TouchableOpacity onPress={() => setIsModalOpen(false)} accessibilityLabel="Fermer">

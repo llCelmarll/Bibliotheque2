@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { ReadingStatus } from "@/types/book";
 import {
 	View,
@@ -15,6 +15,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { FetchBooksAdvancedParams } from "@/services/booksService";
 import { StarRating } from "@/components/StarRating";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useModalFocusTrap } from "@/hooks/useModalFocusTrap";
 
 interface AdvancedSearchModalProps {
 	visible: boolean;
@@ -104,6 +105,9 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 		setNotes("");
 	}, []);
 
+	const modalRef = useRef<View>(null);
+	useModalFocusTrap(modalRef, visible);
+
 	return (
 		<Modal
 			visible={visible}
@@ -115,7 +119,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 				style={[styles.overlay, { backgroundColor: `${theme.textPrimary}80` }]}
 				behavior={undefined}
 			>
-				<View style={[styles.modal, { backgroundColor: theme.bgCard }]}>
+				<View ref={modalRef} style={[styles.modal, { backgroundColor: theme.bgCard }]}>
 					<View style={[styles.header, { borderBottomColor: theme.borderLight }]}>
 						<Text style={[styles.title, { color: theme.textPrimary }]}>Recherche avancée</Text>
 						<TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Fermer">

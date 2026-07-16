@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -24,6 +24,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { UserLoanRequestStatus } from '@/types/userLoanRequest';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 function SharedBookDetailScreen() {
     const router = useRouter();
@@ -44,6 +45,8 @@ function SharedBookDetailScreen() {
     const [requestDueDate, setRequestDueDate] = useState<Date | null>(null);
     const [requestDueDateError, setRequestDueDateError] = useState('');
     const [requesting, setRequesting] = useState(false);
+    const modalRef = useRef<View>(null);
+    useModalFocusTrap(modalRef, showRequestModal);
 
     useEffect(() => {
         loadBook();
@@ -182,7 +185,7 @@ function SharedBookDetailScreen() {
                         keyboardShouldPersistTaps="handled"
                         contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
                     >
-                    <View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
+                    <View ref={modalRef} style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
                         <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Demander "{book.title}"</Text>
                         <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
                             Ajoutez un message et/ou une date de retour souhaitée.

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,8 @@ export default function ResetPasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  const confirmPasswordRef = useRef<TextInput>(null);
 
   if (!token) {
     return (
@@ -111,6 +113,9 @@ export default function ResetPasswordScreen() {
                   }}
                   secureTextEntry={!showNewPassword}
                   editable={!isLoading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
                 <TouchableOpacity
                   onPress={() => setShowNewPassword(!showNewPassword)}
@@ -124,6 +129,7 @@ export default function ResetPasswordScreen() {
               <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
                 <MaterialIcons name="lock-outline" size={24} color={theme.textMuted} style={styles.inputIcon} />
                 <TextInput
+                  ref={confirmPasswordRef}
                   style={[styles.input, { color: theme.textPrimary }]}
                   placeholder="Confirmer le mot de passe"
                   placeholderTextColor={theme.textMuted}
@@ -134,6 +140,8 @@ export default function ResetPasswordScreen() {
                   }}
                   secureTextEntry={!showConfirmPassword}
                   editable={!isLoading}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit}
                 />
                 <TouchableOpacity
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}

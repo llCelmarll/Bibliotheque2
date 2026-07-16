@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ImagePreview } from './ImagePreview';
 import { resolveCoverUrl } from '@/utils/coverUrl';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 const ASPECT_W = 2;
 const ASPECT_H = 3;
@@ -75,6 +76,8 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
     const [cameraLayout, setCameraLayout] = useState<{ width: number; height: number } | null>(null);
     const cameraRef = useRef<CameraView>(null);
     const [, requestPermission] = useCameraPermissions();
+    const modalRef = useRef<View>(null);
+    useModalFocusTrap(modalRef, showCamera);
 
     // Sur web, utiliser un input HTML natif avec accept="image/*"
     // pour eviter le crash d'expo-image-picker sur les fichiers non-image
@@ -258,7 +261,7 @@ export const CoverPicker: React.FC<CoverPickerProps> = ({
             {/* Modal camera plein ecran */}
             {Platform.OS !== 'web' && (
                 <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
-                    <SafeAreaView style={styles.cameraModal}>
+                    <SafeAreaView ref={modalRef} style={styles.cameraModal}>
                         <View style={{ flex: 1 }} onLayout={(e) => setCameraLayout(e.nativeEvent.layout)}>
                             <CameraView
                                 ref={cameraRef}

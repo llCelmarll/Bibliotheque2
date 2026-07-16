@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,10 @@ function CreateContactScreen() {
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const notesRef = useRef<TextInput>(null);
 
   // Mode invitation
   const [searchQuery, setSearchQuery] = useState('');
@@ -203,6 +207,9 @@ function CreateContactScreen() {
                   if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
                 }}
                 autoCapitalize="words"
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                blurOnSubmit={false}
               />
               {errors.name && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.name}</Text>}
             </View>
@@ -211,6 +218,7 @@ function CreateContactScreen() {
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.textPrimary }]}>Email (optionnel)</Text>
               <TextInput
+                ref={emailRef}
                 style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }, errors.email && { borderColor: theme.danger }]}
                 placeholder="email@example.com"
                 placeholderTextColor={theme.textMuted}
@@ -221,6 +229,9 @@ function CreateContactScreen() {
                 }}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => phoneRef.current?.focus()}
+                blurOnSubmit={false}
               />
               {errors.email && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.email}</Text>}
             </View>
@@ -229,6 +240,7 @@ function CreateContactScreen() {
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.textPrimary }]}>Téléphone (optionnel)</Text>
               <TextInput
+                ref={phoneRef}
                 style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }, errors.phone && { borderColor: theme.danger }]}
                 placeholder="+33 6 12 34 56 78"
                 placeholderTextColor={theme.textMuted}
@@ -238,6 +250,9 @@ function CreateContactScreen() {
                   if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
                 }}
                 keyboardType="phone-pad"
+                returnKeyType="next"
+                onSubmitEditing={() => notesRef.current?.focus()}
+                blurOnSubmit={false}
               />
               {errors.phone && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.phone}</Text>}
             </View>
@@ -246,6 +261,7 @@ function CreateContactScreen() {
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.textPrimary }]}>Notes (optionnel)</Text>
               <TextInput
+                ref={notesRef}
                 style={[styles.input, styles.textArea, { backgroundColor: theme.bgInput, borderColor: theme.borderLight, color: theme.textPrimary }]}
                 placeholder="Ajouter des notes..."
                 placeholderTextColor={theme.textMuted}

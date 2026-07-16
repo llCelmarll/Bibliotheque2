@@ -220,10 +220,14 @@ export const BookForm: React.FC<BookFormProps> = ({
 		formik: FormikProps<BookFormData>,
 		placeholder?: string,
 		multiline?: boolean,
-		keyboardType?: 'default' | 'numeric' | 'url'
+		keyboardType?: 'default' | 'numeric' | 'url',
+		returnKeyType?: TextInput['props']['returnKeyType']
 	) => {
 		const hasError = formik.touched[fieldName] && formik.errors[fieldName];
-		
+		// "Next" par défaut sur les champs mono-ligne pour de meilleures transitions clavier ;
+		// les champs multiline gardent le comportement par défaut (pas de "next" forcé).
+		const resolvedReturnKeyType = multiline ? undefined : (returnKeyType ?? 'next');
+
 		return (
 			<View style={styles.fieldContainer}>
 				<Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
@@ -236,6 +240,7 @@ export const BookForm: React.FC<BookFormProps> = ({
 					placeholderTextColor={theme.textMuted}
 					multiline={multiline}
 					keyboardType={keyboardType}
+					returnKeyType={resolvedReturnKeyType}
 				/>
 				{hasError ? (
 					<Text style={[styles.errorText, { color: theme.danger }]}>

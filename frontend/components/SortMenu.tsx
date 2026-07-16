@@ -1,8 +1,9 @@
 // components/books/SortMenu.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface SortOption {
 	label: string;
@@ -38,6 +39,8 @@ export const SortMenu: React.FC<SortMenuProps> = ({
 }) => {
 	const [modalVisible, setModalVisible] = useState(false);
 	const theme = useTheme();
+	const modalRef = useRef<View>(null);
+	useModalFocusTrap(modalRef, modalVisible);
 
 	const getCurrentSortLabel = () => {
 		const option = sortOptions.find(
@@ -66,7 +69,7 @@ export const SortMenu: React.FC<SortMenuProps> = ({
 					style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}
 					onPress={() => setModalVisible(false)}
 				>
-					<View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
+					<View ref={modalRef} style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
 						<Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Trier par</Text>
 						{sortOptions.map((option) => (
 							<Pressable

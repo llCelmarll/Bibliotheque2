@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View, Text, Modal, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, SafeAreaView,
@@ -6,6 +6,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ConflictEntry } from '@/services/importJobService';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface ConflictResolverModalProps {
   visible: boolean;
@@ -48,6 +49,8 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
   onToggleField, onSelectAll, onDeselectAll, onApply, onClose,
 }) => {
   const theme = useTheme();
+  const modalRef = useRef<View>(null);
+  useModalFocusTrap(modalRef, visible);
 
   const totalFields = conflicts.reduce((acc, c) =>
     acc + Object.keys(c.missing_fields).length + Object.keys(c.divergent_fields ?? {}).length, 0);
@@ -58,7 +61,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.bgMuted }]}>
+      <SafeAreaView ref={modalRef} style={[styles.container, { backgroundColor: theme.bgMuted }]}>
 
         {/* En-tête fixe */}
         <View style={[styles.header, { backgroundColor: theme.bgCard, borderBottomColor: theme.borderLight }]}>

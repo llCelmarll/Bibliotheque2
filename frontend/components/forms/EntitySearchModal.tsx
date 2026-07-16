@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Entity, EntityType } from '@/types/entityTypes';
 import { entityService } from '@/services/entityService';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface EntitySearchModalProps<T = {}> {
 	visible: boolean;
@@ -38,6 +39,8 @@ export const EntitySearchModal = <T,>({
 	const [searchResults, setSearchResults] = useState<Entity<T>[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 	const inputRef = useRef<TextInput>(null);
+	const modalRef = useRef<View>(null);
+	useModalFocusTrap(modalRef, visible);
 
 	// Recherche avec service unifié (API + fallback mock)
 	const performSearch = async (query: string) => {
@@ -246,52 +249,54 @@ export const EntitySearchModal = <T,>({
 			onRequestClose={onClose}
 		>
 			<KeyboardAvoidingView
-				style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}
+				style={styles.modalContainer}
 				behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			>
-				{/* Header */}
-				<View style={[styles.header, { borderBottomColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}>
-					<TouchableOpacity
-						style={styles.closeButton}
-						onPress={onClose}
-						accessibilityLabel="Fermer"
-					>
-						<MaterialIcons name="close" size={24} color={theme.textPrimary} />
-					</TouchableOpacity>
-
-					<Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{title}</Text>
-
-					<View style={styles.headerSpacer} />
-				</View>
-
-				{/* Search Input */}
-				<View style={[styles.searchContainer, { backgroundColor: theme.bgInput, borderColor: theme.borderLight }]}>
-					<MaterialIcons name="search" size={20} color={theme.textSecondary} style={styles.searchIcon} />
-					<TextInput
-						ref={inputRef}
-						style={[styles.searchInput, { color: theme.textPrimary }]}
-						placeholder={placeholder}
-						placeholderTextColor={theme.textMuted}
-						value={searchQuery}
-						onChangeText={setSearchQuery}
-						autoCapitalize="words"
-						autoCorrect={false}
-						returnKeyType="search"
-					/>
-					{searchQuery.length > 0 && (
+				<View ref={modalRef} style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
+					{/* Header */}
+					<View style={[styles.header, { borderBottomColor: theme.borderLight, backgroundColor: theme.bgSecondary }]}>
 						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => setSearchQuery('')}
-							accessibilityLabel="Effacer la recherche"
+							style={styles.closeButton}
+							onPress={onClose}
+							accessibilityLabel="Fermer"
 						>
-							<MaterialIcons name="clear" size={20} color={theme.textMuted} />
+							<MaterialIcons name="close" size={24} color={theme.textPrimary} />
 						</TouchableOpacity>
-					)}
-				</View>
 
-				{/* Results */}
-				<View style={styles.content}>
-					{renderSearchResults()}
+						<Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{title}</Text>
+
+						<View style={styles.headerSpacer} />
+					</View>
+
+					{/* Search Input */}
+					<View style={[styles.searchContainer, { backgroundColor: theme.bgInput, borderColor: theme.borderLight }]}>
+						<MaterialIcons name="search" size={20} color={theme.textSecondary} style={styles.searchIcon} />
+						<TextInput
+							ref={inputRef}
+							style={[styles.searchInput, { color: theme.textPrimary }]}
+							placeholder={placeholder}
+							placeholderTextColor={theme.textMuted}
+							value={searchQuery}
+							onChangeText={setSearchQuery}
+							autoCapitalize="words"
+							autoCorrect={false}
+							returnKeyType="search"
+						/>
+						{searchQuery.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => setSearchQuery('')}
+								accessibilityLabel="Effacer la recherche"
+							>
+								<MaterialIcons name="clear" size={20} color={theme.textMuted} />
+							</TouchableOpacity>
+						)}
+					</View>
+
+					{/* Results */}
+					<View style={styles.content}>
+						{renderSearchResults()}
+					</View>
 				</View>
 			</KeyboardAvoidingView>
 		</Modal>

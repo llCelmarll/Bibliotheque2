@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 export interface SharedLibraryAdvancedParams {
     title?: string;
@@ -87,6 +88,9 @@ export const SharedLibraryAdvancedModal: React.FC<SharedLibraryAdvancedModalProp
         setPageMax('');
     }, []);
 
+    const modalRef = useRef<View>(null);
+    useModalFocusTrap(modalRef, visible);
+
     return (
         <Modal
             visible={visible}
@@ -98,7 +102,7 @@ export const SharedLibraryAdvancedModal: React.FC<SharedLibraryAdvancedModalProp
                 style={[styles.overlay, { backgroundColor: `${theme.textPrimary}80` }]}
                 behavior={undefined}
             >
-                <View style={[styles.modal, { backgroundColor: theme.bgCard }]}>
+                <View ref={modalRef} style={[styles.modal, { backgroundColor: theme.bgCard }]}>
                     <View style={[styles.header, { borderBottomColor: theme.borderLight }]}>
                         <Text style={[styles.title, { color: theme.textPrimary }]}>Recherche avancée</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Fermer">

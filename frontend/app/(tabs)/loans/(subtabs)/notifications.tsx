@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
     View,
@@ -23,6 +23,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAlert, showConfirm } from '@/utils/notificationHelpers';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 function NotificationsScreen() {
     const router = useRouter();
@@ -59,6 +60,8 @@ function NotificationsScreen() {
     const [selectedUser, setSelectedUser] = useState<{ id: number; username: string } | null>(null);
     const [sending, setSending] = useState(false);
     const [sendError, setSendError] = useState<string | null>(null);
+    const modalRef = useRef<View>(null);
+    useModalFocusTrap(modalRef, showSendModal);
 
     useFocusEffect(useCallback(() => {
         refresh();
@@ -405,7 +408,7 @@ function NotificationsScreen() {
                         }}
                     >
                         <View style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}>
-                            <View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
+                            <View ref={modalRef} style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
                                 <View style={styles.modalHeader}>
                                     <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Inviter un utilisateur</Text>
                                     <TouchableOpacity onPress={() => {

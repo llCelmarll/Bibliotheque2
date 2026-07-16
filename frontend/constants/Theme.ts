@@ -24,13 +24,13 @@ const warmCozy = {
   // Textes
   textPrimary:   '#1C1008',  // brun très foncé
   textSecondary: '#6B5744',  // brun moyen
-  textMuted:     '#9C8470',  // brun clair (metadata)
+  textMuted:     '#7A6554',  // brun clair (metadata) — assombri pour contraste WCAG AA (4.5:1)
   textInverse:   '#FFFFFF',
 
   // Accent
   accent:       '#8B2020',  // bordeaux
   accentLight:  '#F5E6C8',  // ambre clair (bg tags)
-  accentMedium: '#C9956C',  // caramel
+  accentMedium: '#915D35',  // caramel — assombri pour contraste WCAG AA (4.5:1)
 
   // États sémantiques
   success:   '#2D6A4F', successBg:  '#D8F3DC',
@@ -39,7 +39,7 @@ const warmCozy = {
 
   // Tab bar
   tabActive:   '#8B2020',
-  tabInactive: '#9C8470',
+  tabInactive: '#7A6554',
   tabBg:       '#FAF7F2',
 
   // Bordures
@@ -65,19 +65,19 @@ const darkPremium = {
 
   textPrimary:   '#E5E5E5',
   textSecondary: '#B0B0B0',
-  textMuted:     '#757575',
+  textMuted:     '#919191',  // éclairci pour contraste WCAG AA (4.5:1)
   textInverse:   '#121212',
 
   accent:       '#D4A017',
   accentLight:  '#2A2208',
-  accentMedium: '#A07010',
+  accentMedium: '#C08613',  // éclairci pour contraste WCAG AA (4.5:1)
 
   success:   '#4CAF50', successBg:  '#1B3A1F',
   warning:   '#FFA726', warningBg:  '#3A2800',
   danger:    '#EF5350', dangerBg:   '#3A1010',
 
   tabActive:   '#D4A017',
-  tabInactive: '#757575',
+  tabInactive: '#919191',
   tabBg:       '#1A1A1A',
 
   borderLight:  '#2A2A2A',
@@ -101,19 +101,19 @@ const cleanMinimal = {
 
   textPrimary:   '#111827',
   textSecondary: '#374151',
-  textMuted:     '#9CA3AF',
+  textMuted:     '#5F6876',  // assombri pour contraste WCAG AA (4.5:1)
   textInverse:   '#FFFFFF',
 
   accent:       '#4F46E5',
   accentLight:  '#EEF2FF',
-  accentMedium: '#818CF8',
+  accentMedium: '#4151F4',  // assombri pour contraste WCAG AA (4.5:1)
 
   success:   '#059669', successBg:  '#D1FAE5',
   warning:   '#D97706', warningBg:  '#FEF3C7',
   danger:    '#DC2626', dangerBg:   '#FEE2E2',
 
   tabActive:   '#4F46E5',
-  tabInactive: '#9CA3AF',
+  tabInactive: '#5F6876',
   tabBg:       '#FFFFFF',
 
   borderLight:  '#E5E7EB',
@@ -137,19 +137,19 @@ const nature = {
 
   textPrimary:   '#1A1A2E',
   textSecondary: '#3D4A3A',
-  textMuted:     '#7A8C77',
+  textMuted:     '#5A6858',  // assombri pour contraste WCAG AA (4.5:1)
   textInverse:   '#FFFFFF',
 
   accent:       '#2D6A4F',
   accentLight:  '#D8F3DC',
-  accentMedium: '#52B788',
+  accentMedium: '#2F7052',  // assombri pour contraste WCAG AA (4.5:1)
 
   success:   '#1B4332', successBg:  '#D8F3DC',
   warning:   '#9A6700', warningBg:  '#FEF9C3',
   danger:    '#B91C1C', dangerBg:   '#FEE2E2',
 
   tabActive:   '#2D6A4F',
-  tabInactive: '#7A8C77',
+  tabInactive: '#5A6858',
   tabBg:       '#F4F1EC',
 
   borderLight:  '#E8E0D5',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,8 @@ export default function DeleteAccountScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const confirmationTextRef = useRef<TextInput>(null);
 
   const canSubmit = password.trim().length > 0 && confirmationText === CONFIRMATION_WORD;
 
@@ -109,6 +111,9 @@ export default function DeleteAccountScreen() {
               onChangeText={(text) => { setPassword(text); if (errorMessage) setErrorMessage(''); }}
               secureTextEntry={!showPassword}
               editable={!isLoading}
+              returnKeyType="next"
+              onSubmitEditing={() => confirmationTextRef.current?.focus()}
+              blurOnSubmit={false}
             />
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
@@ -125,6 +130,7 @@ export default function DeleteAccountScreen() {
           <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
             <MaterialIcons name="delete-forever" size={24} color={theme.danger} style={styles.inputIcon} />
             <TextInput
+              ref={confirmationTextRef}
               style={[styles.input, { color: theme.textPrimary }]}
               placeholder={CONFIRMATION_WORD}
               placeholderTextColor={theme.textMuted}
@@ -132,6 +138,8 @@ export default function DeleteAccountScreen() {
               onChangeText={(text) => { setConfirmationText(text); if (errorMessage) setErrorMessage(''); }}
               autoCapitalize="characters"
               editable={!isLoading}
+              returnKeyType="done"
+              onSubmitEditing={() => { if (canSubmit) handleDelete(); }}
             />
           </View>
 

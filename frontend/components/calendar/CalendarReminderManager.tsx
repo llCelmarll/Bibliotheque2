@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import * as Calendar from 'expo-calendar';
 import { useCalendarReminder } from '@/hooks/useCalendarReminder';
 import { calendarPreferencesService } from '@/services/calendarPreferences';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 /**
  * Props du composant CalendarReminderManager
@@ -67,6 +68,9 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
     date: string;
     calendarName: string;
   } | null>(null);
+
+  const modalRef = useRef<View>(null);
+  useModalFocusTrap(modalRef, modalVisible);
 
   // Options de délai disponibles (0 = jour même)
   const OFFSET_OPTIONS = [0, 1, 2, 3, 7];
@@ -393,7 +397,7 @@ export const CalendarReminderManager: React.FC<CalendarReminderManagerProps> = (
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={[styles.modalOverlay, { backgroundColor: `${theme.textPrimary}80` }]}>
-          <View style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
+          <View ref={modalRef} style={[styles.modalContent, { backgroundColor: theme.bgCard }]}>
             <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
               <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
                 {existingEventId ? 'Modifier le rappel' : 'Nouveau rappel'}

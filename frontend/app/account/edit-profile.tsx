@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ export default function EditProfileScreen() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const emailRef = useRef<TextInput>(null);
 
   const hasChanges = username !== user?.username || email !== user?.email;
 
@@ -82,6 +84,9 @@ export default function EditProfileScreen() {
               placeholderTextColor={theme.textMuted}
               autoCapitalize="none"
               editable={!isLoading}
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
 
@@ -89,6 +94,7 @@ export default function EditProfileScreen() {
           <View style={[styles.inputContainer, { borderColor: theme.borderLight, backgroundColor: theme.bgInput }]}>
             <MaterialIcons name="email" size={24} color={theme.textMuted} style={styles.inputIcon} />
             <TextInput
+              ref={emailRef}
               style={[styles.input, { color: theme.textPrimary }]}
               value={email}
               onChangeText={(text) => { setEmail(text); if (errorMessage) setErrorMessage(''); }}
@@ -97,6 +103,8 @@ export default function EditProfileScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}
+              returnKeyType="done"
+              onSubmitEditing={() => { if (hasChanges) handleSubmit(); }}
             />
           </View>
 

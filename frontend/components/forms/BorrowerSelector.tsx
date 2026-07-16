@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Modal, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Borrower } from '@/types/borrower';
 import { useBorrowers } from '@/hooks/useBorrowers';
 import { BorrowerListItem } from '../loans/BorrowerListItem';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface BorrowerSelectorProps {
   selectedBorrower: Borrower | string | null;
@@ -23,6 +24,8 @@ export const BorrowerSelector: React.FC<BorrowerSelectorProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { borrowers, loading, searchBorrowers, loadBorrowers } = useBorrowers({ autoLoad: false });
+  const modalRef = useRef<View>(null);
+  useModalFocusTrap(modalRef, isModalOpen);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -103,7 +106,7 @@ export const BorrowerSelector: React.FC<BorrowerSelectorProps> = ({
         transparent={false}
         onRequestClose={() => setIsModalOpen(false)}
       >
-        <View style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
+        <View ref={modalRef} style={[styles.modalContainer, { backgroundColor: theme.bgCard }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.borderLight }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Sélectionner un emprunteur</Text>
             <TouchableOpacity onPress={() => setIsModalOpen(false)} accessibilityLabel="Fermer">

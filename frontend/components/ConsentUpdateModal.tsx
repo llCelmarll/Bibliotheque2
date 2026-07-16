@@ -1,7 +1,9 @@
+import { useRef } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ExternalLink } from '@/components/ExternalLink';
 import API_CONFIG from '@/config/api';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface Props {
   visible: boolean;
@@ -12,6 +14,8 @@ interface Props {
 
 export function ConsentUpdateModal({ visible, onAccept, onDecline, loading = false }: Props) {
   const theme = useTheme();
+  const modalRef = useRef<View>(null);
+  useModalFocusTrap(modalRef, visible);
 
   return (
     <Modal
@@ -21,7 +25,7 @@ export function ConsentUpdateModal({ visible, onAccept, onDecline, loading = fal
       onRequestClose={onDecline}
     >
       <View style={[styles.overlay, { backgroundColor: `${theme.textPrimary}80` }]}>
-        <View style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
+        <View ref={modalRef} style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
           <Text style={[styles.header, { color: theme.accent }]}>Mise à jour des CGU</Text>
           <Text style={[styles.title, { color: theme.textPrimary }]}>
             Nos conditions ont été mises à jour

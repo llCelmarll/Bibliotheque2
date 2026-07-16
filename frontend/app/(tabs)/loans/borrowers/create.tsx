@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,10 @@ function CreateBorrowerScreen() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const notesRef = useRef<TextInput>(null);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -118,6 +122,9 @@ function CreateBorrowerScreen() {
                 }
               }}
               autoCapitalize="words"
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
+              blurOnSubmit={false}
             />
             {errors.name && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.name}</Text>}
           </View>
@@ -126,6 +133,7 @@ function CreateBorrowerScreen() {
           <View style={styles.field}>
             <Text style={[styles.label, { color: theme.textSecondary }]}>Email (optionnel)</Text>
             <TextInput
+              ref={emailRef}
               style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight }, errors.email && { borderColor: theme.danger }]}
               placeholder="email@example.com"
               value={email}
@@ -137,6 +145,9 @@ function CreateBorrowerScreen() {
               }}
               keyboardType="email-address"
               autoCapitalize="none"
+              returnKeyType="next"
+              onSubmitEditing={() => phoneRef.current?.focus()}
+              blurOnSubmit={false}
             />
             {errors.email && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.email}</Text>}
           </View>
@@ -145,6 +156,7 @@ function CreateBorrowerScreen() {
           <View style={styles.field}>
             <Text style={[styles.label, { color: theme.textSecondary }]}>Téléphone (optionnel)</Text>
             <TextInput
+              ref={phoneRef}
               style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderLight }, errors.phone && { borderColor: theme.danger }]}
               placeholder="+33 6 12 34 56 78"
               value={phone}
@@ -155,6 +167,9 @@ function CreateBorrowerScreen() {
                 }
               }}
               keyboardType="phone-pad"
+              returnKeyType="next"
+              onSubmitEditing={() => notesRef.current?.focus()}
+              blurOnSubmit={false}
             />
             {errors.phone && <Text style={[styles.errorText, { color: theme.danger }]}>{errors.phone}</Text>}
           </View>
@@ -163,6 +178,7 @@ function CreateBorrowerScreen() {
           <View style={styles.field}>
             <Text style={[styles.label, { color: theme.textSecondary }]}>Notes (optionnel)</Text>
             <TextInput
+              ref={notesRef}
               style={[styles.input, styles.textArea, { backgroundColor: theme.bgInput, borderColor: theme.borderLight }]}
               placeholder="Ajouter des notes..."
               value={notes}

@@ -98,6 +98,8 @@ export default function ForgotPasswordScreen() {
                   autoCapitalize="none"
                   autoComplete="email"
                   editable={!isLoading}
+                  returnKeyType="send"
+                  onSubmitEditing={handleSubmit}
                 />
               </View>
 

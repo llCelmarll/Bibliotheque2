@@ -1,7 +1,9 @@
+import { useRef } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChangelogEntry } from '@/utils/useChangelog';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface Props {
   visible: boolean;
@@ -12,6 +14,8 @@ interface Props {
 export function WhatsNewModal({ visible, entry, onClose }: Props) {
   const router = useRouter();
   const theme = useTheme();
+  const modalRef = useRef<View>(null);
+  useModalFocusTrap(modalRef, visible);
 
   const handleViewHistory = () => {
     onClose();
@@ -31,7 +35,7 @@ export function WhatsNewModal({ visible, entry, onClose }: Props) {
       onRequestClose={onClose}
     >
       <View style={[styles.overlay, { backgroundColor: `${theme.textPrimary}80` }]}>
-        <View style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
+        <View ref={modalRef} style={[styles.container, { backgroundColor: theme.bgCard, shadowColor: theme.textPrimary }]}>
           <Text style={[styles.header, { color: theme.accent }]}>Nouveautés</Text>
           <Text style={[styles.version, { color: theme.textPrimary }]}>Version {entry.version}</Text>
           <Text style={[styles.date, { color: theme.textMuted }]}>{formatDate(entry.date)}</Text>
