@@ -1,9 +1,9 @@
 import os
 import asyncio
 import httpx
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.models.user_push_token_model import UserPushToken
+from app.repositories.push_token_repository import PushTokenRepository
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
@@ -60,9 +60,7 @@ class PushNotificationService:
                         print(f"[Push] Type '{data['type']}' désactivé pour user {user_id} — ignoré")
                         return
 
-            tokens = session.exec(
-                select(UserPushToken).where(UserPushToken.user_id == user_id)
-            ).all()
+            tokens = PushTokenRepository(session).get_all_for_user(user_id)
 
             if not tokens:
                 return
