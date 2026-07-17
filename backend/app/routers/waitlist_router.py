@@ -1,16 +1,22 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, Query, Request, status
+from sqlmodel import Session
 from app.db import get_session
-from app.models.waitlist_entry_model import WaitlistEntry, WaitlistStatus
-from app.models.whitelist_entry_model import WhitelistEntry
+from app.models.waitlist_entry_model import WaitlistStatus
 from app.models.user_model import User
 from app.schemas.waitlist_schemas import WaitlistEntryCreate, WaitlistEntryRead, WaitlistEntryUpdateStatus
 from app.services.auth_service import get_current_admin_user_sync as get_current_admin_user
 from app.services.email_service import email_notification_service
+from app.services.waitlist_service import WaitlistService
 from app.utils.rate_limiter import rate_limiter
 
 router = APIRouter(tags=["waitlist"])
+
+
+def get_waitlist_service(
+    session: Session = Depends(get_session),
+) -> WaitlistService:
+    return WaitlistService(session)
 
 
 # ── Endpoint public ──────────────────────────────────────────────────────────
@@ -20,37 +26,14 @@ async def join_waitlist(
     data: WaitlistEntryCreate,
     request: Request,
     session: Session = Depends(get_session),
+    service: WaitlistService = Depends(get_waitlist_service),
 ):
     client_ip = email_notification_service.get_client_ip(request)
     rate_limiter.check_and_record(
         client_ip, "waitlist", max_attempts=3, window_minutes=60, session=session
     )
 
-    existing = session.exec(
-        select(WaitlistEntry).where(WaitlistEntry.email == data.email.lower())
-    ).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Cet email est déjà sur la liste d'attente.",
-        )
-
-    entry = WaitlistEntry(
-        email=data.email.lower(),
-        name=data.name.strip(),
-        message=data.message.strip() if data.message else None,
-        referred_by=data.referred_by.strip() if data.referred_by else None,
-    )
-    session.add(entry)
-    session.commit()
-    session.refresh(entry)
-
-    await email_notification_service.send_waitlist_confirmation(entry.email, entry.name)
-    await email_notification_service.send_waitlist_admin_notification(
-        entry.name, entry.email, entry.message, entry.referred_by
-    )
-
-    return entry
+    return await service.join(data)
 
 
 # ── Endpoints admin ──────────────────────────────────────────────────────────
@@ -61,59 +44,26 @@ def list_waitlist(
     status_filter: Optional[WaitlistStatus] = Query(None, alias="status"),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_admin_user),
+    service: WaitlistService = Depends(get_waitlist_service),
 ):
-    query = select(WaitlistEntry)
-    if search:
-        query = query.where(
-            (WaitlistEntry.email.ilike(f"%{search}%"))
-            | (WaitlistEntry.name.ilike(f"%{search}%"))
-        )
-    if status_filter:
-        query = query.where(WaitlistEntry.status == status_filter)
-    query = query.order_by(WaitlistEntry.created_at.desc()).offset(offset).limit(limit)
-    return session.exec(query).all()
+    return service.list_entries(search, status_filter, offset, limit)
 
 
 @router.delete("/admin/waitlist/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_waitlist_entry(
     entry_id: int,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_admin_user),
+    service: WaitlistService = Depends(get_waitlist_service),
 ):
-    entry = session.get(WaitlistEntry, entry_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entrée introuvable.")
-    session.delete(entry)
-    session.commit()
+    service.delete(entry_id)
 
 
 @router.patch("/admin/waitlist/{entry_id}", response_model=WaitlistEntryRead)
 async def update_waitlist_status(
     entry_id: int,
     data: WaitlistEntryUpdateStatus,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_admin_user),
+    service: WaitlistService = Depends(get_waitlist_service),
 ):
-    entry = session.get(WaitlistEntry, entry_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entrée introuvable.")
-
-    entry.status = data.status
-    session.add(entry)
-    session.commit()
-    session.refresh(entry)
-
-    if data.status == WaitlistStatus.invited:
-        # Ajouter à la whitelist si pas déjà présent
-        already_whitelisted = session.exec(
-            select(WhitelistEntry).where(WhitelistEntry.email == entry.email)
-        ).first()
-        if not already_whitelisted:
-            session.add(WhitelistEntry(email=entry.email, added_by_id=current_user.id))
-            session.commit()
-
-        await email_notification_service.send_waitlist_invitation(entry.email, entry.name)
-
-    return entry
+    return await service.update_status(entry_id, data.status, current_user.id)
