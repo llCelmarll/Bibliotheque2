@@ -1,12 +1,13 @@
 import asyncio
 from fastapi import HTTPException, status
-from sqlmodel import Session, select, func
+from sqlmodel import Session
 from typing import List
 from datetime import datetime
 
 from app.models.contact_invitation_model import ContactInvitation, InvitationStatus
 from app.models.contact_model import Contact
 from app.models.user_model import User
+from app.repositories.contact_invitation_repository import ContactInvitationRepository
 from app.schemas.contact_invitation_schemas import ContactInvitationRead, ContactInvitationCreate
 from app.services.push_notification_service import push_notification_service
 
@@ -41,63 +42,26 @@ class ContactInvitationService:
     def __init__(self, session: Session, current_user_id: int):
         self.session = session
         self.current_user_id = current_user_id
+        self.contact_invitation_repository = ContactInvitationRepository(session)
 
     def _load(self, inv_id: int) -> ContactInvitation:
-        from sqlalchemy.orm import selectinload
-        inv = self.session.exec(
-            select(ContactInvitation)
-            .where(ContactInvitation.id == inv_id)
-            .options(
-                selectinload(ContactInvitation.sender),
-                selectinload(ContactInvitation.recipient),
-            )
-        ).first()
+        inv = self.contact_invitation_repository.get_by_id_with_relations(inv_id)
         if not inv:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation introuvable")
         return inv
 
     def get_received(self) -> List[ContactInvitationRead]:
         """Invitations reçues (en attente)"""
-        from sqlalchemy.orm import selectinload
-        invs = self.session.exec(
-            select(ContactInvitation)
-            .where(
-                ContactInvitation.recipient_id == self.current_user_id,
-                ContactInvitation.status == InvitationStatus.PENDING,
-            )
-            .options(
-                selectinload(ContactInvitation.sender),
-                selectinload(ContactInvitation.recipient),
-            )
-            .order_by(ContactInvitation.created_at.desc())
-        ).all()
+        invs = self.contact_invitation_repository.list_received_pending(self.current_user_id)
         return [_to_read(i) for i in invs]
 
     def get_sent(self) -> List[ContactInvitationRead]:
         """Invitations envoyées"""
-        from sqlalchemy.orm import selectinload
-        invs = self.session.exec(
-            select(ContactInvitation)
-            .where(
-                ContactInvitation.sender_id == self.current_user_id,
-                ContactInvitation.status != InvitationStatus.CANCELLED,
-            )
-            .options(
-                selectinload(ContactInvitation.sender),
-                selectinload(ContactInvitation.recipient),
-            )
-            .order_by(ContactInvitation.created_at.desc())
-        ).all()
+        invs = self.contact_invitation_repository.list_sent_active(self.current_user_id)
         return [_to_read(i) for i in invs]
 
     def get_pending_received_count(self) -> int:
-        result = self.session.exec(
-            select(func.count(ContactInvitation.id)).where(
-                ContactInvitation.recipient_id == self.current_user_id,
-                ContactInvitation.status == InvitationStatus.PENDING,
-            )
-        ).one()
-        return result
+        return self.contact_invitation_repository.count_pending_received(self.current_user_id)
 
     def send(self, data: ContactInvitationCreate) -> ContactInvitationRead:
         if data.recipient_id == self.current_user_id:
@@ -107,25 +71,14 @@ class ContactInvitationService:
             )
 
         # Vérifier que le destinataire existe
-        recipient = self.session.exec(
-            select(User).where(User.id == data.recipient_id, User.is_active == True)
-        ).first()
+        recipient = self.contact_invitation_repository.get_active_user_by_id(data.recipient_id)
         if not recipient:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
 
         # Vérifier qu'une invitation PENDING n'existe pas déjà dans un sens ou l'autre
-        existing = self.session.exec(
-            select(ContactInvitation).where(
-                ContactInvitation.status == InvitationStatus.PENDING,
-                (
-                    (ContactInvitation.sender_id == self.current_user_id) &
-                    (ContactInvitation.recipient_id == data.recipient_id)
-                ) | (
-                    (ContactInvitation.sender_id == data.recipient_id) &
-                    (ContactInvitation.recipient_id == self.current_user_id)
-                )
-            )
-        ).first()
+        existing = self.contact_invitation_repository.find_pending_between(
+            self.current_user_id, data.recipient_id
+        )
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -133,12 +86,9 @@ class ContactInvitationService:
             )
 
         # Vérifier qu'ils ne sont pas déjà connectés (contact lié existe des deux côtés)
-        already_linked = self.session.exec(
-            select(Contact).where(
-                Contact.owner_id == self.current_user_id,
-                Contact.linked_user_id == data.recipient_id,
-            )
-        ).first()
+        already_linked = self.contact_invitation_repository.find_linked_contact(
+            self.current_user_id, data.recipient_id
+        )
         if already_linked:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -152,10 +102,10 @@ class ContactInvitationService:
             message=data.message,
             created_at=datetime.utcnow(),
         )
-        self.session.add(inv)
+        self.contact_invitation_repository.add_invitation(inv)
         self.session.commit()
         self.session.refresh(inv)
-        sender = self.session.exec(select(User).where(User.id == self.current_user_id)).first()
+        sender = self.contact_invitation_repository.get_user_by_id(self.current_user_id)
         sender_name = sender.username if sender else "Quelqu'un"
         _fire_push(self.session, data.recipient_id, "Nouvelle invitation", f"{sender_name} vous a envoyé une invitation de contact", notification_type="contact_invitation")
         return _to_read(self._load(inv.id))
@@ -173,8 +123,8 @@ class ContactInvitationService:
             )
 
         # Créer le contact des deux côtés avec linked_user_id
-        sender = self.session.exec(select(User).where(User.id == inv.sender_id)).first()
-        recipient = self.session.exec(select(User).where(User.id == inv.recipient_id)).first()
+        sender = self.contact_invitation_repository.get_user_by_id(inv.sender_id)
+        recipient = self.contact_invitation_repository.get_user_by_id(inv.recipient_id)
 
         # Contact chez le destinataire → pointe vers l'expéditeur
         self._get_or_create_linked_contact(
@@ -187,9 +137,9 @@ class ContactInvitationService:
             linked_user=recipient,
         )
 
-        inv.status = InvitationStatus.ACCEPTED
-        inv.responded_at = datetime.utcnow()
-        self.session.add(inv)
+        self.contact_invitation_repository.update_invitation_status(
+            inv, InvitationStatus.ACCEPTED, responded_at=datetime.utcnow()
+        )
         self.session.commit()
         acceptor_name = recipient.username if recipient else "Quelqu'un"
         _fire_push(self.session, inv.sender_id, "Invitation acceptée", f"{acceptor_name} a accepté votre invitation", notification_type="contact_accepted")
@@ -207,9 +157,9 @@ class ContactInvitationService:
                 detail=f"Impossible de refuser une invitation en statut '{inv.status}'"
             )
 
-        inv.status = InvitationStatus.DECLINED
-        inv.responded_at = datetime.utcnow()
-        self.session.add(inv)
+        self.contact_invitation_repository.update_invitation_status(
+            inv, InvitationStatus.DECLINED, responded_at=datetime.utcnow()
+        )
         self.session.commit()
         return _to_read(self._load(inv.id))
 
@@ -225,8 +175,7 @@ class ContactInvitationService:
                 detail=f"Impossible d'annuler une invitation en statut '{inv.status}'"
             )
 
-        inv.status = InvitationStatus.CANCELLED
-        self.session.add(inv)
+        self.contact_invitation_repository.update_invitation_status(inv, InvitationStatus.CANCELLED)
         self.session.commit()
         return _to_read(self._load(inv.id))
 
@@ -235,39 +184,22 @@ class ContactInvitationService:
         Si un contact avec ce nom existe, on lui attache le linked_user_id.
         Sinon on crée un nouveau contact avec le username comme nom."""
         # Chercher par linked_user_id d'abord
-        existing = self.session.exec(
-            select(Contact).where(
-                Contact.owner_id == owner_id,
-                Contact.linked_user_id == linked_user.id,
-            )
-        ).first()
+        existing = self.contact_invitation_repository.find_contact_by_linked_user(owner_id, linked_user.id)
         if existing:
             return existing
 
         # Chercher par email si disponible
         if linked_user.email:
-            by_email = self.session.exec(
-                select(Contact).where(
-                    Contact.owner_id == owner_id,
-                    Contact.email == linked_user.email,
-                )
-            ).first()
+            by_email = self.contact_invitation_repository.find_contact_by_email(owner_id, linked_user.email)
             if by_email:
-                by_email.linked_user_id = linked_user.id
-                self.session.add(by_email)
+                self.contact_invitation_repository.update_contact_link(by_email, linked_user.id)
                 self.session.commit()
                 return by_email
 
         # Chercher par username (nom du contact)
-        by_name = self.session.exec(
-            select(Contact).where(
-                Contact.owner_id == owner_id,
-                Contact.name == linked_user.username,
-            )
-        ).first()
+        by_name = self.contact_invitation_repository.find_contact_by_name(owner_id, linked_user.username)
         if by_name:
-            by_name.linked_user_id = linked_user.id
-            self.session.add(by_name)
+            self.contact_invitation_repository.update_contact_link(by_name, linked_user.id)
             self.session.commit()
             return by_name
 
@@ -279,6 +211,6 @@ class ContactInvitationService:
             linked_user_id=linked_user.id,
             library_shared=False,
         )
-        self.session.add(contact)
+        self.contact_invitation_repository.add_contact(contact)
         self.session.commit()
         return contact
