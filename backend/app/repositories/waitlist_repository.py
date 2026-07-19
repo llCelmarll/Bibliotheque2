@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from app.models.waitlist_entry_model import WaitlistEntry, WaitlistStatus
 
@@ -48,3 +48,8 @@ class WaitlistRepository:
 
     def delete_entry(self, entry: WaitlistEntry) -> None:
         self.session.delete(entry)
+
+    def count_pending(self) -> int:
+        return self.session.exec(
+            select(func.count(WaitlistEntry.id)).where(WaitlistEntry.status == WaitlistStatus.pending)
+        ).one()

@@ -1,21 +1,15 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, select
-from sqlalchemy import func
+from fastapi import APIRouter, Depends, Query, status
+from sqlmodel import Session
 from app.db import get_session
 from app.models.user_model import User
-from app.models.book_model import Book
-from app.models.loan_model import Loan, LoanStatus
-from app.models.report_model import Report, ReportStatus
-from app.models.audit_log_model import AuditLog
-from app.models.whitelist_entry_model import WhitelistEntry
-from app.models.waitlist_entry_model import WaitlistEntry, WaitlistStatus
 from app.schemas.admin_schemas import (
     AdminStats, AdminUserRead, AdminUserUpdate,
     WhitelistEntryRead, WhitelistEntryCreate, AuditLogRead,
 )
 from app.schemas.book_schemas import BookRead, BookAdvancedSearchParams
 from app.schemas.other_schemas import SortBy, SortOrder
+from app.services.admin_service import AdminService
 from app.services.auth_service import get_current_moderator_user_sync as get_current_moderator_user, get_current_admin_user_sync as get_current_admin_user
 from app.services.book_service import BookService
 from app.repositories.book_repository import BookRepository
@@ -23,31 +17,20 @@ from app.repositories.book_repository import BookRepository
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+def get_admin_service(
+    session: Session = Depends(get_session),
+) -> AdminService:
+    return AdminService(session)
+
+
 # --- Stats ---
 
 @router.get("/stats", response_model=AdminStats)
 def get_stats(
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_moderator_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    total_users = session.scalar(select(func.count(User.id)))
-    active_users = session.scalar(select(func.count(User.id)).where(User.is_active == True))
-    total_books = session.scalar(select(func.count(Book.id)))
-    active_loans = session.scalar(select(func.count(Loan.id)).where(Loan.status == LoanStatus.ACTIVE))
-    pending_reports = session.scalar(select(func.count(Report.id)).where(Report.status == ReportStatus.pending))
-    whitelist_count = session.scalar(select(func.count(WhitelistEntry.id)))
-    pending_waitlist = session.scalar(
-        select(func.count(WaitlistEntry.id)).where(WaitlistEntry.status == WaitlistStatus.pending)
-    )
-    return AdminStats(
-        total_users=total_users,
-        active_users=active_users,
-        total_books=total_books,
-        active_loans=active_loans,
-        pending_reports=pending_reports,
-        whitelist_count=whitelist_count,
-        pending_waitlist=pending_waitlist,
-    )
+    return service.get_stats()
 
 
 # --- Users ---
@@ -59,144 +42,67 @@ def list_users(
     role: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=1000),
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_moderator_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    query = select(User)
-    if search:
-        query = query.where(
-            (User.email.ilike(f"%{search}%")) | (User.username.ilike(f"%{search}%"))
-        )
-    if is_active is not None:
-        query = query.where(User.is_active == is_active)
-    if role:
-        query = query.where(User.role == role)
-    query = query.order_by(User.created_at.desc()).offset(offset).limit(limit)
-    return session.exec(query).all()
+    return service.list_users(search, is_active, role, offset, limit)
 
 
 @router.get("/users/{user_id}/loans")
 def get_user_loans(
     user_id: int,
     limit: int = Query(50, ge=1, le=200),
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_moderator_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-    query = (
-        select(Loan)
-        .where(Loan.owner_id == user_id)
-        .order_by(Loan.loan_date.desc())
-        .limit(limit)
-    )
-    loans = session.exec(query).all()
-    result = []
-    for loan in loans:
-        book = session.get(Book, loan.book_id) if loan.book_id else None
-        result.append({
-            "id": loan.id,
-            "status": loan.status,
-            "loan_date": loan.loan_date,
-            "due_date": loan.due_date,
-            "return_date": loan.return_date,
-            "book": {"id": book.id, "title": book.title, "authors": [{"name": a.name} for a in book.authors]} if book else None,
-            "contact": {"name": loan.contact.name} if loan.contact else None,
-        })
-    return result
+    return service.get_user_loans(user_id, limit)
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserRead)
 def update_user(
     user_id: int,
     data: AdminUserUpdate,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_moderator_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-    if user.id == current_user.id:
-        raise HTTPException(status_code=400, detail="Vous ne pouvez pas modifier votre propre compte depuis l'admin")
-    if data.role is not None and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seul un administrateur peut modifier les rôles")
-
-    audit_detail = {}
-    if data.is_active is not None:
-        audit_detail["is_active"] = {"before": user.is_active, "after": data.is_active}
-        user.is_active = data.is_active
-    if data.role is not None:
-        audit_detail["role"] = {"before": user.role, "after": data.role}
-        user.role = data.role
-
-    action = "suspend_user" if data.is_active is False else "change_role" if data.role else "update_user"
-    audit = AuditLog(actor_id=current_user.id, action=action, target_type="user", target_id=user_id, detail=audit_detail)
-    session.add(user)
-    session.add(audit)
-    session.commit()
-    session.refresh(user)
-    return user
+    return service.update_user(user_id, data, current_user)
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
     user_id: int,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_admin_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-    if user.id == current_user.id:
-        raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
-    audit = AuditLog(actor_id=current_user.id, action="delete_user", target_type="user", target_id=user_id, detail={"email": user.email, "username": user.username})
-    session.add(audit)
-    session.delete(user)
-    session.commit()
+    service.delete_user(user_id, current_user)
 
 
 # --- Whitelist ---
 
 @router.get("/whitelist", response_model=List[WhitelistEntryRead])
 def list_whitelist(
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_admin_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    return session.exec(select(WhitelistEntry).order_by(WhitelistEntry.added_at.desc())).all()
+    return service.list_whitelist()
 
 
 @router.post("/whitelist", response_model=WhitelistEntryRead, status_code=status.HTTP_201_CREATED)
 def add_to_whitelist(
     data: WhitelistEntryCreate,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_admin_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    existing = session.exec(select(WhitelistEntry).where(WhitelistEntry.email == data.email.lower())).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Cet email est déjà dans la whitelist")
-    entry = WhitelistEntry(email=data.email.lower(), added_by_id=current_user.id)
-    audit = AuditLog(actor_id=current_user.id, action="whitelist_add", target_type="whitelist", detail={"email": data.email.lower()})
-    session.add(entry)
-    session.add(audit)
-    session.commit()
-    session.refresh(entry)
-    return entry
+    return service.add_to_whitelist(data, current_user)
 
 
 @router.delete("/whitelist/{email}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_from_whitelist(
     email: str,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_admin_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    entry = session.exec(select(WhitelistEntry).where(WhitelistEntry.email == email.lower())).first()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Email introuvable dans la whitelist")
-    audit = AuditLog(actor_id=current_user.id, action="whitelist_remove", target_type="whitelist", detail={"email": email.lower()})
-    session.add(audit)
-    session.delete(entry)
-    session.commit()
+    service.remove_from_whitelist(email, current_user)
 
 
 # --- Audit log ---
@@ -206,14 +112,10 @@ def get_audit_log(
     action: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=1000),
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_moderator_user),
+    service: AdminService = Depends(get_admin_service),
 ):
-    query = select(AuditLog)
-    if action:
-        query = query.where(AuditLog.action == action)
-    query = query.order_by(AuditLog.created_at.desc()).offset(offset).limit(limit)
-    return session.exec(query).all()
+    return service.get_audit_log(action, offset, limit)
 
 
 @router.get("/books", response_model=List[BookRead])
