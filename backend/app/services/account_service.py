@@ -1,19 +1,29 @@
 import csv
 import io
 import logging
+import os
+import secrets
+import sys
 import zipfile
+from datetime import datetime, timedelta
 from time import perf_counter
+from typing import Optional
 
+from fastapi import HTTPException
 from sqlmodel import Session
 
+from app.config.whitelist import is_email_allowed
+from app.models.password_reset_token_model import PasswordResetToken
 from app.models.user_model import User
 from app.repositories.account_repository import AccountRepository
 
 logger = logging.getLogger("app")
 
+RESET_TOKEN_EXPIRE_MINUTES = 15
+
 
 class AccountService:
-    def __init__(self, session: Session, user_id: int):
+    def __init__(self, session: Session, user_id: Optional[int] = None):
         self.session = session
         self.user_id = user_id
         self.account_repository = AccountRepository(session)
@@ -184,3 +194,193 @@ class AccountService:
         for t in tokens:
             writer.writerow([t.platform or '', t.created_at.isoformat()])
         return output.getvalue()
+
+    # --- Mot de passe / profil / suppression de compte ---
+
+    async def request_password_reset(self, email: str) -> dict:
+        """Demande de réinitialisation de mot de passe.
+        Envoie un email avec un lien valable 15 min.
+        Réponse toujours identique (anti-énumération des emails)."""
+        generic_response = {"message": "Si cet email correspond à un compte, vous recevrez un lien dans quelques minutes."}
+
+        user = self.account_repository.get_user_by_email(email.lower())
+        if not user or not user.is_active:
+            return generic_response
+
+        # Invalider les anciens tokens non utilisés pour cet utilisateur
+        old_tokens = self.account_repository.list_unused_reset_tokens(user.id)
+        for t in old_tokens:
+            self.account_repository.mark_reset_token_used(t)
+
+        # Créer le nouveau token
+        raw_token = secrets.token_urlsafe(32)
+        reset_token = PasswordResetToken(
+            token=raw_token,
+            user_id=user.id,
+            expires_at=datetime.utcnow() + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES),
+            used=False,
+            created_at=datetime.utcnow(),
+        )
+        self.account_repository.add_reset_token(reset_token)
+        self.session.commit()
+
+        # Envoi de l'email (sauf en mode test)
+        is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true"
+        if not is_testing:
+            try:
+                from app.services.email_service import email_notification_service
+                await email_notification_service.send_password_reset_email(
+                    email=user.email,
+                    reset_token=raw_token,
+                )
+            except Exception as e:
+                logger.warning("Erreur envoi email reset : %s", e)
+
+        return generic_response
+
+    def reset_password(self, token: str, new_password: str, hash_password_fn) -> dict:
+        """Réinitialisation du mot de passe via token (reçu par email).
+        Le token est à usage unique et valable 15 min."""
+        reset_token = self.account_repository.get_reset_token_by_value(token)
+
+        if not reset_token:
+            raise HTTPException(status_code=400, detail="Lien de réinitialisation invalide.")
+
+        if reset_token.used:
+            raise HTTPException(status_code=400, detail="Ce lien a déjà été utilisé.")
+
+        if datetime.utcnow() > reset_token.expires_at:
+            raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez faire une nouvelle demande.")
+
+        user = self.account_repository.get_user(reset_token.user_id)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=400, detail="Compte introuvable ou désactivé.")
+
+        # Mettre à jour le mot de passe
+        user.hashed_password = hash_password_fn(new_password)
+        self.account_repository.update_user_fields(user)
+
+        # Invalider le token
+        self.account_repository.mark_reset_token_used(reset_token)
+
+        self.session.commit()
+
+        return {"message": "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."}
+
+    def change_password(self, current_user: User, current_password: str, new_password: str, verify_password_fn, hash_password_fn) -> dict:
+        """Changement de mot de passe pour un utilisateur connecté. Nécessite le mot de passe actuel."""
+        if not verify_password_fn(current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect.")
+
+        if verify_password_fn(new_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Le nouveau mot de passe doit être différent de l'ancien.")
+
+        current_user.hashed_password = hash_password_fn(new_password)
+        self.account_repository.update_user_fields(current_user)
+        self.session.commit()
+
+        return {"message": "Mot de passe modifié avec succès."}
+
+    def update_profile(self, current_user: User, username: Optional[str], email: Optional[str]) -> dict:
+        """Modification du profil utilisateur (username et/ou email)."""
+        if username is None and email is None:
+            raise HTTPException(status_code=400, detail="Au moins un champ à modifier est requis.")
+
+        if username is not None:
+            import re
+            username = username.strip()
+            if len(username) < 3:
+                raise HTTPException(status_code=400, detail="Le nom d'utilisateur doit contenir au moins 3 caractères.")
+            if len(username) > 50:
+                raise HTTPException(status_code=400, detail="Le nom d'utilisateur ne peut pas dépasser 50 caractères.")
+            if not re.match(r'^[\w\s\-]+$', username, re.UNICODE):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Le nom d'utilisateur ne peut contenir que des lettres, chiffres, espaces, tirets et underscores.",
+                )
+            current_user.username = username
+
+        if email is not None:
+            new_email = email.lower().strip()
+            if new_email != current_user.email:
+                if not is_email_allowed(new_email):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Cette adresse email n'est pas autorisée. Contactez l'administrateur.",
+                    )
+                if self.account_repository.email_taken(new_email):
+                    raise HTTPException(status_code=400, detail="Cette adresse email est déjà utilisée.")
+                current_user.email = new_email
+
+        self.account_repository.update_user_fields(current_user)
+        self.session.commit()
+        self.session.refresh(current_user)
+
+        return {
+            "id": current_user.id,
+            "email": current_user.email,
+            "username": current_user.username,
+            "is_active": current_user.is_active,
+            "created_at": current_user.created_at,
+        }
+
+    def delete_account(self, current_user: User, password: str, confirmation: str, client_ip: str, verify_password_fn) -> dict:
+        """Suppression définitive du compte et de toutes les données associées.
+        Nécessite le mot de passe et la saisie de "SUPPRIMER"."""
+        if confirmation != "SUPPRIMER":
+            raise HTTPException(status_code=400, detail="Confirmation incorrecte. Tapez exactement SUPPRIMER.")
+
+        if not verify_password_fn(password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Mot de passe incorrect.")
+
+        user_id = current_user.id
+
+        # 1. Tokens de reset, vérification email et push notifications
+        for t in self.account_repository.list_reset_tokens(user_id):
+            self.account_repository.delete_entity(t)
+        for t in self.account_repository.list_email_verification_tokens(user_id):
+            self.account_repository.delete_entity(t)
+        for t in self.account_repository.get_push_tokens(user_id):
+            self.account_repository.delete_entity(t)
+
+        # 2. Demandes de prêt (en tant que demandeur ou prêteur)
+        for r in self.account_repository.get_loan_requests(user_id):
+            self.account_repository.delete_entity(r)
+
+        # 3. Invitations (envoyées ou reçues)
+        for inv in self.account_repository.get_invitations(user_id):
+            self.account_repository.delete_entity(inv)
+
+        # 4. Délier les contacts d'autres utilisateurs qui pointaient vers ce compte
+        for contact in self.account_repository.list_contacts_linked_to_user(user_id):
+            self.account_repository.unlink_contact(contact)
+
+        # 5. Prêts en tant que propriétaire
+        for loan in self.account_repository.get_loans_as_owner(user_id):
+            self.account_repository.delete_entity(loan)
+
+        # 6. Livres empruntés
+        for bb in self.account_repository.get_borrowed_books(user_id):
+            self.account_repository.delete_entity(bb)
+
+        # 7. Contacts du compte (et leurs prêts/borrowed_books via cascade SQLAlchemy)
+        for contact in self.account_repository.get_contacts_owned(user_id):
+            self.account_repository.delete_entity(contact)
+
+        # Flush pour appliquer les suppressions avant de toucher aux livres
+        self.session.flush()
+
+        # 8. Livres du compte
+        for book in self.account_repository.list_books_owned(user_id):
+            self.account_repository.delete_entity(book)
+
+        # 9. Supprimer l'utilisateur
+        logger.info(
+            "ACCOUNT_DELETED user_id=%s email=%s username=%s ip=%s",
+            user_id, current_user.email, current_user.username, client_ip,
+        )
+
+        self.account_repository.delete_user(current_user)
+        self.session.commit()
+
+        return {"message": "Compte supprimé définitivement."}
