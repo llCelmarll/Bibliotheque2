@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
 from app.models.genre_model import Genre
+from app.models.book_genre_link_model import BookGenreLink
 
 class GenreRepository:
 	"""Repository des genres"""
@@ -63,3 +64,30 @@ class GenreRepository:
 		)
 		results = self.session.exec(statement)
 		return list(results)
+
+	def get_book_genre_links(self, genre_id: int) -> List[BookGenreLink]:
+		"""Retourne tous les liens book-genre pour un genre donné."""
+		statement = select(BookGenreLink).where(BookGenreLink.genre_id == genre_id)
+		return list(self.session.exec(statement))
+
+	def get_book_genre_link(self, book_id: int, genre_id: int) -> Optional[BookGenreLink]:
+		"""Retourne le lien book-genre pour une paire donnée, s'il existe."""
+		statement = select(BookGenreLink).where(
+			BookGenreLink.book_id == book_id,
+			BookGenreLink.genre_id == genre_id,
+		)
+		return self.session.exec(statement).first()
+
+	def delete_book_genre_link(self, link: BookGenreLink) -> None:
+		"""Supprime un lien book-genre (sans commit)."""
+		self.session.delete(link)
+
+	def add_book_genre_link(self, book_id: int, genre_id: int) -> BookGenreLink:
+		"""Crée un nouveau lien book-genre (sans commit)."""
+		link = BookGenreLink(book_id=book_id, genre_id=genre_id)
+		self.session.add(link)
+		return link
+
+	def delete_no_commit(self, genre: Genre) -> None:
+		"""Supprime un genre sans committer (pour transactions groupées, ex: fusion)."""
+		self.session.delete(genre)

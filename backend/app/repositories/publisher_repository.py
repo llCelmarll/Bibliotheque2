@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
 from app.models.publisher_model import Publisher
+from app.models.book_model import Book
 
 class PublisherRepository:
 	"""Repository de éditeurs"""
@@ -63,3 +64,18 @@ class PublisherRepository:
 		)
 		results = self.session.exec(statement)
 		return list(results)
+
+	def get_books_by_publisher(self, publisher_id: int) -> List[Book]:
+		"""Retourne tous les livres liés à un éditeur."""
+		statement = select(Book).where(Book.publisher_id == publisher_id)
+		return list(self.session.exec(statement))
+
+	def reassign_book_publisher(self, book: Book, target_publisher_id: int) -> Book:
+		"""Réassigne un livre vers un autre éditeur (sans commit)."""
+		book.publisher_id = target_publisher_id
+		self.session.add(book)
+		return book
+
+	def delete_no_commit(self, publisher: Publisher) -> None:
+		"""Supprime un éditeur sans committer (pour transactions groupées, ex: fusion)."""
+		self.session.delete(publisher)
