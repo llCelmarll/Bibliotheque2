@@ -25,6 +25,15 @@ jest.mock('@/config/api', () => ({
   default: { BASE_URL: 'http://localhost:8000' },
 }));
 
+jest.mock('expo-router', () => ({
+  router: { replace: jest.fn() },
+}));
+
+jest.mock('@/services/api/authInterceptor', () => ({
+  setupAuthInterceptor: jest.fn(),
+  default: jest.fn(),
+}));
+
 import { accountService } from '../accountService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
