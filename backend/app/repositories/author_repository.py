@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
 from app.models.author_model import Author
+from app.models.book_author_link_model import BookAuthorLink
 from app.schemas.author_schemas import AuthorRead, AuthorCreate
 
 class AuthorRepository:
@@ -64,3 +65,30 @@ class AuthorRepository:
 		)
 		results = self.session.exec(statement)
 		return list(results)
+
+	def get_book_author_links(self, author_id: int) -> List[BookAuthorLink]:
+		"""Retourne tous les liens book-author pour un auteur donné."""
+		statement = select(BookAuthorLink).where(BookAuthorLink.author_id == author_id)
+		return list(self.session.exec(statement))
+
+	def get_book_author_link(self, book_id: int, author_id: int) -> Optional[BookAuthorLink]:
+		"""Retourne le lien book-author pour une paire donnée, s'il existe."""
+		statement = select(BookAuthorLink).where(
+			BookAuthorLink.book_id == book_id,
+			BookAuthorLink.author_id == author_id,
+		)
+		return self.session.exec(statement).first()
+
+	def delete_book_author_link(self, link: BookAuthorLink) -> None:
+		"""Supprime un lien book-author (sans commit)."""
+		self.session.delete(link)
+
+	def add_book_author_link(self, book_id: int, author_id: int) -> BookAuthorLink:
+		"""Crée un nouveau lien book-author (sans commit)."""
+		link = BookAuthorLink(book_id=book_id, author_id=author_id)
+		self.session.add(link)
+		return link
+
+	def delete_no_commit(self, author: Author) -> None:
+		"""Supprime un auteur sans committer (pour transactions groupées, ex: fusion)."""
+		self.session.delete(author)

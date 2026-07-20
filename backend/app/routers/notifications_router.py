@@ -1,45 +1,24 @@
-from typing import List
 from fastapi import APIRouter, Depends
-from sqlmodel import Session, select, func
+from sqlmodel import Session
 
 from app.db import get_session
 from app.services.auth_service import get_current_user
 from app.models.user_model import User
-from app.models.user_loan_request_model import UserLoanRequest, UserLoanRequestStatus
-from app.models.contact_invitation_model import ContactInvitation, InvitationStatus
+from app.services.notification_service import NotificationService
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
+def get_notification_service(
+    session: Session = Depends(get_session),
+) -> NotificationService:
+    return NotificationService(session)
+
+
 @router.get("/counts")
 async def get_notification_counts(
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
+    service: NotificationService = Depends(get_notification_service),
 ):
     """Retourne les compteurs de notifications en une seule requête (pour le polling)."""
-    invitation_pending = session.exec(
-        select(func.count(ContactInvitation.id)).where(
-            ContactInvitation.recipient_id == current_user.id,
-            ContactInvitation.status == InvitationStatus.PENDING,
-        )
-    ).one()
-
-    loan_pending = session.exec(
-        select(func.count(UserLoanRequest.id)).where(
-            UserLoanRequest.lender_id == current_user.id,
-            UserLoanRequest.status == UserLoanRequestStatus.PENDING,
-        )
-    ).one()
-
-    declined_ids: List[int] = list(session.exec(
-        select(UserLoanRequest.id).where(
-            UserLoanRequest.requester_id == current_user.id,
-            UserLoanRequest.status == UserLoanRequestStatus.DECLINED,
-        )
-    ).all())
-
-    return {
-        "invitation_pending": invitation_pending,
-        "loan_pending": loan_pending,
-        "declined_outgoing_ids": declined_ids,
-    }
+    return service.get_counts(current_user.id)

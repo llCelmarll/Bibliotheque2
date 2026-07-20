@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlmodel import Session, select, func
 from app.models.series_model import Series
+from app.models.book_series_link_model import BookSeriesLink
 
 class SeriesRepository:
 	"""Repository des séries"""
@@ -71,3 +72,30 @@ class SeriesRepository:
 			return existing
 		series = Series(name=name)
 		return self.create(series)
+
+	def get_book_series_links(self, series_id: int) -> List[BookSeriesLink]:
+		"""Retourne tous les liens book-series pour une série donnée."""
+		statement = select(BookSeriesLink).where(BookSeriesLink.series_id == series_id)
+		return list(self.session.exec(statement))
+
+	def get_book_series_link(self, book_id: int, series_id: int) -> Optional[BookSeriesLink]:
+		"""Retourne le lien book-series pour une paire donnée, s'il existe."""
+		statement = select(BookSeriesLink).where(
+			BookSeriesLink.book_id == book_id,
+			BookSeriesLink.series_id == series_id,
+		)
+		return self.session.exec(statement).first()
+
+	def delete_book_series_link(self, link: BookSeriesLink) -> None:
+		"""Supprime un lien book-series (sans commit)."""
+		self.session.delete(link)
+
+	def add_book_series_link(self, book_id: int, series_id: int, volume_number: Optional[int]) -> BookSeriesLink:
+		"""Crée un nouveau lien book-series en préservant le numéro de tome (sans commit)."""
+		link = BookSeriesLink(book_id=book_id, series_id=series_id, volume_number=volume_number)
+		self.session.add(link)
+		return link
+
+	def delete_no_commit(self, series: Series) -> None:
+		"""Supprime une série sans committer (pour transactions groupées, ex: fusion)."""
+		self.session.delete(series)

@@ -6,10 +6,11 @@ import bcrypt
 from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlmodel import Session, select
+from sqlmodel import Session
 from app.models.user_model import User
 from app.db import get_session
 from app.config.whitelist import is_email_allowed
+from app.repositories.auth_repository import AuthRepository
 
 # Configuration de sécurité
 import os
@@ -91,6 +92,7 @@ class AuthService:
             return None
     def __init__(self, session: Session):
         self.session = session
+        self.auth_repository = AuthRepository(session)
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Vérifier un mot de passe contre son hash"""
@@ -102,9 +104,7 @@ class AuthService:
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Récupérer un utilisateur par son email"""
-        statement = select(User).where(User.email == email)
-        result = self.session.exec(statement)
-        return result.first()
+        return self.auth_repository.get_user_by_email(email)
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
         user = self.get_user_by_email(email)
@@ -140,14 +140,12 @@ class AuthService:
         payload = self.verify_token(token)
         if payload is None:
             return None
-        
+
         user_id: int = payload.get("sub")
         if user_id is None:
             return None
-            
-        statement = select(User).where(User.id == user_id)
-        result = self.session.exec(statement)
-        return result.first()
+
+        return self.auth_repository.get_user_by_id(user_id)
 
     def validate_email(self, email: str) -> bool:
         """Valider le format d'un email"""
@@ -237,7 +235,7 @@ class AuthService:
             consent_accepted_at=datetime.utcnow() if consent_version else None,
         )
 
-        self.session.add(new_user)
+        self.auth_repository.add_user(new_user)
         self.session.commit()
         self.session.refresh(new_user)
 
@@ -251,7 +249,7 @@ class AuthService:
             used=False,
             created_at=datetime.utcnow(),
         )
-        self.session.add(verification_token)
+        self.auth_repository.add_verification_token(verification_token)
         self.session.commit()
 
         is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true"
@@ -282,13 +280,84 @@ class AuthService:
 
     def update_consent(self, user_id: int, consent_version: str) -> User:
         """Enregistre l'acceptation d'une nouvelle version des CGU."""
-        user = self.session.get(User, user_id)
+        user = self.auth_repository.get_user_by_id(user_id)
         user.consent_version = consent_version
         user.consent_accepted_at = datetime.utcnow()
-        self.session.add(user)
+        self.auth_repository.update_user(user)
         self.session.commit()
         self.session.refresh(user)
         return user
+
+    def verify_email(self, token: str) -> dict:
+        """Activation du compte via le lien reçu par email.
+        Le token est à usage unique et valable 24 heures."""
+        record = self.auth_repository.get_verification_token(token)
+
+        if not record:
+            raise HTTPException(status_code=400, detail="Lien de vérification invalide.")
+
+        if record.used:
+            raise HTTPException(status_code=400, detail="Ce lien a déjà été utilisé.")
+
+        if datetime.utcnow() > record.expires_at:
+            raise HTTPException(status_code=400, detail="Ce lien a expiré. Demandez un nouveau lien.")
+
+        user = self.auth_repository.get_user_by_id(record.user_id)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=400, detail="Compte introuvable ou désactivé.")
+
+        user.email_verified_at = datetime.utcnow()
+        self.auth_repository.update_user(user)
+
+        self.auth_repository.mark_verification_token_used(record)
+
+        self.session.commit()
+
+        return {"message": "Email vérifié avec succès. Vous pouvez maintenant vous connecter."}
+
+    async def resend_verification(self, email: str) -> dict:
+        """Renvoie un email de vérification si le compte n'est pas encore activé.
+        Réponse toujours identique (anti-énumération)."""
+        import os
+        import secrets
+        import sys
+
+        generic_response = {"message": "Si cet email correspond à un compte non vérifié, vous recevrez un nouveau lien."}
+
+        user = self.auth_repository.get_user_by_email(email.lower())
+        if not user or not user.is_active or user.email_verified_at is not None:
+            return generic_response
+
+        # Invalider les anciens tokens non utilisés
+        for old in self.auth_repository.list_unused_verification_tokens(user.id):
+            self.auth_repository.mark_verification_token_used(old)
+
+        raw_token = secrets.token_urlsafe(32)
+        from app.models.email_verification_token_model import EmailVerificationToken
+        new_token = EmailVerificationToken(
+            token=raw_token,
+            user_id=user.id,
+            expires_at=datetime.utcnow() + timedelta(hours=24),
+            used=False,
+            created_at=datetime.utcnow(),
+        )
+        self.auth_repository.add_verification_token(new_token)
+        self.session.commit()
+
+        is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true"
+        if not is_testing:
+            try:
+                from app.services.email_service import email_notification_service
+                await email_notification_service.send_email_verification(
+                    email=user.email,
+                    username=user.username,
+                    verification_token=raw_token,
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger("app").warning("Erreur renvoi email verification : %s", e)
+
+        return generic_response
 
 
 def get_auth_service(session: Session = Depends(get_session)) -> AuthService:

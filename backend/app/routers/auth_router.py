@@ -1,17 +1,14 @@
 import logging
 import os
-import secrets
-import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session, select
+from sqlmodel import Session
 from app.schemas.user_schemas import UserLogin, UserRead, Token, LoginToken
 from app.schemas.auth_schemas import UserCreate, UserResponse
 from app.services.auth_service import AuthService, get_auth_service, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.user_model import User
-from app.models.email_verification_token_model import EmailVerificationToken
 from app.db import get_session
 from app.utils.rate_limiter import rate_limiter
 
@@ -25,15 +22,15 @@ def get_client_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:
         return forwarded.split(",")[0].strip()
-    
+
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
         return real_ip
-    
+
     # Fallback sur l'IP du client direct
     if request.client:
         return request.client.host
-    
+
     return "unknown"
 
 @router.post("/login", response_model=LoginToken)
@@ -171,7 +168,7 @@ async def register_user(
                 "token_type": "bearer"
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -192,38 +189,13 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
 @router.get("/verify-email")
 async def verify_email(
     token: str,
-    session: Session = Depends(get_session),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Activation du compte via le lien reçu par email.
     Le token est à usage unique et valable 24 heures.
     """
-    record = session.exec(
-        select(EmailVerificationToken).where(EmailVerificationToken.token == token)
-    ).first()
-
-    if not record:
-        raise HTTPException(status_code=400, detail="Lien de vérification invalide.")
-
-    if record.used:
-        raise HTTPException(status_code=400, detail="Ce lien a déjà été utilisé.")
-
-    if datetime.utcnow() > record.expires_at:
-        raise HTTPException(status_code=400, detail="Ce lien a expiré. Demandez un nouveau lien.")
-
-    user = session.get(User, record.user_id)
-    if not user or not user.is_active:
-        raise HTTPException(status_code=400, detail="Compte introuvable ou désactivé.")
-
-    user.email_verified_at = datetime.utcnow()
-    session.add(user)
-
-    record.used = True
-    session.add(record)
-
-    session.commit()
-
-    return {"message": "Email vérifié avec succès. Vous pouvez maintenant vous connecter."}
+    return auth_service.verify_email(token)
 
 
 class ResendVerificationRequest(BaseModel):
@@ -234,6 +206,7 @@ class ResendVerificationRequest(BaseModel):
 async def resend_verification(
     data: ResendVerificationRequest,
     request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
     session: Session = Depends(get_session),
 ):
     """
@@ -244,46 +217,7 @@ async def resend_verification(
     client_ip = get_client_ip(request)
     rate_limiter.check_and_record(client_ip, "resend-verification", max_attempts=3, window_minutes=15, session=session)
 
-    generic_response = {"message": "Si cet email correspond à un compte non vérifié, vous recevrez un nouveau lien."}
-
-    user = session.exec(select(User).where(User.email == data.email.lower())).first()
-    if not user or not user.is_active or user.email_verified_at is not None:
-        return generic_response
-
-    # Invalider les anciens tokens non utilisés
-    for old in session.exec(
-        select(EmailVerificationToken).where(
-            EmailVerificationToken.user_id == user.id,
-            EmailVerificationToken.used == False,
-        )
-    ).all():
-        old.used = True
-        session.add(old)
-
-    raw_token = secrets.token_urlsafe(32)
-    new_token = EmailVerificationToken(
-        token=raw_token,
-        user_id=user.id,
-        expires_at=datetime.utcnow() + timedelta(hours=24),
-        used=False,
-        created_at=datetime.utcnow(),
-    )
-    session.add(new_token)
-    session.commit()
-
-    is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true"
-    if not is_testing:
-        try:
-            from app.services.email_service import email_notification_service
-            await email_notification_service.send_email_verification(
-                email=user.email,
-                username=user.username,
-                verification_token=raw_token,
-            )
-        except Exception as e:
-            logger.warning("Erreur renvoi email verification : %s", e)
-
-    return generic_response
+    return await auth_service.resend_verification(data.email)
 
 
 @router.post("/consent")

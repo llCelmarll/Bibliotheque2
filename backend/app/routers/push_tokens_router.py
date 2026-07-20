@@ -1,15 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
 
 from app.db import get_session
-from app.models.user_push_token_model import UserPushToken
 from app.services.auth_service import get_current_user
 from app.models.user_model import User
+from app.services.push_token_service import PushTokenService
 
 router = APIRouter(prefix="/push-tokens", tags=["push-notifications"])
+
+
+def get_push_token_service(
+    session: Session = Depends(get_session),
+) -> PushTokenService:
+    return PushTokenService(session)
 
 
 class PushTokenRegister(BaseModel):
@@ -20,35 +25,11 @@ class PushTokenRegister(BaseModel):
 @router.post("", status_code=201)
 async def register_push_token(
     data: PushTokenRegister,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
+    service: PushTokenService = Depends(get_push_token_service),
 ):
     """Enregistre ou met à jour un token push Expo pour l'utilisateur courant."""
-    if not data.token.startswith("ExponentPushToken["):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token push invalide — doit commencer par ExponentPushToken["
-        )
-
-    existing = session.exec(
-        select(UserPushToken).where(UserPushToken.token == data.token)
-    ).first()
-
-    if existing:
-        existing.user_id = current_user.id
-        existing.platform = data.platform
-        existing.updated_at = datetime.utcnow()
-        session.add(existing)
-    else:
-        push_token = UserPushToken(
-            user_id=current_user.id,
-            token=data.token,
-            platform=data.platform,
-        )
-        session.add(push_token)
-
-    session.commit()
-    return {"status": "ok"}
+    return service.register_token(current_user.id, data.token, data.platform)
 
 
 class PushPrefsUpdate(BaseModel):
@@ -58,39 +39,27 @@ class PushPrefsUpdate(BaseModel):
 @router.get("/prefs", status_code=200)
 async def get_push_prefs(
     current_user: User = Depends(get_current_user),
+    service: PushTokenService = Depends(get_push_token_service),
 ):
     """Récupère les préférences de notifications push de l'utilisateur."""
-    return {"prefs": current_user.push_prefs or {}}
+    return service.get_prefs(current_user)
 
 
 @router.put("/prefs", status_code=200)
 async def update_push_prefs(
     data: PushPrefsUpdate,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
+    service: PushTokenService = Depends(get_push_token_service),
 ):
     """Met à jour les préférences de notifications push de l'utilisateur."""
-    current_user.push_prefs = data.prefs
-    session.add(current_user)
-    session.commit()
-    return {"status": "ok"}
-
+    return service.update_prefs(current_user, data.prefs)
 
 
 @router.delete("/{token}", status_code=204)
 async def unregister_push_token(
     token: str,
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
+    service: PushTokenService = Depends(get_push_token_service),
 ):
     """Supprime un token push (appelé au logout)."""
-    existing = session.exec(
-        select(UserPushToken).where(
-            UserPushToken.token == token,
-            UserPushToken.user_id == current_user.id,
-        )
-    ).first()
-
-    if existing:
-        session.delete(existing)
-        session.commit()
+    service.unregister_token(token, current_user.id)
