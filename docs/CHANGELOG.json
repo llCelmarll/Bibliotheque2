@@ -1,5 +1,12 @@
 [
     {
+        "version": "1.5.0",
+        "date": "2026-07-23",
+        "title": "Export de vos données et améliorations d'accessibilité",
+        "description": "Vous pouvez désormais exporter l'ensemble de vos données personnelles au format ZIP depuis les paramètres. Améliorations d'accessibilité : navigation au clavier dans les formulaires, focus piégé dans les fenêtres modales sur le web, corrections de contraste. Correction d'un problème de stabilité pouvant provoquer un plantage de l'application sur mobile.",
+        "type": "feature"
+    },
+    {
         "version": "1.4.1",
         "date": "2026-07-05",
         "title": "Politique de confidentialité et CGU",
