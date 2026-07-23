@@ -248,7 +248,7 @@ class TestGoogleBooksApiKey:
             pytest.skip("GOOGLE_BOOKS_API_KEY non définie, test ignoré")
 
         # ISBN connu : "L'Étranger" de Camus — toujours présent dans Google Books
-        # Le client gère déjà 3 tentatives en interne — un seul appel suffit ici
+        # Le client gère déjà 5 tentatives en interne — un seul appel suffit ici
         data, error = await fetch_google_books("9782070360024")
 
         # Si l'API est toujours indispo après les retries du client, on skippe
